@@ -27,7 +27,8 @@ function VoiceActionManager(obj) {
 }
 
 /**
- * Adds to log.
+ * Adds to log. The log is actually two server variables that can be retrieved, since it always uses the same name.
+ * Consideration for future purposes: maybe the transcript should be another available variable.
  *
  * @method log
  * @param  {Array} clients - A reference to the client list.
@@ -41,14 +42,14 @@ VoiceActionManager.prototype.log = function(line, shouldConsolePrint = false) {
 	this.s2.sharedServerData.setValue(null, { // wsio is not needed for set value (at least not currently)
 		nameOfValue: "voiceToActionFullLog",
 		value: this.fullLog,
-		description: "This is a list of history for voiceToAction",
+		description: "This is a list of history for voiceToAction"
 	});
 	this.s2.sharedServerData.setValue(null, { // wsio is not needed for set value (at least not currently)
 		nameOfValue: "voiceToActionLastEntry",
 		value: this.lastLogEntry,
-		description: "This is the last entry submitted by voiceToAction",
+		description: "This is the last entry submitted by voiceToAction"
 	});
-}
+};
 
 
 /**
@@ -62,10 +63,10 @@ VoiceActionManager.prototype.log = function(line, shouldConsolePrint = false) {
 VoiceActionManager.prototype.process = function(wsio, data) {
 	try {
 		this.secondaryProcessCallToUseInTryCatch(wsio, data);
-	} catch(e) {
+	} catch (e) {
 		this.log(e, true);
 	}
-}
+};
 
 /**
  * Moved everything there to clean try catch
@@ -101,7 +102,9 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 		}
 	}
 	var words = data.words.split(" "); // should have passed one string of words
-	words = words.map(function(w) { return w.toLowerCase();}); // change to lower case.
+	words = words.map(function(w) {
+		return w.toLowerCase();
+	}); // change to lower case.
 	// if the server prechecks and eats the command then don't send it to an app.
 	if (data.words.includes("cancel")) {
 		this.log("Command contained cancel, discarding: " + data.words, true);
@@ -113,13 +116,12 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 	if (!contextMenu) {
 		return; // can't do anything if didn't find
 	}
-	var menuDescription;
 	var menuMatches = Array(contextMenu.length).fill(0); // make an array of matches "next page"
 	var descriptionWords;
 	// go through each entry, if there is any match for a word 3+ letters, then activate
 	for (let i = 0; i < contextMenu.length; i++) {
 		for (let w = 0; w < words.length; w++) {
-			if (words[w].length >= 3) {
+			if (words[w].length >= 2) {
 				descriptionWords = contextMenu[i].description.toLowerCase().split(" ");
 				for (let dwi = 0; dwi < descriptionWords.length; dwi++) {
 					if (descriptionWords[dwi] === words[w]) {
@@ -141,6 +143,25 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 	// if there was at least one word match
 	if (indexOfMostMatches > -1) {
 		var cmEntry = contextMenu[indexOfMostMatches];
+		var lastDescriptionWord;
+		var wordsToPassAsInput = null;
+
+		// if the menu entry is for input, try to take anything after the indicator to pass as values
+		if (contextMenu[indexOfMostMatches].inputField) {
+			this.log(app + " has an input field, trying to separate input");
+			lastDescriptionWord = contextMenu[indexOfMostMatches].description.toLowerCase();
+			lastDescriptionWord = lastDescriptionWord.replace(/:/g, '').trim(); // remove : if exists
+			this.log("Last word in:" + lastDescriptionWord);
+			lastDescriptionWord = lastDescriptionWord.split(' ');
+			lastDescriptionWord = lastDescriptionWord[lastDescriptionWord.length - 1];
+			this.log("  is:" + lastDescriptionWord);
+			wordsToPassAsInput = data.words.toLowerCase();
+			if (wordsToPassAsInput.indexOf(lastDescriptionWord) > -1) {
+				wordsToPassAsInput = wordsToPassAsInput.substring(wordsToPassAsInput.indexOf(lastDescriptionWord));
+				wordsToPassAsInput = wordsToPassAsInput.substring(lastDescriptionWord.length);
+				wordsToPassAsInput = wordsToPassAsInput.trim();
+			}
+		}
 
 		var dataToSend = {
 			app: app,
@@ -148,14 +169,22 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 			parameters: cmEntry.parameters
 		};
 		dataToSend.parameters.clientId = wsio.id;
+		if (wordsToPassAsInput !== null) {
+			dataToSend.parameters.clientInput = wordsToPassAsInput;
+		}
 
 		// should work on branch: master / acronymRemove derivative 
 		this.s2.wsCallFunctionOnApp(wsio, dataToSend);
-		this.log("Action accepted. Activating " + dataToSend.func + " on " + dataToSend.app);
+		this.log("Action accepted for entry: " + contextMenu[indexOfMostMatches].description);
+		this.log("Activating " + dataToSend.func + " on " + dataToSend.app);
+		if (wordsToPassAsInput !== null) {
+			this.log("--clientInput being given:" + wordsToPassAsInput);
+		}
 	} else {
 		this.log("No voice matches found in " + app + " for the phrase:" + words, true);
 	}
-}
+};
+
 /**
  * Will attempt to take a transcript and use best case to match an action.
  * 
@@ -218,7 +247,7 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"save open applications name",
 				"save applications name"
 			]
-		},
+		}
 	};
 
 	var commandKeys = Object.keys(commandBin);
@@ -231,7 +260,7 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 		// go through each of that commands phrase requirements
 		for (let phrase = 0; phrase < commandInfo.phraseRequirements.length; phrase++) {
 			foundAll = true;
-			phraseWords = commandInfo.phraseRequirements[phrase].split(" ");;
+			phraseWords = commandInfo.phraseRequirements[phrase].split(" ");
 			for (let pwi = 0; pwi < phraseWords.length; pwi++) {
 				if (!allWords.includes(phraseWords[pwi])) {
 					foundAll = false;
@@ -249,7 +278,7 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 	} // end for each command key
 
 	return false;
-} // end voicePreCheckForServerCommands
+}; // end voicePreCheckForServerCommands
 
 /**
  * Will take transcript and attempt to launch application
@@ -268,7 +297,7 @@ VoiceActionManager.prototype.getWordsAfterInList = function(wordToSearchFor, lis
 		}
 	}
 	return retval;
-}
+};
 
 /**
  * Will take transcript and attempt to launch application
@@ -286,19 +315,20 @@ VoiceActionManager.prototype.voiceHandlerForApplicationLaunch = function(wsio, w
 	wordCompare = this.getWordsAfterInList("launch", words);
 	// if there are hits for both, use the longer string
 	if (wordsDescribing && wordCompare && (wordCompare.length < wordsDescribing.length)) {
-		wordsDescribing = wordCompare
+		wordsDescribing = wordCompare;
 	} else if (!wordsDescribing) { // no hits, move on
-		wordsDescribing = wordCompare
+		wordsDescribing = wordCompare;
 	}
 	wordCompare = this.getWordsAfterInList("open", words);
 	if (wordsDescribing && wordCompare && (wordCompare.length < wordsDescribing.length)) {
-		wordsDescribing = wordCompare
+		wordsDescribing = wordCompare;
 	} else if (!wordsDescribing) {
-		wordsDescribing = wordCompare
+		wordsDescribing = wordCompare;
 	}
 	if (wordsDescribing === undefined) {
 		this.log("Error>voiceToAction> voiceHandlerForApplicationLaunch given:" + words, true);
-		this.log("Error>voiceToAction> voiceHandlerForApplicationLaunch tripped, but no application word descriptors. Returning...", true);
+		this.log("Error>voiceToAction> voiceHandlerForApplicationLaunch tripped,"
+			+ " but no application word descriptors. Returning...", true);
 		return;
 	}
 	var apps = this.s2.assets.listApps();
@@ -356,7 +386,7 @@ VoiceActionManager.prototype.voiceHandlerForApplicationLaunch = function(wsio, w
 			appName: apps[largestCountIndex].exif.FileName
 		});
 	}
-} // end voiceHandlerForApplicationLaunch
+}; // end voiceHandlerForApplicationLaunch
 
 /**
  * Will take transcript and attempt to restore session.
@@ -373,9 +403,9 @@ VoiceActionManager.prototype.voiceHandlerForSessionRestore = function(wsio, word
 	wordCompare = this.getWordsAfterInList("back", words);
 	// if there are hits for both, use the longer string
 	if (wordsDescribing && wordCompare && (wordCompare.length < wordsDescribing.length)) {
-		wordsDescribing = wordCompare
+		wordsDescribing = wordCompare;
 	} else if (!wordsDescribing) { // no hits, move on
-		wordsDescribing = wordCompare
+		wordsDescribing = wordCompare;
 	}
 	if (wordsDescribing === undefined) {
 		this.log("Error>voiceToAction> voiceHandlerForSessionRestore given:" + words, true);
@@ -417,7 +447,7 @@ VoiceActionManager.prototype.voiceHandlerForSessionRestore = function(wsio, word
 			user: wsio.id
 		});
 	}
-}
+};
 
 /**
  * Will take transcript and attempt to save session.
@@ -438,15 +468,15 @@ VoiceActionManager.prototype.voiceHandlerForSessionSave = function(wsio, words) 
 	wordCompare = this.getWordsAfterInList("name", words);
 	// if there are hits for both, use the longer string
 	if (wordsDescribing && wordCompare && (wordCompare.length < wordsDescribing.length)) {
-		wordsDescribing = wordCompare
+		wordsDescribing = wordCompare;
 	} else if (!wordsDescribing) { // no hits, move on
-		wordsDescribing = wordCompare
+		wordsDescribing = wordCompare;
 	}
 	if (wordsDescribing === undefined) {
 		this.log("Error>voiceToAction> voiceHandlerForSessionSave given:" + words, true);
 		this.log("Error>voiceToAction> voiceHandlerForSessionSave tripped, but no word descriptors. Returning...", true);
 		return;
-	};
+	}
 	if (wordsDescribing.length < 1) {
 		this.log("Error>voiceToAction> voiceHandlerForSessionSave given:" + words, true);
 		this.log("Error>voiceToAction> voiceHandlerForSessionSave tripped, but name scheme was not given.", true);
@@ -455,8 +485,6 @@ VoiceActionManager.prototype.voiceHandlerForSessionSave = function(wsio, words) 
 	// save the session with the given name
 	this.log("Saving session, filename:" + wordsDescribing.join(" "));
 	this.s2.wsSaveSesion(wsio, wordsDescribing.join(" "));
-}
-
-
+};
 
 module.exports = VoiceActionManager;

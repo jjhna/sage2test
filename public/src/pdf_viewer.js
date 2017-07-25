@@ -767,6 +767,33 @@ var pdf_viewer = SAGE2_App.extend({
 		entry.inputFieldSize = 3;
 		entries.push(entry);
 
+		entry = {};
+		entry.description = "Go to page: ";
+		entry.callback = "changeThePage";
+		entry.parameters = {};
+		entry.inputField = true;
+		entry.inputFieldSize = 3;
+		entry.voiceEntryOverload = true;
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "Jump to page: ";
+		entry.callback = "changeThePage";
+		entry.parameters = {};
+		entry.inputField = true;
+		entry.inputFieldSize = 3;
+		entry.voiceEntryOverload = true;
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "Show page: ";
+		entry.callback = "changeThePage";
+		entry.parameters = {};
+		entry.inputField = true;
+		entry.inputFieldSize = 3;
+		entry.voiceEntryOverload = true;
+		entries.push(entry);
+
 		// Special callback: dowload the file
 		entries.push({
 			description: "Download PDF",

@@ -2553,6 +2553,9 @@ function setAppContextMenuEntries(data) {
 	// for each entry to add, create the div, app the properties, and effects
 	var workingDiv;
 	for (i = 0; i < entriesToAdd.length; i++) {
+		if (entriesToAdd[i].voiceEntryOverload) {
+			continue;
+		}
 		workingDiv = document.createElement('div');
 		// unique entry id
 		workingDiv.id = 'appContextMenuEntry' + i;
@@ -3173,19 +3176,20 @@ s2SpeechRecognition.final_transcript   = false;
 s2SpeechRecognition.interim_transcript = false;
 
 s2SpeechRecognition.init = function() {
+	// console.log("s2SpeechRecognition init()");
 	if (!("webkitSpeechRecognition" in window)) {
 		alert("Sorry your browser doesn't support webkitSpeechRecognition. You will need an updated chrome");
-	}
-	else {
+	} else {
 		console.log("webkitSpeechRecognition exists beginning setup");
-		this.webkitSR = new webkitSpeechRecognition();
+		// the contructor is actually lower case
+		this.webkitSR = new webkitSpeechRecognition(); // eslint-disable-line
 		this.webkitSR.continuous = true;
 		this.webkitSR.interimResults = true;
 
 		this.webkitSR.onstart = function() {
 			console.log("s2SpeechRecognition started");
 			this.recognizing = true;
-		}
+		};
 
 		/*
 			After getting a result, but this also includes pieces that aren't detected as full sentences.
@@ -3206,7 +3210,7 @@ s2SpeechRecognition.init = function() {
 					wsio.emit('voiceToAction', {words: this.final_transcript});
 
 					// for some reason it works better after stopping, maybe this has improved.
-					setTimeout(function(){
+					setTimeout(function() {
 						console.log("restarting");
 						s2SpeechRecognition.webkitSR.stop();
 					}, 10);
@@ -3219,22 +3223,27 @@ s2SpeechRecognition.init = function() {
 					});
 				}
 			}
-		} //end onresult
+		}; //end onresult
 
+		// this.errorCount = 0;
 		this.webkitSR.onerror = function(e) {
 			console.log("webkitSpeechRecognition error:" + e);
 			console.dir(e);
-		}
+			this.errorCount++;
+		};
 
 		// after ending restart
 		this.webkitSR.onend = function() {
 			this.recognizing = false;
 			console.log("voice ended, attempting to restart");
 			s2SpeechRecognition.webkitSR.start();
-		}
+			// if (this.errorCount < 5) {
+			// 	s2SpeechRecognition.webkitSR.start();
+			// }
+		};
 		this.toggleS2SpeechRecognition();
 	} //end else there is webkit
-}
+};
 s2SpeechRecognition.toggleS2SpeechRecognition = function() {
 	if (this.recognizing) {
 		this.webkitSR.stop();
@@ -3243,6 +3252,5 @@ s2SpeechRecognition.toggleS2SpeechRecognition = function() {
 	this.final_transcript = " ";
 	this.webkitSR.lang = "en-US";
 	this.webkitSR.start();
-}
-console.log("s2SpeechRecognition init()");
-s2SpeechRecognition.init();
+};
+// s2SpeechRecognition.init();

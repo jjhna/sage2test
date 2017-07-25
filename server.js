@@ -648,8 +648,8 @@ var variablesUsedInVoiceHandler = {
 	wsSaveSesion,
 	tileApplications,
 	deleteAllApplications,
-	broadcast,
-}
+	broadcast
+};
 var voiceHandler = new VoiceActionManager(variablesUsedInVoiceHandler);
 
 //

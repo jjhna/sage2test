@@ -416,6 +416,24 @@ var googlemaps = SAGE2_App.extend({
 		entry.inputFieldSize = 20;
 		entries.push(entry);
 
+		entry   = {};
+		entry.description = "Show me";
+		entry.callback = "setLocation";
+		entry.parameters     = {};
+		entry.inputField     = true;
+		entry.inputFieldSize = 20;
+		entry.voiceEntryOverload = true;
+		entries.push(entry);
+
+		entry   = {};
+		entry.description = "go to";
+		entry.callback = "setLocation";
+		entry.parameters     = {};
+		entry.inputField     = true;
+		entry.inputFieldSize = 20;
+		entry.voiceEntryOverload = true;
+		entries.push(entry);
+
 		entry = {};
 		entry.description = "Save current location";
 		entry.callback = "setDefault";
