@@ -424,8 +424,8 @@ VoiceActionManager.prototype.voiceHandlerForSessionRestore = function(wsio, word
 		nameString = sessions[sessionIndex].exif.FileName.toLowerCase(); // lower case, words are already expected to be lower case
 		// for each of the words.
 		for (let w = 0; w < wordsDescribing.length; w++) {
-			if (wordsDescribing[w].length < 3) {
-				continue; // do not check words 2 or less characters long
+			if (wordsDescribing[w].length < 2) {
+				continue;
 			}
 			if (nameString.includes(wordsDescribing[w])) {
 				nameCount++;
