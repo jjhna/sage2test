@@ -1078,8 +1078,11 @@ function setupListeners(wsio) {
 	wsio.on('saveDataOnServer',						wsSaveDataOnServer);
 	wsio.on('serverDataSetValue',					wsServerDataSetValue);
 	wsio.on('serverDataGetValue',					wsServerDataGetValue);
+	wsio.on('serverDataRemoveValue',				wsServerDataRemoveValue);
 	wsio.on('serverDataSubscribeToValue',			wsServerDataSubscribeToValue);
 	wsio.on('serverDataGetAllTrackedValues',		wsServerDataGetAllTrackedValues);
+	wsio.on('serverDataGetAllTrackedDescriptions',	wsServerDataGetAllTrackedDescriptions);
+	wsio.on('serverDataSubscribeToNewValueNotification',	wsServerDataSubscribeToNewValueNotification);
 
 	// voice to sage2 actions
 	wsio.on('voiceToAction',                      wsVoiceToAction);
@@ -9461,11 +9464,7 @@ function appLaunchHelperGetPathOfApp(appName) {
  * @method wsSendDataToClient
  * @param  {Object} wsio - The websocket of sender.
  * @param  {Object} data - The object properties described below.
- * @param  {Integer} data.x   - Pointer x, corresponds to on entire wall.
- * @param  {Integer} data.y   - Pointer y, corresponds to on entire wall.
- * @param  {String} data.app  - App id, which function should be activated.
- * @param  {String} data.func - Name of function to activate
- * @param  {Object} data.parameters - Object to send to the app as parameter.
+ * @param  {String} data.clientDest - Unique identifier of client
  */
 function wsSendDataToClient(wsio, data) {
 	var i;
@@ -9584,6 +9583,18 @@ function wsServerDataGetValue(wsio, data) {
 }
 
 /**
+ * Removes variable from server. Expected usage is this is called when an app closes.
+ * Made for the sake of cleanup as apps open and close.
+ *
+ * @method wsServerDataRemoveValue
+ * @param  {Object} wsio - The websocket of sender.
+ * @param  {Object} data - The object properties described below.
+ */
+function wsServerDataRemoveValue(wsio, data) {
+	sharedServerData.removeValue(wsio, data);
+}
+
+/**
  * Add the app to the named values a subscriber.
  * If the value doesn't exist, it will create a "blank" value and subscribe to it.
  *
@@ -9601,7 +9612,7 @@ function wsServerDataSubscribeToValue(wsio, data) {
 /**
  * Will respond back once to the app giving the func an array of tracked values.
  * They will be in an array of objects with properties nameOfValue and value.
- * NOTE: this could be a huge array.
+ * NOTE: the values in the array could be huge.
  *
  * @method wsServerDataGetAllTrackedValues
  * @param  {Object} wsio - The websocket of sender.
@@ -9611,6 +9622,34 @@ function wsServerDataSubscribeToValue(wsio, data) {
  */
 function wsServerDataGetAllTrackedValues(wsio, data) {
 	sharedServerData.getAllTrackedValues(wsio, data);
+}
+
+/**
+ * Will respond back once to the app giving the func an array of tracked descriptions.
+ * They will be in an array of objects with properties nameOfValue and description.
+ *
+ * @method wsServerDataGetAllTrackedDescriptions
+ * @param  {Object} wsio - The websocket of sender.
+ * @param  {Object} data - The object properties described below.
+ * @param  {String} data.app - App that requested.
+ * @param  {String} data.func - Name of the function on the app to give value to.
+ */
+function wsServerDataGetAllTrackedDescriptions(wsio, data) {
+	sharedServerData.getAllTrackedDescriptions(wsio, data);
+}
+
+/**
+ * Will add the websocket to subscriber list of new value notifications.
+ * The subscriber will get an object with nameOfValue and description.
+ *
+ * @method wsServerDataSubscribeToNewValueNotification
+ * @param  {Object} wsio - The websocket of sender.
+ * @param  {Object} data - The object properties described below.
+ * @param  {String} data.app - App that requested.
+ * @param  {String} data.func - Name of the function on the app to give value to.
+ */
+function wsServerDataSubscribeToNewValueNotification(wsio, data) {
+	sharedServerData.subscribeToNewValueNotification(wsio, data);
 }
 
 /**

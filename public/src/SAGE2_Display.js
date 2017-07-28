@@ -1592,11 +1592,6 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 				if (data.animation === true) {
 					wsio.emit('finishedRenderingAppFrame', {id: data.id});
 				}
-
-				// custom launch
-				if (data.customLaunchParams && data.customLaunchParams.functionToCallAfterInit) {
-					newapp[data.customLaunchParams.functionToCallAfterInit](data.customLaunchParams);
-				}
 			}, false);
 			js.type  = "text/javascript";
 			js.async = false;
@@ -1624,10 +1619,6 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 				setTimeout(function() {
 					wsio.emit('requestVideoFrame', {id: data.id});
 				}, 500);
-			}
-			// custom launch 2, for app that has already been loaded
-			if (data.customLaunchParams && data.customLaunchParams.functionToCallAfterInit) {
-				app[data.customLaunchParams.functionToCallAfterInit](data.customLaunchParams);
 			}
 		}
 	}

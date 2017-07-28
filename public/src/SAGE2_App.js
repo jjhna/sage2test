@@ -8,7 +8,7 @@
 //
 // Copyright (c) 2014-2015
 
-/* global ignoreFields, SAGE2WidgetControl, SAGE2MEP */
+/* global ignoreFields, SAGE2WidgetControl, SAGE2MEP, SAGE2SharedServerData */
 /* global addStoredFileListEventHandler, removeStoredFileListEventHandler */
 
 /**
@@ -151,6 +151,9 @@ var SAGE2_App = Class.extend({
 		this.hasFileBuffer = false;
 		this.SAGE2CopyState(data.state);
 		this.SAGE2InitializeAppOptionsFromState();
+
+		// add serverData functions, or update later to have that file .extend() the function into SAGE2_App.
+		SAGE2SharedServerData.addSharedServerDataFunctions(this, data);
 	},
 
 	SAGE2Load: function(state, date) {
@@ -738,6 +741,8 @@ var SAGE2_App = Class.extend({
 		if (isMaster && this.hasFileBuffer === true) {
 			wsio.emit('closeFileBuffer', {id: this.div.id});
 		}
+		// remove values placed on server
+		this.serverDataRemoveAllValuesGivenToServer();
 	},
 
 	/**
