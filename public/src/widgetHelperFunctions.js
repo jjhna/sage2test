@@ -422,6 +422,7 @@ function makeSvgBackgroundForWidgetConnectors(width, height) {
 	foreground.node.style.left = "0";
 	foreground.node.style.top = "0";
 	foreground.node.style.position = "absolute";
+	foreground.attr("class", "svgForegroundDraw");
 	ui.main.appendChild(foreground.node);
 	svgForegroundForWidgetConnectors = foreground;
 
