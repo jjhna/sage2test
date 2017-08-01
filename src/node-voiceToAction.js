@@ -101,6 +101,7 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 			}
 		}
 	}
+	data.words = data.words.replace(/-/g, ' ').trim(); // turn - into ' '. particularly "next-page" to "next page"
 	var words = data.words.split(" "); // should have passed one string of words
 	words = words.map(function(w) {
 		return w.toLowerCase();
@@ -118,7 +119,7 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 	}
 	var menuMatches = Array(contextMenu.length).fill(0); // make an array of matches "next page"
 	var descriptionWords;
-	// go through each entry, if there is any match for a word 3+ letters, then activate
+	// go through each entry, if there is any match for a word 2+ letters, then activate. go, to, me. 
 	for (let i = 0; i < contextMenu.length; i++) {
 		for (let w = 0; w < words.length; w++) {
 			if (words[w].length >= 2) {
@@ -171,6 +172,7 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 		dataToSend.parameters.clientId = wsio.id;
 		if (wordsToPassAsInput !== null) {
 			dataToSend.parameters.clientInput = wordsToPassAsInput;
+			dataToSend.parameters.clientVoiceInput = data.words.toLowerCase();
 		}
 
 		// should work on branch: master / acronymRemove derivative 
