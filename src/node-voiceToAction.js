@@ -225,6 +225,14 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"load application"
 			]
 		},
+		makeNote: {
+			successFunction: this.voiceHandlerForMakeNote,
+			phraseRequirements: [
+				"make a note",
+				"write down",
+				"make a reminder"
+			]
+		},
 		sessionRestore: {
 			successFunction: this.voiceHandlerForSessionRestore,
 			phraseRequirements: [
@@ -294,7 +302,7 @@ VoiceActionManager.prototype.getWordsAfterInList = function(wordToSearchFor, lis
 	var retval;
 	for (let i = 0; i < listOfWords.length; i++) {
 		if (listOfWords[i] === wordToSearchFor) {
-			retval = listOfWords.slice(i);
+			retval = listOfWords.slice(i + 1);
 			break;
 		}
 	}
@@ -313,7 +321,7 @@ VoiceActionManager.prototype.voiceHandlerForApplicationLaunch = function(wsio, w
 	// "load application"
 	var wordsDescribing, wordCompare;
 	// use descriptor string that is longer, first get the words after "application"
-	wordsDescribing = this.getWordsAfterInList("application", words); // should be array, not single string.
+	wordsDescribing = this.getWordsAfterInList("application", words); // takes and returns array
 	wordCompare = this.getWordsAfterInList("launch", words);
 	// if there are hits for both, use the longer string
 	if (wordsDescribing && wordCompare && (wordCompare.length < wordsDescribing.length)) {
@@ -391,6 +399,47 @@ VoiceActionManager.prototype.voiceHandlerForApplicationLaunch = function(wsio, w
 }; // end voiceHandlerForApplicationLaunch
 
 /**
+ * Will try to make a note
+ * 
+ * @method voiceHandlerForMakeNote
+ * @param {Array} words - transcript as array of words
+ */
+VoiceActionManager.prototype.voiceHandlerForMakeNote = function(wsio, words) {
+	// "make a note",
+	// "write down",
+	// "make a reminder"
+	var wordsDescribing, wordCompare;
+	wordsDescribing = this.getWordsAfterInList("note", words); // takes and returns array
+	wordCompare = this.getWordsAfterInList("down", words);
+	// if there are hits for both, use the longer string
+	if (wordsDescribing && wordCompare && (wordCompare.length < wordsDescribing.length)) {
+		wordsDescribing = wordCompare;
+	} else if (!wordsDescribing) { // no hits, move on
+		wordsDescribing = wordCompare;
+	}
+	wordCompare = this.getWordsAfterInList("reminder", words);
+	if (wordsDescribing && wordCompare && (wordCompare.length < wordsDescribing.length)) {
+		wordsDescribing = wordCompare;
+	} else if (!wordsDescribing) { // no hits, move on
+		wordsDescribing = wordCompare;
+	}
+	if (wordsDescribing === undefined) {
+		this.log("Error>voiceToAction> voiceHandlerForSessionRestore given:" + words, true);
+		this.log("Error>voiceToAction> voiceHandlerForSessionRestore tripped, but no word descriptors. Returning...", true);
+		return;
+	}
+	var label = this.s2.sagePointers[wsio.id].label;
+
+	var data = {};
+	data.appName	= "quickNote";
+    data.customLaunchParams		= {};
+    data.customLaunchParams.clientName = this.s2.sagePointers[wsio.id].label;
+    data.customLaunchParams.clientInput = wordsDescribing.join(" ");
+
+	this.s2.wsLaunchAppWithValues(wsio, data);
+};
+
+/**
  * Will take transcript and attempt to restore session.
  * 
  * @method voiceHandlerForSessionRestore
@@ -401,7 +450,7 @@ VoiceActionManager.prototype.voiceHandlerForSessionRestore = function(wsio, word
 	// "load session",
 	// "bring back"
 	var wordsDescribing, wordCompare;
-	wordsDescribing = this.getWordsAfterInList("session", words); // should be array, not single string.
+	wordsDescribing = this.getWordsAfterInList("session", words); // takes and returns array
 	wordCompare = this.getWordsAfterInList("back", words);
 	// if there are hits for both, use the longer string
 	if (wordsDescribing && wordCompare && (wordCompare.length < wordsDescribing.length)) {
@@ -466,7 +515,7 @@ VoiceActionManager.prototype.voiceHandlerForSessionSave = function(wsio, words) 
 	// "save applications as",
 	// " ... name"
 	var wordsDescribing, wordCompare;
-	wordsDescribing = this.getWordsAfterInList("as", words); // should be array, not single string.
+	wordsDescribing = this.getWordsAfterInList("as", words); // takes and returns array
 	wordCompare = this.getWordsAfterInList("name", words);
 	// if there are hits for both, use the longer string
 	if (wordsDescribing && wordCompare && (wordCompare.length < wordsDescribing.length)) {
