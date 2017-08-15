@@ -232,6 +232,55 @@ var chemViewer = SAGE2_App.extend({
 			this.drawMolecule();
 		}
 		this.repaint = false;
+
+
+		if (this.webCheckCounter === undefined) {
+			this.webCheckCounter = 0;
+			this.webCheckAmount = this.maxFPS; // once per second
+			this.lastPdbIdFromWeb = [];
+		} else {
+			this.webCheckCounter++;
+			if (this.webCheckCounter >= this.webCheckAmount) {
+				this.webCheckCounter = 0;
+				var currentId, appKeys;
+				// quick check to see if has a last for each webview
+				var appKeys = Object.keys(applications);
+				var appNumber = appKeys[appKeys.length - 1];
+				appNumber = +appNumber.substring(appNumber.indexOf("_") + 1); // get number of last app
+				while (appNumber >= this.lastPdbIdFromWeb.length) { // >= because starts at 0
+					this.lastPdbIdFromWeb.push("");
+				}
+				// search for any webpage
+				for (let i = 0; i < appKeys.length; i++) {
+					if (applications[appKeys[i]].application === "Webview") {
+						appNumber = applications[appKeys[i]].id; // gets the number out of the app id
+						appNumber = +appNumber.substring(appNumber.indexOf("_") + 1);
+						if ((applications[appKeys[i]].state.url.includes("rcsb.org"))
+							&& (applications[appKeys[i]].state.url.includes("structureId"))
+							) {
+							currentId = applications[appKeys[i]].state.url;
+							currentId = currentId.substring(currentId.indexOf("structureId"));
+							currentId = currentId.substring(currentId.indexOf("=") + 1);
+							if (currentId !== this.lastPdbIdFromWeb[appNumber]) {
+								this.lastPdbIdFromWeb[appNumber] = currentId;
+								this.searchPDB({clientInput: currentId});
+							}
+						}
+						if ((applications[appKeys[i]].state.url.includes("ebi.ac.uk/"))
+							&& (applications[appKeys[i]].state.url.includes("chebiId"))
+							) {
+							currentId = applications[appKeys[i]].state.url;
+							currentId = currentId.substring(currentId.indexOf("chebiId"));
+							currentId = currentId.substring(currentId.indexOf("=") + 1);
+							if (currentId !== this.lastPdbIdFromWeb[appNumber]) {
+								this.lastPdbIdFromWeb[appNumber] = currentId;
+								this.searchMOL({clientInput: currentId});
+							}
+						}
+					}
+				}
+			}
+		}
 	},
 
 	/**

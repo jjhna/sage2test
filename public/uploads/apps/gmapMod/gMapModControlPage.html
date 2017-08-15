@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+
+	<title>SAGE2 - Google Maps Modified</title>
+
+	<script type="text/license">
+		// SAGE2 is available for use under the SAGE2 Software License
+		//
+		// University of Illinois at Chicago's Electronic Visualization Laboratory (EVL)
+		// and University of Hawai'i at Manoa's Laboratory for Advanced Visualization and
+		// Applications (LAVA)
+		//
+		// See full text, terms and conditions in the LICENSE.txt included file
+		//
+		// Copyright (c) 2014
+	</script>
+
+
+	<script src="SAGE2_standAlonePageConnectBack.js"></script>
+</head>
+
+<body>
+
+
+    <div id="mapDiv"></div>
+    <script>
+	var map = null;
+	var lastCenterCoordinates = {};
+	var lastZoomLevel = null;
+
+
+
+	function initMap() {
+		console.log("Map script loaded, init now");
+
+		map = new google.maps.Map(document.getElementById('mapDiv'), {
+			zoom: 12,
+			center: {lat: 21.5, lng: -158}
+		});
+		mapDiv.style.width = window.innerWidth * .9 + "px";
+		mapDiv.style.height = window.innerHeight * .9 + "px";
+
+		//initS2Connection: function(s2Hostname = null, session = null, isMasterDisplayOrUniqueWebpage = true, appIdOfWebview = null);
+		SAGE2Connection.initS2Connection();
+		SAGE2Connection.afterSAGE2Connection = afterConnectEffects;
+	}
+
+
+
+	function afterConnectEffects() {
+		console.log("Connection ready");
+		SAGE2Connection.serverDataGetValue(SAGE2Connection.appId + ":source:testConvert:geoLocationCenter", initialLocation);
+		console.log("  Waiting on initial location");
+	}
+	function initialLocation(location) {
+		console.log("Received initial location " + JSON.stringify(location));
+		if (Array.isArray(location)) {
+			location = location[0];
+		}
+		map.setCenter(location);
+		setInterval(updateCenterOnApp, 1000);
+	}
+	function updateCenterOnApp() {
+		var currentCenter = {
+			lat: map.getCenter().lat(),
+			lng: map.getCenter().lng()
+		}
+		var currentZoomLevel = this.map.getZoom();
+		if (lastCenterCoordinates.lat !== currentCenter.lat || lastCenterCoordinates.lng !== currentCenter.lng) {
+			// console.log("Updating");
+			lastCenterCoordinates = currentCenter;
+			// serverDataSetValue: function(nameOfValue, value, description, shouldRemoveValueFromServerWhenAppCloses = false)
+			SAGE2Connection.serverDataSetValue(SAGE2Connection.appId + ":destination:testConvert:viewCenter", currentCenter);
+		}
+		if (lastZoomLevel !== currentZoomLevel) {
+			lastZoomLevel = currentZoomLevel;
+			// need to bring in the zoom adjustment from voice
+			// callFunctionOnApp: function(functionName, parameterObject) {
+			// SAGE2Connection.callFunctionOnApp();
+		}
+	}
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyANE6rJqcfc7jH-bDOwhXQZK_oYq9BWRDY&callback=initMap">
+    </script>
+
+</body>
+</html>

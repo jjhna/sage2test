@@ -680,6 +680,17 @@ var gmapMod = SAGE2_App.extend({
 		var entry   = {};
 
 		entry = {};
+		entry.description = "Edit";
+		entry.callback    = "SAGE2_openPage";
+		entry.parameters  = {
+			url: this.resrcPath + "gMapModControlPage.html"
+		};
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "separator";
+		entries.push(entry);
+		entry = {};
 		entry.description = "Zoom in";
 		entry.callback = "contextMenuZoom";
 		entry.parameters = {value: 1};
