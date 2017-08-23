@@ -77,6 +77,13 @@ VoiceActionManager.prototype.process = function(wsio, data) {
  * @param  {String} data.words - what was said.
  */
 VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio, data) {
+	// first check that the word "computer" was used
+	if (!data.words.includes("computer ")) {
+		return; // wait for initiation
+	}
+	data.words = data.words.slice(data.words.indexOf("computer ")); // chop from beginning of computer
+	data.words = data.words.slice(data.words.indexOf(" ") + 1); // then take out computer
+
 	// get the pointer associated to this wsio
 	var userPointer = this.s2.sagePointers[wsio.id];
 
@@ -102,10 +109,7 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 		}
 	}
 	data.words = data.words.replace(/-/g, ' ').trim(); // turn - into ' '. particularly "next-page" to "next page"
-	var words = data.words.split(" "); // should have passed one string of words
-	words = words.map(function(w) {
-		return w.toLowerCase();
-	}); // change to lower case.
+	var words = data.words.toLowerCase().split(" "); // should have passed one string of words
 	// if the server prechecks and eats the command then don't send it to an app.
 	if (data.words.includes("cancel")) {
 		this.log("Command contained cancel, discarding: " + data.words, true);
@@ -256,6 +260,12 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"save state name",
 				"save open applications name",
 				"save applications name"
+			]
+		},
+		webSearch: {
+			successFunction: this.voiceHandlerForWebSearch,
+			phraseRequirements: [
+				"google search"
 			]
 		}
 	};
@@ -428,13 +438,12 @@ VoiceActionManager.prototype.voiceHandlerForMakeNote = function(wsio, words) {
 		this.log("Error>voiceToAction> voiceHandlerForSessionRestore tripped, but no word descriptors. Returning...", true);
 		return;
 	}
-	var label = this.s2.sagePointers[wsio.id].label;
 
 	var data = {};
 	data.appName	= "quickNote";
-    data.customLaunchParams		= {};
-    data.customLaunchParams.clientName = this.s2.sagePointers[wsio.id].label;
-    data.customLaunchParams.clientInput = wordsDescribing.join(" ");
+	data.customLaunchParams		= {};
+	data.customLaunchParams.clientName = this.s2.sagePointers[wsio.id].label;
+	data.customLaunchParams.clientInput = wordsDescribing.join(" ");
 
 	this.s2.wsLaunchAppWithValues(wsio, data);
 };
@@ -536,6 +545,96 @@ VoiceActionManager.prototype.voiceHandlerForSessionSave = function(wsio, words) 
 	// save the session with the given name
 	this.log("Saving session, filename:" + wordsDescribing.join(" "));
 	this.s2.wsSaveSesion(wsio, wordsDescribing.join(" "));
+};
+
+/**
+ * Will perform search. If "image" keyword is used early then will perform image search.
+ * 
+ * @method voiceHandlerForWebSearch
+ * @param {Array} words - transcript as array of words
+ */
+VoiceActionManager.prototype.voiceHandlerForWebSearch = function(wsio, words) {
+	// "google search"
+	var imageSearching = false;
+
+	/*
+	making some assumptions about image search invoke:
+		computer
+			google image search [for]
+			search google images [for]
+			image search in google [for]
+			do a google image search [for]
+
+		first check if the words contain "image"
+			then position check
+	*/
+	var foundImage = false;
+	var searchEngine = "google";
+	var foundEngine = false;
+	var foundFor = false;
+	var foundSearch = false;
+	for (let i = 0; i < words.length; i++) {
+		if (words[i].includes("image")) {
+			if ((foundEngine !== false) && (foundEngine === (i - 1))) { // engine should be before image
+				imageSearching = true;
+			} else {
+				imageSearching = true; // finding "image" before engine means use the engine's image search
+			}
+			foundImage = i;
+		} else if (words[i].includes(searchEngine)) {
+			foundEngine = i; // want index of the word
+		} else if (words[i].includes("for")) {
+			foundFor = i; // image after for means that image was probably a search term.
+		} else if (words[i].includes("search")) {
+			foundSearch = i;
+		}
+	}
+
+	// this should not be possible
+	var searchTermStartIndex = -1;
+	if ((foundSearch === false) || (foundEngine === false)) {
+		console.log("Error in voiceToAction: voiceHandlerForWebSearch activated but could not find keyword");
+	}
+
+	// determine which word of the keywords marks the start of the search terms.
+	if (foundFor !== false) {
+		searchTermStartIndex = foundFor;
+	} else if (foundImage !== false) { // if found "image"
+		// need to know if search was after, or image
+		if (foundImage > foundSearch) {
+			searchTermStartIndex = foundImage;
+		} else if (foundSearch > foundEngine) {
+			searchTermStartIndex = foundSearch;
+		} else {
+			searchTermStartIndex = foundEngine;
+		}
+	} else { // else it was after engine or search
+		if (foundEngine > foundSearch) {
+			searchTermStartIndex = foundEngine;
+		} else {
+			searchTermStartIndex = foundSearch;
+		}
+	}
+
+	// take the words after the last activator word
+	var searchTerms = words.slice(searchTermStartIndex + 1);
+	if (searchTerms.length === 0) {
+		this.log("Discarding web search, no search terms given:" + words);
+		return;
+	}
+	searchTerms = searchTerms.join("+");
+	var params =  {
+		action: "address",
+		clientInput: "https://www.google.com/#q=" + searchTerms
+	};
+	if (imageSearching) {
+		params.clientInput += "&source=lnms&tbm=isch";
+	}
+	this.s2.wsLaunchAppWithValues(wsio, {
+		appName: "Webview",
+		customLaunchParams: params,
+		func: "navigation"
+	});
 };
 
 module.exports = VoiceActionManager;

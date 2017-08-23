@@ -9394,7 +9394,7 @@ function wsCallFunctionOnApp(wsio, data) {
  * @param  {Object} data - The object properties described below.
  * @param  {String} data.appName - Folder name to check for the app.
  * @param  {Object} data.params - Will be passed to the app. Function too, it is specified.
- * @param  {String}  data.func - Optional, if specified, will also call this funciton and pass parameters.
+ * @param  {String} data.func - Optional, if specified, will also call this funciton and pass parameters.
  */
 function wsLaunchAppWithValues(wsio, data) {
 	// first try see if the app is registered with apps exif.
