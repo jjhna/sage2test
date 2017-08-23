@@ -412,6 +412,17 @@ var quickNote = SAGE2_App.extend({
 				url: this.noteTitle + "\n" + this.state.clientInput + "\n"
 			}
 		});
+		
+		entries.push({description: "separator"});
+
+		entry = {};
+		entry.description = "Sort notes by:";
+		entry.callback    = "sortAllNotesLogic";
+		entry.parameters  = {};
+		entry.inputField  = true;
+		entry.inputFieldSize = 20;
+		entries.push(entry);
+		
 		return entries;
 	},
 
@@ -435,6 +446,41 @@ var quickNote = SAGE2_App.extend({
 		if (index !== -1) {
 			this.saEditorIds.splice(index, 1);
 		}
+	},
+
+
+	/**
+	 * Ensures that new audioManager instances get metadata about all existing apps
+	 *
+	 * @method sortAllNotesLogic
+	 * @param {Object} responseObject - Object should have at minimum client input
+	 * @param {Object} responseObject.clientInput - What was typed: name/creator/author, color, time/date
+	 */
+	sortAllNotesLogic: function(responseObject) {
+		var sortType = responseObject.clientInput;
+		if (!sortType || sortType.length < 1) {
+			return; // need a sort type
+		}
+
+		var sortName = ["names creators authors writers makers posters"];
+		var sortColor = ["colors"];
+		var sortTime = ["times dates"];
+
+		// check which sort type is to be done
+		sortType = sortType.split(" "); // split on words
+		for (let i = 0; i < sortType.length; i++) {
+			if (sortName.includes(sortType[i])) {
+				sorttype = "colorChoice";
+				break;
+			} else if (sortColor.includes(sortType[i])) {
+				sorttype = "color";
+				break;
+			} else if (sortTime.includes(sortType[i])) {
+				sorttype = "time";
+				break;
+			}
+		}
+
 	},
 
 	quit: function() {
