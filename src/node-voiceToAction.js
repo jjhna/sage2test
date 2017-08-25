@@ -215,6 +215,7 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 			successFunction: this.s2.deleteAllApplications,
 			phraseRequirements: [
 				"close everything",
+				"clear everything",
 				"get rid everything",
 				"toss everything",
 				"toss it all"
