@@ -12,6 +12,7 @@
 // require variables to be declared
 "use strict";
 
+var fs = require('fs');
 
 /**
  * VoiceActionManager container object.
@@ -24,6 +25,10 @@ function VoiceActionManager(obj) {
 	this.s2 = obj;
 	this.fullLog = [];
 	this.lastLogEntry = "";
+	this.currentCommandLogInfo = {}; // used for tracking.
+	var today = new Date();
+	this.fileLogPath = "./" + today.getFullYear() + "-"
+		+ (today.getMonth() + 1) + "-" + today.getDate() + "-transcript.json";
 }
 
 /**
@@ -33,11 +38,11 @@ function VoiceActionManager(obj) {
  * @method log
  * @param  {Array} clients - A reference to the client list.
  */
-VoiceActionManager.prototype.log = function(line, shouldConsolePrint = false) {
+VoiceActionManager.prototype.oldLog = function(line, shouldConsolePrint = false) {
 	this.fullLog.push(line);
 	this.lastLogEntry = line;
 	if (shouldConsolePrint) {
-		console.log(line);
+		console.oldLog(line);
 	}
 	this.s2.sharedServerData.setValue(null, { // wsio is not needed for set value (at least not currently)
 		nameOfValue: "voiceToActionFullLog",
@@ -51,6 +56,27 @@ VoiceActionManager.prototype.log = function(line, shouldConsolePrint = false) {
 	});
 };
 
+/**
+ * File logging for command submission and transcripts.
+ * Writes based on data within this.currentCommandLogInfo;
+ *
+ * @method fileLog
+ */
+VoiceActionManager.prototype.fileLog = function() {
+	if (this.currentCommandLogInfo.logged) {
+		return; // don't double log
+	}
+	var currentLog;
+	try {
+		currentLog = JSON.parse(fs.readFileSync(this.fileLogPath));
+	} catch (e) {
+		currentLog = [];
+	}
+	currentLog.push(this.currentCommandLogInfo);
+	fs.writeFileSync(this.fileLogPath, JSON.stringify(currentLog));
+	// set logged to true to prevent error catch log
+	this.currentCommandLogInfo.logged = true;
+};
 
 /**
  * Entry point for voice alteration
@@ -61,10 +87,39 @@ VoiceActionManager.prototype.log = function(line, shouldConsolePrint = false) {
  * @param  {String} data.words - what was said.
  */
 VoiceActionManager.prototype.process = function(wsio, data) {
+	this.currentCommandLogInfo = {
+		time: Date.now(),
+		transcript: {
+			full: data.words,
+			evaluated: ""
+		},
+		command: {
+			serverCommand: false,
+			inputValue: false,
+			activatedFunction: "",
+			description: "",
+			keywords: ""
+		},
+		app: {
+			id: null,
+			title: null,
+			type: null,
+			left: null,
+			top: null,
+			width: null,
+			height: null
+		},
+		status: "No Prompt - No Command Check",
+		logged: false
+	};
 	try {
 		this.secondaryProcessCallToUseInTryCatch(wsio, data);
 	} catch (e) {
-		this.log(e, true);
+		this.oldLog(e, true);
+		this.currentCommandLogInfo.status = "Error during lookup";
+	}
+	if (this.currentCommandLogInfo.logged === false) {
+		this.fileLog();
 	}
 };
 
@@ -83,13 +138,28 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 	}
 	data.words = data.words.slice(data.words.indexOf("computer ")); // chop from beginning of computer
 	data.words = data.words.slice(data.words.indexOf(" ") + 1); // then take out computer
+	data.words = data.words.replace(/-/g, ' ').trim(); // turn - into ' '. particularly "next-page" to "next page"
+
+	// log the words evaluated
+	this.currentCommandLogInfo.status = "No Match";
+	this.currentCommandLogInfo.transcript.evaluated = data.words;
 
 	// get the pointer associated to this wsio
 	var userPointer = this.s2.sagePointers[wsio.id];
+	this.currentCommandLogInfo.userInformation = {
+		id: userPointer.id,
+		name: userPointer.label,
+		color: userPointer.color,
+		left: userPointer.left,
+		top: userPointer.top,
+		visibleLeft: userPointer.visibleLeft,
+		visibleTop: userPointer.visibleTop,
+		visible: userPointer.visible
+	};
 
 	// can't do anything if there is no pointer.
 	if (!userPointer) {
-		this.log("ERROR>wsVoiceToContextMenu> No pointer detected for this wsio.id:" + wsio.id, true);
+		this.oldLog("ERROR>wsVoiceToContextMenu> No pointer detected for this wsio.id:" + wsio.id, true);
 		return;
 	}
 	var pointerX = this.s2.sagePointers[wsio.id].left;
@@ -108,14 +178,15 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 			}
 		}
 	}
-	data.words = data.words.replace(/-/g, ' ').trim(); // turn - into ' '. particularly "next-page" to "next page"
 	var words = data.words.toLowerCase().split(" "); // should have passed one string of words
 	// if the server prechecks and eats the command then don't send it to an app.
 	if (data.words.includes("cancel")) {
-		this.log("Command contained cancel, discarding: " + data.words, true);
+		this.oldLog("Command contained cancel, discarding: " + data.words, true);
+		this.currentCommandLogInfo.command.name = "CANCEL";
 		return; // unsure if this is a bad check
 	}
 	if (this.voicePreCheckForServerCommands(wsio, words)) {
+		this.currentCommandLogInfo.command.serverCommand = true;
 		return;
 	}
 	if (!contextMenu) {
@@ -153,20 +224,35 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 
 		// if the menu entry is for input, try to take anything after the indicator to pass as values
 		if (contextMenu[indexOfMostMatches].inputField) {
-			this.log(app + " has an input field, trying to separate input");
+			this.oldLog(app + " has an input field, trying to separate input");
 			lastDescriptionWord = contextMenu[indexOfMostMatches].description.toLowerCase();
 			lastDescriptionWord = lastDescriptionWord.replace(/:/g, '').trim(); // remove : if exists
-			this.log("Last word in:" + lastDescriptionWord);
+			this.oldLog("Last word in:" + lastDescriptionWord);
 			lastDescriptionWord = lastDescriptionWord.split(' ');
 			lastDescriptionWord = lastDescriptionWord[lastDescriptionWord.length - 1];
-			this.log("  is:" + lastDescriptionWord);
+			this.oldLog("  is:" + lastDescriptionWord);
 			wordsToPassAsInput = data.words.toLowerCase();
 			if (wordsToPassAsInput.indexOf(lastDescriptionWord) > -1) {
 				wordsToPassAsInput = wordsToPassAsInput.substring(wordsToPassAsInput.indexOf(lastDescriptionWord));
 				wordsToPassAsInput = wordsToPassAsInput.substring(lastDescriptionWord.length);
 				wordsToPassAsInput = wordsToPassAsInput.trim();
+				this.currentCommandLogInfo.command.inputValue = wordsToPassAsInput;
 			}
 		}
+
+		// log the app and command info
+		obj = this.s2.SAGE2Items.applications.list[obj.data.id];
+		this.currentCommandLogInfo.app.id = obj.id;
+		this.currentCommandLogInfo.app.title = obj.title;
+		this.currentCommandLogInfo.app.type = obj.application;
+		this.currentCommandLogInfo.app.left = obj.left;
+		this.currentCommandLogInfo.app.top = obj.top;
+		this.currentCommandLogInfo.app.width = obj.width;
+		this.currentCommandLogInfo.app.height = obj.height;
+		// command
+		this.currentCommandLogInfo.command.activatedFunction = cmEntry.callback;
+		this.currentCommandLogInfo.command.description = cmEntry.description;
+		this.currentCommandLogInfo.status = "SUCCESS";
 
 		var dataToSend = {
 			app: app,
@@ -181,13 +267,13 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 
 		// should work on branch: master / acronymRemove derivative 
 		this.s2.wsCallFunctionOnApp(wsio, dataToSend);
-		this.log("Action accepted for entry: " + contextMenu[indexOfMostMatches].description);
-		this.log("Activating " + dataToSend.func + " on " + dataToSend.app);
+		this.oldLog("Action accepted for entry: " + contextMenu[indexOfMostMatches].description);
+		this.oldLog("Activating " + dataToSend.func + " on " + dataToSend.app);
 		if (wordsToPassAsInput !== null) {
-			this.log("--clientInput being given:" + wordsToPassAsInput);
+			this.oldLog("--clientInput being given:" + wordsToPassAsInput);
 		}
 	} else {
-		this.log("No voice matches found in " + app + " for the phrase:" + words, true);
+		this.oldLog("No voice matches found in " + app + " for the phrase:" + words, true);
 	}
 };
 
@@ -291,8 +377,12 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 			// if all the phrase words were found for a command, activate the command and return true;
 			if (foundAll) {
 				// call the success function and use this object as reference for this, without call "this" is commandBin
-				this.log("Action accepted. Activating...");
+				this.oldLog("Action accepted. Activating...");
 				commandInfo.successFunction.call(this, wsio, words);
+
+				this.currentCommandLogInfo.command.activatedFunction = commandInfo.successFunction.name;
+				this.currentCommandLogInfo.command.description = commandInfo.phraseRequirements[phrase];
+				this.currentCommandLogInfo.status = "SUCCESS";
 				return true;
 			}
 		}
@@ -347,8 +437,8 @@ VoiceActionManager.prototype.voiceHandlerForApplicationLaunch = function(wsio, w
 		wordsDescribing = wordCompare;
 	}
 	if (wordsDescribing === undefined) {
-		this.log("Error>voiceToAction> voiceHandlerForApplicationLaunch given:" + words, true);
-		this.log("Error>voiceToAction> voiceHandlerForApplicationLaunch tripped,"
+		this.oldLog("Error>voiceToAction> voiceHandlerForApplicationLaunch given:" + words, true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForApplicationLaunch tripped,"
 			+ " but no application word descriptors. Returning...", true);
 		return;
 	}
@@ -402,7 +492,7 @@ VoiceActionManager.prototype.voiceHandlerForApplicationLaunch = function(wsio, w
 	// based on highest match count, launch the application.
 	if (matchList[largestCountIndex] > 0) {
 		// launch app...
-		this.log("Launching app:" + apps[largestCountIndex].exif.FileName);
+		this.oldLog("Launching app:" + apps[largestCountIndex].exif.FileName);
 		this.s2.wsLaunchAppWithValues(wsio, {
 			appName: apps[largestCountIndex].exif.FileName
 		});
@@ -435,8 +525,8 @@ VoiceActionManager.prototype.voiceHandlerForMakeNote = function(wsio, words) {
 		wordsDescribing = wordCompare;
 	}
 	if (wordsDescribing === undefined) {
-		this.log("Error>voiceToAction> voiceHandlerForSessionRestore given:" + words, true);
-		this.log("Error>voiceToAction> voiceHandlerForSessionRestore tripped, but no word descriptors. Returning...", true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForSessionRestore given:" + words, true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForSessionRestore tripped, but no word descriptors. Returning...", true);
 		return;
 	}
 
@@ -469,8 +559,8 @@ VoiceActionManager.prototype.voiceHandlerForSessionRestore = function(wsio, word
 		wordsDescribing = wordCompare;
 	}
 	if (wordsDescribing === undefined) {
-		this.log("Error>voiceToAction> voiceHandlerForSessionRestore given:" + words, true);
-		this.log("Error>voiceToAction> voiceHandlerForSessionRestore tripped, but no word descriptors. Returning...", true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForSessionRestore given:" + words, true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForSessionRestore tripped, but no word descriptors. Returning...", true);
 		return;
 	}
 	// var assetList = this.s2.assets.listAssets();
@@ -501,7 +591,7 @@ VoiceActionManager.prototype.voiceHandlerForSessionRestore = function(wsio, word
 	// based on highest match count, launch the application.
 	if (matchList[largestCountIndex] > 0) {
 		// launch app...
-		this.log("Loading session:" + sessions[largestCountIndex].id);
+		this.oldLog("Loading session:" + sessions[largestCountIndex].id);
 		this.s2.wsLoadFileFromServer(wsio, {
 			application: 'load_session',
 			filename: sessions[largestCountIndex].id,
@@ -534,17 +624,17 @@ VoiceActionManager.prototype.voiceHandlerForSessionSave = function(wsio, words) 
 		wordsDescribing = wordCompare;
 	}
 	if (wordsDescribing === undefined) {
-		this.log("Error>voiceToAction> voiceHandlerForSessionSave given:" + words, true);
-		this.log("Error>voiceToAction> voiceHandlerForSessionSave tripped, but no word descriptors. Returning...", true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForSessionSave given:" + words, true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForSessionSave tripped, but no word descriptors. Returning...", true);
 		return;
 	}
 	if (wordsDescribing.length < 1) {
-		this.log("Error>voiceToAction> voiceHandlerForSessionSave given:" + words, true);
-		this.log("Error>voiceToAction> voiceHandlerForSessionSave tripped, but name scheme was not given.", true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForSessionSave given:" + words, true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForSessionSave tripped, but name scheme was not given.", true);
 		return;
 	}
 	// save the session with the given name
-	this.log("Saving session, filename:" + wordsDescribing.join(" "));
+	this.oldLog("Saving session, filename:" + wordsDescribing.join(" "));
 	this.s2.wsSaveSesion(wsio, wordsDescribing.join(" "));
 };
 
@@ -594,7 +684,7 @@ VoiceActionManager.prototype.voiceHandlerForWebSearch = function(wsio, words) {
 	// this should not be possible
 	var searchTermStartIndex = -1;
 	if ((foundSearch === false) || (foundEngine === false)) {
-		console.log("Error in voiceToAction: voiceHandlerForWebSearch activated but could not find keyword");
+		console.oldLog("Error in voiceToAction: voiceHandlerForWebSearch activated but could not find keyword");
 	}
 
 	// determine which word of the keywords marks the start of the search terms.
@@ -620,7 +710,7 @@ VoiceActionManager.prototype.voiceHandlerForWebSearch = function(wsio, words) {
 	// take the words after the last activator word
 	var searchTerms = words.slice(searchTermStartIndex + 1);
 	if (searchTerms.length === 0) {
-		this.log("Discarding web search, no search terms given:" + words);
+		this.oldLog("Discarding web search, no search terms given:" + words);
 		return;
 	}
 	searchTerms = searchTerms.join("+");
