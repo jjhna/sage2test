@@ -3178,6 +3178,8 @@ s2SpeechRecognition.webkitSR           = null;
 s2SpeechRecognition.recognizing        = false;
 s2SpeechRecognition.final_transcript   = false;
 s2SpeechRecognition.interim_transcript = false;
+s2SpeechRecognition.errorCount         = -1;
+s2SpeechRecognition.errorTime          = null; // can probably get away without using time for now
 
 s2SpeechRecognition.init = function() {
 	// console.log("s2SpeechRecognition init()");
@@ -3229,21 +3231,20 @@ s2SpeechRecognition.init = function() {
 			}
 		}; //end onresult
 
-		// this.errorCount = 0;
 		this.webkitSR.onerror = function(e) {
 			console.log("webkitSpeechRecognition error:" + e);
 			console.dir(e);
-			this.errorCount++;
+			s2SpeechRecognition.errorCount++;
 		};
 
 		// after ending restart
 		this.webkitSR.onend = function() {
-			this.recognizing = false;
-			console.log("voice ended, attempting to restart");
-			s2SpeechRecognition.webkitSR.start();
-			// if (this.errorCount < 5) {
-			// 	s2SpeechRecognition.webkitSR.start();
-			// }
+			// seems that when the prompt to allow is forbidden from accessing microphone, it triggers an error and end call.
+			if (s2SpeechRecognition.errorCount < 5) {
+				this.recognizing = false;
+				console.log("voice ended, attempting to restart");
+				s2SpeechRecognition.webkitSR.start();
+			}
 		};
 		this.toggleS2SpeechRecognition();
 	} //end else there is webkit
