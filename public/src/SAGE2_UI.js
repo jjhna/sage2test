@@ -710,6 +710,17 @@ function setupListeners() {
 			console.log("Server> No screenshot capability");
 		}
 	});
+
+	wsio.on('setVoiceNameMarker', function(data) {
+		s2SpeechRecognition.nameMarker = data.name.toLowerCase(); // server should give a space
+		console.log("Voice marker:" + s2SpeechRecognition.nameMarker);
+	});
+	wsio.on('playVoiceCommandSuccessSound', function(data) {
+		s2SpeechRecognition.successSound.play();
+	});
+	wsio.on('playVoiceCommandFailSound', function(data) {
+		s2SpeechRecognition.failSound.play();
+	});
 }
 
 /**
@@ -3199,8 +3210,12 @@ s2SpeechRecognition.webkitSR           = null;
 s2SpeechRecognition.recognizing        = false;
 s2SpeechRecognition.final_transcript   = false;
 s2SpeechRecognition.interim_transcript = false;
+s2SpeechRecognition.firstNameMention   = false;
+s2SpeechRecognition.nameMarker         = "sage "; // should be set by server, this space is critical
 s2SpeechRecognition.errorCount         = -1;
 s2SpeechRecognition.errorTime          = null; // can probably get away without using time for now
+s2SpeechRecognition.interimStart       = -1;
+s2SpeechRecognition.interimID          = null;
 
 s2SpeechRecognition.init = function() {
 	// console.log("s2SpeechRecognition init()");
@@ -3228,22 +3243,67 @@ s2SpeechRecognition.init = function() {
 					this.final_transcript = event.results[i][0].transcript;
 					console.log("final_transcript(" + typeof this.final_transcript + "):" + this.final_transcript);
 
-					// show
+					// set for later a restart
+					setTimeout(function() {
+						console.log("restarting");
+						s2SpeechRecognition.webkitSR.stop();
+					}, 10);
+					s2SpeechRecognition.firstNameMention = false;
+					// remove the checker for stuck transcript
+					if (s2SpeechRecognition.interimID) {
+						window.clearTimeout(s2SpeechRecognition.interimID);
+						s2SpeechRecognition.interimID = null;
+					}
+
+					// UI debug activator check
+					var ftl = this.final_transcript.toLowerCase(this.final_transcript);
+					var debugActivationWords = [s2SpeechRecognition.nameMarker, "show", "debug"];
+					for (let i = 0; i < debugActivationWords.length; i++) {
+						if (!ftl.includes(debugActivationWords[i])) {
+							break;
+						}
+						if (i === debugActivationWords.length - 1) {
+							document.getElementById("voiceTranscriptOuterContainer").style.visibility = "visible";
+							document.getElementById("voiceTranscriptActual").textContent = "Voice debug activated";
+							return; // show debug shouldn't send command to server
+						}
+					}
+					// this is the final transcript to log
 					wsio.emit("serverDataSetValue", {
 						nameOfValue: "voiceToActionInterimTranscript",
 						value: "Submitted phrase:" + this.final_transcript
 					});
 					// do something with it now.
 					wsio.emit('voiceToAction', {words: this.final_transcript});
-
-					// for some reason it works better after stopping, maybe this has improved.
-					setTimeout(function() {
-						console.log("restarting");
-						s2SpeechRecognition.webkitSR.stop();
-					}, 10);
 				} else {
 					this.interim_transcript += event.results[i][0].transcript;
 					console.log("interim_transcript:" + this.interim_transcript);
+					if (s2SpeechRecognition.interimID) {
+						// this should get cleared out each transcript change
+						window.clearTimeout(s2SpeechRecognition.interimID);
+						s2SpeechRecognition.interimID = null;
+					}
+					// if ever gets stuck on a single interim transcript for timeout restart
+					s2SpeechRecognition.interimID = setTimeout(() => {
+						s2SpeechRecognition.init();
+					}, 6000); // good enough?
+					// if this is the first time name is said then 
+					if ((!s2SpeechRecognition.firstNameMention) &&
+						this.interim_transcript.toLowerCase().includes(s2SpeechRecognition.nameMarker)) {
+						s2SpeechRecognition.firstNameMention = true;
+						s2SpeechRecognition.listenSound.play();
+						console.log("play");
+					} if (s2SpeechRecognition.firstNameMention) { // if first name is mentioned set the transcript
+						let transcript = this.interim_transcript.toLowerCase();
+						// possible that the transcript changes with an update
+						if (!transcript.includes(s2SpeechRecognition.nameMarker)) {
+							s2SpeechRecognition.firstNameMention = false;
+						} else {
+							transcript = transcript.substring(transcript.indexOf(s2SpeechRecognition.nameMarker));
+							transcript = transcript.substring(transcript.indexOf(" ") + 1);
+							document.getElementById("voiceTranscriptActual").textContent = transcript;
+						}
+					}
 					wsio.emit("serverDataSetValue", {
 						nameOfValue: "voiceToActionInterimTranscript",
 						value: "Detected Words:" + this.interim_transcript
@@ -3269,6 +3329,9 @@ s2SpeechRecognition.init = function() {
 		};
 		this.toggleS2SpeechRecognition();
 	} //end else there is webkit
+	this.successSound = new Audio('sounds/ALARM.WAV');
+	this.failSound    = new Audio('sounds/ALARMTIME1.WAV');
+	this.listenSound  = new Audio('sounds/IDENTIFY.WAV');
 };
 s2SpeechRecognition.toggleS2SpeechRecognition = function() {
 	if (this.recognizing) {

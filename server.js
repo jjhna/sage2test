@@ -648,7 +648,8 @@ var variablesUsedInVoiceHandler = {
 	wsSaveSesion,
 	tileApplications,
 	deleteAllApplications,
-	broadcast
+	broadcast,
+	voiceNameMarker: "sage " // that space is important for checking // change this later to check config
 };
 var voiceHandler = new VoiceActionManager(variablesUsedInVoiceHandler);
 
@@ -838,6 +839,8 @@ function wsAddClient(wsio, data) {
 	// If it's a UI, send message to enable screenshot capability
 	if (wsio.clientType === "sageUI") {
 		reportIfCanWallScreenshot();
+		// also tell it variablesUsedInVoiceHandler.voiceNameMarker
+		wsio.emit("setVoiceNameMarker", {name: variablesUsedInVoiceHandler.voiceNameMarker});
 	}
 
 	// If it's a display, check for Electron and send enable screenshot capability

@@ -42,7 +42,7 @@ VoiceActionManager.prototype.oldLog = function(line, shouldConsolePrint = false)
 	this.fullLog.push(line);
 	this.lastLogEntry = line;
 	if (shouldConsolePrint) {
-		console.oldLog(line);
+		console.log(line);
 	}
 	this.s2.sharedServerData.setValue(null, { // wsio is not needed for set value (at least not currently)
 		nameOfValue: "voiceToActionFullLog",
@@ -132,12 +132,13 @@ VoiceActionManager.prototype.process = function(wsio, data) {
  * @param  {String} data.words - what was said.
  */
 VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio, data) {
-	// first check that the word "computer" was used
-	if (!data.words.includes("computer ")) {
+	// first check that the word voiceNameMarker was used
+	if (!data.words.toLowerCase().includes(this.s2.voiceNameMarker.toLowerCase())) {
 		return; // wait for initiation
 	}
-	data.words = data.words.slice(data.words.indexOf("computer ")); // chop from beginning of computer
-	data.words = data.words.slice(data.words.indexOf(" ") + 1); // then take out computer
+	data.words = data.words.slice(
+		data.words.toLowerCase().indexOf(this.s2.voiceNameMarker.toLowerCase())); // chop from beginning of voiceNameMarker
+	data.words = data.words.slice(data.words.indexOf(" ") + 1); // then take out voiceNameMarker
 	data.words = data.words.replace(/-/g, ' ').trim(); // turn - into ' '. particularly "next-page" to "next page"
 
 	// log the words evaluated
@@ -187,9 +188,11 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 	}
 	if (this.voicePreCheckForServerCommands(wsio, words)) {
 		this.currentCommandLogInfo.command.serverCommand = true;
+		wsio.emit("playVoiceCommandSuccessSound");
 		return;
 	}
 	if (!contextMenu) {
+		wsio.emit("playVoiceCommandFailSound");
 		return; // can't do anything if didn't find
 	}
 	var menuMatches = Array(contextMenu.length).fill(0); // make an array of matches "next page"
@@ -272,8 +275,10 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 		if (wordsToPassAsInput !== null) {
 			this.oldLog("--clientInput being given:" + wordsToPassAsInput);
 		}
+		wsio.emit("playVoiceCommandSuccessSound");
 	} else {
 		this.oldLog("No voice matches found in " + app + " for the phrase:" + words, true);
+		wsio.emit("playVoiceCommandFailSound");
 	}
 };
 
@@ -684,7 +689,7 @@ VoiceActionManager.prototype.voiceHandlerForWebSearch = function(wsio, words) {
 	// this should not be possible
 	var searchTermStartIndex = -1;
 	if ((foundSearch === false) || (foundEngine === false)) {
-		console.oldLog("Error in voiceToAction: voiceHandlerForWebSearch activated but could not find keyword");
+		console.log("Error in voiceToAction: voiceHandlerForWebSearch activated but could not find keyword");
 	}
 
 	// determine which word of the keywords marks the start of the search terms.
