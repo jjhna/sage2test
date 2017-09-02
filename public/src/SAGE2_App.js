@@ -8,7 +8,8 @@
 //
 // Copyright (c) 2014-2015
 
-/* global ignoreFields, SAGE2WidgetControl, SAGE2MEP, SAGE2SharedServerData */
+
+/* global ignoreFields, SAGE2WidgetControl, SAGE2PointerToNativeMouseEvent, SAGE2SharedServerData */
 /* global addStoredFileListEventHandler, removeStoredFileListEventHandler */
 
 /**
@@ -300,7 +301,7 @@ var SAGE2_App = Class.extend({
 			this.event(eventType, position, user_id, data, date);
 
 			if (this.passSAGE2PointerAsMouseEvents) {
-				SAGE2MEP.processAndPassEvents(this.id, eventType, position,
+				SAGE2PointerToNativeMouseEvent.processAndPassEvents(this.id, eventType, position,
 					user_id, data, date);
 			}
 			this.SAGE2UserModification = false;
@@ -689,7 +690,8 @@ var SAGE2_App = Class.extend({
 	updateTitle: function(title) {
 		var titleText = document.getElementById(this.id + "_text");
 		if (titleText) {
-			titleText.textContent = title;
+			// titleText.textContent = title;
+			titleText.innerHTML = title;
 		}
 	},
 
