@@ -576,7 +576,34 @@ var googlemaps = SAGE2_App.extend({
 			// convert input to a number
 			zoomValue = +responseObject.clientInput;
 			if (isNaN(zoomValue)) {
-				return;
+				var lowerCaseLine = responseObject.clientInput.toLowerCase();
+				if (lowerCaseLine.includes("country")) {
+					zoomValue = 6;
+				} else if (lowerCaseLine.includes("world")
+					|| lowerCaseLine.includes("glob")
+					|| lowerCaseLine.includes("overview")) {
+					zoomValue = 9;
+				} else if (lowerCaseLine.includes("province")
+					|| lowerCaseLine.includes("prefecture")
+					|| lowerCaseLine.includes("region")) {
+					zoomValue = 9;
+				} else if (lowerCaseLine.includes("city")
+					|| lowerCaseLine.includes("town")
+					|| lowerCaseLine.includes("district")
+					|| lowerCaseLine.includes("territory")) {
+					zoomValue = 12;
+				} else if (lowerCaseLine.includes("neighborhood")
+					|| lowerCaseLine.includes("block")
+					|| lowerCaseLine.includes("street")) {
+					zoomValue = 15;
+				} else if (lowerCaseLine.includes("max")
+					|| (lowerCaseLine.includes("close") && owerCaseLine.includes("up"))
+					|| lowerCaseLine.includes("ground")) {
+					zoomValue = 20;
+				}
+				else {
+					return;
+				}
 			}
 		}
 		zoomValue = (zoomValue < 1) ? 1 : zoomValue;
