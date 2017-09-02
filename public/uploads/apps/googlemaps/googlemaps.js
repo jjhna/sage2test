@@ -577,12 +577,12 @@ var googlemaps = SAGE2_App.extend({
 			zoomValue = +responseObject.clientInput;
 			if (isNaN(zoomValue)) {
 				var lowerCaseLine = responseObject.clientInput.toLowerCase();
-				if (lowerCaseLine.includes("country")) {
-					zoomValue = 6;
-				} else if (lowerCaseLine.includes("world")
+				if (lowerCaseLine.includes("world")
 					|| lowerCaseLine.includes("glob")
 					|| lowerCaseLine.includes("overview")) {
-					zoomValue = 9;
+					zoomValue = 3;
+				} else if (lowerCaseLine.includes("country")) {
+					zoomValue = 6;
 				} else if (lowerCaseLine.includes("province")
 					|| lowerCaseLine.includes("prefecture")
 					|| lowerCaseLine.includes("region")) {
