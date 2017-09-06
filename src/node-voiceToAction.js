@@ -90,6 +90,7 @@ VoiceActionManager.prototype.process = function(wsio, data) {
 	this.currentCommandLogInfo = {
 		time: Date.now(),
 		transcript: {
+			confidence: data.confidence,
 			full: data.words,
 			evaluated: ""
 		},

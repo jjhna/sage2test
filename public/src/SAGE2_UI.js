@@ -6,11 +6,11 @@
 //
 // See full text, terms and conditions in the LICENSE.txt included file
 //
-// Copyright (c) 2014-15
+// Copyright (c) 2014-17
 
 "use strict";
 
-/* global FileManager, SAGE2_interaction, SAGE2DisplayUI */
+/* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech */
 /* global removeAllChildren, SAGE2_copyToClipboard, parseBool */
 
 /**
@@ -712,14 +712,14 @@ function setupListeners() {
 	});
 
 	wsio.on('setVoiceNameMarker', function(data) {
-		s2SpeechRecognition.nameMarker = data.name.toLowerCase(); // server should give a space
-		console.log("Voice marker:" + s2SpeechRecognition.nameMarker);
+		SAGE2_speech.nameMarker = data.name.toLowerCase(); // server should give a space
+		console.log("Voice marker:" + SAGE2_speech.nameMarker);
 	});
 	wsio.on('playVoiceCommandSuccessSound', function(data) {
-		s2SpeechRecognition.successSound.play();
+		SAGE2_speech.successSound.play();
 	});
 	wsio.on('playVoiceCommandFailSound', function(data) {
-		s2SpeechRecognition.failSound.play();
+		SAGE2_speech.failSound.play();
 	});
 }
 
@@ -3198,148 +3198,3 @@ function uiDrawZoneRemoveSelfAsClient() {
 	dataForApp.clientDest = "allDisplays";
 	wsio.emit("sendDataToClient", dataForApp);
 }
-
-
-// ----------------------------------------------------------------------------------
-// ----------------------------------------------------------------------------------
-// ----------------------------------------------------------------------------------
-
-var s2SpeechRecognition = {};
-s2SpeechRecognition.hasInit            = false;
-s2SpeechRecognition.webkitSR           = null;
-s2SpeechRecognition.recognizing        = false;
-s2SpeechRecognition.final_transcript   = false;
-s2SpeechRecognition.interim_transcript = false;
-s2SpeechRecognition.firstNameMention   = false;
-s2SpeechRecognition.nameMarker         = "sage "; // should be set by server, this space is critical
-s2SpeechRecognition.errorCount         = -1;
-s2SpeechRecognition.errorTime          = null; // can probably get away without using time for now
-s2SpeechRecognition.interimStart       = -1;
-s2SpeechRecognition.interimID          = null;
-
-s2SpeechRecognition.init = function() {
-	// console.log("s2SpeechRecognition init()");
-	if (!("webkitSpeechRecognition" in window)) {
-		alert("Sorry your browser doesn't support webkitSpeechRecognition. You will need an updated chrome");
-	} else {
-		console.log("webkitSpeechRecognition exists beginning setup");
-		// the contructor is actually lower case
-		this.webkitSR = new webkitSpeechRecognition(); // eslint-disable-line
-		this.webkitSR.continuous = true;
-		this.webkitSR.interimResults = true;
-
-		this.webkitSR.onstart = function() {
-			console.log("s2SpeechRecognition started");
-			this.recognizing = true;
-		};
-
-		/*
-			After getting a result, but this also includes pieces that aren't detected as full sentences.
-		*/
-		this.webkitSR.onresult = function(event) {
-			this.interim_transcript = " ";
-			for (var i = event.resultIndex; i < event.results.length; ++i) {
-				if (event.results[i].isFinal) {
-					this.final_transcript = event.results[i][0].transcript;
-					console.log("final_transcript(" + typeof this.final_transcript + "):" + this.final_transcript);
-
-					// set for later a restart
-					setTimeout(function() {
-						console.log("restarting");
-						s2SpeechRecognition.webkitSR.stop();
-					}, 10);
-					s2SpeechRecognition.firstNameMention = false;
-					// remove the checker for stuck transcript
-					if (s2SpeechRecognition.interimID) {
-						window.clearTimeout(s2SpeechRecognition.interimID);
-						s2SpeechRecognition.interimID = null;
-					}
-
-					// UI debug activator check
-					var ftl = this.final_transcript.toLowerCase(this.final_transcript);
-					var debugActivationWords = [s2SpeechRecognition.nameMarker, "show", "debug"];
-					for (let i = 0; i < debugActivationWords.length; i++) {
-						if (!ftl.includes(debugActivationWords[i])) {
-							break;
-						}
-						if (i === debugActivationWords.length - 1) {
-							document.getElementById("voiceTranscriptOuterContainer").style.visibility = "visible";
-							document.getElementById("voiceTranscriptActual").textContent = "Voice debug activated";
-							return; // show debug shouldn't send command to server
-						}
-					}
-					// this is the final transcript to log
-					wsio.emit("serverDataSetValue", {
-						nameOfValue: "voiceToActionInterimTranscript",
-						value: "Submitted phrase:" + this.final_transcript
-					});
-					// do something with it now.
-					wsio.emit('voiceToAction', {words: this.final_transcript});
-				} else {
-					this.interim_transcript += event.results[i][0].transcript;
-					console.log("interim_transcript:" + this.interim_transcript);
-					if (s2SpeechRecognition.interimID) {
-						// this should get cleared out each transcript change
-						window.clearTimeout(s2SpeechRecognition.interimID);
-						s2SpeechRecognition.interimID = null;
-					}
-					// if ever gets stuck on a single interim transcript for timeout restart
-					s2SpeechRecognition.interimID = setTimeout(() => {
-						s2SpeechRecognition.init();
-					}, 6000); // good enough?
-					// if this is the first time name is said then 
-					if ((!s2SpeechRecognition.firstNameMention) &&
-						this.interim_transcript.toLowerCase().includes(s2SpeechRecognition.nameMarker)) {
-						s2SpeechRecognition.firstNameMention = true;
-						s2SpeechRecognition.listenSound.play();
-						console.log("play");
-					} if (s2SpeechRecognition.firstNameMention) { // if first name is mentioned set the transcript
-						let transcript = this.interim_transcript.toLowerCase();
-						// possible that the transcript changes with an update
-						if (!transcript.includes(s2SpeechRecognition.nameMarker)) {
-							s2SpeechRecognition.firstNameMention = false;
-						} else {
-							transcript = transcript.substring(transcript.indexOf(s2SpeechRecognition.nameMarker));
-							transcript = transcript.substring(transcript.indexOf(" ") + 1);
-							document.getElementById("voiceTranscriptActual").textContent = transcript;
-						}
-					}
-					wsio.emit("serverDataSetValue", {
-						nameOfValue: "voiceToActionInterimTranscript",
-						value: "Detected Words:" + this.interim_transcript
-					});
-				}
-			}
-		}; //end onresult
-
-		this.webkitSR.onerror = function(e) {
-			console.log("webkitSpeechRecognition error:" + e);
-			console.dir(e);
-			s2SpeechRecognition.errorCount++;
-		};
-
-		// after ending restart
-		this.webkitSR.onend = function() {
-			// seems that when the prompt to allow is forbidden from accessing microphone, it triggers an error and end call.
-			if (s2SpeechRecognition.errorCount < 5) {
-				this.recognizing = false;
-				console.log("voice ended, attempting to restart");
-				s2SpeechRecognition.webkitSR.start();
-			}
-		};
-		this.toggleS2SpeechRecognition();
-	} //end else there is webkit
-	this.successSound = new Audio('sounds/ALARM.WAV');
-	this.failSound    = new Audio('sounds/ALARMTIME1.WAV');
-	this.listenSound  = new Audio('sounds/IDENTIFY.WAV');
-};
-s2SpeechRecognition.toggleS2SpeechRecognition = function() {
-	if (this.recognizing) {
-		this.webkitSR.stop();
-		return;
-	}
-	this.final_transcript = " ";
-	this.webkitSR.lang = "en-US";
-	this.webkitSR.start();
-};
-// s2SpeechRecognition.init();

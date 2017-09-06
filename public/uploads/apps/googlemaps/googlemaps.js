@@ -597,11 +597,10 @@ var googlemaps = SAGE2_App.extend({
 					|| lowerCaseLine.includes("street")) {
 					zoomValue = 15;
 				} else if (lowerCaseLine.includes("max")
-					|| (lowerCaseLine.includes("close") && owerCaseLine.includes("up"))
+					|| (lowerCaseLine.includes("close") && lowerCaseLine.includes("up"))
 					|| lowerCaseLine.includes("ground")) {
 					zoomValue = 20;
-				}
-				else {
+				} else {
 					return;
 				}
 			}
