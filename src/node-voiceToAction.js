@@ -111,7 +111,8 @@ VoiceActionManager.prototype.process = function(wsio, data) {
 			height: null
 		},
 		status: "No Prompt - No Command Check",
-		logged: false
+		logged: false,
+		currentSuccessPhrase: ""
 	};
 	try {
 		this.secondaryProcessCallToUseInTryCatch(wsio, data);
@@ -189,11 +190,11 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 	}
 	if (this.voicePreCheckForServerCommands(wsio, words)) {
 		this.currentCommandLogInfo.command.serverCommand = true;
-		wsio.emit("playVoiceCommandSuccessSound");
+		wsio.emit("playVoiceCommandSuccessSound", {message: this.currentCommandLogInfo.currentSuccessPhrase});
 		return;
 	}
 	if (!contextMenu) {
-		wsio.emit("playVoiceCommandFailSound");
+		wsio.emit("playVoiceCommandFailSound", {message: "please repeat"});
 		return; // can't do anything if didn't find
 	}
 	var menuMatches = Array(contextMenu.length).fill(0); // make an array of matches "next page"
@@ -276,16 +277,16 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 		if (wordsToPassAsInput !== null) {
 			this.oldLog("--clientInput being given:" + wordsToPassAsInput);
 		}
-		wsio.emit("playVoiceCommandSuccessSound");
+		wsio.emit("playVoiceCommandSuccessSound", {message: "By your command"});
 	} else {
 		this.oldLog("No voice matches found in " + app + " for the phrase:" + words, true);
-		wsio.emit("playVoiceCommandFailSound");
+		wsio.emit("playVoiceCommandFailSound", {message: "please repeat"});
 	}
 };
 
 /**
  * Will attempt to take a transcript and use best case to match an action.
- * 
+ *
  * @method voicePreCheckForServerCommands
  * @param {Array} words - Array of transcript words
  */
@@ -301,7 +302,8 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"tile content",
 				"organize this",
 				"organize everything"
-			]
+			],
+			successPhrase: "Organizing wall content"
 		},
 		clearAllContent: {
 			successFunction: this.s2.deleteAllApplications,
@@ -311,7 +313,8 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"get rid everything",
 				"toss everything",
 				"toss it all"
-			]
+			],
+			successPhrase: "Closing all open applications"
 		},
 		launchApplication: {
 			successFunction: this.voiceHandlerForApplicationLaunch,
@@ -320,7 +323,8 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"open",
 				"start",
 				"load application"
-			]
+			],
+			successPhrase: "Launching application"
 		},
 		makeNote: {
 			successFunction: this.voiceHandlerForMakeNote,
@@ -328,7 +332,8 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"make a note",
 				"write down",
 				"make a reminder"
-			]
+			],
+			successPhrase: "Noted"
 		},
 		sessionRestore: {
 			successFunction: this.voiceHandlerForSessionRestore,
@@ -336,7 +341,8 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"restore session",
 				"load session",
 				"bring back"
-			]
+			],
+			successPhrase: "Restoring session"
 		},
 		sessionSave: {
 			successFunction: this.voiceHandlerForSessionSave,
@@ -353,13 +359,15 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"save state name",
 				"save open applications name",
 				"save applications name"
-			]
+			],
+			successPhrase: "Saving session"
 		},
 		webSearch: {
 			successFunction: this.voiceHandlerForWebSearch,
 			phraseRequirements: [
 				"google search"
-			]
+			],
+			successPhrase: "Searching"
 		}
 	};
 
@@ -384,7 +392,11 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 			if (foundAll) {
 				// call the success function and use this object as reference for this, without call "this" is commandBin
 				this.oldLog("Action accepted. Activating...");
-				commandInfo.successFunction.call(this, wsio, words);
+				this.currentCommandLogInfo.currentSuccessPhrase = commandInfo.successPhrase;
+				var tempPhraseAddition = commandInfo.successFunction.call(this, wsio, words);
+				if (typeof tempPhraseAddition === "string") {
+					this.currentCommandLogInfo.currentSuccessPhrase += tempPhraseAddition;
+				}
 
 				this.currentCommandLogInfo.command.activatedFunction = commandInfo.successFunction.name;
 				this.currentCommandLogInfo.command.description = commandInfo.phraseRequirements[phrase];
@@ -502,6 +514,7 @@ VoiceActionManager.prototype.voiceHandlerForApplicationLaunch = function(wsio, w
 		this.s2.wsLaunchAppWithValues(wsio, {
 			appName: apps[largestCountIndex].exif.FileName
 		});
+		return apps[largestCountIndex].exif.metadata.title.toLowerCase();
 	}
 }; // end voiceHandlerForApplicationLaunch
 
@@ -531,8 +544,8 @@ VoiceActionManager.prototype.voiceHandlerForMakeNote = function(wsio, words) {
 		wordsDescribing = wordCompare;
 	}
 	if (wordsDescribing === undefined) {
-		this.oldLog("Error>voiceToAction> voiceHandlerForSessionRestore given:" + words, true);
-		this.oldLog("Error>voiceToAction> voiceHandlerForSessionRestore tripped, but no word descriptors. Returning...", true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForMakeNote given:" + words, true);
+		this.oldLog("Error>voiceToAction> voiceHandlerForMakeNote tripped, but no word descriptors. Returning...", true);
 		return;
 	}
 
@@ -603,6 +616,7 @@ VoiceActionManager.prototype.voiceHandlerForSessionRestore = function(wsio, word
 			filename: sessions[largestCountIndex].id,
 			user: wsio.id
 		});
+		return sessions[largestCountIndex].exif.FileName.toLowerCase();
 	}
 };
 
@@ -642,6 +656,7 @@ VoiceActionManager.prototype.voiceHandlerForSessionSave = function(wsio, words) 
 	// save the session with the given name
 	this.oldLog("Saving session, filename:" + wordsDescribing.join(" "));
 	this.s2.wsSaveSesion(wsio, wordsDescribing.join(" "));
+	return wordsDescribing.join(" ");
 };
 
 /**

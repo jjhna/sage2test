@@ -712,14 +712,16 @@ function setupListeners() {
 	});
 
 	wsio.on('setVoiceNameMarker', function(data) {
+		console.log("Voice marker:'" + data.name + "'");
 		SAGE2_speech.nameMarker = data.name.toLowerCase(); // server should give a space
-		console.log("Voice marker:" + SAGE2_speech.nameMarker);
 	});
 	wsio.on('playVoiceCommandSuccessSound', function(data) {
-		SAGE2_speech.successSound.play();
+		// SAGE2_speech.successSound.play();
+		SAGE2_speech.textToSpeech(data.message);
 	});
 	wsio.on('playVoiceCommandFailSound', function(data) {
-		SAGE2_speech.failSound.play();
+		// SAGE2_speech.failSound.play();
+		SAGE2_speech.textToSpeech(data.message);
 	});
 }
 
