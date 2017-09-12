@@ -396,6 +396,8 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				var tempPhraseAddition = commandInfo.successFunction.call(this, wsio, words);
 				if (typeof tempPhraseAddition === "string") {
 					this.currentCommandLogInfo.currentSuccessPhrase += tempPhraseAddition;
+				} else if (typeof tempPhraseAddition === "boolean" && !tempPhraseAddition) {
+					return false;
 				}
 
 				this.currentCommandLogInfo.command.activatedFunction = commandInfo.successFunction.name;
@@ -439,6 +441,103 @@ VoiceActionManager.prototype.voiceHandlerForApplicationLaunch = function(wsio, w
 	// "open",
 	// "load application"
 	var wordsDescribing, wordCompare;
+
+	// media check is little different
+	var launchWords = ["launch", "open", "load"];
+	var fileTypeWords = [
+		["pdf"],
+		["image", "picture"],
+		["video", "movie"]
+	];
+	var launchWordIndex;
+	var fileTypeIndex;
+	var fileNameDescription = null;
+	for (let i = 0; i < launchWords.length; i++) {
+		if (words.includes(launchWords[i])) {
+			for (let fIndex = 0; fIndex < fileTypeWords.length; fIndex++) {
+				for (let fType = 0; fType < fileTypeWords[fIndex].length; fType++) {
+					// if the detected word
+					launchWordIndex = words.indexOf(launchWords[i]);
+					fileTypeIndex = words.indexOf(fileTypeWords[fIndex][fType]);
+					if ( // if there are more words than index of words
+						(words.length - 1 > launchWordIndex)
+						// and the type word comes after file keyword
+						&& (launchWordIndex + 1 === fileTypeIndex)
+						// and there are name words
+						&& (words.length - 1 > fileTypeIndex)
+					) {
+						fileNameDescription = this.getWordsAfterInList(fileTypeWords[fIndex][fType], words);
+						launchWordIndex = launchWords[i];
+						fileTypeIndex = fileTypeWords[fIndex][fType];
+						break;
+					}
+				}
+				if (fileNameDescription) { // if a filename description was found
+					break;
+				}
+			}
+			if (fileNameDescription) { // if a filename description was found
+				break;
+			}
+		}
+		if (fileNameDescription) { // if a filename description was found
+			break;
+		}
+	}
+	// if a filename description was found. fileNameDescription will be an array
+	if (fileNameDescription) {
+		// this returns an object with properties: images, videos, pdfs
+		var assetsList = this.s2.assets.listAssets();
+		var retval;
+		if (fileTypeIndex === "pdf") {
+			fileTypeIndex = "pdfs";
+			retval = "pdf_viewer";
+		} else if (fileTypeIndex === "image" || fileTypeIndex === "picture") {
+			fileTypeIndex = "images";
+			retval = "image_viewer";
+		} else if (fileTypeIndex === "video" || fileTypeIndex === "movie") {
+			fileTypeIndex = "videos";
+			retval = "movie_player";
+		} else {
+			console.log("error");
+		}
+		// go through asset list and get a match
+		var matches = Array(assetsList[fileTypeIndex].length).fill(0);
+		var foundMatch = false;
+		for (let i = 0; i < assetsList[fileTypeIndex].length; i++) {
+			for (let j = 0; j < fileNameDescription.length; j++) {
+				if (assetsList[fileTypeIndex][i].sage2URL.toLowerCase().includes(
+					fileNameDescription[j].toLowerCase())) {
+					matches[i]++; // increase
+					foundMatch = true;
+				}
+			}
+		}
+		// go through matches if any and open it
+		if (foundMatch) {
+			var bestMatch = 0;
+			var bestMatchIndex = -1;
+			for (let i = 0; i < matches.length; i++) {
+				if (matches[i] > bestMatch) {
+					bestMatch = matches[i];
+					bestMatchIndex = i;
+				}
+			}
+			if (bestMatchIndex > 0) {
+				// launch
+				this.oldLog("Launching" + retval + ":" + assetsList[fileTypeIndex][bestMatchIndex].filename);
+				this.s2.wsLoadFileFromServer(wsio, {
+					application: retval,
+					filename: assetsList[fileTypeIndex][bestMatchIndex].filename,
+					user: wsio.id
+				});
+				return retval;
+			}
+		}
+		return false;
+	} // if not a file, then might be an app
+
+
 	// use descriptor string that is longer, first get the words after "application"
 	wordsDescribing = this.getWordsAfterInList("application", words); // takes and returns array
 	wordCompare = this.getWordsAfterInList("launch", words);
@@ -516,6 +615,7 @@ VoiceActionManager.prototype.voiceHandlerForApplicationLaunch = function(wsio, w
 		});
 		return apps[largestCountIndex].exif.metadata.title.toLowerCase();
 	}
+	return false;
 }; // end voiceHandlerForApplicationLaunch
 
 /**

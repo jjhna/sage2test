@@ -936,6 +936,12 @@ var SAGE2_App = Class.extend({
 					parameters: {}
 				});
 				appContextMenu.entries.push({
+					description: "minimize",
+					callback: "SAGE2Maximize",
+					parameters: {},
+					voiceEntryOverload: true // not displayed on UI, added for voice entry
+				});
+				appContextMenu.entries.push({
 					description: "separator"
 				});
 				appContextMenu.entries.push({
