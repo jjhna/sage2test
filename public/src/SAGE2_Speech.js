@@ -26,10 +26,11 @@ SAGE2_speech.errorTime          = null; // can probably get away without using t
 SAGE2_speech.interimStart       = -1;
 SAGE2_speech.interimId          = null;
 // restart listener for mouse hold
-SAGE2_speech.mouseHoldTimeNeeded = 500; // ms
+SAGE2_speech.mouseHoldTimeNeeded = 800; // ms
 SAGE2_speech.mouseHoldTimeoutId  = null;
 SAGE2_speech.mouseHoldActivated  = false;
-
+SAGE2_speech.mouseHoldStartPos   = {x: -100, y: -100};
+SAGE2_speech.mouseHoldMoveLimit  = {x: 20, y: 20};
 // listening variables
 SAGE2_speech.showListening      = false;
 SAGE2_speech.listentingInfo     = null;
@@ -59,6 +60,9 @@ SAGE2_speech.init = function() {
 		this.webkitSR.onstart = function() {
 			console.log("SAGE2_speech started");
 			this.recognizing = true;
+			// cleanup variables
+			SAGE2_speech.showListening = false;
+			SAGE2_speech.firstNameMention = false;
 		};
 
 		this.initMouseholdToStart();
@@ -78,10 +82,6 @@ SAGE2_speech.init = function() {
 						this.final_transcript = SAGE2_speech.nameMarker + this.final_transcript;
 					}
 					console.log("final_transcript(" + event.results[i][0].confidence + "%):" + this.final_transcript);
-					// cleanup variables
-					SAGE2_speech.showListening = false;
-					SAGE2_speech.firstNameMention = false;
-					SAGE2_speech.mouseHoldActivated = false;
 
 					// set for later a restart
 					setTimeout(function() {
@@ -170,22 +170,17 @@ SAGE2_speech.init = function() {
 				// 		+ "page must be reloaded to attempt speech recognition restart.");
 				// }
 			}
-			SAGE2_speech.showListening = false;
-			SAGE2_speech.firstNameMention = false;
-			SAGE2_speech.mouseHoldActivated = false;
 		};
 
 		// after ending restart
 		this.webkitSR.onend = function() {
+			this.recognizing = false;
 			// restart if error was caused
 			if (!SAGE2_speech.errorNotAllowed && SAGE2_speech.errorCount < 5) {
-				this.recognizing = false;
 				// console.log("voice ended, attempting to restart");
 				SAGE2_speech.webkitSR.start();
 			}
 			// cleanup variables
-			SAGE2_speech.showListening = false;
-			SAGE2_speech.firstNameMention = false;
 			SAGE2_speech.mouseHoldActivated = false;
 		};
 		this.toggleSAGE2_speech();
@@ -217,10 +212,12 @@ SAGE2_speech.toggleSAGE2_speech = function() {
  */
 SAGE2_speech.initMouseholdToStart = function() {
 	// on mouse down, if over canvas, set a timeout to check for listening
-	document.addEventListener("mousedown", function() {
+	document.addEventListener("mousedown", function(e) {
 		SAGE2_speech.mouseHoldTimeoutId = null;
 		// only activate if over the sage2UICanvas
 		if (event.target.id === "sage2UICanvas") {
+			SAGE2_speech.mouseHoldStartPos.x = e.clientX;
+			SAGE2_speech.mouseHoldStartPos.y = e.clientY;
 			// clear out existing timeouts if they exist.
 			if (SAGE2_speech.mouseHoldTimeoutId) {
 				window.clearTimeout(SAGE2_speech.mouseHoldTimeoutId);
@@ -250,16 +247,20 @@ SAGE2_speech.initMouseholdToStart = function() {
  *
  * @method enableMouseholdToStart
  */
-SAGE2_speech.enableMouseholdToStart = function() {
-	// if it isn't listening.
-	if (!SAGE2_speech.firstNameMention) {
-		this.webkitSR.stop(); // stop
-		setTimeout(function() {
-			SAGE2_speech.showListening = true;
-			SAGE2_speech.mouseHoldActivated = true;
-			console.log("speech activated through mouse down");
-			// SAGE2_speech.webkitSR.start(); // start
-		}, SAGE2_speech.mouseHoldTimeNeeded / 2); // not sure best minimum
+SAGE2_speech.enableMouseholdToStart = function(e) {
+	var dx = Math.abs(e.clientX - SAGE2_speech.mouseHoldStartPos.x);
+	var dy = Math.abs(e.clientY - SAGE2_speech.mouseHoldStartPos.y);
+	// if mouse cursor is still within move limit
+	if (dx < SAGE2_speech.mouseHoldMoveLimit.x && dy < SAGE2_speech.mouseHoldMoveLimit.y) {
+		// if it isn't listening.
+		if (!SAGE2_speech.firstNameMention) {
+			this.webkitSR.stop(); // stop
+			setTimeout(function() {
+				SAGE2_speech.mouseHoldActivated = true;
+				console.log("speech activated through mouse down");
+				// SAGE2_speech.webkitSR.start(); // start
+			}, SAGE2_speech.mouseHoldTimeNeeded / 2); // not sure best minimum
+		}
 	}
 };
 
@@ -331,6 +332,7 @@ SAGE2_speech.drawListeningVisual = function () {
 	} else {
 		listeningDiv.style.left = "-100px";
 		listeningDiv.style.top = "-100px";
+		return; // don't waste cycles if not showing
 	}
 	// draw update
 	var ctx = document.getElementById(SAGE2_speech.listentingInfo.canvasId).getContext('2d');
