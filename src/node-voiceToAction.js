@@ -170,7 +170,7 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 
 	// get app under pointer, then get context menu
 	var obj = this.s2.interactMgr.searchGeometry({x: pointerX, y: pointerY});
-	var contextMenu = false, app = false;
+	var contextMenu = null, app = false;
 	if (obj !== null) {
 		// check type of item under click
 		if (this.s2.SAGE2Items.applications.list.hasOwnProperty(obj.data.id)) {
@@ -193,60 +193,84 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 		wsio.emit("playVoiceCommandSuccessSound", {message: this.currentCommandLogInfo.currentSuccessPhrase});
 		return;
 	}
-	if (!contextMenu) {
-		wsio.emit("playVoiceCommandFailSound", {message: "please repeat"});
-		return; // can't do anything if didn't find
+
+	var matchedMenu = null;
+	if (contextMenu) {
+		// pass the context menu and the transcript words array
+		// returns object with: menuMatches(array), indexOfMostMatches, foundMatch, highestMatchCount
+		matchedMenu = this.checkForContextMenuMatch(contextMenu, words);
+		if (matchedMenu.foundMatch) {
+			matchedMenu.app = app;
+		} else {
+			matchedMenu = null;
+		}
 	}
-	var menuMatches = Array(contextMenu.length).fill(0); // make an array of matches "next page"
-	var descriptionWords;
-	// go through each entry, if there is any match for a word 2+ letters, then activate. go, to, me. 
-	for (let i = 0; i < contextMenu.length; i++) {
-		for (let w = 0; w < words.length; w++) {
-			if (words[w].length >= 2) {
-				descriptionWords = contextMenu[i].description.toLowerCase().split(" ");
-				for (let dwi = 0; dwi < descriptionWords.length; dwi++) {
-					if (descriptionWords[dwi] === words[w]) {
-						menuMatches[i]++;
-					}
+	// if no matched menu, search other apps for best match
+	if (!matchedMenu) {
+		let appIds = Object.keys(this.s2.SAGE2Items.applications.list);
+		let allMenuResults = [];
+		let currentBestMatch = {
+			count: 0,
+			app: null,
+			indexOnApp: -1,
+			indexOfResult: -1
+		};
+		for (let i = 0; i < appIds.length; i++) {
+			// if it has a contextMenu
+			if (this.s2.SAGE2Items.applications.list[appIds[i]].contextMenu) {
+				allMenuResults.push(this.checkForContextMenuMatch(
+					this.s2.SAGE2Items.applications.list[appIds[i]].contextMenu, words));
+				allMenuResults[allMenuResults.length - 1].app = appIds[i];
+				// if a match was found on this app
+				if (allMenuResults[allMenuResults.length - 1].foundMatch
+					&& (allMenuResults[allMenuResults.length - 1].highestMatchCount > currentBestMatch.count)
+				) {
+					currentBestMatch.count = allMenuResults[allMenuResults.length - 1].highestMatchCount;
+					currentBestMatch.app = allMenuResults[allMenuResults.length - 1].app;
+					currentBestMatch.indexOnApp = allMenuResults[allMenuResults.length - 1].indexOfMostMatches;
+					currentBestMatch.indexOfResult = allMenuResults.length - 1;
 				}
 			}
 		}
-	}
-	// search for description with most matches
-	var indexOfMostMatches = -1;
-	var mostMatches = 0;
-	for (let i = 0; i < menuMatches.length; i++) {
-		if (menuMatches[i] > mostMatches) {
-			mostMatches = menuMatches[i];
-			indexOfMostMatches = i;
+		// check if there was a match
+		if (currentBestMatch.app) {
+			matchedMenu = allMenuResults[currentBestMatch.indexOfResult];
+			matchedMenu.app = currentBestMatch.app;
 		}
 	}
-	// if there was at least one word match
-	if (indexOfMostMatches > -1) {
-		var cmEntry = contextMenu[indexOfMostMatches];
+	// has checked app under pointer (if any) and other apps, if matchedMenu, then can activate
+	if (matchedMenu) {
+		// at this point matchedMenu will contain info of the app with best menu match
+		//   menuMatches(array), indexOfMostMatches, foundMatch, highestMatchCount, app
+		// get the menu and the particular match entry
+		contextMenu = this.s2.SAGE2Items.applications.list[matchedMenu.app].contextMenu;
+		var cmEntry = contextMenu[matchedMenu.indexOfMostMatches];
 		var lastDescriptionWord;
 		var wordsToPassAsInput = null;
 
 		// if the menu entry is for input, try to take anything after the indicator to pass as values
-		if (contextMenu[indexOfMostMatches].inputField) {
+		if (cmEntry.inputField) {
 			this.oldLog(app + " has an input field, trying to separate input");
-			lastDescriptionWord = contextMenu[indexOfMostMatches].description.toLowerCase();
+			lastDescriptionWord = cmEntry.description.toLowerCase();
 			lastDescriptionWord = lastDescriptionWord.replace(/:/g, '').trim(); // remove : if exists
 			this.oldLog("Last word in:" + lastDescriptionWord);
 			lastDescriptionWord = lastDescriptionWord.split(' ');
 			lastDescriptionWord = lastDescriptionWord[lastDescriptionWord.length - 1];
 			this.oldLog("  is:" + lastDescriptionWord);
 			wordsToPassAsInput = data.words.toLowerCase();
+			// need to send input, find the last descriptor word
 			if (wordsToPassAsInput.indexOf(lastDescriptionWord) > -1) {
 				wordsToPassAsInput = wordsToPassAsInput.substring(wordsToPassAsInput.indexOf(lastDescriptionWord));
 				wordsToPassAsInput = wordsToPassAsInput.substring(lastDescriptionWord.length);
 				wordsToPassAsInput = wordsToPassAsInput.trim();
-				this.currentCommandLogInfo.command.inputValue = wordsToPassAsInput;
+			} else { // if last descriptor is not available, then it means cannot pass input.
+				wordsToPassAsInput = "";
 			}
+			this.currentCommandLogInfo.command.inputValue = wordsToPassAsInput;
 		}
 
 		// log the app and command info
-		obj = this.s2.SAGE2Items.applications.list[obj.data.id];
+		obj = this.s2.SAGE2Items.applications.list[matchedMenu.app];
 		this.currentCommandLogInfo.app.id = obj.id;
 		this.currentCommandLogInfo.app.title = obj.title;
 		this.currentCommandLogInfo.app.type = obj.application;
@@ -254,30 +278,38 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 		this.currentCommandLogInfo.app.top = obj.top;
 		this.currentCommandLogInfo.app.width = obj.width;
 		this.currentCommandLogInfo.app.height = obj.height;
-		// command
+		// log command
 		this.currentCommandLogInfo.command.activatedFunction = cmEntry.callback;
 		this.currentCommandLogInfo.command.description = cmEntry.description;
 		this.currentCommandLogInfo.status = "SUCCESS";
 
-		var dataToSend = {
-			app: app,
-			func: cmEntry.callback,
-			parameters: cmEntry.parameters
-		};
-		dataToSend.parameters.clientId = wsio.id;
-		if (wordsToPassAsInput !== null) {
-			dataToSend.parameters.clientInput = wordsToPassAsInput;
-			dataToSend.parameters.clientVoiceInput = data.words.toLowerCase();
-		}
 
-		// should work on branch: master / acronymRemove derivative 
-		this.s2.wsCallFunctionOnApp(wsio, dataToSend);
-		this.oldLog("Action accepted for entry: " + contextMenu[indexOfMostMatches].description);
-		this.oldLog("Activating " + dataToSend.func + " on " + dataToSend.app);
-		if (wordsToPassAsInput !== null) {
-			this.oldLog("--clientInput being given:" + wordsToPassAsInput);
+		// if there is an input field, but nothing to input, cannot activate function
+		if (wordsToPassAsInput && wordsToPassAsInput.length === 0) {
+			this.currentCommandLogInfo.status = "FAIL - Missing input";
+			this.oldLog("Match found, but missing input in " + app + " for the phrase:" + words, true);
+			wsio.emit("playVoiceCommandFailSound", {message: "please repeat"});
+		} else {
+			// begin sending preparation
+			var dataToSend = {
+				app: matchedMenu.app,
+				func: cmEntry.callback,
+				parameters: cmEntry.parameters
+			};
+			dataToSend.parameters.clientId = wsio.id;
+			if (wordsToPassAsInput !== null) { // if input, need to pass it along
+				dataToSend.parameters.clientInput = wordsToPassAsInput;
+				dataToSend.parameters.clientVoiceInput = data.words.toLowerCase();
+			}
+			// call the function on the app
+			this.s2.wsCallFunctionOnApp(wsio, dataToSend);
+			this.oldLog("Action accepted for entry: " + cmEntry.description);
+			this.oldLog("Activating " + dataToSend.func + " on " + dataToSend.app);
+			if (wordsToPassAsInput !== null) {
+				this.oldLog("--clientInput being given:" + wordsToPassAsInput);
+			}
+			wsio.emit("playVoiceCommandSuccessSound", {message: "By your command"});
 		}
-		wsio.emit("playVoiceCommandSuccessSound", {message: "By your command"});
 	} else {
 		this.oldLog("No voice matches found in " + app + " for the phrase:" + words, true);
 		wsio.emit("playVoiceCommandFailSound", {message: "please repeat"});
@@ -298,8 +330,9 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"clean wall",
 				"clean this up",
 				"cleanup",
-				"tile everything",
 				"tile content",
+				"tile everything",
+				"tile wall",
 				"organize this",
 				"organize everything"
 			],
@@ -410,6 +443,51 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 
 	return false;
 }; // end voicePreCheckForServerCommands
+
+/**
+ * Given an app and the transcript array, will return match values.
+ *
+ * @method checkForContextMenuMatch
+ * @param {Array} contextMenuToCheck - Application's context menu to check.
+ * @param {Array} wordArray - Array of transcript words.
+ * @return {Object} matchInfo - Array containing each context menu entry and its match count.
+ */
+VoiceActionManager.prototype.checkForContextMenuMatch = function(contextMenuToCheck, wordArray) {
+	// will contain information about the context menu
+	var matchInfo = {};
+	// given the menu, make an array for matches
+	var menuMatches = Array(contextMenuToCheck.length).fill(0);
+	var descriptionWords;
+	// go through each entry, if there is any match for a word 2+ letters, then activate. "go, to, me"
+	for (let i = 0; i < contextMenuToCheck.length; i++) {
+		for (let w = 0; w < wordArray.length; w++) {
+			if (wordArray[w].length >= 2) {
+				descriptionWords = contextMenuToCheck[i].description.toLowerCase(); // lower case
+				descriptionWords = descriptionWords.replace(/:/g, '').split(" "); // remove : then split
+				for (let dwi = 0; dwi < descriptionWords.length; dwi++) {
+					if (descriptionWords[dwi] === wordArray[w]) {
+						menuMatches[i]++;
+					}
+				}
+			}
+		}
+	}
+	matchInfo.menuMatches = menuMatches; // add info to object.
+	// search for description with most matches
+	var indexOfMostMatches = -1;
+	var mostMatches = 0;
+	for (let i = 0; i < menuMatches.length; i++) {
+		if (menuMatches[i] > mostMatches) {
+			mostMatches = menuMatches[i];
+			indexOfMostMatches = i;
+		}
+	}
+	matchInfo.indexOfMostMatches = indexOfMostMatches;
+	matchInfo.foundMatch = (indexOfMostMatches > -1) ? true : false;
+	matchInfo.highestMatchCount = (indexOfMostMatches > -1) ? menuMatches[indexOfMostMatches] : 0;
+
+	return matchInfo;
+};
 
 /**
  * Will take transcript and attempt to launch application
