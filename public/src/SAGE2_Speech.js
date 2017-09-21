@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global showSAGE2Message */
+/* global showSAGE2Message webkitSpeechGrammarList */
 
 var SAGE2_speech = {};
 SAGE2_speech.hasInit            = false;

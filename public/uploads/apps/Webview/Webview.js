@@ -537,6 +537,21 @@ var Webview = SAGE2_App.extend({
 		}
 
 		entries.push({
+			description: "type in page:",
+			callback: "sendTextToLastClickedInputField",
+			inputField: true,
+			inputFieldSize: 20,
+			parameters: {}
+		});
+		entries.push({
+			description: "find:",
+			callback: "findInPage",
+			inputField: true,
+			inputFieldSize: 20,
+			parameters: {}
+		});
+
+		entries.push({
 			description: "Copy URL to clipboard",
 			callback: "SAGE2_copyURL",
 			parameters: {
@@ -545,6 +560,38 @@ var Webview = SAGE2_App.extend({
 		});
 
 		return entries;
+	},
+
+	/**
+	 * Will try send text to the focused element within the webview.
+	 * Possible that nothing will happen because the focused element doesn't have input.
+	 *
+	 * @method     sendTextToLastClickedInputField
+	 * @param      {Object}  responseObject  uses the clientInput
+	 */
+	sendTextToLastClickedInputField: function(responseObject) {
+		if (responseObject.clientInput && (responseObject.clientInput.length > 0)) {
+			this.element.insertText(responseObject.clientInput);
+
+			for (let i = 0; i < responseObject.clientInput.length; i++) {
+				this.element.sendInputEvent({ // Not sure why we need 'char' but it works ! -- Luc
+					type: "char",
+					keyCode: responseObject.clientInput.charAt(i)
+				});
+			}
+		}
+	},
+
+	/**
+	 * Will try to find in the page.
+	 *
+	 * @method     findInPage
+	 * @param      {Object}  responseObject  uses the clientInput
+	 */
+	findInPage: function(responseObject) {
+		if (responseObject.clientInput && (responseObject.clientInput.length > 0)) {
+			this.element.findInPage(responseObject.clientInput);
+		}
 	},
 
 	/**
