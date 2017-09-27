@@ -117,29 +117,19 @@ SAGE2_speech.init = function() {
 						SAGE2_speech.interimId = null;
 					}
 
-					// UI debug activator check
-					var ftl = this.final_transcript.toLowerCase(this.final_transcript);
-					var debugActivationWords = [SAGE2_speech.nameMarker, "show", "debug"];
-					for (let i = 0; i < debugActivationWords.length; i++) {
-						if (!ftl.includes(debugActivationWords[i])) {
-							break;
-						}
-						if (i === debugActivationWords.length - 1) {
-							document.getElementById("voiceTranscriptOuterContainer").style.visibility = "visible";
-							document.getElementById("voiceTranscriptActual").textContent = "Voice debug activated";
-							return; // show debug shouldn't send command to server
-						}
+					// if not a local activation give to server
+					if (!SAGE2_speech.doesTranscriptActivateLocally(this.final_transcript)) {
+						// this is the final transcript to log
+						wsio.emit("serverDataSetValue", {
+							nameOfValue: "voiceToActionInterimTranscript",
+							value: "Submitted phrase:" + this.final_transcript,
+							confidence: event.results[i][0].confidence
+						});
+						// do something with it now.
+						wsio.emit('voiceToAction', {words: this.final_transcript, confidence: event.results[i][0].confidence});
+						document.getElementById("voiceTranscriptActual").textContent =
+							"(" + parseInt(event.results[i][0].confidence * 100) + "%) " + this.final_transcript;
 					}
-					// this is the final transcript to log
-					wsio.emit("serverDataSetValue", {
-						nameOfValue: "voiceToActionInterimTranscript",
-						value: "Submitted phrase:" + this.final_transcript,
-						confidence: event.results[i][0].confidence
-					});
-					// do something with it now.
-					wsio.emit('voiceToAction', {words: this.final_transcript, confidence: event.results[i][0].confidence});
-					document.getElementById("voiceTranscriptActual").textContent =
-						"(" + parseInt(event.results[i][0].confidence * 100) + "%) " + this.final_transcript;
 				} else {
 					this.interim_transcript += event.results[i][0].transcript;
 					console.log("interim_transcript:" + this.interim_transcript);
@@ -230,6 +220,112 @@ SAGE2_speech.toggleSAGE2_speech = function() {
 	this.final_transcript = " ";
 	this.webkitSR.lang = "en-US";
 	// this.webkitSR.start();
+};
+
+/**
+ * Check if transcript is a local speech command.
+ *
+ * @method doesTranscriptActivateLocally
+ */
+SAGE2_speech.doesTranscriptActivateLocally = function(transcript) {
+	// UI debug activator check
+	transcript = transcript.toLowerCase();
+
+	//local checks
+	var localActions = {
+		showSpeechDebug: {
+			keywords: ["show voice debug", "show speech debug"],
+			successFunction: SAGE2_speech.activateSpeechDebug
+		},
+		tellTheTime: {
+			keywords: ["what time"],
+			successFunction: SAGE2_speech.sayTheTime
+		},
+		tellTheDate: {
+			keywords: ["what today", "what date"],
+			successFunction: SAGE2_speech.sayTheDate
+		}
+	};
+	var actionNames = Object.keys(localActions);
+	var keywords;
+	for (let i = 0; i < actionNames.length; i++) {
+		for (let keySets = 0; keySets < localActions[actionNames[i]].keywords.length; keySets++) {
+			keywords = localActions[actionNames[i]].keywords[keySets].toLowerCase().split(" ");
+			for (let k = 0; k < keywords.length; k++) {
+				console.log("Checking transcript '" + transcript + "' for " + keywords[k]);
+				if (!transcript.includes(keywords[k])) {
+					break; // exits out of keyword loop
+				} else if (k == keywords.length - 1) {
+					console.log("Local voice function:" + actionNames[i]);
+					localActions[actionNames[i]].successFunction();
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+};
+
+/**
+ * Makes the speech debug text visible.
+ *
+ * @method activateSpeechDebug
+ */
+SAGE2_speech.activateSpeechDebug = function() {
+	document.getElementById("voiceTranscriptOuterContainer").style.visibility = "visible";
+	document.getElementById("voiceTranscriptActual").textContent = "Voice debug activated";
+};
+
+/**
+ * UI will speak the time.
+ *
+ * @method sayTheTime
+ */
+SAGE2_speech.sayTheTime = function() {
+	var d = new Date();
+	var whatToSay;
+	if (d.getHours() > 12) {
+		whatToSay = (d.getHours() - 12) + " " + (d.getMinutes()) +  " P M";
+	} else {
+		whatToSay = d.getHours() + " " + (d.getMinutes()) +  " A M";
+	}
+	SAGE2_speech.textToSpeech(whatToSay);
+};
+
+/**
+ * UI will speak the date.
+ *
+ * @method sayTheDate
+ */
+SAGE2_speech.sayTheDate = function() {
+	var d = new Date();
+	var whatToSay = "";
+	switch (d.getDay()) {
+		case 0: whatToSay = "Sunday "; break;
+		case 1: whatToSay = "Monday "; break;
+		case 2: whatToSay = "Tuesday "; break;
+		case 3: whatToSay = "Wednesday "; break;
+		case 4: whatToSay = "Thursday "; break;
+		case 5: whatToSay = "Friday "; break;
+		case 6: whatToSay = "Saturday "; break;
+	}
+	switch (d.getMonth()) {
+		case 0: whatToSay += "January "; break;
+		case 1: whatToSay += "February "; break;
+		case 2: whatToSay += "March "; break;
+		case 3: whatToSay += "April "; break;
+		case 4: whatToSay += "May "; break;
+		case 5: whatToSay += "June "; break;
+		case 6: whatToSay += "July "; break;
+		case 7: whatToSay += "August "; break;
+		case 8: whatToSay += "September "; break;
+		case 9: whatToSay += "October "; break;
+		case 10: whatToSay += "November "; break;
+		case 11: whatToSay += "December "; break;
+	}
+	whatToSay += d.getDate();
+	SAGE2_speech.textToSpeech(whatToSay);
 };
 
 /**
