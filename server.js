@@ -2183,13 +2183,13 @@ function wsPackageSession(wsio, data) {
 	// id: filename
 	// url: sage2URL
 	console.log('-----------------------');
-	console.log(sageutils.header('Session') + 'got to package ' + data.url);
+	sageutils.log('Session', 'got to package', data.url);
 	var tempDir = path.join(os.tmpdir(), 'sage2-');
 	fs.mkdtemp(tempDir, (err, folder) => {
 		if (err) {
 			throw err;
 		}
-		console.log(sageutils.header('Session') + 'Building session in ' + folder);
+		sageutils.log('Session', 'Building session in', folder);
 
 		var fullpath;
 		if (sageutils.fileExists(path.resolve(data.id))) {
@@ -2210,12 +2210,12 @@ function wsPackageSession(wsio, data) {
 
 		fs.readFile(fullpath, function(err, data) {
 			if (err) {
-				console.log(sageutils.header("Session") + "error reading session", err);
+				sageutils.log('Session', "error reading session", err);
 			} else {
-				console.log(sageutils.header("Session") + "reading session from " + fullpath);
+				sageutils.log('Session', "reading session from", fullpath);
 
 				var session = JSON.parse(data);
-				console.log(sageutils.header("Session") + "number of applications", session.numapps);
+				sageutils.log('Session', "number of applications", session.numapps);
 
 				// Build a new session file
 				var states     = {};
@@ -2267,16 +2267,16 @@ function wsPackageSession(wsio, data) {
 						{preserveTimestamps: true}
 					);
 
-					console.log(sageutils.header("Session") + 'Icon: ' + iconPath);
+					sageutils.log('Session', 'Icon:', iconPath);
 				} catch (err) {
-					console.log("Error including session Icon", err);
+					sageutils.log('Session', 'Error including session Icon', err);
 				}
 
 				// list apps
 				session.apps.forEach(function(element, index, array) {
 					states.apps.push(element);
 					states.numapps++;
-					console.log(sageutils.header("Session") + 'App ' +  index + ' : ' + element.file);
+					sageutils.log('Session', 'App', index + ' : ' + element.file);
 					if (element.file) {
 						// copy into folder
 						fse.copySync(
@@ -2296,9 +2296,9 @@ function wsPackageSession(wsio, data) {
 						session_fullpath,
 						JSON.stringify(states, null, 4)
 					);
-					console.log(sageutils.header("Session") + "saved new session file to " + session_fullpath);
+					sageutils.log('Session', "saved new session file to", session_fullpath);
 				} catch (err) {
-					console.log(sageutils.header("Session") + "error saving " + err);
+					sageutils.log('Session', "error saving", err);
 				}
 
 				var output_zip = path.join(os.tmpdir(), sessionName + '.s2ps');
@@ -2309,8 +2309,7 @@ function wsPackageSession(wsio, data) {
 
 				// Listen for all archive data to be written
 				output.on('close', function() {
-					console.log(sageutils.header("Session") + "portable session created " + output_zip);
-					console.log('-----------------------');
+					sageutils.log('Session', "portable session created", output_zip);
 					// Deleting temp folder
 					fse.removeSync(folder);
 
@@ -2332,8 +2331,7 @@ function wsPackageSession(wsio, data) {
 
 				// Catch this error explicitly
 				archive.on('error', function(err) {
-					console.log(sageutils.header("Session") + "error creating zip file " + err);
-					console.log('-----------------------');
+					sageutils.log('Session', "error creating zip file", err);
 					throw err;
 				});
 
@@ -2824,12 +2822,12 @@ function loadPortableSession(filename) {
 
 	fs.readFile(fullpath, function(err, data) {
 		if (err) {
-			console.log(sageutils.header("SAGE2") + "error reading session", err);
+			sageutils.log("Session", "error reading session", err);
 		} else {
-			console.log(sageutils.header("SAGE2") + "reading portable session from " + fullpath);
+			sageutils.log("Session", "reading portable session from", fullpath);
 
 			var session = JSON.parse(data);
-			console.log(sageutils.header("Session") + "number of applications", session.numapps);
+			sageutils.log("Session", "number of applications", session.numapps);
 
 			let ptn;
 			// recreate partitions
