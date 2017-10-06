@@ -418,8 +418,8 @@ SAGE2_speech.listeningVisualInit = function () {
 
 	var c = document.createElement("canvas");
 	c.id = SAGE2_speech.listentingInfo.canvasId;
-	c.style.width = SAGE2_speech.listentingInfo.canvasWidth;
-	c.style.height = SAGE2_speech.listentingInfo.canvasHeight;
+	c.style.width = SAGE2_speech.listentingInfo.canvasWidth + "px";
+	c.style.height = SAGE2_speech.listentingInfo.canvasHeight + "px";
 
 	// add to page
 	d.appendChild(c);
