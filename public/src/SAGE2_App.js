@@ -314,6 +314,7 @@ var SAGE2_App = Class.extend({
 				// if app is shared, then track pointer
 				SAGE2RemoteSitePointer.trackPointer(this, user_id, position);
 			} else if (isMaster  && SAGE2RemoteSitePointer.shouldPassEvents && this.isSharedWithRemoteSite()) {
+				// for events beyond pointerMove
 				SAGE2RemoteSitePointer.trackEvent(this, {
 					eventType: eventType,
 					position: position,
@@ -990,26 +991,24 @@ var SAGE2_App = Class.extend({
 				parameters: {},
 				voiceEntryOverload: true // not displayed on UI, added for voice entry
 			});
+			// currently testing with remote pointer event testing
+			/* currently disabled
+			if (!this.shouldPassRemotePointerEvents) {
+				appContextMenu.entries.push({
+					description: "Enable remote pointer passing",
+					callback: "toggleRemotePointerEventPassing",
+					parameters: { value: true }
+				});
+			} else {
+				appContextMenu.entries.push({
+					description: "Disable remote pointer passing",
+					callback: "toggleRemotePointerEventPassing",
+					parameters: { value: false }
+				});
+			} //*/
 			appContextMenu.entries.push({
 				description: "separator"
 			});
-			// currently testing with remote pointer event testing // removed for now.
-			// if (!this.shouldPassRemotePointerEvents) {
-			// 	appContextMenu.entries.push({
-			// 		description: "Enable remote pointer passing",
-			// 		callback: "toggleRemotePointerEventPassing",
-			// 		parameters: { value: true }
-			// 	});
-			// } else {
-			// 	appContextMenu.entries.push({
-			// 		description: "Disable remote pointer passing",
-			// 		callback: "toggleRemotePointerEventPassing",
-			// 		parameters: { value: false }
-			// 	});
-			// }
-			// appContextMenu.entries.push({
-			// 	description: "separator"
-			// });
 			appContextMenu.entries.push({
 				description: "Close " + (this.title || "application"),
 				callback: "SAGE2DeleteElement",
