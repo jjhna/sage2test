@@ -30,12 +30,17 @@ SAGE2_speech.mouseHoldTimeNeeded = 800; // ms
 SAGE2_speech.mouseHoldTimeoutId  = null;
 SAGE2_speech.mouseHoldActivated  = false;
 SAGE2_speech.mouseHoldStartPos   = {x: -100, y: -100};
-SAGE2_speech.mouseHoldMoveLimit  = {x: 20, y: 20};
+SAGE2_speech.mouseHoldMoveLimit  = {x: 10, y: 10};
 SAGE2_speech.mouseIsDown         = false;
 // listening variables
 SAGE2_speech.showListening      = false;
 SAGE2_speech.listentingInfo     = null;
-SAGE2_speech.mousePosition      = {x: window.innerWidth / 2, y: 0};
+SAGE2_speech.mousePosition      = {
+	x: window.innerWidth / 2,
+	y: 0,
+	dx: 0,
+	dy: 0
+};
 // speech synthesis
 SAGE2_speech.ttsConverter       = null;
 SAGE2_speech.synth              = null;
@@ -86,6 +91,8 @@ SAGE2_speech.init = function() {
 			// cleanup variables
 			SAGE2_speech.showListening = true;
 			SAGE2_speech.firstNameMention = false;
+			SAGE2_speech.listentingInfo.imageDetectedInterim = false;
+			SAGE2_speech.listentingInfo.imageCycleFrame = 0;
 		};
 
 		/*
@@ -133,6 +140,7 @@ SAGE2_speech.init = function() {
 				} else {
 					this.interim_transcript += event.results[i][0].transcript;
 					console.log("interim_transcript:" + this.interim_transcript);
+					SAGE2_speech.listentingInfo.imageDetectedInterim = true;
 					if (SAGE2_speech.interimId) {
 						// this should get cleared out each transcript change
 						window.clearTimeout(SAGE2_speech.interimId);
@@ -336,6 +344,9 @@ SAGE2_speech.sayTheDate = function() {
 SAGE2_speech.initMouseholdToStart = function() {
 	// on mouse down, if over canvas, set a timeout to check for listening
 	document.addEventListener("mousedown", function(e) {
+		// reset the move
+		SAGE2_speech.mousePosition.dx = 0;
+		SAGE2_speech.mousePosition.dy = 0;
 		SAGE2_speech.mouseHoldTimeoutId = null;
 		// only activate if over the sage2UICanvas
 		if (event.target.id === "sage2UICanvas"
@@ -362,6 +373,7 @@ SAGE2_speech.initMouseholdToStart = function() {
 			window.clearTimeout(SAGE2_speech.mouseHoldTimeoutId);
 			SAGE2_speech.mouseHoldTimeoutId = null;
 		}
+		SAGE2_speech.webkitSR.stop();
 	});
 };
 
@@ -374,8 +386,8 @@ SAGE2_speech.initMouseholdToStart = function() {
  * @method enableMouseholdToStart
  */
 SAGE2_speech.enableMouseholdToStart = function(e) {
-	var dx = Math.abs(SAGE2_speech.mousePosition.x - SAGE2_speech.mouseHoldStartPos.x);
-	var dy = Math.abs(SAGE2_speech.mousePosition.y - SAGE2_speech.mouseHoldStartPos.y);
+	var dx = Math.abs(SAGE2_speech.mousePosition.dx);
+	var dy = Math.abs(SAGE2_speech.mousePosition.dy);
 	// if mouse cursor is still within move limit
 	if (dx < SAGE2_speech.mouseHoldMoveLimit.x && dy < SAGE2_speech.mouseHoldMoveLimit.y) {
 		// if it isn't listening.
@@ -405,24 +417,48 @@ SAGE2_speech.listeningVisualInit = function () {
 		canvasWidth:  100,
 		canvasHeight: 20,
 		circleRadius:  25,
-		cycleTime: 1500 // divide by 2 to get one sweep time
+		cycleTime: 1500, // divide by 2 to get one sweep time
+		// swap to images
+		imageId: ["imageEar0", "imageEar1", "imageEar2", "imageEar3"], // multiple images
+		imageWidth: 40,
+		imageHeight: 40,
+		imageFrameDuration: 100, // ms
+		imageFrameStartTime: 0,
+		imageCycleFrame: 0,
+		imageDetectedInterim: false
 	};
 
 	var d = document.createElement("div");
 	d.id = SAGE2_speech.listentingInfo.divId;
 	d.style.border = "2px solid black";
 	d.style.position = "absolute";
-	d.style.width = SAGE2_speech.listentingInfo.canvasWidth + "px";
-	d.style.height = SAGE2_speech.listentingInfo.canvasHeight + "px";
+	d.style.width = SAGE2_speech.listentingInfo.imageWidth + "px";
+	d.style.height = SAGE2_speech.listentingInfo.imageHeight + "px";
+	// d.style.width = SAGE2_speech.listentingInfo.canvasWidth + "px";
+	// d.style.height = SAGE2_speech.listentingInfo.canvasHeight + "px";
 	d.style.zIndex = 10000; // unsure of highest value
 
-	var c = document.createElement("canvas");
-	c.id = SAGE2_speech.listentingInfo.canvasId;
-	c.style.width = SAGE2_speech.listentingInfo.canvasWidth + "px";
-	c.style.height = SAGE2_speech.listentingInfo.canvasHeight + "px";
+	// var c = document.createElement("canvas");
+	// c.id = SAGE2_speech.listentingInfo.canvasId;
+	// c.style.width = SAGE2_speech.listentingInfo.canvasWidth + "px";
+	// c.style.height = SAGE2_speech.listentingInfo.canvasHeight + "px";
+
+	// images
+	for (let i = 0; i < SAGE2_speech.listentingInfo.imageId.length; i++) { // currently 4 frames 0,1,2,3
+		let c = document.createElement("img");
+		c.id = SAGE2_speech.listentingInfo.imageId[i];
+		c.style.width = SAGE2_speech.listentingInfo.imageWidth + "px";
+		c.style.height = SAGE2_speech.listentingInfo.imageHeight + "px";
+		c.src = "images/speech-ear" + i + ".png";
+		c.style.position = "absolute";
+		if (i > 0) {
+			c.style.display = "none";
+		}
+		d.appendChild(c);
+	}
 
 	// add to page
-	d.appendChild(c);
+	// d.appendChild(c);
 	document.body.appendChild(d);
 
 	// add listener for mouse move
@@ -441,6 +477,8 @@ SAGE2_speech.listeningVisualInit = function () {
 SAGE2_speech.mouseMoveListener = function (e) {
 	SAGE2_speech.mousePosition.x = e.clientX;
 	SAGE2_speech.mousePosition.y = e.clientY;
+	SAGE2_speech.mousePosition.dx += e.movementX;
+	SAGE2_speech.mousePosition.dy += e.movementY;
 };
 
 /**
@@ -453,33 +491,61 @@ SAGE2_speech.drawListeningVisual = function () {
 	var listeningDiv = document.getElementById(SAGE2_speech.listentingInfo.divId);
 	if (SAGE2_speech.showListening) {
 		listeningDiv.style.left = (SAGE2_speech.mousePosition.x
-			- SAGE2_speech.listentingInfo.canvasWidth / 2) + "px";
-		listeningDiv.style.top = (SAGE2_speech.mousePosition.y + 20) + "px";
+			- SAGE2_speech.listentingInfo.imageWidth / 2) + "px";
+		listeningDiv.style.top = (SAGE2_speech.mousePosition.y - 10 - SAGE2_speech.listentingInfo.imageHeight) + "px";
+		if (document.pointerLockElement) {
+			listeningDiv.style.left = "50px";
+			listeningDiv.style.top = "50px";
+		}
 	} else {
 		listeningDiv.style.left = "-100px";
 		listeningDiv.style.top = "-100px";
 		window.requestAnimationFrame(SAGE2_speech.drawListeningVisual);
 		return; // dont forget to recall frame if not showing, otherwise will not restart.
 	}
-	// draw update
-	var ctx = document.getElementById(SAGE2_speech.listentingInfo.canvasId).getContext('2d');
-	ctx.clearRect(0, 0, SAGE2_speech.listentingInfo.canvasWidth, SAGE2_speech.listentingInfo.canvasHeight); // clear canvas
 
-	var timeCurrent = (SAGE2_speech.listentingInfo.cycleTime / 2); // half a cycle makes one sweep
-	timeCurrent = Date.now() % SAGE2_speech.listentingInfo.cycleTime / timeCurrent;
-	if (timeCurrent > 1) { // >1 means on return cycle.
-		timeCurrent = 2 - timeCurrent; // it cannot be 2
+	// only draw animation if interim activated
+	if (SAGE2_speech.listentingInfo.imageDetectedInterim) {
+		if ((Date.now() - SAGE2_speech.listentingInfo.imageFrameStartTime)
+			>= SAGE2_speech.listentingInfo.imageFrameDuration) {
+			SAGE2_speech.listentingInfo.imageCycleFrame++;
+			if (SAGE2_speech.listentingInfo.imageCycleFrame >= SAGE2_speech.listentingInfo.imageId.length) {
+				SAGE2_speech.listentingInfo.imageCycleFrame = 0;
+			}
+			for (let i = 0; i < SAGE2_speech.listentingInfo.imageId.length; i++) {
+				if (i === SAGE2_speech.listentingInfo.imageCycleFrame) {
+					document.getElementById(SAGE2_speech.listentingInfo.imageId[i]).style.display = "block";
+				} else {
+					document.getElementById(SAGE2_speech.listentingInfo.imageId[i]).style.display = "none";
+				}
+			}
+			SAGE2_speech.listentingInfo.imageFrameStartTime = Date.now();
+		}
 	}
-	var xCurrent = SAGE2_speech.listentingInfo.canvasWidth * timeCurrent;
-	var yCurrent = SAGE2_speech.listentingInfo.canvasHeight;
-	// xycenter, radius start , xy end, radius end
-	var gradient = ctx.createRadialGradient(
-		xCurrent, yCurrent, SAGE2_speech.listentingInfo.circleRadius,
-		xCurrent, yCurrent, 0);
-	gradient.addColorStop(0, 'black');
-	gradient.addColorStop(1, 'red');
-	ctx.fillStyle = gradient;
-	ctx.fillRect(0, 0, SAGE2_speech.listentingInfo.canvasWidth, SAGE2_speech.listentingInfo.canvasHeight);
+
+
+	// // draw update
+	// var ctx = document.getElementById(SAGE2_speech.listentingInfo.canvasId).getContext('2d');
+	// ctx.clearRect(0, 0, SAGE2_speech.listentingInfo.canvasWidth, SAGE2_speech.listentingInfo.canvasHeight); // clear canvas
+
+	// var timeCurrent = (SAGE2_speech.listentingInfo.cycleTime / 2); // half a cycle makes one sweep
+	// timeCurrent = Date.now() % SAGE2_speech.listentingInfo.cycleTime / timeCurrent;
+	// if (timeCurrent > 1) { // >1 means on return cycle.
+	// 	timeCurrent = 2 - timeCurrent; // it cannot be 2
+	// }
+	// var xCurrent = SAGE2_speech.listentingInfo.canvasWidth * timeCurrent;
+	// var yCurrent = SAGE2_speech.listentingInfo.canvasHeight;
+	// // xycenter, radius start , xy end, radius end
+	// var gradient = ctx.createRadialGradient(
+	// 	xCurrent, yCurrent, SAGE2_speech.listentingInfo.circleRadius,
+	// 	xCurrent, yCurrent, 0);
+	// gradient.addColorStop(0, 'black');
+	// gradient.addColorStop(1, 'red');
+	// ctx.fillStyle = gradient;
+	// ctx.fillRect(0, 0, SAGE2_speech.listentingInfo.canvasWidth, SAGE2_speech.listentingInfo.canvasHeight);
+
+
+	// set into next animation frame.
 	window.requestAnimationFrame(SAGE2_speech.drawListeningVisual);
 };
 
