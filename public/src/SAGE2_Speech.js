@@ -93,6 +93,7 @@ SAGE2_speech.init = function() {
 			SAGE2_speech.firstNameMention = false;
 			SAGE2_speech.listentingInfo.imageDetectedInterim = false;
 			SAGE2_speech.listentingInfo.imageCycleFrame = 0;
+			document.getElementById(SAGE2_speech.listentingInfo.transcriptId).textContent = ""; // start blank
 		};
 
 		/*
@@ -140,6 +141,11 @@ SAGE2_speech.init = function() {
 				} else {
 					this.interim_transcript += event.results[i][0].transcript;
 					console.log("interim_transcript:" + this.interim_transcript);
+					// put transcript in visual
+					let tdiv  = document.getElementById(SAGE2_speech.listentingInfo.transcriptId);
+					tdiv.textContent = this.interim_transcript;
+					tdiv.style.width = (tdiv.textContent.length
+						* SAGE2_speech.listentingInfo.transcriptCharacterPadding) + "px";
 					SAGE2_speech.listentingInfo.imageDetectedInterim = true;
 					if (SAGE2_speech.interimId) {
 						// this should get cleared out each transcript change
@@ -260,7 +266,7 @@ SAGE2_speech.doesTranscriptActivateLocally = function(transcript) {
 		for (let keySets = 0; keySets < localActions[actionNames[i]].keywords.length; keySets++) {
 			keywords = localActions[actionNames[i]].keywords[keySets].toLowerCase().split(" ");
 			for (let k = 0; k < keywords.length; k++) {
-				console.log("Checking transcript '" + transcript + "' for " + keywords[k]);
+				// console.log("Checking transcript '" + transcript + "' for " + keywords[k]);
 				if (!transcript.includes(keywords[k])) {
 					break; // exits out of keyword loop
 				} else if (k == keywords.length - 1) {
@@ -425,15 +431,17 @@ SAGE2_speech.listeningVisualInit = function () {
 		imageFrameDuration: 100, // ms
 		imageFrameStartTime: 0,
 		imageCycleFrame: 0,
-		imageDetectedInterim: false
+		imageDetectedInterim: false,
+		transcriptId: "listeningTranscriptDiv",
+		transcriptCharacterPadding: 7
 	};
 
 	var d = document.createElement("div");
 	d.id = SAGE2_speech.listentingInfo.divId;
-	d.style.border = "2px solid black";
+	// d.style.border = "2px solid black";
 	d.style.position = "absolute";
-	d.style.width = SAGE2_speech.listentingInfo.imageWidth + "px";
-	d.style.height = SAGE2_speech.listentingInfo.imageHeight + "px";
+	// d.style.width = SAGE2_speech.listentingInfo.imageWidth + "px";
+	// d.style.height = SAGE2_speech.listentingInfo.imageHeight + "px";
 	// d.style.width = SAGE2_speech.listentingInfo.canvasWidth + "px";
 	// d.style.height = SAGE2_speech.listentingInfo.canvasHeight + "px";
 	d.style.zIndex = 10000; // unsure of highest value
@@ -451,11 +459,27 @@ SAGE2_speech.listeningVisualInit = function () {
 		c.style.height = SAGE2_speech.listentingInfo.imageHeight + "px";
 		c.src = "images/speech-ear" + i + ".png";
 		c.style.position = "absolute";
+		c.style.border = "2px solid black";
 		if (i > 0) {
 			c.style.display = "none";
 		}
 		d.appendChild(c);
 	}
+
+	// transcript holder
+	var transcriptDiv = document.createElement("div");
+	transcriptDiv.id = SAGE2_speech.listentingInfo.transcriptId;
+	transcriptDiv.style.position = "absolute";
+	transcriptDiv.style.height = SAGE2_speech.listentingInfo.imageHeight + "px"; // match height of image.
+	transcriptDiv.style.left = SAGE2_speech.listentingInfo.imageWidth + "px"; // put right of image
+	transcriptDiv.style.border = "2px solid black";
+	transcriptDiv.style.background = "white";
+	transcriptDiv.style.textAlign = "center";
+	transcriptDiv.style.lineHeight = transcriptDiv.style.height;
+	transcriptDiv.textContent = ""; // start blank
+	transcriptDiv.style.width = (transcriptDiv.textContent.length
+		* SAGE2_speech.listentingInfo.transcriptCharacterPadding) + "px";
+	d.appendChild(transcriptDiv);
 
 	// add to page
 	// d.appendChild(c);
