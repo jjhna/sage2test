@@ -445,13 +445,13 @@ var googlemaps = SAGE2_App.extend({
 		// toggle for plotting image data.
 		if (this.plotAnyNewGeoSource) {
 			entry = {};
-			entry.description = "Stop plotting image coordinates";
+			entry.description = "Stop plotting new image location";
 			entry.callback = "toggleAutomaticPlot";
 			entry.parameters = { plot: false };
 			entries.push(entry);
 		} else {
 			entry = {};
-			entry.description = "Plot image geo coordinates";
+			entry.description = "Plot new images with location";
 			entry.callback = "toggleAutomaticPlot";
 			entry.parameters = { plot: true };
 			entries.push(entry);

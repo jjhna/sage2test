@@ -153,12 +153,12 @@ var image_viewer = SAGE2_App.extend({
 
 		if (this.checkIfHasGpsData()) {
 			entries.push({
-				description: "Try plot geo location on open map",
+				description: "Plot location on open map",
 				callback: "tryPlotOnGoogleMap",
 				parameters: {}
 			});
 			entries.push({
-				description: "Plot geo location on new map",
+				description: "Plot location on new map",
 				callback: "plotOnNewGoogleMap",
 				parameters: {}
 			});
@@ -198,7 +198,8 @@ var image_viewer = SAGE2_App.extend({
 
 	checkForGoogleMapApp: function() {
 		var keys = Object.keys(applications);
-		for (let i = 0; i < keys.length; i++) {
+		// go from most recent to oldest
+		for (let i = keys.length - 1; i >= 0; i--) {
 			if (applications[keys[i]].application == "googlemaps") {
 				return keys[i];
 			}
