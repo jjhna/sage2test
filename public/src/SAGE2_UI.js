@@ -714,8 +714,7 @@ function setupListeners() {
 	});
 
 	wsio.on('setVoiceNameMarker', function(data) {
-		console.log("Voice marker:'" + data.name + "'");
-		SAGE2_speech.nameMarker = data.name.toLowerCase(); // server should give a space
+		SAGE2_speech.setNameMarker(data.name);
 	});
 	wsio.on('playVoiceCommandSuccessSound', function(data) {
 		// SAGE2_speech.successSound.play();

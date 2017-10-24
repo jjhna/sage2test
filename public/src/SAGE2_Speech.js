@@ -45,6 +45,9 @@ SAGE2_speech.mousePosition      = {
 SAGE2_speech.ttsConverter       = null;
 SAGE2_speech.synth              = null;
 SAGE2_speech.voices             = null;
+SAGE2_speech.isEnabled          = true;
+SAGE2_speech.uiMenuEntryEnable  = true;
+SAGE2_speech.uiMenuEntryDisable = true;
 
 
 /**
@@ -94,6 +97,7 @@ SAGE2_speech.init = function() {
 			SAGE2_speech.listentingInfo.imageDetectedInterim = false;
 			SAGE2_speech.listentingInfo.imageCycleFrame = 0;
 			document.getElementById(SAGE2_speech.listentingInfo.transcriptId).textContent = ""; // start blank
+			document.getElementById(SAGE2_speech.listentingInfo.transcriptId).style.width = "1px"; // start blank
 		};
 
 		/*
@@ -189,13 +193,8 @@ SAGE2_speech.init = function() {
 			// this particular error will be triggered if the microphone is blocked.
 			if (e.error === "not-allowed") {
 				SAGE2_speech.errorNotAllowed = true;
-			} else {
-				// how to reliably detect when lost connection to server?
-				// SAGE2_speech.errorCount++;
-				// if (SAGE2_speech.errorCount >= 5) {
-				// 	showSAGE2Message("Chrome speech recognition has errored."
-				// 		+ "page must be reloaded to attempt speech recognition restart.");
-				// }
+				SAGE2_speech.isEnabled = true; // the toggle wil swap it to false
+				SAGE2_speech.toggleVoiceRecognition();
 			}
 		};
 
@@ -203,18 +202,12 @@ SAGE2_speech.init = function() {
 		this.webkitSR.onend = function() {
 			this.recognizing = false;
 			SAGE2_speech.showListening = false;
-			// restart if error was caused
-			if (!SAGE2_speech.errorNotAllowed && SAGE2_speech.errorCount < 5) {
-				// console.log("voice ended, attempting to restart");
-
-
-				// currently disable auto restart
-				// SAGE2_speech.webkitSR.start();
-			}
 			// cleanup variables
 			SAGE2_speech.mouseHoldActivated = false;
 		};
 		this.toggleSAGE2_speech();
+		this.isEnabled = false; // toggle will flip
+		SAGE2_speech.toggleVoiceRecognition();
 	} //end else there is webkit
 	// this.successSound = new Audio('sounds/ALARM.WAV');
 	// this.failSound    = new Audio('sounds/ALARMTIME1.WAV');
@@ -233,7 +226,6 @@ SAGE2_speech.toggleSAGE2_speech = function() {
 	}
 	this.final_transcript = " ";
 	this.webkitSR.lang = "en-US";
-	// this.webkitSR.start();
 };
 
 /**
@@ -350,6 +342,9 @@ SAGE2_speech.sayTheDate = function() {
 SAGE2_speech.initMouseholdToStart = function() {
 	// on mouse down, if over canvas, set a timeout to check for listening
 	document.addEventListener("mousedown", function(e) {
+		if (!SAGE2_speech.isEnabled) {
+			return; // if speech recognition was disabled by user, don't
+		}
 		// reset the move
 		SAGE2_speech.mousePosition.dx = 0;
 		SAGE2_speech.mousePosition.dy = 0;
@@ -401,7 +396,6 @@ SAGE2_speech.enableMouseholdToStart = function(e) {
 			this.webkitSR.stop(); // stop
 			setTimeout(function() {
 				SAGE2_speech.mouseHoldActivated = true;
-				console.log("speech activated through mouse down");
 				SAGE2_speech.webkitSR.start(); // start
 			}, SAGE2_speech.mouseHoldTimeNeeded / 2); // not sure best minimum
 		}
@@ -433,7 +427,7 @@ SAGE2_speech.listeningVisualInit = function () {
 		imageCycleFrame: 0,
 		imageDetectedInterim: false,
 		transcriptId: "listeningTranscriptDiv",
-		transcriptCharacterPadding: 7
+		transcriptCharacterPadding: 6
 	};
 
 	var d = document.createElement("div");
@@ -451,6 +445,23 @@ SAGE2_speech.listeningVisualInit = function () {
 	// c.style.width = SAGE2_speech.listentingInfo.canvasWidth + "px";
 	// c.style.height = SAGE2_speech.listentingInfo.canvasHeight + "px";
 
+	// transcript holder appendChild before images to make transcript visually behind them.
+	var transcriptDiv = document.createElement("div");
+	transcriptDiv.id = SAGE2_speech.listentingInfo.transcriptId;
+	transcriptDiv.style.position = "absolute";
+	transcriptDiv.style.height = (SAGE2_speech.listentingInfo.imageHeight / 2) + "px"; // not as big as image
+	transcriptDiv.style.top = (SAGE2_speech.listentingInfo.imageHeight / 4 - 6) + "px"; // center the transcript
+	transcriptDiv.style.left = (SAGE2_speech.listentingInfo.imageWidth - 20) + "px"; // put right of image
+	transcriptDiv.style.paddingLeft = "20px"; // match the left offset from image
+	transcriptDiv.style.paddingTop = "5px"; // match the left offset from image
+	transcriptDiv.style.border = "2px solid black";
+	transcriptDiv.style.borderRadius = "2px 20px 20px 2px";
+	transcriptDiv.style.background = "white";
+	transcriptDiv.textContent = ""; // start blank
+	transcriptDiv.style.width = (transcriptDiv.textContent.length
+		* SAGE2_speech.listentingInfo.transcriptCharacterPadding) + "px";
+	d.appendChild(transcriptDiv);
+
 	// images
 	for (let i = 0; i < SAGE2_speech.listentingInfo.imageId.length; i++) { // currently 4 frames 0,1,2,3
 		let c = document.createElement("img");
@@ -459,27 +470,12 @@ SAGE2_speech.listeningVisualInit = function () {
 		c.style.height = SAGE2_speech.listentingInfo.imageHeight + "px";
 		c.src = "images/speech-ear" + i + ".png";
 		c.style.position = "absolute";
-		c.style.border = "2px solid black";
+		// c.style.border = "2px solid black"; // no border, final image should be transparent around circle
 		if (i > 0) {
 			c.style.display = "none";
 		}
 		d.appendChild(c);
 	}
-
-	// transcript holder
-	var transcriptDiv = document.createElement("div");
-	transcriptDiv.id = SAGE2_speech.listentingInfo.transcriptId;
-	transcriptDiv.style.position = "absolute";
-	transcriptDiv.style.height = SAGE2_speech.listentingInfo.imageHeight + "px"; // match height of image.
-	transcriptDiv.style.left = SAGE2_speech.listentingInfo.imageWidth + "px"; // put right of image
-	transcriptDiv.style.border = "2px solid black";
-	transcriptDiv.style.background = "white";
-	transcriptDiv.style.textAlign = "center";
-	transcriptDiv.style.lineHeight = transcriptDiv.style.height;
-	transcriptDiv.textContent = ""; // start blank
-	transcriptDiv.style.width = (transcriptDiv.textContent.length
-		* SAGE2_speech.listentingInfo.transcriptCharacterPadding) + "px";
-	d.appendChild(transcriptDiv);
 
 	// add to page
 	// d.appendChild(c);
@@ -547,7 +543,7 @@ SAGE2_speech.drawListeningVisual = function () {
 		}
 	}
 
-
+	// // // Currently disabled, testing ear images
 	// // draw update
 	// var ctx = document.getElementById(SAGE2_speech.listentingInfo.canvasId).getContext('2d');
 	// ctx.clearRect(0, 0, SAGE2_speech.listentingInfo.canvasWidth, SAGE2_speech.listentingInfo.canvasHeight); // clear canvas
@@ -641,4 +637,31 @@ SAGE2_speech.textToSpeech = function (whatToSay) {
 	}
 };
 
-SAGE2_speech.init();
+/**
+ * Will toggle whether or not voice recognition starts for long click and hold.
+ *
+ * @method toggleVoiceRecognition
+ */
+SAGE2_speech.toggleVoiceRecognition = function () {
+	// toogle: if enabled, disable and make menu allow reenable
+	if (SAGE2_speech.isEnabled) {
+		$$('topmenu').showItem('voiceserviceEnable_menu');
+		$$('topmenu').hideItem('voiceserviceDisable_menu');
+	} else { // else was disabled, enable it and allow disable
+		$$('topmenu').showItem('voiceserviceDisable_menu');
+		$$('topmenu').hideItem('voiceserviceEnable_menu');
+	}
+	SAGE2_speech.isEnabled = !SAGE2_speech.isEnabled;
+};
+
+/**
+ * Activates after receiving from server what the name marker is.
+ * Only after receiving will it init the voice recognition.
+ *
+ * @method setNameMarker
+ */
+SAGE2_speech.setNameMarker = function (nameMarkerFromServer) {
+	// console.log("Voice marker:'" + nameMarkerFromServer + "'");
+	SAGE2_speech.nameMarker = nameMarkerFromServer.toLowerCase(); // server should give a space
+	SAGE2_speech.init();
+};

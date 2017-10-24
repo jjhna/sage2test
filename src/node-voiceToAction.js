@@ -331,10 +331,10 @@ VoiceActionManager.prototype.voicePreCheckForServerCommands = function (wsio, wo
 				"clean this up",
 				"cleanup",
 				"tile content",
+				"tile context", // speech to text commonly turns content into context
 				"tile everything",
 				"tile wall",
-				"organize this",
-				"organize everything"
+				"organize"
 			],
 			successPhrase: "Organizing wall content"
 		},
