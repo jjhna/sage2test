@@ -127,14 +127,6 @@ var image_viewer = SAGE2_App.extend({
 	getContextEntries: function() {
 		var entries = [];
 
-		// Show overlay with EXIF data
-		entries.push({
-			description: "Show EXIF",
-			accelerator: "i",
-			callback: "showEXIF",
-			parameters: {}
-		});
-
 		// Special callback: download the file
 		entries.push({
 			description: "Download image",
@@ -151,14 +143,23 @@ var image_viewer = SAGE2_App.extend({
 			}
 		});
 
+		// Show overlay with EXIF data
+		entries.push({
+			description: "Show EXIF",
+			accelerator: "I",
+			callback: "showEXIF",
+			parameters: {}
+		});
+
 		if (this.checkIfHasGpsData()) {
+			// Disable this for now
+			// entries.push({
+			// 	description: "Plot Location On Open Map",
+			// 	callback: "tryPlotOnGoogleMap",
+			// 	parameters: {}
+			// });
 			entries.push({
-				description: "Plot location on open map",
-				callback: "tryPlotOnGoogleMap",
-				parameters: {}
-			});
-			entries.push({
-				description: "Plot location on new map",
+				description: "Plot Location On New Map",
 				callback: "plotOnNewGoogleMap",
 				parameters: {}
 			});

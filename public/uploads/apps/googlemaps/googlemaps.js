@@ -419,7 +419,7 @@ var googlemaps = SAGE2_App.extend({
 
 		var entry   = {};
 		// label of them menu
-		entry.description = "Type a location:";
+		entry.description = "Type Location:";
 		// callback
 		entry.callback = "setLocation";
 		// parameters of the callback function
@@ -429,13 +429,13 @@ var googlemaps = SAGE2_App.extend({
 		entries.push(entry);
 
 		entry = {};
-		entry.description = "Save current location";
+		entry.description = "Save Current Location";
 		entry.callback = "setDefault";
 		entry.parameters = {};
 		entries.push(entry);
 
 		entry = {};
-		entry.description = "Load saved location";
+		entry.description = "Load Saved Location";
 		entry.callback = "loadDefault";
 		entry.parameters = {};
 		entries.push(entry);
@@ -445,13 +445,13 @@ var googlemaps = SAGE2_App.extend({
 		// toggle for plotting image data.
 		if (this.plotAnyNewGeoSource) {
 			entry = {};
-			entry.description = "Stop plotting new image location";
+			entry.description = "Stop Plotting New Image Locations";
 			entry.callback = "toggleAutomaticPlot";
 			entry.parameters = { plot: false };
 			entries.push(entry);
 		} else {
 			entry = {};
-			entry.description = "Plot new images with location";
+			entry.description = "Plot New Images With Location";
 			entry.callback = "toggleAutomaticPlot";
 			entry.parameters = { plot: true };
 			entries.push(entry);
@@ -460,23 +460,22 @@ var googlemaps = SAGE2_App.extend({
 		if (this.mapMarkers.length > 0) {
 			entries.push({description: "separator"});
 			entry = {};
-			entry.description = "Remove all markers from map"; // remove marker plots
+			entry.description = "Remove All Markers From Map"; // remove marker plots
 			entry.callback = "removeAllMarkersFromMap";
 			entry.parameters = {};
 			entries.push(entry);
 			// even if only 1, allow going to it.
 			entry = {};
-			entry.description = "Go to next marker";
+			entry.description = "Go To Next Marker";
 			entry.callback = "focusOnMarkerIndex";
 			entry.parameters = { cycle: "next" };
 			entries.push(entry);
 			entry = {};
-			entry.description = "Go to prevous marker";
+			entry.description = "Go To Prevous Marker";
 			entry.callback = "focusOnMarkerIndex";
 			entry.parameters = { cycle: "previous" };
 			entries.push(entry);
 		}
-
 		return entries;
 	},
 
