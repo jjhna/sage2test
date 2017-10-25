@@ -234,6 +234,13 @@ var pdf_viewer = SAGE2_App.extend({
 
 				var neww = that.baseWidthPage * that.state.numberOfPageToShow * that.resizeValue;
 				var newh = (that.baseHeightPage + that.commandBarG.height + that.thumbnailHeight) * that.resizeValue;
+				// calculate the aspect ratio
+				var newar = neww / newh;
+				// use the same width as specified by the server
+				neww = that.sage2_width;
+				// adjust the height
+				newh = neww / newar;
+				// ask for a size update
 				that.sendResize(neww, newh);
 				return;
 			}
@@ -531,6 +538,20 @@ var pdf_viewer = SAGE2_App.extend({
 		}
 	},
 
+	/**
+	* Callback from right-click menu for adding/removing pages
+	*
+	* @method pageCallback
+	* @param responseObject {Object} contains operation to perform
+	*/
+	pageCallback: function(responseObject) {
+		if (responseObject.operation === 'add') {
+			this.addPage(this);
+		} else if (responseObject.operation === 'remove') {
+			this.removePage(this);
+		}
+	},
+
 	showThumbnails: function(that) {
 		that.modifyState("showingThumbnails", !that.state.showingThumbnails);
 		that.thumbnailsVisualizer.style("visibility", that.state.showingThumbnails ? "visible" : "hidden");
@@ -717,6 +738,12 @@ var pdf_viewer = SAGE2_App.extend({
 	},
 
 	load: function(date) {
+		// This check is necessary for remote sharing.
+		// Activating generateMissingPages() will infinitely loop on first sync.
+		if (!this.hadFirstRemoteLoad) {
+			this.hadFirstRemoteLoad = true;
+			return;
+		}
 		// Update the current page
 		this.goToPage(this.state.currentPage);
 
@@ -777,6 +804,24 @@ var pdf_viewer = SAGE2_App.extend({
 		entry.parameters = {};
 		entry.inputField = true;
 		entry.inputFieldSize = 3;
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "separator";
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "Show Extra Page";
+		entry.accelerator = "+";
+		entry.callback = "pageCallback";
+		entry.parameters = {operation: 'add'};
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "Remove Extra Page";
+		entry.accelerator = "-";
+		entry.callback = "pageCallback";
+		entry.parameters = {operation: 'remove'};
 		entries.push(entry);
 
 		// Special callback: dowload the file
@@ -932,10 +977,12 @@ var pdf_viewer = SAGE2_App.extend({
 				this.GoToNext(this);
 			} else if (data.character === "1" || data.character === "f") {
 				this.GoToFirst(this);
-				this.refresh(date);
 			} else if (data.character === "0" || data.character === "l") {
 				this.GoToLast(this);
-				this.refresh(date);
+			} else if (data.character === "+") {
+				this.addPage(this);
+			} else if (data.character === "-") {
+				this.removePage(this);
 			}
 		}
 

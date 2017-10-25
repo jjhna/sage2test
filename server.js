@@ -76,7 +76,7 @@ var FileBufferManager	= require('./src/node-filebuffer');
 var PartitionList       = require('./src/node-partitionlist');    // list of SAGE2 Partitions
 var SharedDataManager	= require('./src/node-sharedserverdata'); // manager for shared data
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
-
+var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
 //
 // Globals
 //
@@ -127,6 +127,7 @@ var config;
 var SAGE2_version;
 var interactMgr;
 var drawingManager;
+var performanceManager;
 
 // Partition variables
 var partitions;
@@ -285,6 +286,10 @@ function initializeSage2Server() {
 			ffmpegOptions.appPath = config.dependencies.FFMpeg;
 		}
 	}
+
+	// Create an object to gather performance statistics
+	performanceManager = new PerformanceManager();
+
 	imageMagick = gm.subClass(imageMagickOptions);
 	assets.initializeConfiguration(config);
 	assets.setupBinaries(imageMagickOptions, ffmpegOptions);
@@ -376,6 +381,8 @@ function initializeSage2Server() {
 		}
 	}
 
+	/*
+	Monitor OFF, cause issues with drag-drop files
 	// Monitoring some folders
 	var listOfFolders = [];
 	for (var lf in mediaFolders) {
@@ -383,16 +390,16 @@ function initializeSage2Server() {
 	}
 	// try to exclude some folders from the monitoring
 	var excludesFiles   = ['.DS_Store', 'Thumbs.db', 'passwd.json'];
-	var excludesFolders = ['assets', 'apps', 'config', 'savedFiles', 'sessions', 'tmp', 'web'];
+	var excludesFolders = ['assets', 'apps', 'config', 'savedFiles', 'sessions', 'tmp'];
 	sageutils.monitorFolders(listOfFolders, excludesFiles, excludesFolders,
 		function(change) {
 			sageutils.log("Monitor", "Changes detected in", this.root);
 			if (change.modifiedFiles.length > 0) {
 				sageutils.log("Monitor",  "	Modified files: %j", change.modifiedFiles);
 				// broadcast the new file list
-				assets.refresh(this.root, function(count) {
-					broadcast('storedFileList', getSavedFilesList());
-				});
+				// assets.refresh(this.root, function(count) {
+				// 	broadcast('storedFileList', getSavedFilesList());
+				// });
 			}
 			if (change.addedFiles.length > 0) {
 				// sageutils.log("Monitor", "	Added files:    %j",   change.addedFiles);
@@ -411,6 +418,7 @@ function initializeSage2Server() {
 			}
 		}
 	);
+	*/
 
 	// Initialize app loader
 	appLoader = new Loader(mainFolder.path, hostOrigin, config, imageMagickOptions, ffmpegOptions);
@@ -661,6 +669,13 @@ function emitLog(data) {
 }
 // Make the function global
 global.emitLog = emitLog;
+
+// Export variables to sub modules
+// dirname: used by application plugins to load plugin source
+// broadcast: used by plugins to send results back to apps
+exports.dirname = path.join(__dirname, "node_modules");
+exports.broadcast = broadcast;
+
 
 // global variables to manage clients
 var clients           = [];
@@ -943,6 +958,10 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 	if (wsio.clientType === "webBrowser") {
 		webBrowserClient = wsio;
 	}
+
+	if (wsio.clientType === "performance") {
+		performanceManager.updateClient(wsio);
+	}
 }
 
 /**
@@ -1127,6 +1146,9 @@ function setupListeners(wsio) {
 	wsio.on('partitionScreen',                      wsPartitionScreen);
 	wsio.on('deleteAllPartitions',                  wsDeleteAllPartitions);
 	wsio.on('partitionsGrabAllContent',             wsPartitionsGrabAllContent);
+
+	// message from electron display client
+	wsio.on('displayHardware',                      wsDisplayHardware);
 }
 
 /**
@@ -2400,19 +2422,23 @@ function listSessions() {
 	return thelist;
 }
 
-function deleteSession(filename) {
+function deleteSession(filename, cb) {
 	if (filename) {
-		var fullpath = path.join(sessionDirectory, filename);
-		// if it doesn't end in .json, add it
-		if (fullpath.indexOf(".json", fullpath.length - 5) === -1) {
-			fullpath += '.json';
-		}
+		// var fullpath = path.join(sessionDirectory, filename);
+		// // if it doesn't end in .json, add it
+		// if (fullpath.indexOf(".json", fullpath.length - 5) === -1) {
+		// 	fullpath += '.json';
+		// }
+		var fullpath = path.resolve(filename);
 		fs.unlink(fullpath, function(err) {
 			if (err) {
 				sageutils.log("Session", "Could not delete session", filename, err);
 				return;
 			}
 			sageutils.log("Session", "Successfully deleted session", filename);
+			if (cb) {
+				cb();
+			}
 		});
 	}
 }
@@ -2654,6 +2680,9 @@ function saveSession(filename) {
 	try {
 		fs.writeFileSync(fullPreviewPath, header + svg);
 		sageutils.log("Session", "saved session preview image to", chalk.yellow.bold(fullPreviewPath));
+
+		// Update the file manager in the UI clients
+		broadcast('storedFileList', getSavedFilesList());
 	} catch (err) {
 		sageutils.log("Session", "error saving", err);
 	}
@@ -3341,7 +3370,7 @@ function wsLoadApplication(wsio, data) {
 
 function wsLoadImageFromBuffer(wsio, data) {
 	appLoader.loadImageFromDataBuffer(data.src, data.width, data.height,
-		"image/jpeg", "", data.url, data.title, {},
+		data.mime, "", data.url, data.title, {},
 		function(appInstance) {
 			// Get the drop position and convert it to wall coordinates
 			var position = data.position || [0, 0];
@@ -3618,9 +3647,12 @@ function calculateValidBlocks(app, blockSize, renderhandle) {
 }
 
 function wsDeleteElementFromStoredFiles(wsio, data) {
-	if (data.application === "load_session") {
+	if (data.application === "sage2/session") {
 		// if it's a session
-		deleteSession(data.filename);
+		deleteSession(data.filename, function() {
+			// send the update file list
+			broadcast('storedFileList', getSavedFilesList());
+		});
 	} else {
 		assets.deleteAsset(data.filename, function(err) {
 			if (!err) {
@@ -3665,6 +3697,8 @@ function wsMoveElementFromStoredFiles(wsio, data) {
 
 function wsAddNewWebElement(wsio, data) {
 	appLoader.loadFileFromWebURL(data, function(appInstance, videohandle) {
+		// Update the file list for the UI clients
+		broadcast('storedFileList', getSavedFilesList());
 
 		// Get the drop position and convert it to wall coordinates
 		var position = data.position || [0, 0];
@@ -5536,6 +5570,10 @@ function processInputCommand(line) {
 			console.log('sessions\tlist the available sessions');
 			console.log('screenshot\ttake a screenshot of the wall');
 			console.log('update\t\trun a git update');
+			console.log('performance\tshow performance information');
+			console.log('perfsampling\tset performance metric sampling rate');
+			console.log('hardware\tget an summary of the hardware running the server');
+			console.log('update\t\trun a git update');
 			console.log('version\t\tprint SAGE2 version');
 			console.log('exit\t\tstop SAGE2');
 			break;
@@ -5709,6 +5747,19 @@ function processInputCommand(line) {
 			listMediaBlockStreams();
 			break;
 		}
+		case 'perfsampling':
+			if (command.length > 1) {
+				performanceManager.setSamplingInterval(command[1]);
+			} else {
+				sageutils.log("Command", "should be: perfsampling [slow|normal|often]");
+			}
+			break;
+		case 'performance':
+			performanceManager.printMetrics();
+			break;
+		case 'hardware':
+			performanceManager.printServerHardware();
+			break;
 		case 'exit':
 		case 'quit':
 		case 'bye': {
@@ -8755,7 +8806,15 @@ function keyPress(uniqueID, pointerX, pointerY, data) {
 		// if in empty space:
 		// Pressing ? for help (with shift)
 		if (data.code === 63 && remoteInteraction[uniqueID].SHIFT) {
-			broadcast('toggleHelp', {});
+			// Load the cheet sheet on the wall
+			wsLoadApplication(null, {
+				application: "/uploads/pdfs/cheat-sheet.pdf",
+				user: "127.0.0.1:42",
+				// position in center and 100pix down
+				position: [0.5, 100]
+			});
+			// show a popup
+			// broadcast('toggleHelp', {});
 		}
 		return;
 	}
@@ -9006,6 +9065,12 @@ function pointerCloseGesture(uniqueID, pointerX, pointerY, time, gesture) {
 }
 
 function handleNewApplication(appInstance, videohandle) {
+	// Create tracking for all apps by default stacking another state load value.
+	// It must be done here due to how mergeObjects() works as specified in src/node-utils.js
+	if (appInstance.data === null || appInstance.data === undefined) {
+		appInstance.data = {};
+	}
+	appInstance.data.pointersOverApp = [];
 	broadcast('createAppWindow', appInstance);
 	broadcast('createAppWindowPositionSizeOnly', getAppPositionSize(appInstance));
 
@@ -10254,6 +10319,18 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 	}
 	// Reset variable to allow another capture
 	masterDisplay.startedScreenshot = false;
+}
+
+/**
+ * Receive data from Electron display client about their hardware
+ *
+ * @method     wsDisplayHardware
+ * @param      {<type>}  wsio    The wsio
+ * @param      {<type>}  data    The data
+ */
+function wsDisplayHardware(wsio, data) {
+	// store the hardware data for a given client
+	performanceManager.addDisplayClient(wsio.clientID, data);
 }
 
 /**
