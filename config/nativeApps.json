@@ -23,7 +23,7 @@
                 "image/x-ms-bmp",
                 "image/gif",
                 "image/tiff",
-            "image/svg",
+                "image/svg",
                 "image/svg+xml",
                 "image/vnd.adobe.photoshop"
             ],
