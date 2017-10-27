@@ -709,7 +709,7 @@ var variablesUsedInVoiceHandler = {
 	wsCallFunctionOnApp,
 	wsLaunchAppWithValues,
 	wsLoadFileFromServer,
-	wsSaveSesion,
+	wsSaveSession,
 	tileApplications,
 	clearDisplay,
 	broadcast,
