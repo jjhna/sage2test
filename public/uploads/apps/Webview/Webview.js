@@ -216,6 +216,8 @@ var Webview = SAGE2_App.extend({
 		var subPath = appPath.split("node_modules");
 		// take the first element which contains the current folder of the application
 		var rootPath = subPath[0];
+		//rootPath = 'C:\\Users\\articulate\\sage2\\';
+		this.log('################################################# rootPath = ' + rootPath);
 		// add the relative path to the webview folder
 		var preloadPath = path.join(rootPath, 'public/uploads/apps/Webview', 'SAGE2_script_supplement.js');
 		// finally make it a local URL and pass it to the webview element
