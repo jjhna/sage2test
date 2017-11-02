@@ -1154,12 +1154,14 @@ var SAGE2_App = Class.extend({
 	},
 	//
 	SAGE2TextInputEvent: function(data){
-		console.log("text in!" + data);
 		this.textInputEvent(data.data, data.targetAppID, data.date);
 	},
 
+	SAGE2PointedToApp: function(data){
+		this.pointedToApp(data.data, data.date);
+	},
+
 	SAGE2StartGestureRecognition: function(data){
-		console.log("status in!" + data);
 		this.startGestureRecognition(data.data, data.date);
 	},
 

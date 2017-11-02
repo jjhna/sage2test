@@ -902,6 +902,7 @@ function setupListeners(wsio) {
 
 	wsio.on('checkKinectPointers',									wsCheckKinectPointers);
 	wsio.on('removeKinectPointer',									wsRemoveKinectPointer);
+	wsio.on('gestureDragging',									wsGestureDragging);
 
 	wsio.on('pointerPress',                         wsPointerPress);
 	wsio.on('pointerRelease',                       wsPointerRelease);
@@ -1458,6 +1459,32 @@ function wsCheckKinectPointers(wsio,data){
 			stopSageKinectPointer(id);
 		}
 	}
+}
+
+function wsGestureDragging(wsio, data) {
+	if (SAGE2Items.applications.list.hasOwnProperty(data.app_id)) {
+		var app = SAGE2Items.applications.list[data.app_id];
+		// Values in percent if smaller than 1
+		var pointer = sagePointers[data.pointer_id];
+
+		var posX = pointer.left - data.dragHoldX;
+		var posY = pointer.top - data.dragHoldY;
+
+		app.left = posX;
+		app.top  = posY;
+		// build the object to be sent
+		var updateItem = {
+			elemId: app.id,
+			elemLeft: app.left,
+			elemTop: app.top,
+			elemWidth: app.width,
+			elemHeight: app.height,
+			force: true,
+			date: Date.now()
+		};
+		moveApplicationWindow(updateItem);
+	}
+
 }
 
 function wsPointerPress(wsio, data) {
@@ -2902,9 +2929,11 @@ function validParentChildPair(parentId, childId) {
 // this could use some work, but works ok for prototype
 //THIS IS THE OLD ONE that abeer worked on
 //saving to make sure we can go back to it easily
-function wsGoogleVoiceSpeechInput2(wsio, data){
+function wsGoogleVoiceSpeechInput(wsio, data){
 	//console.log(data);
 
+
+		var orderedItems = mostItems(pointedToApps);
 	//find articulate app (just articulate app for now)
 	var app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui");
 	//console.log(app);
@@ -2913,7 +2942,7 @@ function wsGoogleVoiceSpeechInput2(wsio, data){
 		console.log("arraylength2 " + pointedToApps.length);
 		var targetAppID = mostOccurrenceItem(pointedToApps);
 		console.log("targetAppID in server " + targetAppID);
-		var data = {id: app.id, data: data.text, targetAppID:   targetAppID, date: Date.now()};
+		var data = {id: app.id, data: {text: data.text, orderedItems: orderedItems}, date: Date.now()};
 		broadcast('textInputEvent', data);
 	}
 	else{
@@ -2923,7 +2952,7 @@ function wsGoogleVoiceSpeechInput2(wsio, data){
 }
 
 /// Vijay and Joe
-function wsGoogleVoiceSpeechInput(wsio, data){
+function wsGoogleVoiceSpeechInput2(wsio, data){
 
 	var commandText = data.text.toUpperCase();
 	// console.log("Command Text:", commandText);
@@ -3192,7 +3221,7 @@ function wsGestureRecognitionStatus(wsio, data){
 	if( app != null ){
 		var data = {id: app.id, data: data.text, date: Date.now()};
 		broadcast('startGestureRecognition', data);
-}
+	}
 	// console.log(app);
 }
 
@@ -3214,33 +3243,36 @@ function wsPointingGesturePosition(wsio, data){
 
 
 	//show sage pointer
-	//    data.label, data.color, data.sourceType
+	//data.label, data.color, data.sourceType
 	pointerPosition(data.id, {pointerX: data.x, pointerY: data.y} );
 	// console.log("position " + data.x + " " + data.y);
 
-	if( data.recognitionStatus ){ //only check for the apps they point to when recognition status is on
+	//if( data.recognitionStatus ){ //only check for the apps they point to when recognition status is on
 
-		var obj = interactMgr.searchGeometry({x: data.x, y: data.y}); //object on top pointed at given an x and y coordinate HERE!
-		// console.log("obj: " + JSON.stringify(obj) );
+	var obj = interactMgr.searchGeometry({x: data.x, y: data.y}); //object on top pointed at given an x and y coordinate HERE! 		// console.log("obj: " + JSON.stringify(obj) );
 
-		for (var key in SAGE2Items.applications.list) {
-			var app = SAGE2Items.applications.list[key];
-			if(app.title != "machineLearning" && app.title != "articulate_ui" && app.title != "background"){
-				if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){//*****
-
+	for (var key in SAGE2Items.applications.list){
+		var app = SAGE2Items.applications.list[key];
+		if(app.title != "machineLearning" && app.title != "articulate_ui" && app.title != "background"){
+			if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){//*****
+				if( data.recognitionStatus ){
 					// pointedToApps[pointedToApps.length]= {appId: app.id, pointerId: data.id};
 					pointedToApps.push({appId: app.id, pointerId: data.id});
-
 					if(app.id !== cur_app_id){
 						cur_app_id = app.id;
-						// console.log("Current App:",cur_app_id);
 					}
+				}
+				//get position <-> send pointed to app to kinect app
+				//Always send pointed to app to machine learning app
+				// var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
+				// if( ml != null ){
+				// 	var data = {id: ml.id, data: app, date: Date.now()};
+					//broadcast('pointedToApp', data);
 				}
 			}
 		}
-		//console.log("arraylength1 " + pointedToApps.length);
 	}
-}
+
 function mostOccurrenceItem(array){
 	if(array.length == 0){
 		return null;

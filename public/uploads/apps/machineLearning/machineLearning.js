@@ -4,7 +4,9 @@
 //
 // Copyright (c) 2015
 //
-
+var newPosition = {x: 0, y: 0};
+var currentPosition = {x: 0, y: 0};
+let previousIDs = [];
 const bodyParts = {
 	"OMICRON_SKEL_HEAD": {
 		"partName": "head",
@@ -222,6 +224,28 @@ var machineLearning = SAGE2_App.extend( {
 
 		this.regularTrialMode = true;
 		this.recognitionStatus = 'false';
+
+		// new parameters for dragging and zooming gestures
+		this.progress = 0;
+		this.startAngle = 4.75;
+		this.diff;
+		this.sim;
+
+		this.grapping = false;
+		this.dragging = false;
+		this.dropping = false;
+		this.Selected = false;
+		this.stability = null;
+		this.grappingInProgress = false;
+
+		this.dragHoldX = 0;
+		this.dragHoldY = 0;
+
+		// this.newPosition = {x: 0, y: 0};
+		// this.currentPosition = {x: 0, y: 0};
+		this.cur_app = null;
+		this.cur_app_id = null;
+
 		// rotation matrix math:
 		// measured angle between kinect and screen = 63 degrees
 		// rotated -27 degrees so kinect is perpendicular to screen on x-axis
@@ -428,6 +452,7 @@ var machineLearning = SAGE2_App.extend( {
 	// 	this.ctx.stroke();
 	// },
 drawSkeletonLines: function(){
+
 	for (const skeletonID in this.skeletons) {
 		const skeleton = this.skeletons[skeletonID];
 
@@ -693,7 +718,18 @@ drawSkeletonLines: function(){
 	//---------- DRAWING FUNCTIONS ----------//
 	//---------------------------------------//
 	draw: function(date) {
-
+		if(this.skeletons){
+			//josh and joe - remove kinect pointers from inactive skeletons
+			let curIDs = Object.keys(this.skeletons);
+			if(curIDs.length !== previousIDs.length){
+				for(let p of previousIDs){
+					if(curIDs.indexOf(p) === -1){
+						wsio.emit('removeKinectPointer', {id: `kinect_${p}`});
+					}
+				}
+				previousIDs = curIDs;
+			}
+		}
 		this.calibratedTrialModeDraw(date);
 	},
 
@@ -875,7 +911,7 @@ drawSkeletonLines: function(){
 	 //  now will call not only when they are talking
 	 //  talking status sent, so will use that
 	 //console.log(this.mostRecentSkeleton);
-
+	 newPosition = {x: mappedX, y: mappedY};
 	 wsio.emit("pointingGesturePosition", {x: mappedX, y:mappedY, id: "kinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true')});
 
 
@@ -889,7 +925,7 @@ drawSkeletonLines: function(){
  //  }
  } else {
 	 //stop pointer
-	 //wsio.emit("stopPointingGesturePosition", {id: "kinect_" + this.mostRecentSkeleton.id });
+	//  wsio.emit("stopPointingGesturePosition", {id: "kinect_" + this.mostRecentSkeleton.id });
  }
 
     //Old virtual screen by Rayan
@@ -918,6 +954,112 @@ drawSkeletonLines: function(){
 			//}
 		//}
 	},
+
+	pointedToApp: function(data){
+		this.cur_app = data;
+		this.cur_app_id = this.cur_app.id;
+		//console.log("Recieved " + this.cur_app_id);
+		//console.log("x "+this.newPosition.x+" y "+this.newPosition.y)
+		if(this.cur_app_id != null){
+
+			if(!this.grapping && !this.Selected){
+
+				//the user is trying to grab? check pointing stability after 1 seconed
+				this.grapping = true;
+				currentPosition.x = newPosition.x;
+				currentPosition.y = newPosition.y;
+				this.stability = setTimeout(this.positionMovement, 1000);
+			}
+
+			if(this.dragging){
+				this.DragAppWindow(this.cur_app_id);
+			}
+
+			if(this.Selected && !this.dropping){
+				this.dropping = true;
+				currentPosition.x = newPosition.x;
+				currentPosition.y = newPosition.y;
+				this.stability = setTimeout(this.positionMovement, 1000);
+				// if(!stability)
+				// 	dropping = false;
+				// else if(stability){
+				// 	Selected = false;
+				// 	app.drag = false;
+			}
+		}
+	},
+
+	//Checking positions in some interval
+	//setTimeout(positionMovement(currentposition), 30);
+	positionMovement: function(){
+		var dist = Math.sqrt( Math.pow((currentPosition.x-newPosition.x), 2) + Math.pow((currentPosition.y-newPosition.y), 2) );
+		var thr = 100;
+		console.log("dis "+ dist);
+		console.log("new "+ newPosition.x);
+		console.log("cur "+ currentPosition.x);
+		if (parseFloat(parseFloat(dist).toFixed(0)) < parseFloat(thr) && this.grapping == true){//threshold distance between pointing points
+			console.log = ("dis "+ dist+ " go to setIntervalTime");
+			this.setIntervalTime();
+		}
+		else if(parseFloat(parseFloat(dist).toFixed(0)) >= parseFloat(thr) && this.grapping == true){
+			console.log = ("dis " + dist + " just moving");
+			this.grapping = false;
+		}
+		else if(parseFloat(dist) < parseFloat(thr) && this.dropping){
+			console.log = ("dis " + dist + " want to drop");
+			this.dragging = false;
+			this.Selected = false;
+		}
+		else if(parseFloat(dist) >= parseFloat(thr) && this.dropping){
+			console.log = ("dis " + dist + "NOT want to drop");
+			this.dropping = false;
+		}
+	},
+
+	setIntervalTime: function(){
+		console.log = (" in setIntervalTime.. should start drawing");
+		this.grappingInProgress = true;
+		this.sim = setInterval(this.grappingInterval(), 3000);
+	},
+
+
+	grappingInterval: function(){
+		console.log = (" in grappingInterval.. should start looping");
+		this.ctx.clearRect(currentPosition.x, currentPosition.y, 10, 10);
+
+		var dist = Math.sqrt( Math.pow((currentPosition.x-newPosition.x), 2) + Math.pow((currentPosition.y-newPosition.y), 2) );
+		if (dist > 200){
+			this.grappingInProgress = false;
+		}
+
+		if(this.grappingInProgress){
+			this.diff = ((this.progress / 100) * Math.PI*2*10).toFixed(2);
+			this.ctx.beginPath();
+			//ctx.arc(x, y, radius, startAngle, endAngle, anticlockwise);
+			this.ctx.arc(this.currentPosition.x, this.currentPosition.y, 30, this.startAngle, this.diff/10+this.startAngle, false);
+			this.ctx.stroke();
+
+			if(this.progress >= 100){
+				clearTimeout(this.sim);
+				this.Selected = true;
+				this.grapping = false;
+				this.dragging = true;//tell server to drag
+				this.dragHoldX = newPosition.x - cur_app.left;
+				this.dragHoldY = newPosition.y - cur_app.top;
+				//DragAppWindow(cur_app_id);
+				//wsio.emit("gesturePress", {id: "kinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true'), button: "left"});
+				//run your script
+			}
+
+			this.progress++;
+		}
+	},
+
+	DragAppWindow: function(cur_app_id){
+		console.log("drag app: "+cur_app_id);
+		//wsio.emit("gestureDragging", {app_id: cur_app_id, pointer_id: "kinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true'), this.dragHoldX, this.dragHoldY});
+	},
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	//------------------------------------------//
 	//--------------EVENT FUNCTIONS-------------//
@@ -1044,7 +1186,7 @@ drawSkeletonLines: function(){
 				this.recognizePoint();
 			} else {
 				//stop pointer
-				//wsio.emit("stopPointingGesturePosition", {id: "kinect_" + this.mostRecentSkeleton.id });
+				// wsio.emit("stopPointingGesturePosition", {id: "kinect_" + this.mostRecentSkeleton.id });
 			}
 
 			this.refresh(date);
@@ -1054,36 +1196,43 @@ drawSkeletonLines: function(){
 			const phrase = data.phrase;
 			if (data.confidence < 0.5) return;
 
-			const {x, y} = this.mostRecentSkeleton.leftFingerTip;
+			// const {x, y} = this.mostRecentSkeleton.leftFingerTip;
 			const {upperLeft, lowerLeft, upperRight, lowerRight} = this.calibrations;
+			if (phrase === "alexa") {
 
-			if (!this.trialRunning && phrase === "start") {
-				// this.beginTrial();
-			} else if (this.trialRunning && phrase === "stop") {
-				// this.endTrial();
-			} else if (phrase === "calibrate" && upperLeft && lowerLeft && upperRight && lowerRight) {
-				this.calibrations.calibrated = true;
-				this.calibrations.xMin = (upperLeft.x + lowerLeft.x) / 2;
-				this.calibrations.xMax = (upperRight.x + lowerRight.x) / 2;
-				this.calibrations.yMin = (upperLeft.y + upperRight.y) / 2;
-				this.calibrations.yMax = (lowerLeft.y + lowerRight.y) / 2;
-			} else if (phrase === "upper left") {
-				this.calibrations.upperLeft = {};
-				this.calibrations.upperLeft.x = x;
-				this.calibrations.upperLeft.y = y;
-			} else if (phrase === "lower left") {
-				this.calibrations.lowerLeft = {};
-				this.calibrations.lowerLeft.x = x;
-				this.calibrations.lowerLeft.y = y;
-			} else if (phrase === "upper right") {
-				this.calibrations.upperRight = {};
-				this.calibrations.upperRight.x = x;
-				this.calibrations.upperRight.y = y;
-			} else if (phrase === "lower right") {
-				this.calibrations.lowerRight = {};
-				this.calibrations.lowerRight.x = x;
-				this.calibrations.lowerRight.y = y;
+				// start anitmation visual queue
+				console.log("I heard alexa!.");
+
 			}
+
+
+			// if (!this.trialRunning && phrase === "start") {
+			// 	// this.beginTrial();
+			// } else if (this.trialRunning && phrase === "stop") {
+			// 	// this.endTrial();
+			// } else if (phrase === "calibrate" && upperLeft && lowerLeft && upperRight && lowerRight) {
+			// 	this.calibrations.calibrated = true;
+			// 	this.calibrations.xMin = (upperLeft.x + lowerLeft.x) / 2;
+			// 	this.calibrations.xMax = (upperRight.x + lowerRight.x) / 2;
+			// 	this.calibrations.yMin = (upperLeft.y + upperRight.y) / 2;
+			// 	this.calibrations.yMax = (lowerLeft.y + lowerRight.y) / 2;
+			// } else if (phrase === "upper left") {
+			// 	this.calibrations.upperLeft = {};
+			// 	this.calibrations.upperLeft.x = x;
+			// 	this.calibrations.upperLeft.y = y;
+			// } else if (phrase === "lower left") {
+			// 	this.calibrations.lowerLeft = {};
+			// 	this.calibrations.lowerLeft.x = x;
+			// 	this.calibrations.lowerLeft.y = y;
+			// } else if (phrase === "upper right") {
+			// 	this.calibrations.upperRight = {};
+			// 	this.calibrations.upperRight.x = x;
+			// 	this.calibrations.upperRight.y = y;
+			// } else if (phrase === "lower right") {
+			// 	this.calibrations.lowerRight = {};
+			// 	this.calibrations.lowerRight.x = x;
+			// 	this.calibrations.lowerRight.y = y;
+			// }
 		}
 		else if (eventType === "dictationInput") {
 			// const phrase = data.phrase;

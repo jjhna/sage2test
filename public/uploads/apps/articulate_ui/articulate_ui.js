@@ -196,16 +196,16 @@ var articulate_ui = SAGE2_App.extend( {
 
 	// this is where commands come from the UI
 	// so when the user speaks, and presses 'send to sage2', it ends up here
-	textInputEvent: function(text, targetAppID, date){
+	textInputEvent: function(data, date){
 		console.log("in articulate");
-		this.targetAppID = targetAppID;
-		console.log("targetApp " + this.targetAppID);
-		this.commands[this.commands.length-1] = text;
+		this.orderedItems = data.orderedItems;
+		console.log("targetApp " + this.orderedItems);
+		this.commands[this.commands.length-1] = data.text;
 		this.commands.push(">");
 
 		//if( isMaster ){
 			//send to articulate hub...
-			this.contactArticulateHub(text);  //send to the articulate hub
+			this.contactArticulateHub(data.text, data.orderedItems);  //send to the articulate hub
 		//}
 
 
@@ -226,17 +226,19 @@ var articulate_ui = SAGE2_App.extend( {
 	//---------------------------------------------
 
 	//contact the smart hub-- only called by master
-	contactArticulateHub: function(msg){
+	contactArticulateHub: function(msg, orderedItems){
 		console.log("sending msg: " , msg);
-		if(msg.includes("Close")){
+		//if(msg.includes("Close")){
 
-		}else{
+		//}else{
 			//msg = "Can I see crimes on streets by crime type"; //msg.replace(" ", "%");
-		}
+		//}
 		url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/";
 
 		//url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/can%we%look%at%total%crime%by%locationtype%in%2013%for%UIC";
-		url = url+msg;
+		var temp= JSON.stringify(orderedItems);
+		console.log(temp);
+		url = url+msg+temp;
 
 		this.callbackFunc = this.callback.bind(this);
 
@@ -315,18 +317,18 @@ var articulate_ui = SAGE2_App.extend( {
 			}
 		}
 		else if( specificationObj.specType == "Layout") //only used for close operations
-		{
-			if( specificationObj.request.indexOf("close") != -1 )
-			{
-				for(var key in this.childList)
-				{
-					if(this.childList[key].childId == this.targetAppID)
-					var closeAppIndex = this.childList.indexOf(this.childList[key]);
-					this.closeChild(closeAppIndex);
-					console.log("Cloose "+this.childList[key].childId);
-				}
-				//this.closeChild(this.getNumberOfChildren()-1); //right now we just close the last one, later will use a unique id of the vis
-			}
+		 {
+		// 	if( specificationObj.request.indexOf("close") != -1 )
+		// 	{
+		// 		for(var key in this.childList)
+		// 		{
+		// 			if(this.childList[key].childId == this.targetAppID)
+		// 			var closeAppIndex = this.childList.indexOf(this.childList[key]);
+		// 			this.closeChild(closeAppIndex);
+		// 			console.log("Cloose "+this.childList[key].childId);
+		// 		}
+		// 		//this.closeChild(this.getNumberOfChildren()-1); //right now we just close the last one, later will use a unique id of the vis
+		// 	}
 		}
 		else // else make a vis!
 		{
@@ -507,13 +509,31 @@ var articulate_ui = SAGE2_App.extend( {
 			}// this is the end of the line chart
 
 			// launch the app we created!
+
 			this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
+			this.childList[this.getNumberOfChildren()-1].hub_id = hub_id;
 			//this.closeChild(this.getNumberOfChildren()-1);
 			//console.log("after " + this.childList.length);
 		}
 
 	},
-
+	childMonitorEvent: function(childId, type, data, date){
+		// if( type == "childMoveEvent")
+		// 	this.monitoringText = "child: " + childId + " " + type + " x: " + data.x + "y: " + data.y;
+		// if( type == "childResizeEvent")
+		// 	this.monitoringText = "child: " + childId + " " + type + " w: " + data.w + "h: " + data.h;
+		// if( type == "childMoveAndResizeEvent")
+		// 	this.monitoringText = "child: " + childId + " " + type +  " x: " + data.x + "y: " + data.y + " w: " + data.w + "h: " + data.h;
+		// if( type == "childCloseEvent" )
+		// 	this.monitoringText = "child: " + childId + " closed";
+		if( type == "childOpenEvent") {
+			//this.monitoringText = "child: " + childId + " opened";
+		}
+		// if( type == "childReopenEvent"){
+		// 	this.monitoringText = "child: " + childId + " reopened ";
+		// }
+		this.refresh(date);
+	}
 
 
 //OLD stuff

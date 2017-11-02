@@ -1011,6 +1011,14 @@ function setupListeners() {
 		app.SAGE2TextInputEvent(event_data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
 	});
 
+	wsio.on('pointedToApp', function(event_data) {
+		var date = new Date(event_data.date);
+		var app  = applications[event_data.id];
+		event_data.date = date;
+		app.SAGE2PointedToApp(event_data);
+	});
+
+
 	wsio.on('startGestureRecognition', function(event_data) {
 		var date = new Date(event_data.date);
 		var app  = applications[event_data.id];
