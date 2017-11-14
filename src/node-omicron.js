@@ -29,6 +29,8 @@ var sageutils           = require('./node-utils');            // provides the cu
 var CoordinateCalculator = require('./node-coordinateCalculator');
 var OneEuroFilter        = require('./node-1euro');
 
+var WebSocket = require('ws');
+
 /* eslint consistent-this: ["error", "omicronManager"] */
 var omicronManager; // Handle to OmicronManager inside of udp blocks (instead of this)
 var drawingManager; // Connect to the node-drawing
@@ -252,10 +254,31 @@ function OmicronManager(sysConfig) {
 
 		omicronManager.runTracker();
 	}
+
+
+	// Unity WebView
+	var wsPort = 19090;
+
+	// Note this is not secure!!!!
+	this.wsServer = new WebSocket.Server({ port: wsPort });
+	sageutils.log('Omicron', 'Starting WebSocketIO on port ' + wsPort);
+	this.wsServer.on('connection', this.openWebSocketClient);
+
+	this.wsServer.broadcast = function broadcast(data) {
+		omicronManager.wsServer.clients.forEach(function each(client) {
+			if (client.readyState === WebSocket.OPEN) {
+				client.send(data);
+			}
+		});
+	};
+}
+
+OmicronManager.prototype.openWebSocketClient = function(ws, req) {
+	sageutils.log('Omicron', 'Client connected: ' + req.connection.remoteAddress);
 }
 
 /**
- * Initalizes connection with Omicron input servr
+ * Initializes connection with Omicron input server
  *
  * @method connect
  */
@@ -378,6 +401,7 @@ OmicronManager.prototype.runTracker = function() {
 
 	udp.on("message", function(msg, rinfo) {
 		omicronManager.processIncomingEvent(msg, rinfo);
+		omicronManager.wsServer.broadcast(msg);
 	});
 
 	udp.on("listening", function() {

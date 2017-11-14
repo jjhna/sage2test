@@ -274,6 +274,7 @@ WebsocketIOServer.prototype.onconnection = function(callback) {
 };
 
 WebsocketIOServer.prototype.broadcast = function(name, data) {
+	console.log('BLAH');
 	var key;
 	var alias;
 	// send as binary buffer
