@@ -90,7 +90,11 @@ function OmicronManager(sysConfig) {
 
 	this.wandXFilter = new OneEuroFilter(freq, mincutoff, beta, dcutoff);
 	this.wandYFilter = new OneEuroFilter(freq, mincutoff, beta, dcutoff);
-
+	
+	this.curTime = 0;
+	this.lastEventTime = 0;
+	this.updateEventTimer = 0;
+	
 	if (sysConfig.experimental !== undefined) {
 		this.config = sysConfig.experimental.omicron;
 	}
@@ -401,7 +405,6 @@ OmicronManager.prototype.runTracker = function() {
 
 	udp.on("message", function(msg, rinfo) {
 		omicronManager.processIncomingEvent(msg, rinfo);
-		omicronManager.wsServer.broadcast(msg);
 	});
 
 	udp.on("listening", function() {
@@ -435,11 +438,8 @@ OmicronManager.prototype.sageToOmicronEvent = function(uniqueID, pointerX, point
 };
 
 OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
-	var dstart = Date.now();
-	var emit   = 0;
-	this.nonCriticalEventDelay = -1;
-	this.lastNonCritEventTime = dstart;
-
+	omicronManager.curTime = Date.now();
+	
 	/*
 	if(rinfo == undefined) {
 		sageutils.log('Omicron', "incoming TCP");
@@ -525,7 +525,27 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 	posY += omicronManager.touchOffset[1];
 
 	var sourceID = e.sourceId;
+	
+	var time = new Date();
+	var timeStr = time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds() + "." + time.getMilliseconds();
+	
+	omicronManager.updateEventTimer += time - omicronManager.lastEventTime;
+	omicronManager.lastEventTime = time;
+	
+	// Insert a delay for constant data, still immediately send 
+	// one-time events
+	if (e.type == 3 || e.type == 4) {
+		if (omicronManager.updateEventTimer > 1000) {
+			omicronManager.wsServer.broadcast(msg);
+			console.log("[" + timeStr + "]: " + "Sending event type: " + e.type);
+			omicronManager.updateEventTimer = 0;
+		}
+	} else {
+		omicronManager.wsServer.broadcast(msg);
+		console.log("[" + timeStr + "]: " + "Sending event type: " + e.type);
+	}
 
+	
 	// serviceType:
 	// 0 = Pointer
 	// 1 = Mocap
@@ -558,7 +578,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 	// ServiceTypePointer
 	//
 	if (serviceType === 0 && omicronManager.enableTouch) {
-		omicronManager.processPointerEvent(e, sourceID, posX, posY, msg, offset, address, emit, dstart);
+		omicronManager.processPointerEvent(e, sourceID, posX, posY, msg, offset, address);
 	} else if (serviceType === 1 && omicronManager.enableMocap) {
 
 		// Kinect v2.0 data has 29 extra data fields
@@ -723,7 +743,6 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 						omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
 						omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
 
-						// console.log((Date.now() - dstart) + "] Wand drag");
 						omicronManager.lastNonCritEventTime = Date.now();
 					}
 				}
@@ -810,10 +829,8 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
  * @param posY {Float} Pointer y position in screen coordinates
  * @param msg {Binary} Binary message. Used to get extraData values
  * @param offset {Integer} Current offset position of msg
- * @param emit {}
- * @param dstart {}
  */
-OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY, msg, offset, address, emit, dstart) {
+OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY, msg, offset, address) {
 	var touchWidth  = 0;
 	var touchHeight = 0;
 
@@ -905,8 +922,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		initX = posX;
 		initY = posY;
 	}
-
-	// var timeSinceLastNonCritEvent = Date.now() - omicronManager.lastNonCritEventTime;
 
 	var flagStrings = {};
 	flagStrings[FLAG_SINGLE_TOUCH] = "FLAG_SINGLE_TOUCH";
@@ -1093,11 +1108,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		}
 	} else {
 		console.log("\t UNKNOWN event type ", e.type, typeStrings[e.type]);
-	}
-
-	if (emit > 2) {
-		dstart = Date.now();
-		emit = 0;
 	}
 };
 
