@@ -95,7 +95,7 @@
 		"coveralls": "latest"
 	},
 	"engines": {
-		"node": ">=0.10.x"
+		"node": ">=6.12.0"
 	},
 	"scripts": {
 		"start": "node server.js -l",
