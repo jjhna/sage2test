@@ -90,11 +90,11 @@ function OmicronManager(sysConfig) {
 
 	this.wandXFilter = new OneEuroFilter(freq, mincutoff, beta, dcutoff);
 	this.wandYFilter = new OneEuroFilter(freq, mincutoff, beta, dcutoff);
-	
+
 	this.curTime = 0;
 	this.lastEventTime = 0;
 	this.updateEventTimer = 0;
-	
+
 	if (sysConfig.experimental !== undefined) {
 		this.config = sysConfig.experimental.omicron;
 	}
@@ -279,7 +279,7 @@ function OmicronManager(sysConfig) {
 
 OmicronManager.prototype.openWebSocketClient = function(ws, req) {
 	sageutils.log('Omicron', 'Client connected: ' + req.connection.remoteAddress);
-}
+};
 
 /**
  * Initializes connection with Omicron input server
@@ -439,7 +439,7 @@ OmicronManager.prototype.sageToOmicronEvent = function(uniqueID, pointerX, point
 
 OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 	omicronManager.curTime = Date.now();
-	
+
 	/*
 	if(rinfo == undefined) {
 		sageutils.log('Omicron', "incoming TCP");
@@ -525,27 +525,27 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 	posY += omicronManager.touchOffset[1];
 
 	var sourceID = e.sourceId;
-	
+
 	var time = new Date();
 	var timeStr = time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds() + "." + time.getMilliseconds();
-	
+
 	omicronManager.updateEventTimer += time - omicronManager.lastEventTime;
 	omicronManager.lastEventTime = time;
-	
-	// Insert a delay for constant data, still immediately send 
+
+	// Insert a delay for constant data, still immediately send
 	// one-time events
 	if (e.type == 3 || e.type == 4) {
-		if (omicronManager.updateEventTimer > 1000) {
-			omicronManager.wsServer.broadcast(msg);
-			console.log("[" + timeStr + "]: " + "Sending event type: " + e.type);
-			omicronManager.updateEventTimer = 0;
-		}
+		// if (omicronManager.updateEventTimer > 1000) {
+		omicronManager.wsServer.broadcast(msg);
+		console.log("[" + timeStr + "]: " + "Sending event type: " + e.type);
+		omicronManager.updateEventTimer = 0;
+		// }
 	} else {
 		omicronManager.wsServer.broadcast(msg);
 		console.log("[" + timeStr + "]: " + "Sending event type: " + e.type);
 	}
 
-	
+
 	// serviceType:
 	// 0 = Pointer
 	// 1 = Mocap
