@@ -4,7 +4,6 @@ branches:
   only:
   - master
   - v3
-  - voiceTests
 
 shallow_clone: true
 
