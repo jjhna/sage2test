@@ -122,7 +122,7 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://player.twitch.tv/?!autoplay&video=v' + twitch_id;
 			}
 			this.contentType = "twitch";
-		} else if (view_url.includes("http://" + this.config.host) && view_url.includes("/user/apps")) {
+		} else if (view_url.includes(this.config.host) && view_url.includes("/user/apps")) {
 			// Locally hosted WebViews are assumed to be Unity applications
 			// Move to more dedicated url later? //users/apps/unity ?
 			this.contentType = "unity";
@@ -934,7 +934,7 @@ var Webview = SAGE2_App.extend({
 				if (this.contentType === "unity") {
 					// Bit of a hack to allow Unity InputManager controls to work
 					// Only upper case characters trigger InputManager -- Arthur
-					data.character = data.character.toUpperCase();
+					// data.character = data.character.toUpperCase();
 				}
 
 				// send the character event
