@@ -43,8 +43,8 @@ var session = require('express-session');
 var cookieParser = require('cookie-parser');
 
 var passport = require('passport');
-var localStrategy = require('passport-local').Strategy;
-var googleStrategy = require('passport-google-oauth').OAuth2Strategy;
+var LocalStrategy = require('passport-local').Strategy;
+var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
 var app = null;
 var publicDirectory;
@@ -105,13 +105,13 @@ function HttpServer(publicDir) {
 	// log in with google strategy
 	app.get('/auth/google',
 		passport.authenticate('google', { scope: [
-	        'https://www.googleapis.com/auth/plus.login',
-	        'email'
+			'https://www.googleapis.com/auth/plus.login',
+			'email'
 		] })
 	);
 
 	// redirection
-	app.get('/auth/google/return', 
+	app.get('/auth/google/return',
 		passport.authenticate('google', { failureRedirect: '/' }),
 		function(req, res) {
 			res.redirect('/');
@@ -126,7 +126,7 @@ function HttpServer(publicDir) {
 
 function configureStrategies() {
 	// set up local strategy
-	passport.use(new localStrategy(function(username, password, done) {
+	passport.use(new LocalStrategy(function(username, password, done) {
 		// get user with username/password
 		// console.log('local',username, password);
 		done(null, "username here");
@@ -136,11 +136,11 @@ function configureStrategies() {
 	// for testing, use localhost on port 9090...
 	let configGoogle = true;
 	if (configGoogle) {
-		passport.use(new googleStrategy(
+		passport.use(new GoogleStrategy(
 			{
 				clientID: "307203767774-cda41sqvjrrrrglufo8ret6iv3n4m9f7.apps.googleusercontent.com",
 				clientSecret: "peFp3B3KF_YCywXZfR_Us_Bw",
-				callbackURL: "https://" + config.host + ":" + config.secure_port + "/auth/google/return"
+				callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + "/auth/google/return"
 			},
 			function (accessToken, refreshToken, profile, done) {
 				// console.log('profile', profile);
@@ -595,6 +595,6 @@ HttpServer.prototype.get = function(name, callback) {
  */
 HttpServer.prototype.post = function(name, callback) {
 	app.post(name, callback);
-}
+};
 
 module.exports = HttpServer;
