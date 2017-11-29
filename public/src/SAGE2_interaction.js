@@ -1266,6 +1266,14 @@ const SAGE2_interaction = (function() {
 						loginElement,
 						{
 							view: "button", id: "user_login"
+						},
+						{
+							view: "button",
+							id: "google",
+							label: "Log in with Google+",
+							click: function() {
+								window.open("/auth/google", "_self");
+							}
 						}
 					],
 					elementsConfig: {

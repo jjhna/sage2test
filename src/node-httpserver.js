@@ -39,7 +39,12 @@ var generateSW = require('../generate-service-worker.js');
 
 // node modules
 var express = require('express');
+var session = require('express-session');
 var cookieParser = require('cookie-parser');
+
+var passport = require('passport');
+var localStrategy = require('passport-local').Strategy;
+var googleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
 var app = null;
 var publicDirectory;
@@ -55,15 +60,27 @@ function HttpServer(publicDir) {
 	publicDirectory = publicDir;
 
 	app = express();
-	this.onrequest = app;
 
-	this.httpPOST = (path, cb) => app.post(path, cb);
+	this.app = app;
 
 	// Generate the service worker for caching
 	generateSW();
 
 	// Add cookie parser middleware
 	app.use(cookieParser());
+
+	// Add session middleware
+	app.use(session({
+		secret: 'keyboard cat',
+		resave: false,
+		saveUninitialized: true,
+		cookie: { secure: true }
+	}));
+
+	// configure strategies for passport
+	configureStrategies();
+	app.use(passport.initialize());
+	app.use(passport.session());
 
 	// //////////////////////
 	// Routes
@@ -79,11 +96,69 @@ function HttpServer(publicDir) {
 		app.use(folder.url, ensureAuthenticated, express.static(folder.path));
 	}
 
-	// handle other paths
-	this.getFuncs = {};
-	app.get('*', ensureAuthenticated, handleGet.bind(this));
+	// TODO: handle login
+	// log in with local strategy
+	app.post('/login',
+		passport.authenticate('local', { successRedirect: '/' })
+	);
 
+	// log in with google strategy
+	app.get('/auth/google',
+		passport.authenticate('google', { scope: [
+	        'https://www.googleapis.com/auth/plus.login',
+	        'email'
+		] })
+	);
+
+	// redirection
+	app.get('/auth/google/return', 
+		passport.authenticate('google', { failureRedirect: '/' }),
+		function(req, res) {
+			res.redirect('/');
+		}
+	);
+
+	// handle other paths
+	this.routes = {};
+	app.get('*', ensureAuthenticated, handleGet.bind(this));
 	app.put('*', handlePut.bind(this));
+}
+
+function configureStrategies() {
+	// set up local strategy
+	passport.use(new localStrategy(function(username, password, done) {
+		// get user with username/password
+		// console.log('local',username, password);
+		done(null, "username here");
+	}));
+
+	// set up google strategy
+	// for testing, use localhost on port 9090...
+	let configGoogle = true;
+	if (configGoogle) {
+		passport.use(new googleStrategy(
+			{
+				clientID: "307203767774-cda41sqvjrrrrglufo8ret6iv3n4m9f7.apps.googleusercontent.com",
+				clientSecret: "peFp3B3KF_YCywXZfR_Us_Bw",
+				callbackURL: "https://" + config.host + ":" + config.secure_port + "/auth/google/return"
+			},
+			function (accessToken, refreshToken, profile, done) {
+				// console.log('profile', profile);
+				done(null, profile);
+			}
+		));
+	}
+
+	// serialize/deserialize users for persistent authentication
+	passport.serializeUser(function(user, done) {
+		// TODO: handle this properly: serialize id
+		done(null, user);
+	});
+
+	passport.deserializeUser(function(id, done) {
+		// TODO: handle properly: get user by id and return done(null, user)
+		done(null, id);
+	});
 }
 
 /**
@@ -107,7 +182,7 @@ function ensureAuthenticated(req, res, next) {
 			(path.extname(pathname) === ".html" &&
 			!req.url.startsWith("/session.html"))) {
 
-			// Get the cookies from the request header
+			// FIXME: working on Chrome but not on Firefox
 			if (req.cookies.session !== global.__SESSION_ID) {
 				// If no match, go back to password page
 				res.redirect("/session.html?page=" + req.url.substring(1));
@@ -126,9 +201,9 @@ function ensureAuthenticated(req, res, next) {
  * @param res {Object} the response object
  */
 function handleGet(req, res) {
-	// Check the HTTP GET handlers
-	if (typeof this.getFuncs[req.url] === 'function') {
-		this.getFuncs[req.url](req, res);
+	// Check the routes handlers
+	if (typeof this.routes[req.url] === 'function') {
+		this.routes[req.url](req, res);
 		return;
 	}
 
@@ -322,7 +397,7 @@ function handleGet(req, res) {
 /**
  * Handler for PUT requests
  *
- * @method handleGet
+ * @method handlePut
  * @param req {Object} the request object
  * @param res {Object} the response object
  */
@@ -500,16 +575,26 @@ HttpServer.prototype.buildHeader = function() {
 	return header;
 };
 
-
 /**
  * Add a HTTP GET handler (i.e. route)
  *
- * @method httpGET
+ * @method get
  * @param name {String} matching URL name (i.e. /config)
  * @param callback {Function} processing function
  */
-HttpServer.prototype.httpGET = function(name, callback) {
-	this.getFuncs[name] = callback;
+HttpServer.prototype.get = function(name, callback) {
+	this.routes[name] = callback;
 };
+
+/**
+ * Add a HTTP POST handler
+ *
+ * @method post
+ * @param name {String} matching URL name (i.e. /config)
+ * @param callback {Function} processing function
+ */
+HttpServer.prototype.post = function(name, callback) {
+	app.post(name, callback);
+}
 
 module.exports = HttpServer;
