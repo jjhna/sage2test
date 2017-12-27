@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+
+<title>SAGE2 - Doodle Page</title>
+
+<script type="text/license">
+	// SAGE2 is available for use under the SAGE2 Software License
+	//
+	// University of Illinois at Chicago's Electronic Visualization Laboratory (EVL)
+	// and University of Hawai'i at Manoa's Laboratory for Advanced Visualization and
+	// Applications (LAVA)
+	//
+	// See full text, terms and conditions in the LICENSE.txt included file
+	//
+	// Copyright (c) 2014
+</script>
+
+<style>
+	body {
+		font-family: Arial, Helvetica, sans-serif
+	}
+	.resInput {
+		width: 200px;
+		margin-left: 85px;
+		margin-top: 1px;
+		margin-bottom: 1px;
+		font-size: 20px;
+		text-align: right;
+	}
+	.resButton {
+		width: 200px;
+		margin-left: 85px;
+		margin-top: 1px;
+		margin-bottom: 1px;
+		font-size: 15px;
+	}
+	.dh2 {
+		margin-top: 10px;
+		margin-bottom: 10px;
+		font-size: 30px;
+		font-weight: bold;
+	}
+	.thickBlock {
+		display: inline-block;
+		margin-left: 1px;
+		margin-right: 1px;
+		width: 57px;
+		height: 57px;
+		border: 1px solid black;
+	}
+	.drawingSizeReference {
+		position: absolute;
+		top: -100;
+		left: -100;
+		width: 1;
+		border: 1px solid black;
+		border-radius: 50%;
+		z-index: 10;
+		pointer-events: none;
+	}
+</style>
+
+</head>
+<script src="../../../src/SAGE2_standAlonePageConnectBack.js"></script>
+<body style="background:#d8d8d8">
+
+	<canvas id="canvas" style="position:absolute;border:1px solid black">
+		
+	</canvas>
+	<!-- Disable svg, currently too much work to use svg
+	<svg id="thesvg"> </svg>
+	-->
+	<div id="controlPanel" style="position:absolute;border:1px solid black; margin: 10px;background:#e5a647">
+		<div id="cpGuts" style="margin: 10px">
+			<div id="resolutionControl">
+				<div class="resInput"> Set a width: <input id="widthInput" size="6"> px </div>
+				<div class="resInput"> Set a height: <input id="heightInput" size="6"> px </div>
+				<button class="resButton" id="submitResButton"> Update Resolution </button>
+			</div>
+			<hr>
+			<div class="dh2">Brush</div>
+			<div class="dh2">Thickness</div>
+			<div id="thicknessPallet">
+				<div class="thickBlock" id="thickBlock1"><div id="thickSizeExample1"></div></div>
+				<div class="thickBlock" id="thickBlock2"><div id="thickSizeExample2"></div></div>
+				<div class="thickBlock" id="thickBlock3"><div id="thickSizeExample3"></div></div>
+				<div class="thickBlock" id="thickBlock4"><div id="thickSizeExample4"></div></div>
+				<div class="thickBlock" id="thickBlock5"><div id="thickSizeExample5"></div></div>
+			</div>
+			<div class="dh2">Color</div>
+			<div id="colorpallet">
+			</div>
+			<hr>
+			<div class="dh2">Canvas Background</div>
+			<div id="colorpalletForCanvasTransparent"></div>
+			<div id="colorpalletForCanvas">
+			</div>
+		</div>
+	</div>
+
+	<div id="sizeReference" class="drawingSizeReference"></div>
+</body>
+
+<script src="editorScript.js"></script>
+</html>

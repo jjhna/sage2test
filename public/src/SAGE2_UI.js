@@ -1480,7 +1480,7 @@ function handleClick(element) {
 		data.func = "addClientIdAsEditor";
 		data.customLaunchParams = {
 			clientId: interactor.uniqueID,
-			clientName: interactor.pointerValue
+			clientName: interactor.pointerLabel
 		};
 		wsio.emit('launchAppWithValues', data);
 
@@ -2603,6 +2603,17 @@ function setAppContextMenuEntries(data) {
 						// defined in SAGE2_runtime
 						SAGE2_copyToClipboard(dlurl);
 					}
+				} else if (this.callback === "SAGE2_openURL") {
+					// Special case: open a new window with the given URL
+					let urlToOpen = this.parameters.url;
+					// If url doesn't have parameters already
+					if (!urlToOpen.includes("?")) {
+						urlToOpen += "?";
+					} else {
+						urlToOpen += "&";
+					}
+					urlToOpen += "appId=" + this.app;
+					window.open(urlToOpen);
 				} else {
 					// if an input field, need to modify the params to pass back before sending.
 					if (this.inputField === true) {
@@ -3117,6 +3128,9 @@ function addMenuEntry(menuDiv, entry, id, app) {
 								// defined in SAGE2_runtime
 								SAGE2_copyToClipboard(dlurl);
 							}
+						} else if (this.callback === "SAGE2_openURL") {
+							// Special case: open a new window with the given URL
+							window.open(this.parameters.url);
 						} else {
 							// if an input field, need to modify the params to pass back before sending.
 							if (this.inputField === true) {
@@ -3681,40 +3695,50 @@ function uiDrawMakeLine(data) {
  * @param {Object} data.appId       - app id this is for.
  */
 function uiDrawSetCurrentStateAndShow(data) {
-	// clear out canvas
-	uiDrawCanvasBackgroundFlush("white");
-	var imageResolutionToBe = { w: data.imageWidth, h: data.imageHeight };
-	var imageLimit = {w: (window.innerWidth * 0.8), h: (window.innerHeight - 200)};
-	var resizeCount = 0;
-	while (imageResolutionToBe.w > imageLimit.w) {
-		imageResolutionToBe.w /= 2;
-		imageResolutionToBe.h /= 2;
-		resizeCount++;
-	}
-	while (imageResolutionToBe.h > imageLimit.h) {
-		imageResolutionToBe.w /= 2;
-		imageResolutionToBe.h /= 2;
-		resizeCount++;
-	}
+	// // clear out canvas
+	// uiDrawCanvasBackgroundFlush("white");
+	// var imageResolutionToBe = { w: data.imageWidth, h: data.imageHeight };
+	// var imageLimit = {w: (window.innerWidth * 0.8), h: (window.innerHeight - 200)};
+	// var resizeCount = 0;
+	// while (imageResolutionToBe.w > imageLimit.w) {
+	// 	imageResolutionToBe.w /= 2;
+	// 	imageResolutionToBe.h /= 2;
+	// 	resizeCount++;
+	// }
+	// while (imageResolutionToBe.h > imageLimit.h) {
+	// 	imageResolutionToBe.w /= 2;
+	// 	imageResolutionToBe.h /= 2;
+	// 	resizeCount++;
+	// }
 
 	// set the state
-	var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	workingDiv.width           = data.imageWidth;
-	workingDiv.height          = data.imageHeight;
-	workingDiv.style.width     = imageResolutionToBe.w + "px";
-	workingDiv.style.height    = imageResolutionToBe.h + "px";
-	workingDiv.imageToDraw.src = data.canvasImage;
-	// set variables to correctly send updates and allow removal as editor.
-	workingDiv.clientDest  = data.clientDest;
-	workingDiv.appId       = data.appId;
-	workingDiv.resizeCount = resizeCount;
-	// delayed drawing until after load completes
-	workingDiv.imageToDraw.parentCtx = workingDiv.getContext('2d');
-	workingDiv.imageToDraw.onload    = function() {
-		this.parentCtx.drawImage(this, 0, 0);
-		// show dialog
-		showDialog('uiDrawZone');
-	};
+	// var workingDiv = document.getElementById('uiDrawZoneCanvas');
+	// workingDiv.width           = data.imageWidth;
+	// workingDiv.height          = data.imageHeight;
+	// workingDiv.style.width     = imageResolutionToBe.w + "px";
+	// workingDiv.style.height    = imageResolutionToBe.h + "px";
+	// workingDiv.imageToDraw.src = data.canvasImage;
+	// // set variables to correctly send updates and allow removal as editor.
+	// workingDiv.clientDest  = data.clientDest;
+	// workingDiv.appId       = data.appId;
+	// workingDiv.resizeCount = resizeCount;
+	// // delayed drawing until after load completes
+	// workingDiv.imageToDraw.parentCtx = workingDiv.getContext('2d');
+	// workingDiv.imageToDraw.onload    = function() {
+	// 	this.parentCtx.drawImage(this, 0, 0);
+	// 	// show dialog
+	// 	showDialog('uiDrawZone');
+	// };
+
+	let urlToOpen = data.url;
+	// If url doesn't have parameters already
+	if (!urlToOpen.includes("?")) {
+		urlToOpen += "?";
+	} else {
+		urlToOpen += "&";
+	}
+	urlToOpen += "appId=" + data.appId;
+	window.open(urlToOpen);
 }
 
 /**

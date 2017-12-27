@@ -10,7 +10,8 @@
 	"load": {
 		"imageSnapshot": "",
 		"originalCreator": "Anonymous",
-		"creationTime" : null
+		"creationTime" : null,
+		"canvasBackground": "white"
 	},
 	"title": "doodle",
 	"version": "1.0.0",

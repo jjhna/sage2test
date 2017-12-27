@@ -32,9 +32,12 @@ var doodle = SAGE2_App.extend({
 		this.drawCanvas.style.height = "100%";
 		this.element.appendChild(this.drawCanvas);
 		this.ctx = this.drawCanvas.getContext("2d");
-		this.ctx.fillStyle = "#FFFFFF";
-		this.ctx.fillRect(0, 0, this.drawCanvas.width, this.drawCanvas.height);
-		this.ctx.fillStyle = "#000000";
+		this.ctx.clearRect(0, 0, this.drawCanvas.width, this.drawCanvas.height);
+		this.drawCanvas.style.background = "white";
+		this.state.canvasBackground = "white";
+		// this.ctx.fillStyle = "#FFFFFF";
+		// this.ctx.fillRect(0, 0, this.drawCanvas.width, this.drawCanvas.height);
+		// this.ctx.fillStyle = "#000000";
 
 		// tracks who needs to receive updates for draw commands.
 		this.arrayOfEditors = [];
@@ -136,6 +139,8 @@ var doodle = SAGE2_App.extend({
 			dataForClient.canvasImage = imageString;
 			dataForClient.imageWidth  = this.drawCanvas.width;
 			dataForClient.imageHeight = this.drawCanvas.height;
+			dataForClient.canvasBackground = this.state.canvasBackground;
+			dataForClient.url = this.resrcPath + "editor.html";
 			// sendDataToClient: function(clientDest, func, paramObj) appId is automatically added to param object
 			this.sendDataToClient(responseObject.clientId, "uiDrawSetCurrentStateAndShow", dataForClient);
 		}
@@ -195,6 +200,44 @@ var doodle = SAGE2_App.extend({
 				dataForClient.clientDest = this.arrayOfEditors[i];
 				// clientDest, function, param object for function. appId is automatically added.
 				this.sendDataToClient(this.arrayOfEditors[i], "uiDrawMakeLine", dataForClient);
+			}
+		}
+	},
+
+	changeCanvasColor: function(data) {
+		// Update color on all displays
+		var color = data.color;
+		this.drawCanvas.style.background = color;
+		if (color.includes("00000000")) {
+			this.drawCanvas.style.background = "rgba(0, 0, 0, 0)";
+		}
+
+		// If master display, tell all clients to update
+		if (isMaster) {
+			var dataForClient = {};
+			dataForClient.color = color;
+			for (var i = 0; i < this.arrayOfEditors.length; i++) {
+				dataForClient.clientDest = this.arrayOfEditors[i];
+				// clientDest, function, param object for function. appId is automatically added.
+				this.sendDataToClient(this.arrayOfEditors[i], "changeCanvasColor", dataForClient);
+			}
+		}
+	},
+
+	changeResolution: function(data) {
+		// Update canvas draw area, this doesn't affect visual size, that is always 100% to app
+		this.drawCanvas.width = data.width;
+		this.drawCanvas.height = data.height;
+
+		// If master display, tell all clients to update
+		if (isMaster) {
+			var dataForClient = {};
+			dataForClient.width = data.width;
+			dataForClient.height = data.height;
+			for (var i = 0; i < this.arrayOfEditors.length; i++) {
+				dataForClient.clientDest = this.arrayOfEditors[i];
+				// clientDest, function, param object for function. appId is automatically added.
+				this.sendDataToClient(this.arrayOfEditors[i], "recvResolutionChange", dataForClient);
 			}
 		}
 	},
@@ -277,6 +320,7 @@ var doodle = SAGE2_App.extend({
 			// Otherwise, decode filename into author and date
 			var author = parts[0];
 			var month  = parseInt(parts[2].substring(4, 6)); // YYYY[MM]
+			month--; // Because 0 is January
 			var day    = parseInt(parts[2].substring(6, 8)); // YYYYMM[DD]
 			var hour   = parseInt(parts[3].substring(0, 2)); // [HH]
 			var min    = parseInt(parts[3].substring(2, 4)); // HH[MM]
@@ -348,16 +392,25 @@ var doodle = SAGE2_App.extend({
 		var entry;
 
 		entry = {};
+		entry.description = "Edit";
+		entry.callback    = "SAGE2_openURL";
+		entry.parameters  = {url: this.resrcPath + "editor.html"};
+		entries.push(entry);
+
+		entries.push({description: "separator"});
+
+		entry = {};
 		entry.description = "Duplicate";
 		entry.callback    = "duplicate";
 		entry.parameters  = {};
 		entries.push(entry);
 
-		entry = {};
-		entry.description = "Edit";
-		entry.callback    = "addClientIdAsEditor";
-		entry.parameters  = {};
-		entries.push(entry);
+		// Old version
+		// entry = {};
+		// entry.description = "Edit";
+		// entry.callback    = "addClientIdAsEditor";
+		// entry.parameters  = {};
+		// entries.push(entry);
 
 		return entries;
 	},
