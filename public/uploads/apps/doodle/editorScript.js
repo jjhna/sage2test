@@ -28,6 +28,7 @@ Finalize the page
 */
 
 var global = {
+	debug: true,
 	drawColor: "black",
 	thickness: 4,
 	currentCanvasColor: undefined,
@@ -54,7 +55,7 @@ var global = {
 		borderMouseEnter: "1px solid white",
 		borderSelected: "3px solid white",
 	},
-	debug: true
+	imageUrlString: []
 }
 
 

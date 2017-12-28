@@ -151,11 +151,16 @@ var image_viewer = SAGE2_App.extend({
 			parameters: {}
 		});
 
+		entries.push({description: "separator"});
 		entries.push({
-			description: "separator"
+			description: "Make Doodle of image",
+			callback: "makeDoodle",
+			parameters: {}
 		});
 
 		if (this.checkIfHasGpsData()) {
+			// Make separator
+			entries.push({description: "separator"});
 			// Disable this for now
 			// entries.push({
 			// 	description: "Plot Location On Open Map",
@@ -224,16 +229,14 @@ var image_viewer = SAGE2_App.extend({
 	*/
 	makeDoodle: function(responseObject) {
 		if (isMaster) {
-			var data = {};
-			data.appName = "doodle";
-			data.func    = "initializationThroughDuplicate";
-			data.xLaunch = this.sage2_x + 100;
-			data.yLaunch = this.sage2_y;
-			data.customLaunchParams  =  {};
-			data.customLaunchParams.func = "initializationThroughDuplicate";
-			data.customLaunchParams.clientName    = responseObject.clientName;
-			data.customLaunchParams.imageSnapshot = cleanURL(this.state.src || this.state.img_url);
-			wsio.emit("launchAppWithValues", data);
+			var imgAsText = cleanURL(this.state.src || this.state.img_url);
+			// Params are: app name, paaram object, x location to make window, y location, function to call after init
+			this.launchAppWithValues(
+				"doodle",
+				{ clientName: responseObject.clientName, imageSnapshot: imgAsText},
+				this.sage2_x + 100, this.sage2_y,
+				"initializationThroughDuplicate"
+			);
 		}
 	},
 

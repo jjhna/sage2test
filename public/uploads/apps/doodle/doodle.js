@@ -112,9 +112,27 @@ var doodle = SAGE2_App.extend({
 	/**
 	Returns current canvas as image encode.
 	*/
-	getCanvasAsImage: function () {
-		this.saveCurrentWork();
-		return this.drawCanvas.toDataURL();
+	getCanvasAsImage: function (override) {
+		// The websockets have a transmission limit.
+		// 1st pass is to figure out how big the transmission would be.
+		var imageAsText = this.drawCanvas.toDataURL();
+		// This number is mostly trial and error. Roughly around 2 MB is a good speed on transmission without halting too long.
+		// It still blocks communication for a good 5-10 seconds.
+		var limit = 2000000;
+		var compress = imageAsText.length / limit;
+		// If over the limit, need to compress.
+		if (compress > 1) {
+			// How much to compress down to
+			compress = 1 / compress;
+			// Only take two decimals
+			compress = parseInt(compress * 100);
+			// Round up
+			compress++;
+			// Back to percent
+			compress /= 100;
+			imageAsText = this.drawCanvas.toDataURL('image/jpeg', compress);
+		}
+		return imageAsText;
 	},
 
 	/**
@@ -133,6 +151,7 @@ var doodle = SAGE2_App.extend({
 			this.arrayOfEditors.push(responseObject.clientId);
 			// get canvas as image.
 			var imageString = this.getCanvasAsImage();
+			this.saveCurrentWork();
 
 			// send back to client the OK to start editing.
 			var dataForClient = {};
@@ -244,7 +263,7 @@ var doodle = SAGE2_App.extend({
 
 	saveCurrentWork: function() {
 		// Before saving make sure to grab a snapshot of current canvas.
-		this.state.imageSnapshot = this.drawCanvas.toDataURL();
+		this.state.imageSnapshot = this.getCanvasAsImage();
 		this.SAGE2UpdateAppOptionsFromState();
 		this.SAGE2Sync(true);
 		// Tell server to save the file
@@ -365,6 +384,8 @@ var doodle = SAGE2_App.extend({
 
 	duplicate: function (responseObject) {
 		if (isMaster) {
+			// Save work first
+			this.saveCurrentWork();
 			// function(appName, x, y, params, funcToPassParams) {
 			this.launchAppWithValues("doodle", {
 				clientName: responseObject.clientName,
