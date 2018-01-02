@@ -29,6 +29,8 @@ Finalize the page
 
 var global = {
 	debug: true,
+	mobile: false,
+	convertTouchEvents: false,
 	drawColor: "black",
 	thickness: 4,
 	currentCanvasColor: undefined,
@@ -43,7 +45,7 @@ var global = {
 		borderDefault: "1px solid black",
 		borderMouseEnter: "1px solid white",
 		borderSelected: "3px solid black",
-		sizes: [8, 16, 24, 32, 40]
+		sizes: [4, 8, 16, 32, 40]
 	},
 	colorPalletProperties: {
 		rowSize: 12,
@@ -58,8 +60,7 @@ var global = {
 	imageUrlString: []
 }
 
-
-// center
+setupMobileSpecific();
 updateCanvasStyleAndPositioning(100, 100);
 updateThickBlocks();
 makeColorPallet("colorpallet");
@@ -103,7 +104,6 @@ function addThisClientAsEditor() {
 // HAVE to use this name for compliance with UI version
 function uiDrawSetCurrentStateAndShow(data) {
 	dbugprint("Got current state data");
-	console.dir(data);
 	// Set canvas backgrond
 	var canvas = getCanvas();
 	setCanvasBackgroundColor(data.canvasBackground);
@@ -208,6 +208,18 @@ function recvResolutionChange(data) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 /* ------------------------------------------------------------------------------------------------------------------
 // 4
 // ------------------------------------------------------------------------------------------------------------------
@@ -218,7 +230,30 @@ Functions for usage in the page
 
 
 
-
+function setupMobileSpecific() {
+	if (!navigator.userAgent.includes("Mobi")) {
+		return;
+	}
+	global.mobile = true;
+	document.getElementById("assistWithMobileViewDiv").style.display = "block";
+	document.getElementById("toggleTouchInteraction").addEventListener("touchstart", toggleTouchConversion);
+}
+function toggleTouchConversion() {
+	// Swapped because didn't toggle yet.
+	if (global.convertTouchEvents) {
+		// Going to be view mode, make button say enable drawing
+		document.getElementById("toggleTouchInteraction").textContent = "Enable Drawing";
+		document.ontouchmove = null;
+	} else {
+		// Going to be drawing mode, make button say enable view
+		document.getElementById("toggleTouchInteraction").textContent = "Enable View Change";
+		// Disable mobile's automatic touch scrolling
+		document.ontouchmove = function(event){
+			event.preventDefault();
+		}
+	}
+	global.convertTouchEvents = !global.convertTouchEvents;
+}
 
 
 
@@ -552,7 +587,6 @@ function panelDragStart(e) {
 }
 
 function panelDrag(e) {
-	// console.dir(this);
 	if (this.dragging) {
 		dbugprint("Panel Drag");
 		this.style.left = this.dragPositionStartX + (e.pageX - this.dragMouseStartX) + "px";
@@ -561,7 +595,6 @@ function panelDrag(e) {
 }
 
 function panelDragStop(e) {
-	// console.dir(this);
 	if (this.dragging) {
 		dbugprint("Panel Drag End");
 		this.dragging = false;
@@ -670,13 +703,6 @@ function addDrawEvents() {
 	// canvas.addEventListener('touchstart', drawTouchStart.bind(canvas));
 	// canvas.addEventListener('touchmove',  drawTouchMove.bind(canvas));
 	// canvas.addEventListener('touchend',   drawTouchEnd.bind(canvas));
-	canvas.ongoingTouches = [];
-
-	// Disable ipad's automatic touch scrolling
-	document.ontouchmove = function(event){
-		event.preventDefault();
-		// Can probably modify this later to be more specific
-	}
 }
 
 function drawHandlerStart(event) {
@@ -794,6 +820,10 @@ function drawGetTouchId(id) {
 
 function touchHandler(event, shouldPreventDefault)
 {
+	// If not converting touch events, immediately return
+	if (!global.convertTouchEvents) {
+		return;
+	}
     var touches = event.changedTouches,
         first = touches[0],
         type = "";

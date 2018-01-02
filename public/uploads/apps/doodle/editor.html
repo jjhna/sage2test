@@ -22,6 +22,13 @@
 	body {
 		font-family: Arial, Helvetica, sans-serif
 	}
+	#assistWithMobileViewDiv{
+		display: none;
+		text-align: center;
+	}
+	#toggleTouchInteraction {
+		font-size: 20px;
+	}
 	.resInput {
 		width: 200px;
 		margin-left: 85px;
@@ -74,6 +81,11 @@
 	<svg id="thesvg"> </svg>
 	-->
 	<div id="controlPanel" style="position:absolute;border:1px solid black; margin: 10px;background:#e5a647">
+		<div id="assistWithMobileViewDiv">
+			<br>
+			<button id="toggleTouchInteraction">Enable Drawing</button>
+			<hr>
+		</div>
 		<div id="cpGuts" style="margin: 10px">
 			<div id="resolutionControl">
 				<div class="resInput"> Set a width: <input id="widthInput" size="6"> px </div>
