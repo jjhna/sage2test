@@ -111,7 +111,15 @@ var SAGE2Connection = {
 		Maybe change this to SAGE2Connection?
 		*/
 		this.wsio.on("broadcast", function(data) {
-			window[data.func](data.data);
+			try {
+				window[data.func](data.data);
+			} catch (e) {
+				console.log("Function " + data.func + " doesn't exist in window. Cannot call it as part of broadcast packet");
+				// Possible that many errors will occur due to broadcast hitting everything.
+				// console.log("Error in broadcast handler");
+				// console.log("Does function exist: " + data.func);
+				// console.log("Error message:" + e);
+			}
 		});
 	},
 
@@ -138,6 +146,23 @@ var SAGE2Connection = {
 		data.parameters.clientId   = this.uniqueID;
 
 		this.wsio.emit('callFunctionOnApp', data);
+	},
+
+	/**
+	* Given the name of the variable, set value of variable on server.
+	* Will create if doesn't exist.
+	*
+	* @method serverDataSetValue
+	* @param {String} nameOfValue - name of value on server to set
+	* @param {Object} value - the value to store for this variable
+	* @param {Object} description - description object
+	*/
+	serverDataSetValue: function(nameOfValue, value, description) {
+		this.wsio.emit("serverDataSetValue", {
+			nameOfValue: nameOfValue,
+			value: value,
+			description: description
+		});
 	},
 
 
