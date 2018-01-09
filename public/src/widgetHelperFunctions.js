@@ -20,6 +20,7 @@
  */
 var dynamicStyleSheets = {};
 var svgBackgroundForWidgetConnectors = null;
+var svgForegroundForWidgetConnectors = null;
 
 function drawSpokeForRadialLayout(instanceID, paper, center, point) {
 	var spoke = paper.line(center.x, center.y, point.x, point.y);
@@ -96,7 +97,7 @@ function makeWidgetBarOutlinePath(start, end, innerR, center, width, offset) {
 		"A " + innerR + " " + innerR + " " + 0 + " " + 0 + " " + 1 + " " + pointA.x +
 		" " + pointA.y + "";
 
-	return d;
+	return {d: d, leftTop: pointA, leftBottom: pointD, rightTop: pointB, rightBottom: pointC};
 }
 
 function mapMoveToSlider(sliderKnob, position) {
@@ -257,6 +258,21 @@ function polarToCartesian(radius, theta, center) {
 	return {x: x, y: y};
 }
 
+function cartesianToPolar(x, y, center) {
+	if (center === undefined || center === null) {
+		center = {x: 0, y: 0};
+	}
+	var radius = Math.sqrt((x - center.x) * (x - center.x) + (y - center.y) * (y - center.y));
+	var theta = Math.acos((x - center.x) / radius) * 180.0 / Math.PI;
+	return {r: radius, theta: theta};
+}
+
+function thetaFromY(y, radius, center) {
+	if (center === undefined || center === null) {
+		center = {x: 0, y: 0};
+	}
+	return Math.asin((center.y - y) / radius) * 180.0 / Math.PI;
+}
 
 function createWidgetToAppConnector(instanceID) {
 	var paper = svgBackgroundForWidgetConnectors;
@@ -382,7 +398,7 @@ function showWidgetToAppConnectors(data) {
 	if (!selectedAppTitle) {
 		return;
 	}
-	re = /\.|\:/g;
+	re = /\.|:/g;
 	styleCaption = data.user_id.split(re).join("");
 	selectedAppTitle.className = dynamicStyleSheets[styleCaption] ? "title" + styleCaption : "windowTitle";
 	for (var item in controlItems) {
@@ -400,6 +416,16 @@ function makeSvgBackgroundForWidgetConnectors(width, height) {
 	backDrop.node.style.position = "absolute";
 	ui.main.appendChild(backDrop.node);
 	svgBackgroundForWidgetConnectors = backDrop;
+	// testing with a foreground
+	var foreground = new Snap(parseInt(width), parseInt(height));
+	foreground.node.style.zIndex = "10000";
+	foreground.node.style.left = "0";
+	foreground.node.style.top = "0";
+	foreground.node.style.position = "absolute";
+	foreground.attr("class", "svgForegroundDraw");
+	ui.main.appendChild(foreground.node);
+	svgForegroundForWidgetConnectors = foreground;
+
 	return backDrop;
 }
 

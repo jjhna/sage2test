@@ -28,6 +28,7 @@ function generate() {
 	swPrecache.write(path.join(rootDir, 'service-worker.js'), {
 		cacheId: "SAGE2",
 		handleFetch: true,
+		logger: function() {},
 		verbose: false,
 		staticFileGlobs: [
 			rootDir + '/favicon.ico',
@@ -39,6 +40,7 @@ function generate() {
 			rootDir + '/images/ui/*.svg',
 			rootDir + '/images/radialMenu/*.svg',
 			rootDir + '/images/appUi/*.svg',
+			rootDir + '/images/icons/*.png',
 			// HTML pages
 			rootDir + 'audioManager.html',
 			rootDir + 'index.html',
@@ -53,7 +55,7 @@ function generate() {
 		],
 		stripPrefix: rootDir
 	}, function() {
-		console.log('ServiceWorker>	Cache generated');
+		// console.log('ServiceWorker>	Cache generated');
 	});
 }
 

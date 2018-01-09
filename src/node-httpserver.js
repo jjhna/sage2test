@@ -149,7 +149,7 @@ var hpkpPin2 = (function() {
  */
 HttpServer.prototype.buildHeader = function() {
 	// Get the site configuration, from server.js
-	var cfg = module.parent.exports.config;
+	var cfg = global.config;
 	// Build the header object
 	var header = {};
 
@@ -355,8 +355,17 @@ HttpServer.prototype.onreq = function(req, res) {
 			var header = this.buildHeader();
 
 			if (path.extname(pathname) === ".html") {
-				// Do not allow iframe
-				header['X-Frame-Options'] = 'DENY';
+				if (pathname.endsWith("public/index.html")) {
+					// Allow embedding the UI page
+					delete header['X-Frame-Options'];
+				} else {
+					// Do not allow iframe
+					header['X-Frame-Options'] = 'DENY';
+				}
+			} else {
+				// not needed for images and such
+				delete header["X-XSS-Protection"];
+				delete header['X-Frame-Options'];
 			}
 
 			header['Access-Control-Allow-Headers']  = 'Range';
@@ -399,7 +408,16 @@ HttpServer.prototype.onreq = function(req, res) {
 			//
 
 			// Set the mime type
-			header["Content-Type"] = mime.lookup(pathname);
+			var fileMime = mime.getType(pathname);
+			var charFile;
+			if (fileMime === "image/svg+xml" || fileMime === "application/manifest+json") {
+				charFile = "UTF-8";
+			}
+			if (charFile) {
+				header["Content-Type"] =  fileMime + "; charset=" + charFile;
+			} else {
+				header["Content-Type"] =  fileMime;
+			}
 
 			// Get the file size from the 'stat' system call
 			var total = stats.size;
@@ -421,20 +439,40 @@ HttpServer.prototype.onreq = function(req, res) {
 
 				// Write the HTTP header, 206 Partial Content
 				res.writeHead(206, header);
+
 				// Read part of the file
-				var rstream = fs.createReadStream(pathname, {start: start, end: end});
-				// Pass it to the HTTP response
-				rstream.pipe(res);
+				// This line opens the file as a readable stream
+				let readStream = fs.createReadStream(pathname, {start: start, end: end});
+				// This will wait until we know the readable stream is actually valid before piping
+				readStream.on('open', function () {
+					// This just pipes the read stream to the response object
+					readStream.pipe(res);
+				});
+				// This catches any errors that happen while creating the readable stream
+				readStream.on('error', function(err) {
+					res.end(err);
+				});
+
+
 			} else {
 				// Open the file as a stream
-				var stream = fs.createReadStream(pathname);
+				let readStream = fs.createReadStream(pathname);
 				// array of allowed compression file types
 				var compressExtensions = ['.html', '.json', '.js', '.css', '.txt', '.svg', '.xml', '.md'];
 				if (compressExtensions.indexOf(path.extname(pathname)) === -1) {
 					// Do not compress, just set file size
 					header["Content-Length"] = total;
 					res.writeHead(200, header);
-					stream.pipe(res);
+					readStream.on('open', function () {
+						readStream.pipe(res);
+					});
+					readStream.on('end', function() {
+					});
+					readStream.on('close', function() {
+					});
+					readStream.on('error', function(err) {
+						res.end(err);
+					});
 				} else {
 					// Check for allowed compression
 					var acceptEncoding = req.headers['accept-encoding'] || '';
@@ -444,17 +482,32 @@ HttpServer.prototype.onreq = function(req, res) {
 						// Write the HTTP response header
 						res.writeHead(200, header);
 						// Pipe the file input onto the HTTP response
-						stream.pipe(zlib.createGzip()).pipe(res);
+						readStream.on('open', function () {
+							readStream.pipe(zlib.createGzip()).pipe(res);
+						});
+						readStream.on('error', function(err) {
+							res.end(err);
+						});
 					} else if (acceptEncoding.match(/deflate/)) {
 						// Set the encoding to deflate
 						header["Content-Encoding"] = 'deflate';
 						res.writeHead(200, header);
-						stream.pipe(zlib.createDeflate()).pipe(res);
+						readStream.on('open', function () {
+							readStream.pipe(zlib.createDeflate()).pipe(res);
+						});
+						readStream.on('error', function(err) {
+							res.end(err);
+						});
 					} else {
 						// No HTTP compression, just set file size
 						header["Content-Length"] = total;
 						res.writeHead(200, header);
-						stream.pipe(res);
+						readStream.on('open', function () {
+							readStream.pipe(res);
+						});
+						readStream.on('error', function(err) {
+							res.end(err);
+						});
 					}
 				}
 			}
@@ -467,7 +520,6 @@ HttpServer.prototype.onreq = function(req, res) {
 			return;
 		}
 	} else if (req.method === "POST") {
-		// var postName = decodeURIComponent(url.parse(req.url).pathname);
 		var postName = sageutils.sanitizedURL(url.parse(req.url).pathname);
 		if (postName in this.postFuncs) {
 			this.postFuncs[postName](req, res);
@@ -476,7 +528,6 @@ HttpServer.prototype.onreq = function(req, res) {
 	} else if (req.method === "PUT") {
 		// Need some authentication / security here
 
-		// var putName = decodeURIComponent(url.parse(req.url).pathname);
 		var putName = sageutils.sanitizedURL(url.parse(req.url).pathname);
 		// Remove the first / if there
 		if (putName[0] === '/') {
@@ -489,12 +540,11 @@ HttpServer.prototype.onreq = function(req, res) {
 
 		wstream.on('finish', function() {
 			// stream closed
-			console.log(sageutils.header('PUT') + 'File written' + putName +
-				' ' + fileLength + ' bytes');
+			sageutils.log('PUT', 'File written', putName, fileLength, 'bytes');
 		});
 		wstream.on('error', function() {
 			// Error during write
-			console.log(sageutils.header('PUT') + 'Error during write for ' + putName);
+			sageutils.log('PUT', 'Error during write for', putName);
 		});
 		// Getting data
 		req.on('data', function(chunk) {
@@ -505,8 +555,7 @@ HttpServer.prototype.onreq = function(req, res) {
 		// Data no more
 		req.on('end', function() {
 			// No more data
-			console.log(sageutils.header('PUT') + 'Received: ' + filename + ' ' +
-				putName + ' ' + fileLength + ' bytes');
+			sageutils.log('PUT', 'Received:', filename, putName, fileLength, 'bytes');
 			// Close the write stream
 			wstream.end();
 			// empty 200 OK response for now

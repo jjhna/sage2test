@@ -18,7 +18,9 @@
  */
 
 /* global SAGE2_init, SAGE2_resize, escape, unescape, sage2Version, showDialog */
-/* global removeAllChildren */
+/* global removeAllChildren, SAGE2_copyToClipboard, displayUI, dateToYYYYMMDDHHMMSS */
+/* global showSAGE2Message */
+/* global SAGE2_speech */
 
 "use strict";
 
@@ -31,9 +33,10 @@
  */
 function fileSizeIEC(a, b, c, d, e) {
 	return (b = Math, c = b.log, d = 1024, e = c(a) / c(d) | 0,
-			a / b.pow(d, e)).toFixed(1) + ' ' + (e ? 'KMGTPEZY'[--e] : 'B');
+		a / b.pow(d, e)).toFixed(1) + ' ' + (e ? 'KMGTPEZY'[--e] : 'B');
 }
 
+var interactor;
 
 /**
  * FileManager object
@@ -53,6 +56,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 	this.json_cfg  = null;
 	this.http_port = null;
 
+	// Set the current sorting order
+	this.sorting = {by: "name", dir: "asc", as: "string"};
+
 	var _this = this;
 
 	// WEBIX
@@ -61,66 +67,547 @@ function FileManager(wsio, mydiv, uniqueID) {
 	var data_with_icon = [
 		{id: "treeroot", value: "SAGE2", icon: "home", open: true, tooltip: "All the files",
 			data: [
-				{id: "Image:/", value: "Image", icon: "search", data: [], tooltip: "Show all the images"},
-				{id: "Video:/", value: "Video", icon: "search", data: [], tooltip: "Show all the videos"},
-				{id: "PDF:/", value: "PDF", icon: "search", data: [], tooltip: "Show all the PDFs"},
-				{id: "Note:/", value: "Note", icon: "search", data: [], tooltip: "Show all the Notes"},
-				{id: "App:/", value: "Application", icon: "search", data: [], tooltip: "Show all the applications"},
+				{id: "Image:/",   value: "Image", icon: "search", data: [], tooltip: "Show all the images"},
+				{id: "Video:/",   value: "Video", icon: "search", data: [], tooltip: "Show all the videos"},
+				{id: "PDF:/",     value: "PDF", icon: "search", data: [], tooltip: "Show all the PDF files"},
+				{id: "Note:/",    value: "Note", icon: "search", data: [], tooltip: "Show all the notes"},
+				{id: "App:/",     value: "Application", icon: "search", data: [], tooltip: "Show all the applications"},
 				{id: "Session:/", value: "Session", icon: "search", data: [], tooltip: "Show all the sessions"},
-				{id: "Mine:/", value: "Uploaded", icon: "search", data: [], tooltip: "Show all my uploaded files"}
+				{id: "Link:/",    value: "Link", icon: "search", data: [], tooltip: "Show all the links"},
+				{id: "Mine:/",    value: "My files", icon: "search", data: [], tooltip: "Show all my uploaded files"}
 			]
 		}
 	];
 
-	var menu_data = [
-		{id: "file_menu", value: "File", submenu: [
-			{id: "folder_menu",  value: "New folder"},
-			{id: "upload_menu",  value: "Upload file"},
-			{id: "refresh_menu", value: "Refresh"},
-			{$template: "Separator"},
-			{id: "hidefm_menu", value: "Quit"}
-		]},
-		{id: "edit_menu", value: "Edit", submenu: [
-			{id: "delete_menu",   value: "Delete"},
-			{id: "download_menu", value: "Download"}
-		]},
-		{id: "view_menu", value: "View", submenu: [
-			{id: "hideui_menu", value: "Show/Hide UI"},
-			{$template: "Separator"},
-			{id: "tile_menu",   value: "Tile content"},
-			{id: "clear_menu",  value: "Clear display"}
-		]},
-		{id: "mainadmin_menu",    value: "Admin", config: {width: 170}, submenu: [
-			{id: "display_menu",  value: "Display client 0"},
-			{id: "overview_menu", value: "Display overview client"},
-			{id: "audio_menu",    value: "Audio manager"},
-			{id: "web_menu",      value: "Create webview"},
-			// {id: "drawing_menu",  value: "Drawing application"},
-			{id: "console_menu",  value: "Server console"}
-		]},
-		{id: "mainhelp_menu",  value: "Help", submenu: [
-			{id: "help_menu",  value: "Help"},
-			{id: "info_menu",  value: "Information"},
-			{id: "about_menu", value: "About"}
-		]}
-	];
-	var mymenu = {
-		id: "mymenu",
-		view: "menu",
-		openAction: "click",
-		data: menu_data
+	// File menu of the media browser
+	var fileMediaActions = {
+		folder_menu: {value: "New folder", callback: function (evt) {
+			// Try to create a folder
+			createFolderUI();
+		}},
+		upload_menu: {value: "Upload an Image", callback: function (evt) {
+			// open the file uploader panel
+			showDialog('uploadDialog');
+		}},
+		session_menu2: {value: "Save the Session",
+			tooltip: "Saves the opened applications and their states in a session file",
+			callback: function (evt) {
+				// open the session popup
+				_this.saveSession();
+			}
+		},
+		separator: {value: "separator"},
+		refresh_menu: {value: "Refresh Media Browser", callback: function (evt) {
+			wsio.emit('requestStoredFiles');
+		}},
+		hidefm_menu: {value: "Close Media Browser", callback: function (evt) {
+			var mainUI = document.getElementById('mainUI');
+			document.getElementById('fileManager').style.display = "none";
+			if (mainUI.style.display === "none") {
+				mainUI.style.display = "block";
+			}
+			SAGE2_resize();
+		}}
 	};
-	var mytoolbar = {
-		id: "mytoolbar",
+
+	// Edit menu of the media browser
+	var editMediaActions = {
+		open_menu: {value: "Open", callback: function (evt) {
+			// Get selected items
+			var dItems = _this.allTable.getSelectedId(true);
+			var tbo = [];
+			// otherwise take all selected items
+			for (var i = 0; i < dItems.length; i++) {
+				tbo.push(dItems[i].id);
+			}
+			// Open all the content one at a time
+			tbo.map(function(tid) {
+				_this.openItem(tid);
+			});
+		}},
+		copyurl_menu: {value: "Copy URL", callback: function (evt) {
+			// Get selected items
+			var dItems = _this.allTable.getSelectedId(true);
+			copyURLItem(dItems[0].id);
+		}},
+		taburl_menu: {value: "Open in Tab", callback: function (evt) {
+			// Get selected items
+			var dItems = _this.allTable.getSelectedId(true);
+			openURLItem(dItems[0].id);
+		}},
+		download_menu: {value: "Download", callback: function (evt) {
+			// Get selected items
+			var dItems = _this.allTable.getSelectedId(true);
+			// Go over the list of selected items
+			for (var i = 0; i < dItems.length; i++) {
+				// Trigger the download command
+				downloadItem(dItems[i].id);
+			}
+		}},
+		separator: {value: "separator"},
+		delete_menu: {value: "Delete", callback: function (evt) {
+			// Delete one or several selected files
+			deleteFilesUI();
+		}}
+	};
+
+	// File manager menu bar
+	var menuMediaBrowser_data = [
+		// File entry
+		{id: "file_menu", value: "File", config: {width: 170}, submenu: buildSubmenu(fileMediaActions)},
+		// Edit entry
+		{id: "edit_menu", value: "Edit", submenu: buildSubmenu(editMediaActions)}
+	];
+	var menuMediaBrowser = {
+		view: "menu",
+		id: "menuMediaBrowser",
+		openAction: "click",
+		data: menuMediaBrowser_data
+	};
+	var searchToolbar = {
+		id: "searchToolbar",
 		view: "toolbar", paddingY: 0,  borderless: true, elements: [
 			{ id: "search_text", view: "text", width: 250, placeholder: "Search" }
 		]
 	};
 
-	// Custom tooltip function
-	function mytip(obj) {
-		return obj.tooltip ? obj.tooltip : "";
-	}
+	/////////////////////////////////////////////////////////////////////////////
+	// Build all the sub menus
+
+	// File menu
+	var fileActions = {
+		upload_menu: {value: "Upload an Image",
+			tooltip: "Uploads an image to the SAGE2 server and opens it",
+			callback: function (evt) {
+				// open the file uploader panel
+				showDialog('uploadDialog');
+			}
+		},
+		session_menu: {value: "Save the Session",
+			tooltip: "Saves the opened applications and their states in a session file",
+			callback: function (evt) {
+				// open the session popup
+				_this.saveSession();
+			}
+		},
+		separator: {value: "separator"},
+		showfm_menu: {value: "Open Media Browser",
+			tooltip: "Shows the file media browser below the user interface",
+			callback: function (evt) {
+				document.getElementById('fileManager').style.display = "block";
+				SAGE2_resize();
+			}
+		},
+		hidefm_menu: {value: "Close Media Browser",
+			tooltip: "Hides the file media broswer",
+			callback: function (evt) {
+				var mainUI = document.getElementById('mainUI');
+				document.getElementById('fileManager').style.display = "none";
+				if (mainUI.style.display === "none") {
+					mainUI.style.display = "block";
+				}
+				SAGE2_resize();
+			}
+		}
+	};
+
+	// Partitions menu
+	var partitionsActions = {
+		p1x1_menu: {value: "Fullscreen", callback: function (evt) {
+			// create one full partition
+			wsio.emit('partitionScreen', {
+				type: "row", ptn: true,	size: 12
+			});
+		}},
+		p2x1_menu: {value: "2 Columns", callback: function (evt) {
+			// create partition division of screen
+			wsio.emit('partitionScreen',
+				{
+					type: "row", size: 12,
+					children: [
+						{type: "col", ptn: true, size: 6},
+						{type: "col", ptn: true, size: 6}
+					]
+				});
+		}},
+		p3x1_menu: {value: "3 Columns", callback: function (evt) {
+			// create partition division of screen
+			wsio.emit('partitionScreen',
+				{
+					type: "row", size: 12,
+					children: [
+						{type: "col", ptn: true, size: 4},
+						{type: "col", ptn: true, size: 4},
+						{type: "col", ptn: true, size: 4}
+					]
+				});
+		}},
+		p2x2_menu: {value: "2 Columns, 2 Rows", callback: function (evt) {
+			// create partition division of screen
+			wsio.emit('partitionScreen',
+				{
+					type: "col", size: 12,
+					children: [
+						{
+							type: "row", size: 6,
+							children: [
+								{type: "col", ptn: true, size: 6},
+								{type: "col", ptn: true, size: 6}
+							]
+						},
+						{
+							type: "row", size: 6,
+							children: [
+								{type: "col", ptn: true, size: 6},
+								{type: "col", ptn: true, size: 6}
+							]
+						}
+					]
+				});
+		}},
+		p2s_1b_2s_menu: {value: "Center Pane, 4 Mini", callback: function (evt) {
+			// create partition division of screen
+			wsio.emit('partitionScreen',
+				{
+					type: "row", size: 12,
+					children: [
+						{
+							type: "col", size: 3,
+							children: [
+								{type: "row", ptn: true, size: 8},
+								{type: "row", ptn: true, size: 4}
+							]
+						},
+						{type: "col", ptn: true, size: 6},
+						{
+							type: "col", size: 3,
+							children: [
+								{type: "row", ptn: true, size: 4},
+								{type: "row", ptn: true, size: 8}
+							]
+						}
+					]
+				});
+		}},
+		p2b_1w_menu: {value: "2 Pane, Taskbar", callback: function (evt) {
+			// create partition division of screen
+			wsio.emit('partitionScreen',
+				{
+					type: "col", size: 12,
+					children: [
+						{
+							type: "row", size: 8,
+							children: [
+								{type: "col", ptn: true, size: 6},
+								{type: "col", ptn: true, size: 6}
+							]
+						},
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 12}
+							]
+						}
+					]
+				});
+		}},
+		separator: {value: "separator"},
+		partitiongrab_menu: {
+			value: "Fit Content",
+			callback: function (evt) {
+				wsio.emit('partitionsGrabAllContent');
+			}}
+	};
+
+	// View menu
+	var viewActions = {
+		settings_menu: {value: "Settings",
+			tooltip: "Opens the pointer and screen sharing settings panel",
+			callback: function (evt) {
+				interactor.settingsDialog('main');
+			}
+		},
+		separator1: {value: "separator"},
+		tile_menu: {value: "Tile Content",
+			tooltip: "Applies an automatic layout algorithm to tile the current windows",
+			callback: function (evt) {
+				// Tile applications on the wall
+				wsio.emit('tileApplications');
+			}
+		},
+		clear_menu: {value: "Clear Display",
+			tooltip: "Deletes all applications and partitions",
+			callback: function (evt) {
+				// Remove apps and partitions
+				wsio.emit('clearDisplay');
+			}
+		},
+		deleteapps_menu: {value: "Delete Applications",
+			tooltip: "Closes all the applications but leaves the partitions",
+			callback: function (evt) {
+				// Remove apps and keep the partitions
+				wsio.emit('deleteAllApplications');
+			}
+		},
+		deletepartition_menu: {value: "Delete Partitions",
+			tooltip: "Deletes only the partitions but not the applications",
+			callback: function (evt) {
+				wsio.emit('deleteAllPartitions');
+			}
+		},
+		partitions_menu: {value: "Create Partitions", submenu: buildSubmenu(partitionsActions)},
+		separator3: {value: "separator"},
+		wallScreenshot_menu: {value: "Take Screenshot",
+			tooltip: "Captures a screenshot of the wall and opens it up",
+			callback: function (evt) {
+				wsio.emit("startWallScreenshot");
+			}
+		}
+	};
+
+	// Services menu
+	var servicesActions = {
+		appstore_menu: {value: "SAGE2 Appstore",
+			tooltip: "Opens the appstore where you can download new applications\nthat can be added to your wall",
+			callback: function (evt) {
+				var storeUrl = "http://apps.sagecommons.org/";
+				window.open(storeUrl, '_blank');
+			}
+		},
+		imageservice_menu: {value: "Large Image Processing",
+			tooltip: "Opens a service that lets you process large images into pyramidal representation:\n" +
+				"download the DZI file and drop it onto your wall",
+			callback: function (evt) {
+				var imageUrl = "https://sage2rtt.evl.uic.edu:3043/upload";
+				window.open(imageUrl, '_blank');
+			}
+		},
+		videoservice_menu: {value: "Video Processing",
+			tooltip: "Opens a service that lets you convert video files to MP4 format",
+			callback: function (evt) {
+				var videoUrl = "https://sage2rtt.evl.uic.edu:3043/video/";
+				window.open(videoUrl, '_blank');
+			}
+		},
+		voiceserviceEnable_menu: {value: "Enable voice recognition",
+			tooltip: "Voice recognition will activate if left mouse button is held down for 1 second",
+			callback: SAGE2_speech.toggleVoiceRecognition
+		},
+		voiceserviceDisable_menu: {value: "Disable voice recognition",
+			tooltip: "Will not activate voice recognition when holding down left mouse button",
+			callback: SAGE2_speech.toggleVoiceRecognition
+		}
+	};
+	SAGE2_speech.uiMenuEntryEnable = servicesActions.voiceserviceEnable_menu;
+	SAGE2_speech.uiMenuEntryDisable = servicesActions.voiceserviceDisable_menu;
+
+	// Help
+	var helpActions = {
+		help_menu: {value: "SAGE2 Help",
+			tooltip: "Help on how to setup desktop sharing and\nlist supported media formats",
+			callback: function (evt) {
+				window.open("help/index.html", '_blank');
+			}
+		},
+
+		separator1: { value: "separator" },
+
+		shortcuts_menu: {value: "Interaction",
+			tooltip: "Mouse and keyboard operations and shortcuts",
+			callback: function (evt) {
+				window.open("help/interaction.html", '_blank');
+				// webix.modalbox({
+				// 	title: "Mouse and keyboard operations",
+				// 	buttons: ["Ok"],
+				// 	text: "<img src=/images/cheat-sheet.jpg width=100%>",
+				// 	width: "70%",
+				// 	height: "50%"
+				// });
+			}
+		},
+
+		voice_menu: {value: "Voice Commands",
+			tooltip: "Quick Reference for Voice Commands",
+			callback: function (evt) {
+				window.open("help/voice.html", '_blank');
+			}
+		},
+
+		separator2: { value: "separator" },
+
+		forum_menu: {value: "User Forum",
+			tooltip: "User forum on Google Groups",
+			callback: function (evt) {
+				window.open("https://groups.google.com/forum/#!forum/sage2", '_blank');
+			}
+		},
+		info_menu: {value: "Information",
+			tooltip: "Shows references and links about SAGE2",
+			callback: function (evt) {
+				window.open("help/info.html", '_blank');
+			}
+		},
+		about_menu: {value: "About",
+			tooltip: "SAGE2 server version and configuration",
+			callback: function (evt) {
+				var versionText = buildAboutHTML();
+				// Open the popup
+				webix.alert({
+					type: "alert-warning",
+					title: "SAGE2™",
+					width: "420px",
+					ok: "OK",
+					text: versionText
+				});
+			}
+		}
+	};
+
+	// Assemble the top menu bar
+	var topmenu_data = [
+		{id: "topfile_menu", value: "File",
+			config: {width: 170, zIndex: 9000},
+			submenu: buildSubmenu(fileActions)
+		},
+		{id: "view_menu", value: "View", config: {width: 170, zIndex: 9000},
+			submenu: buildSubmenu(viewActions)
+		},
+		{id: "services_menu", value: "Services", config: {width: 170, zIndex: 9000},
+			submenu: buildSubmenu(servicesActions)
+		},
+		{id: "mainhelp_menu",  value: "Help", config: {zIndex: 9000},
+			submenu: buildSubmenu(helpActions)
+		}
+	];
+
+	// Build the Advanced menu
+	var advancedToolbarActions = {
+		display_menu: {value: "Display Client 0",
+			tooltip: "Opens a new page with the first display client",
+			callback: function (evt) {
+				var displayUrl = "http://" + window.location.hostname + _this.http_port +  "/display.html?clientID=0";
+				window.open(displayUrl, '_blank');
+			}
+		},
+		overview_menu: {value: "Display Full Wall",
+			tooltip: "Opens a new page with the overview display client",
+			callback: function (evt) {
+				var overviewUrl = "http://" + window.location.hostname + _this.http_port +  "/display.html?clientID=-1";
+				window.open(overviewUrl, '_blank');
+			}
+		},
+		separator1: { value: "separator" },
+		audio_menu: {value: "Audio Manager",
+			tooltip: "Opens a new page with the audio manager",
+			callback: function (evt) {
+				var audioUrl = "http://" + window.location.hostname + _this.http_port +  "/audioManager.html";
+				window.open(audioUrl, '_blank');
+			}
+		},
+		console_menu: {value: "Server Console",
+			tooltip: "Opens a new page displaying the server debug messages",
+			callback: function (evt) {
+				window.open("admin/console.html", '_blank');
+			}
+		},
+		user_menu: {value: "User Console",
+			tooltip: "Opens a new page displaying users and roles",
+			callback: function (evt) {
+				window.open("admin/SAGE2_user.html", '_blank');
+			}
+		},
+		performance_menu: {value: "Performance Console",
+			tooltip: "Opens a new page displaying performance monitoring data",
+			callback: function (evt) {
+				window.open("admin/performance.html", '_blank');
+			}
+		},
+		separator2: { value: "separator" }
+	};
+
+	// Advanced setting, right-aligned in the top menubar
+	var advancedToolbar = {
+		view: "toolbar", paddingY: 0, css: {'text-align': 'right'}, elements: [
+			{view: "menu", id: "advancedToolbar", paddingY: 0, borderless: true,
+				tooltip: false,
+				submenuConfig: {
+					tooltip: {
+						// function building the tooltip text
+						template: showTooltip,
+						// tooltip position offset
+						dx: 50, dy: 5,
+						width: 100
+					},
+					// Delay the tooltip by 0.5s
+					mouseEventDelay: 500
+				},
+				data: [
+					{id: "mainadmin_menu", value: "Advanced", config: {zIndex: 9000},
+						submenu: buildSubmenu(advancedToolbarActions)
+					}
+				]
+			}
+		]
+	};
+
+	// On mobile, menu opens with a click, otherwise hovers
+	var clickOrNoClick = __SAGE2__.browser.isMobile ? "click" : null;
+
+	var topmenu = {
+		id: "topmenu",
+		view: "menu",
+		// click or not to open
+		openAction: clickOrNoClick,
+		data: topmenu_data,
+		tooltip: false,
+		submenuConfig: {
+			tooltip: {
+				// function building the tooltip text
+				template: showTooltip,
+				// tooltip position offset
+				dx: 50, dy: 5,
+				width: 100
+			},
+			// Delay the tooltip by 0.5s
+			mouseEventDelay: 500
+		}
+	};
+
+	// Top menubar above the UI
+	// Create the top menubar, with menu and avanced settings in the right-aligned toolbar
+	webix.ui({
+		container: document.getElementById('mainMenuBar'),
+		id: "toplayout",
+		// CSS styling for colors
+		css: "my_style",
+		// Remove the css borders for full width
+		borderless: true,
+		rows: [{
+			view: "toolbar",
+			cols: [topmenu, advancedToolbar]
+		}]
+	});
+
+	// Disable the screenshot menu. Will wbe enabled later froms server
+	$$('topmenu').disableItem('wallScreenshot_menu');
+	// Disable voice recognition. Will be enabled from SAGE2_Speech.js file
+	$$('topmenu').hideItem('voiceserviceEnable_menu');
+	$$('topmenu').hideItem('voiceserviceDisable_menu');
+
+	// Set the actions for the file menu
+	attachCallbacks($$("topmenu").getSubMenu('topfile_menu'), fileActions);
+	// Set the actions for the view menu
+	attachCallbacks($$('topmenu').getSubMenu('view_menu'), viewActions);
+	// Set the actions for the services menu
+	attachCallbacks($$("topmenu").getSubMenu('services_menu'), servicesActions);
+	// Set the actions for the help menu
+	attachCallbacks($$("topmenu").getSubMenu('mainhelp_menu'), helpActions);
+	// Set the actions for the advanced menu
+	attachCallbacks($$("advancedToolbar").getSubMenu('mainadmin_menu'), advancedToolbarActions);
+	// Set the actions for the partition menu
+	attachCallbacks($$('topmenu').getSubMenu('partitions_menu'), partitionsActions);
+
+	/////////////////////////////////////////////////////////////////////////////
 
 	this.main = webix.ui({
 		container: mydiv,
@@ -128,7 +615,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 		css: { border: "solid 1px #565656;"},
 		rows: [
 			{
-				view: "toolbar", cols: [mymenu, mytoolbar]
+				view: "toolbar",
+				cols: [menuMediaBrowser, searchToolbar]
 			},
 			{ cols: [
 				{
@@ -142,7 +630,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 							minWidth: 120,
 							width: 180,
 							activeTitle: true, // close/open when selected
-							tooltip: mytip,
+							tooltip: showTooltip,
 							data: data_with_icon,
 							onContext: {} // required for context menu
 						},
@@ -162,11 +650,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 				{
 					id: "all_table",
 					view: "datatable",
-					// editable: true,
 					gravity: 2, // two times bigger
 					columnWidth: 200,
 					resizeColumn: true,
-					// animate: false,
 					scroll: 'y',
 					drag: true,
 					select: "multiselect",
@@ -189,17 +675,17 @@ function FileManager(wsio, mydiv, uniqueID) {
 					columns: [
 						{id: "index", header: "",     width: 40, minWidth: 25, sort: "int"},
 						{id: "name",  header: "Name", minWidth: 180,
-							sort: "text", fillspace: true},
+							sort: "string", fillspace: true},
 						{id: "user",  header: "User", width: 80, minWidth: 50,
-							sort: "text", css: {'text-align': 'right'}},
+							sort: "string", css: {'text-align': 'right'}},
 						{id: "size",  header: "Size", width: 80, minWidth: 50,
 							sort: sortBySize, css: {'text-align': 'right'}},
 						{id: "date",  header: "Date", width: 150, minWidth: 80,
-							sort: sortByDate, css: {'text-align': 'center'}},
+							sort: sortByDate1, css: {'text-align': 'center'}},
 						{id: "ago",   header: "Modified", width: 100, minWidth: 80,
-							sort: sortByDate, css: {'text-align': 'right'}},
+							sort: sortByDate2, css: {'text-align': 'right'}},
 						{id: "type",  header: "Type", width: 80, minWidth: 50,
-							sort: "text", css: {'text-align': 'center'}}
+							sort: "string", css: {'text-align': 'center'}}
 					],
 					data: [
 					]
@@ -230,7 +716,11 @@ function FileManager(wsio, mydiv, uniqueID) {
 							id: "thumb",
 							template: function(obj) {
 								if (obj.image) {
-									return "<img src='" + obj.image + "_256.jpg'></img>";
+									if (obj.session) {
+										// if it is from a session
+										return "<img src='" + obj.image + "' style='width:100%;'></img>";
+									}
+									return "<img src='" + obj.image + "_256.jpg' style='width:100%;'></img>";
 								}
 								return "";
 							}
@@ -238,10 +728,16 @@ function FileManager(wsio, mydiv, uniqueID) {
 					]
 				}
 			]
-		}
+			}
 		]
 	});
 	this.tree = $$("tree1");
+
+	// Set the actions for the media browser menu
+	attachCallbacks($$("menuMediaBrowser").getSubMenu('file_menu'),
+		fileMediaActions);
+	attachCallbacks($$("menuMediaBrowser").getSubMenu('edit_menu'),
+		editMediaActions);
 
 	// Prevent HTML drop on rest of the page
 	webix.event(window, 'dragover', function(evt) {
@@ -256,196 +752,38 @@ function FileManager(wsio, mydiv, uniqueID) {
 		$$("uploadlist").clearAll();
 	});
 
-	$$("mymenu").attachEvent("onMenuItemClick", function(evt) {
-		var mainUI = document.getElementById('mainUI');
-		if (evt === "about_menu") {
-			var versionText = "SAGE2 Version:<br>";
-			if (sage2Version.branch && sage2Version.commit && sage2Version.date) {
-				versionText += "<b>v" + sage2Version.base + "-" + sage2Version.branch + "-" +
-					sage2Version.commit + "</b> " + sage2Version.date;
-			} else {
-				versionText += "<b>v" + sage2Version.base + "</b>";
-			}
-			webix.alert({
-				type: "alert-warning",
-				title: "SAGE2 (tm)",
-				ok: "OK",
-				text: versionText
-			});
-		} else if (evt === "info_menu") {
-			window.open("help/info.html", '_blank');
-		} else if (evt === "help_menu") {
-			window.open("help/index.html", '_blank');
-		} else if (evt === "refresh_menu") {
-			wsio.emit('requestStoredFiles');
-		} else if (evt === "upload_menu") {
-			// open the file uploader panel
-			showDialog('uploadDialog');
-		} else if (evt === "folder_menu") {
-			var item = _this.tree.getSelectedItem();
-			if (item && item.sage2URL) {
-				webix.ui({
-					view: "window",
-					id: "folder_form",
-					position: "center",
-					modal: true,
-					head: "New folder in " + item.sage2URL,
-					body: {
-						view: "form",
-						width: 400,
-						borderless: false,
-						elements: [
-							{view: "text", id: "folder_name", label: "Folder name", name: "folder"},
-							{margin: 5, cols: [
-								{view: "button", value: "Cancel", click: function() {
-									this.getTopParentView().hide();
-								}},
-								{view: "button", value: "Create", type: "form", click: function() {
-									createFolder(item, this.getFormView().getValues());
-									this.getTopParentView().hide();
-								}}
-							]}
-						],
-						elementsConfig: {
-							labelPosition: "top"
-						}
-					}
-				}).show();
-				// Attach handlers for keyboard
-				$$("folder_name").attachEvent("onKeyPress", function(code, e) {
-					// ESC closes
-					if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-						this.getTopParentView().hide();
-						return false;
-					}
-					// ENTER activates
-					if (code === 13 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-						createFolder(item, this.getFormView().getValues());
-						this.getTopParentView().hide();
-						return false;
-					}
-				});
-				$$('folder_name').focus();
-			} else {
-				webix.alert({
-					type: "alert-warning",
-					title: "SAGE2",
-					ok: "OK",
-					text: "Select a parent folder first"
-				});
-			}
-		} else if (evt === "display_menu") {
-			var displayUrl = "http://" + window.location.hostname + _this.http_port +  "/display.html?clientID=0";
-			window.open(displayUrl, '_blank');
-		} else if (evt === "overview_menu") {
-			var overviewUrl = "http://" + window.location.hostname + _this.http_port +  "/display.html?clientID=-1";
-			window.open(overviewUrl, '_blank');
-		} else if (evt === "clear_menu") {
-			wsio.emit('clearDisplay');
-		} else if (evt === "tile_menu") {
-			wsio.emit('tileApplications');
-		} else if (evt === "hidefm_menu") {
-			document.getElementById('fileManager').style.display = "none";
-			if (mainUI.style.display === "none") {
-				mainUI.style.display = "block";
-			}
-			SAGE2_resize();
-		} else if (evt === "hideui_menu") {
-			// Show and hide the main ui
-			if (mainUI.style.display === "none") {
-				mainUI.style.display = "block";
-				SAGE2_resize();
-			} else {
-				mainUI.style.display = "none";
-				_this.main.config.height = window.innerHeight;
-			}
-			_this.main.adjust();
-		} else if (evt === "audio_menu") {
-			var audioUrl = "http://" + window.location.hostname + _this.http_port +  "/audioManager.html";
-			window.open(audioUrl, '_blank');
-		} else if (evt === "web_menu") {
-
-			// Open a URL in a webview
-			webix.ui({
-				view: "window",
-				id: "web_form",
-				position: "center",
-				modal: true,
-				zIndex: 9999,
-				head: "Create a web view",
-				body: {
-					view: "form",
-					width: 400,
-					borderless: false,
-					elements: [
-						{
-							view: "text", id: "web_url", label: "Type a URL", name: "url"
-						},
-						{margin: 5, cols: [
-							{view: "button", value: "Cancel", click: function() {
-								this.getTopParentView().hide();
-							}},
-							{view: "button", value: "Create", type: "form", click: function() {
-								var data = this.getFormView().getValues();
-								wsio.emit('openNewWebpage', {
-									url: data.url,
-									user: this.uniqueID
-								});
-								this.getTopParentView().hide();
-							}}
-						]}
-					],
-					elementsConfig: {
-						labelPosition: "top"
-					}
-				}
-			}).show();
-			// Attach handlers for keyboard
-			$$("web_url").attachEvent("onKeyPress", function(code, e) {
-				// ESC closes
-				if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-					this.getTopParentView().hide();
-					return false;
-				}
-				// ENTER activates
-				if (code === 13 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-					var data = this.getFormView().getValues();
-					console.log('Webview', data.url);
-					window.open(data.url,
-						"SAGE2 browser",
-						"resizable,scrollbars,status");
-					wsio.emit('openNewWebpage', {
-						url: data.url,
-						user: this.uniqueID
-					});
-					this.getTopParentView().hide();
-					return false;
-				}
-			});
-			$$('web_url').focus();
-
-		} else if (evt === "drawing_menu") {
-			// window.open("drawing.html", '_blank');
-		} else if (evt === "console_menu") {
-			window.open("admin/console.html", '_blank');
-		} else {
-			// dunno
-		}
-	});
-
+	// filter the list of assets based on a search string
 	$$("search_text").attachEvent("onTimedKeyPress", function() {
-		var sel = _this.tree.getSelectedId() || "treeroot";
+		var select = _this.tree.getSelectedId() || "treeroot";
+		updateSearch(select);
 		var filter = $$("search_text").getValue();
-		updateSearch(sel);
 		if (filter) {
+			let filter_regexp = new RegExp(filter, "i");
 			_this.allTable.filter(function(obj) {
-				return obj.name.search(new RegExp(filter, "i")) !== -1;
+				// do a case-insensitive search on name, user and type
+				return (obj.name.search(filter_regexp) !== -1) ||
+					(obj.user.search(filter_regexp) !== -1) ||
+					(obj.type.search(filter_regexp) !== -1);
 			}, null, true);
 		}
 	});
 
 	// Get handle on the middle table data
 	this.allTable = $$("all_table");
+
+	// Remember the sorting direction
+	this.allTable.attachEvent("onAfterSort", function(sort_by, sort_dir, sort_as) {
+		_this.sorting.dir = sort_dir;
+		_this.sorting.as  = sort_as;
+	});
+	// Remember the sorting column
+	this.allTable.attachEvent("onHeaderClick", function(id, e, trg) {
+		_this.sorting.by = id.column;
+	});
+
+	// Sort the table with default order
+	this.allTable.sort(this.sorting.by, this.sorting.dir);
+	this.allTable.markSorting(this.sorting.by, this.sorting.dir);
 
 	// User selection
 	this.allTable.attachEvent("onSelectChange", function(evt) {
@@ -462,13 +800,13 @@ function FileManager(wsio, mydiv, uniqueID) {
 		metadata.config.elements = [];
 		metadata.config.elements.push({label: "Metadata", type: "label"});
 		metadata.config.elements.push({label: "Width",
-				value: _this.allFiles[elt.id].exif.ImageWidth || '-'});
+			value: _this.allFiles[elt.id].exif.ImageWidth || '-'});
 		metadata.config.elements.push({label: "Height",
-				value: _this.allFiles[elt.id].exif.ImageHeight || '-'});
+			value: _this.allFiles[elt.id].exif.ImageHeight || '-'});
 		metadata.config.elements.push({label: "Author",
-				value: _this.allFiles[elt.id].exif.Creator || '-'});
+			value: _this.allFiles[elt.id].exif.Creator || '-'});
 		metadata.config.elements.push({label: "File",
-				value: _this.allFiles[elt.id].exif.MIMEType || '-'});
+			value: _this.allFiles[elt.id].exif.MIMEType || '-'});
 
 		// Add an EXIF panel for pictures
 		var info;
@@ -527,6 +865,10 @@ function FileManager(wsio, mydiv, uniqueID) {
 			metadata.config.elements.push({label: "Encoder", value: info});
 
 		} else if (_this.allFiles[elt.id].exif.MIMEType.indexOf('application/pdf') >= 0) {
+			// Clear the panel
+			metadata.config.elements = [];
+
+			// Create a PDF section
 			metadata.config.elements.push({label: "PDF", type: "label"});
 
 			info = _this.allFiles[elt.id].exif.Title || '';
@@ -564,6 +906,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 				}
 			}
 		} else if (_this.allFiles[elt.id].exif.MIMEType.indexOf('application/custom') >= 0) {
+			// Clear the panel
+			metadata.config.elements = [];
+			// Add an application section
 			metadata.config.elements.push({label: "Application", type: "label"});
 
 			info = _this.allFiles[elt.id].exif.metadata.title || '';
@@ -597,10 +942,27 @@ function FileManager(wsio, mydiv, uniqueID) {
 
 			// Parse description
 			info = _this.allFiles[elt.id].exif.metadata.description || '';
-			metadata.config.elements.push({label: info, type: "label",
-					css: {height: "100px"}});
+			metadata.config.elements.push({
+				label: info, type: "label",
+				css: {height: "100px"}
+			});
+		} else if (_this.allFiles[elt.id].exif.MIMEType.indexOf('sage2/url') >= 0) {
+			// Clear the panel
+			metadata.config.elements = [];
+			metadata.config.elements.push({label: "URL", type: "label"});
+			metadata.config.elements.push({label: "Link",
+				value: _this.allFiles[elt.id].sage2URL || '-'});
+			metadata.config.elements.push({label: "Author",
+				value: _this.allFiles[elt.id].exif.SAGE2user || '-'});
 		} else if (_this.allFiles[elt.id].exif.MIMEType.indexOf('sage2/session') >= 0) {
-			// Noting yet
+			// Clear the panel
+			metadata.config.elements = [];
+
+			metadata.config.elements.push({label: "Metadata", type: "label"});
+			metadata.config.elements.push({label: "Author",
+				value: _this.allFiles[elt.id].exif.Creator || '-'});
+			metadata.config.elements.push({label: "File",
+				value: _this.allFiles[elt.id].exif.MIMEType || '-'});
 		}
 
 		// Done updating metadata
@@ -608,33 +970,19 @@ function FileManager(wsio, mydiv, uniqueID) {
 
 		// Update the thumbnail
 		var thumb = $$("thumb");
-		thumb.data = {image: _this.allFiles[elt.id].exif.SAGE2thumbnail};
+		// what type of app is it
+		var sessionType = _this.allFiles[elt.id].exif.MIMEType === "sage2/session" ||
+			_this.allFiles[elt.id].exif.MIMEType === "sage2/url";
+		// default thumbnail
+		var thumbURL = _this.allFiles[elt.id].exif.SAGE2thumbnail;
+		// if it's a URL, try to get the  favico of the site
+		if (_this.allFiles[elt.id].exif.MIMEType === "sage2/url") {
+			thumbURL = "https://icons.better-idea.org/icon?size=48..128..256&url=" +
+				_this.allFiles[elt.id].sage2URL;
+		}
+		thumb.data = {image: thumbURL, session: sessionType};
 		thumb.refresh();
 	});
-
-	this.openItem = function(tid, position) {
-		var appType = this.getApplicationFromId(tid);
-		// Opening an app
-		if (appType === "application/custom") {
-			wsio.emit('loadApplication',
-					{application: tid,
-					user: _this.uniqueID,
-					position: position});
-		} else if (appType === "sage2/session") {
-			wsio.emit('loadFileFromServer',
-					{application: 'load_session',
-					filename: tid,
-					user: _this.uniqueID,
-					position: position});
-		} else {
-			// Opening a file
-			wsio.emit('loadFileFromServer',
-					{application: appType,
-					filename: tid,
-					user: _this.uniqueID,
-					position: position});
-		}
-	};
 
 	this.allTable.attachEvent("onItemDblClick", function(id, e, node) {
 		// Open the selected content on the wall
@@ -679,7 +1027,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			context.html = "<div style='padding:8px;background:#d3e3ef'>";
 			if (context.source.length === 1) {
 				elt = _this.allFiles[context.start];
-				context.html += '<img width=96 src=\"' + elt.exif.SAGE2thumbnail + '_256.jpg\" />';
+				context.html += '<img width=96 src="' + elt.exif.SAGE2thumbnail + '_256.jpg" />';
 				context.html += '<br>' + elt.exif.FileName;
 			} else {
 				for (var i = 0; i < Math.min(context.source.length, 35); i++) {
@@ -692,6 +1040,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		}
 		return false;
 	});
+
 	// Track the position of the dragged item
 	this.allTable.$dragPos = function(pos, event, node) {
 		// dragPosition used in drop function
@@ -711,6 +1060,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			context.target.startsWith("Video:")   ||
 			context.target.startsWith("App:")     ||
 			context.target.startsWith("Session:") ||
+			context.target.startsWith("Link:")     ||
 			context.target.startsWith("Mine:")) {
 			// No DnD on search icons
 			return false;
@@ -766,12 +1116,12 @@ function FileManager(wsio, mydiv, uniqueID) {
 	this.tree.closeAll();
 	this.tree.open("treeroot");
 
-	webix.ui({
+	var ctx_menu = webix.ui({
 		view: "contextmenu",
 		id: "cmenu",
-		data: ["Open", "Download", { $template: "Separator" }, "Delete"],
+		data: ["Open", "Copy URL", "Open in Tab", "Download", { $template: "Separator" }, "Delete"],
 		on: {
-			onItemClick: function(id) {
+			onMenuItemClick: function(id) {
 				var i;
 				var context = this.getContext();
 				var list    = context.obj;
@@ -779,8 +1129,15 @@ function FileManager(wsio, mydiv, uniqueID) {
 				var dItems  = _this.allTable.getSelectedId(true);
 
 				if (id === "Download") {
-					downloadItem(list.getItem(listId).id);
-
+					// Go over the list of selected items
+					for (i = 0; i < dItems.length; i++) {
+						// Trigger the download command
+						downloadItem(dItems[i].id);
+					}
+				} else if (id === "Copy URL") {
+					copyURLItem(list.getItem(listId).id);
+				} else if (id === "Open in Tab") {
+					openURLItem(list.getItem(listId).id);
 				} else if (id === "Open") {
 					var tbo = [];
 					if (dItems.length === 0) {
@@ -830,10 +1187,14 @@ function FileManager(wsio, mydiv, uniqueID) {
 							if (yesno) {
 								// for all elements
 								tbd.map(function(tid) {
-									// send delete message to server
-									wsio.emit('deleteElementFromStoredFiles',
-										{filename: tid});
-									_this.allTable.remove(tid);
+									var apptype  = _this.allFiles[tid].exif.MIMEType;
+									// Send delete message to server
+									wsio.emit('deleteElementFromStoredFiles', {
+										filename: tid,
+										application: apptype
+									});
+									// Element will be deleted from table by return message from server
+									// _this.allTable.remove(tid);
 								});
 							}
 						}
@@ -842,12 +1203,275 @@ function FileManager(wsio, mydiv, uniqueID) {
 			}
 		}
 	});
-	$$("cmenu").attachTo($$("all_table"));
+	ctx_menu.attachTo($$("all_table"));
+	// Hidding some menus
+	$$("all_table").attachEvent('onBeforeContextMenu', function(id, e, node) {
+		// Reset
+		$$('cmenu').enableItem('Copy URL');
+		$$('cmenu').enableItem('Open in Tab');
+		$$('cmenu').enableItem('Download');
+		$$('cmenu').enableItem('Delete');
+		// Select
+		var dItems  = this.getSelectedId(true);
+		if (dItems.length === 1) {
+			let item = dItems[0].id;
+			let appType = _this.allFiles[item].exif.MIMEType;
+			if (appType === "sage2/session") {
+				$$('cmenu').disableItem('Copy URL');
+				$$('cmenu').disableItem('Open in Tab');
+				$$('cmenu').disableItem('Download');
+			} else if (appType === "application/custom") {
+				$$('cmenu').disableItem('Copy URL');
+				$$('cmenu').disableItem('Open in Tab');
+				$$('cmenu').disableItem('Download');
+				$$('cmenu').disableItem('Delete');
+			} else if (appType === "sage2/url") {
+				$$('cmenu').disableItem('Download');
+			}
+		}
+		return true;
+	});
 
 	this.main.config.height = Math.round(window.innerHeight * 0.80);
 	this.main.show();
 	this.main.adjust();
 
+	///////////////////////////////////////////////////////////////////////////////////
+
+	/**
+     * Setup the callbacks for a menu, using a closure (tricky one)
+	 *
+	 * @method attachCallbacks
+	 * @param element {Object} webix menu object to attach the callbacks to
+	 * @param actions {Object} object containing the callback for each id
+	 */
+	function attachCallbacks(element, actions) {
+		if (element) {
+			element.attachEvent("onItemClick", (function (act) {
+				// Create a closure to keep a local copy of the array 'actions'
+				return function(evt, e, node) {
+					if (evt in act) {
+						if (act[evt].callback) {
+							act[evt].callback();
+						}
+					}
+				};
+			}(actions)));
+			// pass the local variable to the closure
+		}
+	}
+
+	/**
+     * Build a submenu for a description object. Each entry with id and value fields.
+	 *
+	 * @method buildSubmenu
+	 * @param actions {Object} object containing the callback for each id
+	 * @return {Array} array of entries with id and value field
+	 */
+	function buildSubmenu(actions) {
+		var entries = [];
+		for (var a in actions) {
+			// test for a special value to build a separator
+			if (actions[a].value === "separator") {
+				entries.push({$template: "Separator"});
+			} else if (actions[a].submenu) {
+				entries.push({id: a,
+					value: actions[a].value,
+					config: {autowidth: true, zIndex: 9000},
+					submenu: actions[a].submenu,
+					tooltip: actions[a].tooltip
+				});
+			} else {
+				// otherwise just add the object
+				entries.push({id: a,
+					value: actions[a].value,
+					tooltip: actions[a].tooltip
+				});
+			}
+		}
+		return entries;
+	}
+
+	/**
+     * Return the tooltip field of an object or empty string
+	 *
+	 * @method showTooltip
+	 * @param element {Object} object with tooltip value or not
+	 * @return {String} tooltip string
+	 */
+	function showTooltip(obj) {
+		return obj.tooltip ? obj.tooltip : "";
+	}
+
+	/**
+     * Build some HTML to show info about the SAGE2 server
+	 *
+	 * @method buildAboutHTML
+	 * @return {String} HTML popup showing version and info
+	 */
+	function buildAboutHTML() {
+		var versionText = "<p>";
+		// Add new information
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Host</span>: " + displayUI.config.host + "</p>";
+		// Show the type of web browser
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Browser</span>: " +
+			__SAGE2__.browser.browserType + " " + __SAGE2__.browser.version + "</p>";
+		versionText += "</p>";
+		// Configuration
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Resolution</span>: " +
+			displayUI.config.totalWidth + " x " +  displayUI.config.totalHeight + " pixels";
+		versionText += " (" + displayUI.config.layout.columns + " by " + displayUI.config.layout.rows + " tiles";
+		versionText += "  - " + displayUI.config.resolution.width + " x " + displayUI.config.resolution.height + ")" + "</p>";
+		// Add version
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>SAGE2 Version: </span>";
+		if (sage2Version.branch && sage2Version.commit && sage2Version.date) {
+			versionText += "<b>v" + sage2Version.base + "-" + sage2Version.branch + "-" +
+				sage2Version.commit + "</b> " + sage2Version.date;
+		} else {
+			versionText += "<b>v" + sage2Version.base + "</b>";
+		}
+
+		return versionText;
+	}
+
+	/**
+     * Try to delete one or several selected files
+	 *
+	 * @method deleteFilesUI
+	 */
+	function deleteFilesUI() {
+		// Get selected items
+		var dItems = _this.allTable.getSelectedId(true);
+		var tbd = [];
+		var textTbd = "<ol style=\"list-style-position: inside;padding:10px;text-align:left;\">";
+		var numItems = 0;
+		if (dItems.length > 0) {
+			for (var i = 0; i < dItems.length; i++) {
+				tbd.push(dItems[i].id);
+				// Only list first 15 items...
+				if (i < 14) {
+					textTbd += '<li>' + dItems[i].id + '</li>';
+				} else if (i === 14) {
+					textTbd += '<li>...</li>';
+				}
+				numItems++;
+			}
+			textTbd += "</ol>";
+			webix.confirm({
+				title: "Confirm deletion - " + numItems + " item(s)",
+				width: "75%",
+				ok: "Yes",
+				cancel: "No",
+				text: textTbd,
+				callback: function(yesno) {
+					if (yesno) {
+						// for all elements
+						tbd.map(function(tid) {
+							var apptype  = _this.allFiles[tid].exif.MIMEType;
+							// Send delete message to server
+							wsio.emit('deleteElementFromStoredFiles', {
+								filename: tid,
+								application: apptype
+							});
+						});
+					}
+				}
+			});
+		}
+	}
+
+	/**
+     * Try to create a folder inside the currently selected folder
+	 *
+	 * @method createFolderUI
+	 */
+	function createFolderUI() {
+		var item = _this.tree.getSelectedItem();
+		if (item && item.sage2URL) {
+			webix.ui({
+				view: "window",
+				id: "folder_form",
+				position: "center",
+				modal: true,
+				head: "New folder in " + item.sage2URL,
+				body: {
+					view: "form",
+					width: 400,
+					borderless: false,
+					elements: [
+						{view: "text", id: "folder_name", label: "Folder name", name: "folder"},
+						{margin: 5, cols: [
+							{view: "button", value: "Cancel", click: function() {
+								this.getTopParentView().hide();
+							}},
+							{view: "button", value: "Create", type: "form", click: function() {
+								createFolder(item, this.getFormView().getValues());
+								this.getTopParentView().hide();
+							}}
+						]}
+					],
+					elementsConfig: {
+						labelPosition: "top"
+					}
+				}
+			}).show();
+			// Attach handlers for keyboard
+			$$("folder_name").attachEvent("onKeyPress", function(code, e) {
+				// ESC closes
+				if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+					this.getTopParentView().hide();
+					return false;
+				}
+				// ENTER activates
+				if (code === 13 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+					createFolder(item, this.getFormView().getValues());
+					this.getTopParentView().hide();
+					return false;
+				}
+			});
+			$$('folder_name').focus();
+		} else {
+			webix.alert({
+				type: "alert-warning",
+				title: "SAGE2",
+				ok: "OK",
+				text: "Select a parent folder first"
+			});
+		}
+	}
+
+	this.openItem = function(tid, position) {
+		var appType = this.getApplicationFromId(tid);
+		// Opening an app
+		if (appType === "application/custom") {
+			wsio.emit('loadApplication', {
+				application: tid,
+				user: _this.uniqueID,
+				position: position
+			});
+		} else if (appType === "sage2/session") {
+			wsio.emit('loadFileFromServer',	{
+				application: 'load_session',
+				filename: tid,
+				user: _this.uniqueID,
+				position: position
+			});
+		} else if (appType === "sage2/url") {
+			wsio.emit('openNewWebpage',	{
+				url: tid,
+				user: _this.uniqueID,
+				position: position
+			});
+		} else {
+			// Opening a file
+			wsio.emit('loadFileFromServer', {
+				application: appType,
+				filename: tid,
+				user: _this.uniqueID,
+				position: position
+			});
+		}
+	};
 
 	this.getApplicationFromId = function(id) {
 		// default answer
@@ -864,46 +1488,85 @@ function FileManager(wsio, mydiv, uniqueID) {
 				response = "movie_player";
 			} else if (elt.exif.MIMEType.indexOf('sage2/session') >= 0) {
 				response = "load_session";
+			} else if (elt.exif.MIMEType.indexOf('sage2/url') >= 0) {
+				response = "sage2/url";
 			}
 		}
 		// send the result
 		return response;
 	};
 
-	function sortByDate(a, b) {
-		// fileds are 'moment' objects
-		a = _this.allFiles[a.id].exif.FileModifyDate;
-		b = _this.allFiles[b.id].exif.FileModifyDate;
-		return a > b ? 1 : (a < b ? -1 : 0);
-	}
-	function sortBySize(a, b) {
-		// File size in byte
-		a = _this.allFiles[a.id].exif.FileSize;
-		b = _this.allFiles[b.id].exif.FileSize;
-		return a > b ? 1 : (a < b ? -1 : 0);
-	}
-
+	/**
+	 * Trigger a browser downlaod
+	 *
+	 * @method     downloadItem
+	 * @param      {<type>}   elt     The element
+	 * @return     {Boolean}  (description_of_the_return_value)
+	 */
 	function downloadItem(elt) {
-		var url = _this.allFiles[elt].sage2URL;
-		if (url) {
-			// Open the file
-			// window.open(url, '_blank');
+		var mimetype = _this.allFiles[elt].exif.MIMEType;
+		if (mimetype !== "sage2/url" &&
+			mimetype !== "application/custom") {
+			var url = _this.allFiles[elt].sage2URL;
+			if (url) {
+				// Download the file
+				var link = document.createElement('a');
+				link.href = url;
+				if (link.download !== undefined) {
+					// Set HTML5 download attribute. This will prevent file from opening if supported.
+					var fileName = url.substring(url.lastIndexOf('/') + 1, url.length);
+					link.download = fileName;
+				}
+				// Dispatching click event
+				if (document.createEvent) {
+					var me = document.createEvent('MouseEvents');
+					me.initEvent('click', true, true);
+					link.dispatchEvent(me);
+					return true;
+				}
+			}
+		} else {
+			showSAGE2Message("File cannot be downloaded");
+		}
+	}
 
-			// Download the file
-			var link = document.createElement('a');
-			link.href = url;
-			if (link.download !== undefined) {
-				// Set HTML5 download attribute. This will prevent file from opening if supported.
-				var fileName = url.substring(url.lastIndexOf('/') + 1, url.length);
-				link.download = fileName;
+	/**
+	 * Copy the URL of the item into the user's clipboard
+	 *
+	 * @method     copyURLItem
+	 * @param      {<type>}  elt     The element
+	 */
+	function copyURLItem(elt) {
+		var sage2url = _this.allFiles[elt].sage2URL;
+		if (sage2url) {
+			var url;
+			if (_this.allFiles[elt].exif.MIMEType === 'sage2/url') {
+				url = sage2url;
+			} else {
+				url = window.location.origin + sage2url;
 			}
-			// Dispatching click event
-			if (document.createEvent) {
-				var me = document.createEvent('MouseEvents');
-				me.initEvent('click', true, true);
-				link.dispatchEvent(me);
-				return true;
+			// Copy to clipboard (defined in SAGE2_runtime)
+			SAGE2_copyToClipboard(url);
+		}
+	}
+
+	/**
+	 * Opens the content in a browser tab
+	 *
+	 * @method     openURLItem
+	 * @param      {<type>}  elt     The element
+	 */
+	function openURLItem(elt) {
+		var sage2url = _this.allFiles[elt].sage2URL;
+		if (sage2url) {
+			var url;
+			if (_this.allFiles[elt].exif.MIMEType === 'sage2/url') {
+				url = sage2url;
+			} else {
+				url = window.location.origin + sage2url;
 			}
+			// open in a browser tab
+			window.open(url, '_blank');
 		}
 	}
 
@@ -935,55 +1598,28 @@ function FileManager(wsio, mydiv, uniqueID) {
 			_this.allTable.filter(function(obj) {
 				return _this.allFiles[obj.id].exif.MIMEType.indexOf('sage2/session') >= 0;
 			});
+		} else if (searchParam === "Link:/") {
+			_this.allTable.filter(function(obj) {
+				return _this.allFiles[obj.id].exif.MIMEType.indexOf('sage2/url') >= 0;
+			});
 		} else if (searchParam === "Mine:/") {
 			_this.allTable.filter(function(obj) {
 				var val = false;
 				if (_this.allFiles[obj.id].exif.SAGE2user) {
-					val = _this.allFiles[obj.id].exif.SAGE2user.indexOf(localStorage.SAGE2_ptrName) >= 0;
+					val = _this.allFiles[obj.id].exif.SAGE2user.indexOf(interactor.pointerColor) >= 0;
 				}
 				return val;
 			});
 		} else if (searchParam === "treeroot") {
-			_this.allTable.filter();
+			// List everything
+			// _this.allTable.filter();
+
+			// List all but the applications
+			_this.allTable.filter(function(obj) {
+				return _this.allFiles[obj.id].exif.MIMEType.indexOf('application/custom') < 0;
+			});
 		} else {
-			// var query = searchParam.split(':');
-			// if (query[0] === "Image") {
-			// 	_this.allTable.filter(function(obj) {
-			// 		return (_this.allFiles[obj.id].exif.MIMEType.indexOf('image') >= 0) &&
-			// 				(_this.allFiles[obj.id].sage2URL.lastIndexOf(query[1], 0) === 0);
-			// 	});
-			// } else if (query[0] === "PDF") {
-			// 	_this.allTable.filter(function(obj) {
-			// 		return (_this.allFiles[obj.id].exif.MIMEType.indexOf('pdf') >= 0) &&
-			// 				(_this.allFiles[obj.id].sage2URL.lastIndexOf(query[1], 0) === 0);
-			// 	});
-			// } else if (query[0] === "Note") {
-			// 	_this.allTable.filter(function(obj) {
-			// 		return (_this.allFiles[obj.id].exif.sage2Type.indexOf('application/note') >= 0) &&
-			// 				(_this.allFiles[obj.id].sage2URL.lastIndexOf(query[1], 0) === 0);
-			// 	});
-			// } else if (query[0] === "Video") {
-			// 	_this.allTable.filter(function(obj) {
-			// 		return (_this.allFiles[obj.id].exif.MIMEType.indexOf('video') >= 0) &&
-			// 				(_this.allFiles[obj.id].sage2URL.lastIndexOf(query[1], 0) === 0);
-			// 	});
-			// } else if (query[0] === "App") {
-			// 	_this.allTable.filter(function(obj) {
-			// 		return (_this.allFiles[obj.id].exif.MIMEType.indexOf('application/custom') >= 0) &&
-			// 				(_this.allFiles[obj.id].sage2URL.lastIndexOf(query[1], 0) === 0);
-			// 	});
-			// } else if (query[0] === "Session") {
-			// 	_this.allTable.filter(function(obj) {
-			// 		return (_this.allFiles[obj.id].exif.MIMEType.indexOf('sage2/session') >= 0) &&
-			// 				(_this.allFiles[obj.id].sage2URL.lastIndexOf(query[1], 0) === 0);
-			// 	});
-			// } else if (query[0] === "Config") {
-			// 	_this.allTable.filter(function(obj) {
-			// 		return false;
-			// 	});
-			// } else {
-			// 	// console.log('Default search on:', searchParam);
-			// }
+			// dunno
 		}
 	}
 
@@ -996,7 +1632,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 				// Create a subfolder if needed
 
 				// var filepath = myFile.sage2URL.split('/');
-				var filepath = decodeURIComponent(myFile.sage2URL).split('/');
+				// var filepath = decodeURIComponent(myFile.sage2URL).split('/');
+				var filepath = myFile.sage2URL.split('/');
 
 				// Remove the fist two elements (root) and the last (filename)
 				var subdirArray = filepath.slice(2, -1);
@@ -1007,7 +1644,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 					// if it doesnt already exist
 					if (!_this.tree.getItem(newid)) {
 						var newElement = {
-							id: newid, value: sub,
+							// id: newid, value: sub,
+							id: newid, value: decodeURIComponent(sub),
 							icon: "folder", open: true, sage2URL: newid,
 							data: [], onContext: {}
 						};
@@ -1019,6 +1657,63 @@ function FileManager(wsio, mydiv, uniqueID) {
 
 			}
 		}
+	};
+
+	this.saveSession = function() {
+		// generate a default name
+		var template = "session_" + dateToYYYYMMDDHHMMSS(new Date());
+
+		// Build a webix dialog
+		webix.ui({
+			view: "window",
+			id: "session_popup",
+			position: "center",
+			modal: true,
+			zIndex: 9999,
+			head: "Save the current session",
+			width: 400,
+			body: {
+				view: "form",
+				borderless: false,
+				elements: [
+					{view: "text", value: template, id: "session_filename",
+						label: "Please enter a session name:", name: "session"},
+					{margin: 5, cols: [
+						{view: "button", value: "Cancel", click: function() {
+							this.getTopParentView().hide();
+						}},
+						{view: "button", value: "Save", type: "form", click: function() {
+							var values = this.getFormView().getValues();
+							wsio.emit('saveSession', values.session);
+							this.getTopParentView().hide();
+						}}
+					]}
+				],
+				elementsConfig: {
+					labelPosition: "top"
+				}
+			}
+		}).show();
+
+		// Attach handlers for keyboard
+		$$("session_filename").attachEvent("onKeyPress", function(code, e) {
+			// ESC closes
+			if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+				this.getTopParentView().hide();
+				return false;
+			}
+			// ENTER activates
+			if (code === 13 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+				var values = this.getFormView().getValues();
+				wsio.emit('saveSession', values.session);
+				this.getTopParentView().hide();
+				return false;
+			}
+		});
+		// Set focus on the text box
+		$$('session_filename').focus();
+		// select the text in the box (easier to type another name)
+		$$('session_filename').getInputNode().select();
 	};
 
 	// Server sends the media files list
@@ -1059,6 +1754,10 @@ function FileManager(wsio, mydiv, uniqueID) {
 			f = data.sessions[i];
 			this.allFiles[f.id] = f;
 		}
+		for (i = 0; i < data.links.length; i++) {
+			f = data.links[i];
+			this.allFiles[f.id] = f;
+		}
 
 		i = 0;
 		var mm, createDate;
@@ -1080,7 +1779,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				});
 			} else if (f.exif.MIMEType.indexOf('sage2/session') >= 0) {
 				// It's a SAGE2 session
-				mm = moment(f.exif.FileDate, 'YYYY/MM/DD HH:mm:ss');
+				mm = moment(f.exif.FileDate, 'YYYY/MM/DD HH:mm:ssZ');
 				f.exif.FileModifyDate = mm;
 				this.allTable.data.add({id: f.id,
 					name: f.exif.FileName,
@@ -1090,6 +1789,18 @@ function FileManager(wsio, mydiv, uniqueID) {
 					type: "SESSION",
 					size: fileSizeIEC(f.exif.FileSize)
 				});
+			} else if (f.exif.MIMEType.indexOf('sage2/url') >= 0) {
+				// It's a URL
+				mm = moment(f.exif.FileDate, 'YYYY/MM/DD HH:mm:ssZ');
+				f.exif.FileModifyDate = mm;
+				this.allTable.data.add({id: f.id,
+					name: f.exif.FileName,
+					user: f.exif.SAGE2user ? f.exif.SAGE2user : "-",
+					date: mm.format("YYYY/MM/DD HH:mm:ss"),
+					ago:  mm.fromNow(),
+					type: "LINK",
+					size: fileSizeIEC(f.exif.FileSize)
+				});
 			} else {
 				// Any other asset type
 				// Try to find creation
@@ -1097,10 +1808,10 @@ function FileManager(wsio, mydiv, uniqueID) {
 						f.exif.DateTimeOriginal ||
 						f.exif.ModifyDate ||
 						f.exif.FileModifyDate;
-				mm = moment(createDate, 'YYYY:MM:DD HH:mm:ssZZ');
+				mm = moment(createDate, 'YYYY:MM:DD HH:mm:ssZ');
 				if (!mm.isValid()) {
 					// sometimes a value is not valid
-					mm = moment(f.exif.FileModifyDate, 'YYYY:MM:DD HH:mm:ssZZ');
+					mm = moment(f.exif.FileModifyDate, 'YYYY:MM:DD HH:mm:ssZ');
 				}
 				f.exif.FileModifyDate = mm;
 				this.allTable.data.add({id: f.id,
@@ -1119,9 +1830,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 		$$("search_text").setValue("");
 
 		this.refresh();
-		// Sort the table by name
-		this.allTable.sort("name", "asc");
-
 
 		// Get the existing selection
 		var treeSelection = _this.tree.getSelectedItem();
@@ -1139,9 +1847,34 @@ function FileManager(wsio, mydiv, uniqueID) {
 
 	};
 
+	function sortByDate1(a, b) {
+		// fileds are 'moment' objects
+		a = _this.allFiles[a.id].exif.FileModifyDate;
+		b = _this.allFiles[b.id].exif.FileModifyDate;
+		return a > b ? 1 : (a < b ? -1 : 0);
+	}
+	function sortByDate2(a, b) {
+		// fileds are 'moment' objects
+		a = _this.allFiles[a.id].exif.FileModifyDate;
+		b = _this.allFiles[b.id].exif.FileModifyDate;
+		return a > b ? 1 : (a < b ? -1 : 0);
+	}
+	function sortBySize(a, b) {
+		// File size in byte
+		a = _this.allFiles[a.id].exif.FileSize;
+		b = _this.allFiles[b.id].exif.FileSize;
+		return a > b ? 1 : (a < b ? -1 : 0);
+	}
+
 	this.refresh = function() {
 		this.tree.refresh();
 		this.allTable.refresh();
+		// Resort the table
+		if (typeof this.sorting.as === "string") {
+			this.allTable.sort('#' + this.sorting.by + '#', this.sorting.dir, this.sorting.as);
+		} else {
+			this.allTable.sort('', this.sorting.dir, this.sorting.as);
+		}
 		this.main.adjust();
 	};
 
@@ -1167,7 +1900,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		id: "tmenu",
 		data: ["New folder", { $template: "Separator" }, "Refresh"],
 		on: {
-			onItemClick: function(id) {
+			onMenuItemClick: function(id) {
 				var context = this.getContext();
 				var list    = context.obj;
 				var listId  = context.id;
@@ -1263,18 +1996,48 @@ function FileManager(wsio, mydiv, uniqueID) {
 			if (id === 'treeroot' ||
 				(id.indexOf('Image:/') >= 0) ||
 				(id.indexOf('Video:/') >= 0) ||
-				(id.indexOf('PDF:/') >= 0) ||
-				(id.indexOf('Note:/') >= 0) ||
-				(id.indexOf('App:/') >= 0) ||
-				(id.indexOf('Mine:/') >= 0) ||
-				(id.indexOf('Session:/') >= 0)
-				) {
-				tmenu.hideItem('New folder');
+				(id.indexOf('PDF:/') >= 0)   ||
+				(id.indexOf('Note:/') >= 0)  ||
+				(id.indexOf('App:/') >= 0)   ||
+				(id.indexOf('Mine:/') >= 0)  ||
+				(id.indexOf('Link:/') >= 0)  ||
+				(id.indexOf('Session:/') >= 0)) {
+				tmenu.disableItem('New folder');
 			} else {
-				tmenu.showItem('New folder');
+				tmenu.enableItem('New folder');
 			}
 			return true;
 		});
-	};
 
+		// Adding list of diplay clients
+		var adminmenu = $$('advancedToolbar').getSubMenu('mainadmin_menu');
+		var displayList = [];
+		// add overview client
+		displayList[0] = {
+			id: "displayclient_00",
+			value: "Display Full Wall",
+			href:  "http://" + window.location.hostname + this.http_port +  "/display.html?clientID=-1",
+			target: "_blank"
+		};
+		// add a separator line
+		displayList[1] = {$template: "Separator"};
+		// add all display clients to list
+		for (var i = 0; i <  this.json_cfg.displays.length; i++) {
+			displayList[i + 2] = {
+				id:     "displayclient_" + i,
+				value:  "Display " + i,
+				href:   "http://" + window.location.hostname + this.http_port +  "/display.html?clientID=" + i,
+				target: "_blank"
+			};
+		}
+		adminmenu.add({
+			id:    "alldisplayclients_menu",
+			value: "Display Clients",
+			type: {subsign: true},
+			autowidth: true,
+			config: {zIndex: 9000},
+			submenu: displayList
+		});
+
+	};
 }

@@ -8,14 +8,22 @@
             "directory": "pdfs"
         },
         {
+            "name": "Webview",
+            "types": [
+                "application/url"
+            ]
+        },
+        {
             "name": "image_viewer",
             "types": [
                 "image/jpeg",
                 "image/webp",
                 "image/png",
                 "image/bmp",
+                "image/x-ms-bmp",
                 "image/gif",
                 "image/tiff",
+                "image/svg",
                 "image/svg+xml",
                 "image/vnd.adobe.photoshop"
             ],
