@@ -323,7 +323,8 @@ function slaveInit(id) {
 				time: true,
 				console: false
 			},
-			isMobile: __SAGE2__.browser.isMobile
+			browser: __SAGE2__.browser,
+			session: session
 		};
 		slaveWsio.emit('addClient', clientDescription);
 		// log(JSON.stringify(__SAGE2__.browser));
