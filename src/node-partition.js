@@ -17,11 +17,14 @@
 // require variables to be declared
 "use strict";
 
+
+var StickyItems         = require('./node-stickyitems');
+var stickyAppHandler     = new StickyItems();
+
 /**
   * @class Partition
   * @constructor
   */
-
 function Partition(dims, id, color, partitionList) {
 	// the list which this partition is a part of
 	this.partitionList = partitionList;
@@ -49,8 +52,10 @@ function Partition(dims, id, color, partitionList) {
 	this.bounding = true;
 
 	this.innerTiling = false;
-	this.innerMaximization = false;
 	this.currentMaximizedChild = null;
+
+	// for the more geometric idea of partitions
+	this.isSnapping = dims.isSnapping || false;
 }
 
 /**
@@ -104,10 +109,14 @@ Partition.prototype.addChild = function(item) {
 	this.numChildren++;
 	this.children[item.id] = item;
 
-	if (this.innerMaximization) {
+	if (this.innerTiling && this.currentMaximizedChild) {
 		this.maximizeChild(item.id);
 	}
 
+	var stickingItems = stickyAppHandler.getFirstLevelStickingItems(item);
+	for (var s in stickingItems) {
+		this.addChild(stickingItems[s]);
+	}
 	return changedPartitions;
 };
 
@@ -121,6 +130,10 @@ Partition.prototype.updateChild = function(id) {
 		item.relative_top = (item.top - this.top - titleBarHeight) / this.height;
 		item.relative_width = item.width / this.width;
 		item.relative_height = item.height / this.height;
+		var movedItems = stickyAppHandler.moveFirstLevelItemsStickingToUpdatedItem(item);
+		for (var mI in movedItems) {
+			this.updateChild(movedItems[mI].elemId);
+		}
 	}
 
 	return [this.id];
@@ -136,6 +149,7 @@ Partition.prototype.releaseChild = function(id) {
 
 		var item = this.children[id];
 
+
 		item.relative_left = null;
 		item.relative_top = null;
 		item.relative_width = null;
@@ -147,13 +161,18 @@ Partition.prototype.releaseChild = function(id) {
 		this.numChildren--;
 		delete this.children[id];
 
-		if (this.innerMaximization && this.currentMaximizedChild === id) {
+		// if it is tiling and maximized, maximize another child
+		if (this.innerTiling && this.currentMaximizedChild === id) {
 
 			if (Object.keys(this.children).length > 0) {
 				this.maximizeChild(Object.keys(this.children)[0]);
 			} else {
 				this.currentMaximizedChild = null;
 			}
+		}
+		var stickingItems = stickyAppHandler.getFirstLevelStickingItems(item);
+		for (var s in stickingItems) {
+			this.releaseChild(stickingItems[s].id);
 		}
 	}
 
@@ -166,8 +185,9 @@ Partition.prototype.releaseChild = function(id) {
 Partition.prototype.releaseAllChildren = function() {
 	var childIDs = Object.keys(this.children);
 
-	childIDs.forEach((el) => {
-		this.releaseChild(el);
+
+	childIDs.forEach((cID) => {
+		this.releaseChild(cID);
 	});
 
 	return [this.id];
@@ -196,10 +216,21 @@ Partition.prototype.toggleInnerTiling = function() {
 
 	if (this.innerTiling) {
 		this.tilePartition();
+	} else {
+		this.currentMaximizedChild = null;
 	}
 
 	return [this.id];
 };
+
+/**
+  * Set partition background color
+  */
+Partition.prototype.setColor = function (color) {
+	this.color = color;
+};
+
+
 
 /**
   * Re-tile the apps within a partition
@@ -214,7 +245,12 @@ Partition.prototype.tilePartition = function() {
 	var i, c, r, key;
 	var numCols, numRows, numCells;
 
-	var numWindows = this.numChildren - ((this.innerMaximization && this.currentMaximizedChild) ? 1 : 0);
+	var backgroundAndForegroundItems = stickyAppHandler.getListOfBackgroundAndForegroundItems(this.children);
+	var appsWithoutBackground = backgroundAndForegroundItems.backgroundItems;
+	var numAppsWithoutBackground = appsWithoutBackground.length;
+
+	// Don't use sticking items to compute number of windows.
+	var numWindows = numAppsWithoutBackground - (this.currentMaximizedChild ? 1 : 0);
 
 
 	// determine the bounds of the tiling area
@@ -230,53 +266,48 @@ Partition.prototype.tilePartition = function() {
 		height: this.height
 	};
 
-	// get set of children to run tiling on
-	var children = Object.assign({}, this.children);
+	var maxChildCopy = null;
 
-	if (this.innerMaximization) {
-		if (this.currentMaximizedChild) {
+	if (this.currentMaximizedChild) {
 
-			// if a child is maximized, remove from set to tile
-			delete children[this.currentMaximizedChild];
+		let maxChild = this.children[this.currentMaximizedChild];
 
-			let maxChild = this.children[this.currentMaximizedChild];
-
-			if (numWindows === 0) {
-				// if the maximized window is the only window
-				// place in center
-				maxChild.left = this.left + this.width / 2 - maxChild.width / 2;
-				maxChild.top = this.top + (this.height - maxChild.height + titleBar) / 2;
-
-				this.updateChild(this.currentMaximizedChild);
-				return;
-			}
-
-			if (maxChild.maximizeConstraint === "width_ptn") {
-				// aspect ratio is wider than partition
-
-				// shift maximized child to top
-				maxChild.top = this.top + 2 * titleBar;
-
-				// adjust tiling area to be rest of space
-				tilingArea.top = maxChild.top + maxChild.height;
-				tilingArea.height = this.height - maxChild.height - titleBar;
-			} else if (maxChild.maximizeConstraint === "height_ptn") {
-				// aspect ratio is taller than partition
-
-				// shift maximized child to left
-				maxChild.left = this.left + 4;
-
-				// adjust tiling area to be rest of space
-				tilingArea.left = maxChild.left + maxChild.width;
-				tilingArea.width = this.width - maxChild.width;
-			}
-
-			// shift maximized child to top-left
-			maxChild.top = this.top + titleBar + 4;
-			maxChild.left = this.left + 4;
+		if (numWindows === 0) {
+			// if the maximized window is the only window
+			// place in center
+			maxChild.left = this.left + this.width / 2 - maxChild.width / 2;
+			maxChild.top = this.top + (this.height - maxChild.height + titleBar) / 2;
 
 			this.updateChild(this.currentMaximizedChild);
+			return;
 		}
+
+		if (maxChild.maximizeConstraint === "width_ptn") {
+			// aspect ratio is wider than partition
+
+			// shift maximized child to top
+			maxChild.top = this.top + 2 * titleBar;
+
+			// adjust tiling area to be rest of space
+			tilingArea.top = maxChild.top + maxChild.height;
+			tilingArea.height = this.height - maxChild.height - titleBar;
+		} else if (maxChild.maximizeConstraint === "height_ptn") {
+			// aspect ratio is taller than partition
+
+			// shift maximized child to left
+			maxChild.left = this.left + 4;
+
+			// adjust tiling area to be rest of space
+			tilingArea.left = maxChild.left + maxChild.width;
+			tilingArea.width = this.width - maxChild.width;
+		}
+
+		// shift maximized child to top-left
+		maxChild.top = this.top + titleBar + 4;
+		maxChild.left = this.left + 4;
+
+		maxChildCopy = Object.assign({}, maxChild);
+		this.updateChild(this.currentMaximizedChild);
 	}
 
 	if (numWindows === 0) {
@@ -338,8 +369,8 @@ Partition.prototype.tilePartition = function() {
 	// Caculate apps centers
 	// use a subset of children excluding maximizedChild
 
-	for (key in children) {
-		app = children[key];
+	for (key in appsWithoutBackground) {
+		app = appsWithoutBackground[key];
 		centroidsApps[key] = {x: app.left + app.width / 2.0, y: app.top + app.height / 2.0};
 	}
 	// Caculate tiles centers
@@ -359,13 +390,14 @@ Partition.prototype.tilePartition = function() {
 		}
 	}
 
-	for (key in children) {
+	for (key in appsWithoutBackground) {
 		// get the application
-		app = children[key];
+		app = appsWithoutBackground[key];
+
 		// pick a cell
 		var cellid = findMinimum(distances[key]);
 		// put infinite value to disable the chosen cell
-		for (i in children) {
+		for (i in appsWithoutBackground) {
 			distances[i][cellid] = Number.MAX_VALUE;
 		}
 
@@ -392,11 +424,19 @@ Partition.prototype.tilePartition = function() {
 
 		// broadcast('startMove', {id: updateItem.elemId, date: updateItem.date});
 		// broadcast('startResize', {id: updateItem.elemId, date: updateItem.date});
-
+		stickyAppHandler.pileItemsStickingToUpdatedItem(app);
 		this.updateChild(app.id);
-
 		// broadcast('finishedMove', {id: updateItem.elemId, date: updateItem.date});
 		// broadcast('finishedResize', {id: updateItem.elemId, date: updateItem.date});
+	}
+	//Restore maximized app's dimensions and position
+	if (this.currentMaximizedChild) {
+		let maxChild = this.children[this.currentMaximizedChild];
+		maxChild.left = maxChildCopy.left;
+		maxChild.top = maxChildCopy.top;
+		maxChild.width = maxChildCopy.width;
+		maxChild.height = maxChildCopy.height;
+		this.updateChild(this.currentMaximizedChild);
 	}
 
 	function averageWindowAspectRatio() {
@@ -408,8 +448,8 @@ Partition.prototype.tilePartition = function() {
 
 		var totAr = 0.0;
 		var key;
-		for (key in children) {
-			totAr += (children[key].width / children[key].height);
+		for (key in _this.children) {
+			totAr += (_this.children[key].width / _this.children[key].height);
 		}
 		return (totAr / num);
 	}
@@ -472,15 +512,6 @@ Partition.prototype.tilePartition = function() {
 };
 
 /**
-  * Toggle partition maximization mode
-  */
-Partition.prototype.toggleInnerMaximization = function() {
-	this.innerMaximization = !this.innerMaximization;
-
-	return [this.id];
-};
-
-/**
   * Maximize a specific child in the partition
   *
   * @param {string} id - The id of child to maximize
@@ -496,12 +527,13 @@ Partition.prototype.maximizeChild = function(id, shift) {
 		// 	titleBar = 0;
 		// }
 
-		if (this.innerMaximization && this.currentMaximizedChild) {
-			this.restoreChild(this.currentMaximizedChild);
+		// only 1 child maximized in tiled mode
+		if (this.innerTiling) {
+			if (this.currentMaximizedChild) {
+				this.restoreChild(this.currentMaximizedChild);
+			}
+			this.currentMaximizedChild = id;
 		}
-
-		this.currentMaximizedChild = id;
-		this.innerMaximization = true;
 
 		var maxBound = {
 			left: this.left + 4,
@@ -600,7 +632,6 @@ Partition.prototype.restoreChild = function(id, shift) {
 	if (this.children.hasOwnProperty(id)) {
 		var item = this.children[id];
 
-		this.innerMaximization = false;
 		this.currentMaximizedChild = null;
 
 		if (shift === true) {
@@ -632,18 +663,14 @@ Partition.prototype.restoreChild = function(id, shift) {
 };
 
 /**
-  * Updates the inner layout of the partition according to whether or not
-	* the partition is in innerTiling mode or innerMaximization mode or both
+  * Updates the inner layout of the Partition according to whether or not
+	* the partition is in innerTiling mode or has a maximized child mode or both
   *
   * @param {string} id - The id of child to restore
   */
 Partition.prototype.updateInnerLayout = function() {
-	if (this.innerMaximization && this.currentMaximizedChild) {
-		if (this.children[this.currentMaximizedChild].maximized === false) {
-			// this should never really happen
-			console.log("Partition: Maximizing child in updateInnerLayout()");
-			this.maximizeChild(this.currentMaximizedChild);
-		}
+	if (this.currentMaximizedChild) {
+		this.maximizeChild(this.currentMaximizedChild);
 	}
 
 	if (this.innerTiling) {
@@ -651,15 +678,22 @@ Partition.prototype.updateInnerLayout = function() {
 	}
 };
 
+
+/**
+  * Updates positions of all children based on the relative positions of the children
+	* within the Partition and the size of the Partition. Used when a Partition is moved
+	* or resized and the children should also resize/move. Returns a list of children
+	* which have been moved.
+  *
+  */
 Partition.prototype.updateChildrenPositions = function() {
 	var updatedChildren = [];
 
-	var childIDs = Object.keys(this.children);
+	var backgroundAndForegroundItems = stickyAppHandler.getListOfBackgroundAndForegroundItems(this.children);
+	var appsWithoutBackground = backgroundAndForegroundItems.backgroundItems;
 	var titleBarHeight = this.partitionList.configuration.ui.titleBarHeight;
 
-	childIDs.forEach((el) => {
-		var item = this.children[el];
-
+	appsWithoutBackground.forEach((item) => {
 		item.left = item.relative_left * this.width + this.left;
 		item.top = item.relative_top * this.height + this.top + titleBarHeight;
 		item.width = item.relative_width * this.width;
@@ -683,6 +717,279 @@ Partition.prototype.updateChildrenPositions = function() {
 };
 
 /**
+  * Returns the movement bounds of a Partition by the minimum and maximum coordinate
+	* that each side can move to. This is only applicable when a partition has neighbors
+	* while snapped.
+  *
+  */
+Partition.prototype.getMovementBoundaries = function() {
+	let partitions = this.partitionList;
+	let config = partitions.configuration;
+	let titleBar = config.ui.titleBarHeight;
+
+	// bounds to be used to clamp this partitions position/size and then update neighbors
+	let partitionMovementBounds = {
+		left: {},
+		right: {},
+		top: {},
+		bottom: {}
+	};
+
+	// initialized with maximum in every dimension
+	// after populating array, take max of min bounds, min of max bounds
+	let boundCollections = {
+		left: {min: [0], max: [config.totalWidth - partitions.minSize.width]},
+		right: {min: [partitions.minSize.width], max: [config.totalWidth]},
+		top: {min: [titleBar], max: [config.totalHeight - partitions.minSize.height]},
+		bottom: {min: [titleBar + partitions.minSize.height], max: [config.totalHeight - titleBar]}
+	};
+
+	// calculate the bounds that the current partition can move
+	for (let ptnID of Object.keys(this.neighbors)) {
+		let neighPtn = partitions.list[ptnID];
+		let neighInfo = this.neighbors[ptnID];
+
+		// if the top of this partition is shared with the bottom of another
+		if (neighInfo.top) {
+
+			// check which of the 2 sides is the same
+			if (neighInfo.top === "bottom") {
+				boundCollections.top.min.push(neighPtn.top + partitions.minSize.height + titleBar);
+			} else { // "top"
+				boundCollections.top.max.push(neighPtn.top + neighPtn.height - partitions.minSize.height);
+			}
+		}
+		// if the bottom of this partition is shared with the top of another
+		if (neighInfo.bottom) {
+			if (neighInfo.bottom === "top") {
+				boundCollections.bottom.max.push(neighPtn.top + neighPtn.height - partitions.minSize.height - titleBar);
+			} else { // "bottom"
+				boundCollections.bottom.min.push(neighPtn.top + partitions.minSize.height);
+			}
+		}
+		// if the left of this partition is shared with the right of another
+		if (neighInfo.left) {
+			if (neighInfo.left === "right") {
+				boundCollections.left.min.push(neighPtn.left + partitions.minSize.width);
+			} else { // "left"
+				boundCollections.left.max.push(neighPtn.left + neighPtn.width - partitions.minSize.width);
+			}
+		}
+		// if the right of this partition is shared with the left of another
+		if (neighInfo.right) {
+			if (neighInfo.right === "left") {
+				boundCollections.right.max.push(neighPtn.left + neighPtn.width - partitions.minSize.width);
+			} else { // "right"
+				boundCollections.right.min.push(neighPtn.left + partitions.minSize.width);
+			}
+		}
+	}
+
+	// calculate take max of min bounds, min of max bounds of each bound collection
+	for (let side of Object.keys(boundCollections)) {
+		partitionMovementBounds[side].min = Math.max(...boundCollections[side].min);
+		partitionMovementBounds[side].max = Math.min(...boundCollections[side].max);
+	}
+
+	return partitionMovementBounds;
+};
+
+/**
+  * Clamps each side of the Partition to be within each's respective boundary.
+  *
+	* @param {object} boundaries - The movement boundaries of a Partition (from Partition.getMovementBoundaries)
+  */
+Partition.prototype.clampPositionWithinBoundaries = function (boundaries) {
+	let partitions = this.partitionList;
+	let config = partitions.configuration;
+	let titleBar = config.ui.titleBarHeight;
+
+	// clamp this partition within the bounds
+	let newPositionAfterClamp = {
+		left: this.left,
+		right: this.left + this.width,
+		top: this.top,
+		bottom: this.top + this.height
+	};
+
+	// clamp left
+	if (this.left < boundaries.left.min) {
+		newPositionAfterClamp.left = boundaries.left.min;
+	} else if (this.left > boundaries.left.max) {
+		newPositionAfterClamp.left = boundaries.left.max;
+	}
+
+	// clamp top
+	if (this.top < boundaries.top.min) {
+		newPositionAfterClamp.top = boundaries.top.min;
+	} else if (this.top > boundaries.top.max) {
+		newPositionAfterClamp.top = boundaries.top.max;
+	}
+
+	// clamp right
+	if (this.left + this.width < boundaries.right.min) {
+		newPositionAfterClamp.right = boundaries.right.min;
+	} else if (this.left + this.width > boundaries.right.max) {
+		newPositionAfterClamp.right = boundaries.right.max;
+	}
+
+	// clamp bottom
+	if (this.top + this.height < boundaries.bottom.min) {
+		newPositionAfterClamp.bottom = boundaries.bottom.min;
+	} else if (this.top + this.height > boundaries.bottom.max) {
+		newPositionAfterClamp.bottom = boundaries.bottom.max;
+	}
+
+	// check for screen boundary snapping
+	if (this.snapTop) {
+		newPositionAfterClamp.top = titleBar;
+	}
+	if (this.snapLeft) {
+		newPositionAfterClamp.left = 0;
+	}
+	if (this.snapRight) {
+		newPositionAfterClamp.right = config.totalWidth;
+	}
+	if (this.snapBottom) {
+		newPositionAfterClamp.bottom = config.totalHeight - titleBar;
+	}
+
+	this.left = newPositionAfterClamp.left;
+	this.top = newPositionAfterClamp.top;
+	this.width = newPositionAfterClamp.right - this.left;
+	this.height = newPositionAfterClamp.bottom - this.top;
+};
+
+/**
+  * Updates the position of all of the Partitions neighbors based on the position of the Partition
+	* after it has been clamped into its boundaries.
+  */
+Partition.prototype.updateNeighborPtnPositions = function() {
+	let partitions = this.partitionList;
+	let config = partitions.configuration;
+	let titleBar = config.ui.titleBarHeight;
+
+	// bounds to be used to clamp this partitions position/size and then update neighbors
+	let partitionMovementBounds = this.getMovementBoundaries();
+
+	// clamp with those bounds
+	this.clampPositionWithinBoundaries(partitionMovementBounds);
+
+	// update all neighbors based on this position of the partition
+
+	let updatedPtnIDs = [];
+
+	for (var neigh of Object.keys(this.neighbors)) {
+
+		// make sure this partition is in partitions (list)
+		if (partitions.list.hasOwnProperty(neigh)) {
+			let neighPtn = partitions.list[neigh];
+			let isUpdated = false;
+
+			// if the top of this partition is shared with the bottom of another
+			if (this.neighbors[neigh].top) {
+
+				// check which of the 2 sides is the same
+				if (this.neighbors[neigh].top === "bottom") {
+					// adjust height of neighbor
+					neighPtn.height = this.top - neighPtn.top - titleBar;
+
+					isUpdated = true;
+				} else { // "top"
+					// save bottom coordinate
+					let botCoord = neighPtn.top + neighPtn.height;
+
+					// adjust the top and height of neighbor
+					neighPtn.top = this.top;
+					neighPtn.height = botCoord - neighPtn.top;
+
+					isUpdated = true;
+				}
+			}
+			// if the bottom of this partition is shared with the top of another
+			if (this.neighbors[neigh].bottom) {
+				if (this.neighbors[neigh].bottom === "top") {
+					// save bottom coordinate
+					let botCoord = neighPtn.top + neighPtn.height;
+
+					// adjust the top and height of neighbor
+					neighPtn.top = this.top + this.height + titleBar;
+					neighPtn.height = botCoord - neighPtn.top;
+
+					isUpdated = true;
+				} else { // "bottom"
+					// adjust height of neighbor
+					neighPtn.height = this.top + this.height - neighPtn.top;
+
+					isUpdated = true;
+				}
+			}
+			// if the left of this partition is shared with the right of another
+			if (this.neighbors[neigh].left) {
+				if (this.neighbors[neigh].left === "right") {
+					// adjust width of neighbor
+					neighPtn.width = this.left - neighPtn.left;
+
+					isUpdated = true;
+				} else { // "left"
+					// save right coordinate
+					let rightCoord = neighPtn.left + neighPtn.width;
+
+					// adjust the left and width of neighbor
+					neighPtn.left = this.left;
+					neighPtn.width = rightCoord - neighPtn.left;
+
+					isUpdated = true;
+				}
+			}
+			// if the right of this partition is shared with the left of another
+			if (this.neighbors[neigh].right) {
+				if (this.neighbors[neigh].right === "left") {
+					// save right coordinate
+					let rightCoord = neighPtn.left + neighPtn.width;
+
+					// adjust the left and width of neighbor
+					neighPtn.left = this.left + this.width;
+					neighPtn.width = rightCoord - neighPtn.left;
+
+					isUpdated = true;
+				} else { // "right"
+					// adjust width of neighbor
+					neighPtn.width = this.left + this.width - neighPtn.left;
+
+					isUpdated = true;
+				}
+			}
+
+			if (isUpdated) {
+				updatedPtnIDs.push(neigh);
+			}
+		}
+	}
+
+	// return the IDs of updated Partitions so the updates can be reflected in
+	// ui and display
+	return updatedPtnIDs;
+};
+
+/**
+  * Toggles whether or not the Partition is being snapped to its neighbors.
+  */
+Partition.prototype.toggleSnapping = function() {
+	this.isSnapping = !this.isSnapping;
+
+	return this.updateNeighborPartitionList();
+};
+
+/**
+  * Updates the list of neighbors and which side they are neighboring on for this
+	* Partition
+  */
+Partition.prototype.updateNeighborPartitionList = function() {
+	return this.partitionList.updateNeighbors(this.id);
+};
+
+/**
   * Get a string corresponding to the information needed to update the display
   */
 Partition.prototype.getDisplayInfo = function() {
@@ -693,7 +1000,23 @@ Partition.prototype.getDisplayInfo = function() {
 		left: this.left,
 		top: this.top,
 		width: this.width,
-		height: this.height
+		height: this.height,
+
+		// snapped to other partitions
+		snapping: !this.isSnapping || !this.neighbors ? {left: false, right: false, top: false, bottom: false} : {
+			left: Object.values(this.neighbors).reduce((snapped, neighbor) => snapped || neighbor.left, false),
+			right: Object.values(this.neighbors).reduce((snapped, neighbor) => snapped || neighbor.right, false),
+			top: Object.values(this.neighbors).reduce((snapped, neighbor) => snapped || neighbor.top, false),
+			bottom: Object.values(this.neighbors).reduce((snapped, neighbor) => snapped || neighbor.bottom, false)
+		},
+
+		// anchored to sides of screen
+		anchor: {
+			left: this.snapLeft,
+			right: this.snapRight,
+			top: this.snapTop,
+			bottom: this.snapBottom
+		}
 	};
 };
 
@@ -701,12 +1024,16 @@ Partition.prototype.getDisplayInfo = function() {
   * Get a string corresponding to the information needed to update the display
   */
 Partition.prototype.getTitle = function() {
-	var partitionString = "# Items: " + this.numChildren;
-
-	if (this.innerMaximization && this.innerTiling) {
+	var partitionString = "";
+	if (this.numChildren === 0) {
+		partitionString = "Empty";
+	} else if (this.numChildren === 1) {
+		partitionString = "1 Item";
+	} else {
+		partitionString = this.numChildren + " Items";
+	}
+	if (this.currentMaximizedChild && this.innerTiling) {
 		partitionString += " | Maximized & Tiled";
-	} else if (this.innerMaximization) {
-		partitionString += " | Maximized";
 	} else if (this.innerTiling) {
 		partitionString += " | Tiled";
 	}
@@ -715,6 +1042,106 @@ Partition.prototype.getTitle = function() {
 		id: this.id,
 		title: partitionString
 	};
+};
+
+/**
+  * Create the context menu based on the current state of the Partition
+  */
+Partition.prototype.getContextMenu = function() {
+	var contextMenu = [];
+
+	contextMenu.push({
+		description: "Content Management",
+		parameters: {},
+		children: [
+			{
+				description: "Clear",
+				callback: "clearPartition",
+				parameters: {}
+			},
+			{
+				description: this.innerTiling ? "Stop Tiling" : "Tile",
+				callback: "toggleInnerTiling",
+				parameters: {}
+			}
+		]
+	});
+
+	contextMenu.push({
+		description: "Partition Snapping",
+		callback: "toggleSnapping",
+		parameters: {},
+		children: this.isSnapping ?
+			[
+				{
+					description: "Un-Snap",
+					callback: "toggleSnapping",
+					parameters: {}
+				},
+				{
+					description: "Update Neighbors",
+					callback: "updateNeighborPartitionList",
+					parameters: {}
+				}
+			] : [
+				{
+					description: "Snap",
+					callback: "toggleSnapping",
+					parameters: {}
+				}
+			]
+	});
+
+	contextMenu.push({
+		description: "separator"
+	});
+
+	contextMenu.push({
+		description: "Set Color: ",
+		callback: "setColor",
+		value: this.color,
+		inputField: true,
+		// color input field (special input)
+		inputType: "color",
+		colorChoices: [
+			'#a6cee3',
+			'#1f78b4',
+			'#b2df8a',
+			'#33a02c',
+			'#fb9a99',
+			'#e31a1c',
+			'#fdbf6f',
+			'#ff7f00',
+			'#cab2d6',
+			'#6a3d9a',
+			'#ffff99',
+			'#b15928'
+		],
+		inputFieldSize: 7,
+		inputDefault: this.color,
+		inputUpdateOnChange: true,
+		parameters: {}
+	});
+
+	contextMenu.push({
+		description: this.maximized ? "Restore Partition" : "Maximize Partition",
+		callback: "SAGE2Maximize",
+		parameters: {}
+	});
+	contextMenu.push({
+		description: "Close Partition",
+		callback: "SAGE2DeleteElement",
+		parameters: {}
+	});
+
+	return contextMenu;
+};
+
+Partition.prototype.print = function(data) {
+	console.log(data);
+
+	this.sliderVal = data.clientInput;
+	console.log(this.sliderVal);
 };
 
 
