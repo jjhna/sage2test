@@ -155,6 +155,7 @@ program = commander
 	.option('-s, --session [name]',       'Load a session file (last session if omitted)')
 	.option('-t, --track-users [file]',   'enable user interaction tracking (specified file indicates users to track)')
 	.option('-p, --password <password>',  'Sets the password to connect to SAGE2 session')
+	.option('-a, --slaveports <secure>,<index>',   'Run as a slave server with the given secure and index ports')
 	.parse(process.argv);
 
 // Logging or not
