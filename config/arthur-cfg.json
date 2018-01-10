@@ -43,8 +43,12 @@
 		viewing_distance: 0.71	// in meters
 	},
 	resolution: {
-		width: 2560,
-		height: 1600
+		width: 3840,
+		height: 2160
+		//width: 2560,
+		//height: 1600
+		//width: 1366,
+		//height: 768
 	},
 	layout: {
 		rows: 1,
@@ -64,7 +68,8 @@
 			name: "Cyber-Commons",
 			host: "inferno.evl.uic.edu",
 			port: 443,
-			secure: true
+			secure: true,
+			password: "evl123"
 		},
 		{
 			name: "IceWall",
@@ -76,7 +81,8 @@
 			name: "CAVE2",
 			host: "lyra.evl.uic.edu",
 			port: 443,
-			secure: true
+			secure: true,
+			password: "evl123"
 		},
 		{
 			name: "CAVE2-Wall",
@@ -86,32 +92,41 @@
 		}
 	],
 	// for experimental features: true/false
-	/*
+	
 	experimental: {
 		webbrowser: false,  // enable the awesomium module
 		
 		omicron: // enable omicron input module
 		{
-			// Standard 'SAGE' connection
-			// SAGE listens for a sageinputserver to stream events
-			enable: true,
-			dataPort: 30005,
+			enable: false,
+			
+			// Port SAGE will listen on for a oinputserver connection
+			msgPort: 28000,
+			
+			// If specified, SAGE will actively attempt to connect to
+			// an oinputserver on the specified IP and data port
+			inputServerIP: "127.0.0.1",
+			dataPort: 30015,
+			
 			eventDebug: false,
+			
+			enableTouch: true,
+			enableMocap: false,
+			enableWand: false,
+			
+			style: "Touch", // Display as "Touch" or "Pointer"
+			interactionMode: "App", // "Window" or "App"
 
 			// Touch gestures
+			enableTwoFingerZoom: true,
 			zoomGestureScale: 2000,
+			enableTwoFingerWindowDrag: false,
 			acceleratedDragScale: 3,
-			gestureDebug: false,
-
-			// Additional 'CAVE2' type connection
-			// SAGE connects to an oinputserver to get events
-			useOinputserver: true,
-			inputServerIP: "127.0.0.1",
-			msgPort: 28000
+			gestureDebug: false,			
 		}
 		
 	},
-	*/
+	
 	dependencies: {
 		ImageMagick: "",
 		FFMpeg: "C:/Dev/ffmpeg-win64-shared/bin/"

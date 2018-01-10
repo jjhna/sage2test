@@ -17,6 +17,8 @@
  * @submodule SAGE2DisplayUI
  */
 
+/* global viewOnlyMode */
+
 /**
  * User interface drawn using Canvas2D
  *
@@ -34,7 +36,7 @@ function SAGE2DisplayUI() {
 	this.uploadPercent = 0;
 	this.fileDropFontSize = 12;
 	this.applications = {};
-	this.appCount = 0;
+	this.appCount = 20;
 	this.partitions = {};
 	this.ptnCount = 0;
 	this.mediaStreamIcon = null;
@@ -176,10 +178,16 @@ SAGE2DisplayUI.prototype.resize = function(ratio) {
 	// Extra scaling factor
 	ratio = ratio || 1.0;
 	var menuScale = 1.0;
+
 	// var winWidth = window.innerWidth * ratio;
 	// if (window.innerWidth < 856) {
 	// 	menuScale = window.innerWidth / 856;
 	// }
+
+	// Not icon menu bar in view-only mode
+	if (viewOnlyMode) {
+		menuScale = 0;
+	}
 
 	// window width minus padding
 	var freeWidth   = window.innerWidth  - 26;
@@ -198,7 +206,8 @@ SAGE2DisplayUI.prototype.resize = function(ratio) {
 		drawHeight = Math.floor(freeWidth * ratio / sage2Aspect);
 	}
 
-	var freeHeight  = (window.innerHeight * ratio) - 24 - (86 * menuScale);
+	// height minus the button labels and the buttons and the top menubar
+	var freeHeight  = (window.innerHeight * ratio) - 24 - (86 * menuScale) - 40;
 	if (freeHeight < 100) {
 		freeHeight = 100;
 	}
@@ -217,11 +226,16 @@ SAGE2DisplayUI.prototype.resize = function(ratio) {
 
 	sage2UI.width  = drawWidth;
 	sage2UI.height = drawHeight;
-	applicationsDiv.style.width  = drawWidth + "px";
+	applicationsDiv.style.width  = drawWidth  + "px";
 	applicationsDiv.style.height = drawHeight + "px";
-	partitionsDiv.style.width  = drawWidth + "px";
-	partitionsDiv.style.height = drawHeight + "px";
+	partitionsDiv.style.width    = drawWidth  + "px";
+	partitionsDiv.style.height   = drawHeight + "px";
 	displayUI.style.height = (drawHeight + 5) + "px";
+
+	// adjust the top menubar width
+	var mainMenuBar = document.getElementById('mainMenuBar');
+	mainMenuBar.style.width = window.innerWidth + "px";
+	$$("toplayout").adjust();
 
 	this.resizeAppWindows();
 	this.resizePartitionWindows();
@@ -247,6 +261,13 @@ SAGE2DisplayUI.prototype.resizeAppWindows = function(event) {
 		appWindowArea.style.top    = Math.round(this.config.ui.titleBarHeight * this.scale) + "px";
 		appWindowArea.style.width  = Math.round(this.applications[key].width * this.scale) + "px";
 		appWindowArea.style.height = Math.round(this.applications[key].height * this.scale) + "px";
+
+		if (this.applications[key].sticky === true) {
+			var windowIconPinned = document.getElementById(key + "_iconPinned");
+			var windowIconPinout = document.getElementById(key + "_iconPinout");
+			windowIconPinned.style.height = Math.round(this.config.ui.titleBarHeight * this.scale) + "px";
+			windowIconPinout.style.height = Math.round(this.config.ui.titleBarHeight * this.scale) + "px";
+		}
 	}
 };
 
@@ -392,10 +413,14 @@ SAGE2DisplayUI.prototype.addAppWindow = function(data) {
 	appIcon.className = "appWindowIcon";
 	appIcon.onerror = function(event) {
 		setTimeout(function() {
-			if (data.icon.startsWith('data:image')) {
-				appIcon.src = data.icon;
+			if (data.icon) {
+				if (data.icon.startsWith('data:image')) {
+					appIcon.src = data.icon;
+				} else {
+					appIcon.src = data.icon + "_512.jpg";
+				}
 			} else {
-				appIcon.src = data.icon + "_512.jpg";
+				appIcon.src = "/images/unknownapp_512.jpg";
 			}
 		}, 1000);
 	};
@@ -413,6 +438,27 @@ SAGE2DisplayUI.prototype.addAppWindow = function(data) {
 		appIcon.src = "images/unknownapp_512.png";
 	}
 
+	if (data.sticky === true) {
+		var windowIconPinned = document.createElement("img");
+		windowIconPinned.id  = data.id + "_iconPinned";
+		windowIconPinned.className = "invertedIcon";
+		windowIconPinned.src = "images/ui/window-pinnedUI.svg";
+		windowIconPinned.style.height = Math.round(this.config.ui.titleBarHeight * this.scale) + "px";
+		windowIconPinned.style.position = "absolute";
+		windowIconPinned.style.left    = "0px";
+		windowIconPinned.style.display  = "none";
+		appWindowTitle.appendChild(windowIconPinned);
+
+		var windowIconPinout = document.createElement("img");
+		windowIconPinout.id  = data.id + "_iconPinout";
+		windowIconPinout.className = "invertedIcon";
+		windowIconPinout.src = "images/ui/window-pinoutUI.svg";
+		windowIconPinout.style.height = Math.round(this.config.ui.titleBarHeight * this.scale) + "px";
+		windowIconPinout.style.position = "absolute";
+		windowIconPinout.style.left    = "0px";
+		windowIconPinout.style.display  = "none";
+		appWindowTitle.appendChild(windowIconPinout);
+	}
 	appWindowArea.appendChild(appIcon);
 	appWindow.appendChild(appWindowTitle);
 	appWindow.appendChild(appWindowArea);
@@ -420,6 +466,32 @@ SAGE2DisplayUI.prototype.addAppWindow = function(data) {
 
 	this.appCount++;
 	this.applications[data.id] = data;
+};
+
+
+SAGE2DisplayUI.prototype.showStickyPin = function(data) {
+	if (data.sticky !== true) {
+		return;
+	}
+	var windowIconPinned = document.getElementById(data.id + "_iconPinned");
+	var windowIconPinout = document.getElementById(data.id + "_iconPinout");
+	if (data.pinned === true) {
+		windowIconPinned.style.display = "block";
+		windowIconPinout.style.display = "none";
+	} else {
+		windowIconPinned.style.display = "none";
+		windowIconPinout.style.display = "block";
+	}
+};
+
+SAGE2DisplayUI.prototype.hideStickyPin = function(data) {
+	if (data.sticky !== true) {
+		return;
+	}
+	var windowIconPinned = document.getElementById(data.id + "_iconPinned");
+	var windowIconPinout = document.getElementById(data.id + "_iconPinout");
+	windowIconPinned.style.display = "none";
+	windowIconPinout.style.display = "none";
 };
 
 /**
@@ -578,21 +650,53 @@ SAGE2DisplayUI.prototype.deletePartition = function(id) {
 	delete this.partitions[id];
 };
 
-SAGE2DisplayUI.prototype.updateHighlightedPartition = function(id) {
-	for (var p in this.partitions) {
-		var ptnElem = document.getElementById(p + "_area");
+SAGE2DisplayUI.prototype.updateHighlightedPartition = function(data) {
+	// for (var p in this.partitions) {
+	// 	var ptnElem = document.getElementById(p + "_area");
 
 
-		ptnElem.style.backgroundColor = "rgba(1, 1, 1, 0.25)";
-		ptnElem.style.border = "1px solid #a5a5a5";
+	// 	ptnElem.style.backgroundColor = "rgba(1, 1, 1, 0.25)";
+	// 	ptnElem.style.border = "1px solid #a5a5a5";
+	// }
+
+	// // if a value was passed, highlight this value
+	// if (id) {
+	// 	let highlighted = document.getElementById(id + "_area");
+
+	// 	highlighted.style.backgroundColor = "rgba(1, 1, 1, 0.5)";
+	// 	highlighted.style.border = "6px solid #fff723";
+	// }
+
+	if (!data) {
+		for (var p in this.partitions) {
+			var ptnElem = document.getElementById(p + "_area");
+
+			ptnElem.style.backgroundColor = "rgba(1, 1, 1, 0.25)";
+			ptnElem.style.border = "1px solid #a5a5a5";
+		}
+	} else {
+		var highlighted = document.getElementById(data.id + "_area");
+
+		if (this.partitions.hasOwnProperty(data.id) && highlighted) {
+
+			if (data.highlight) {
+				highlighted.style.backgroundColor = "rgba(1, 1, 1, 0.5)";
+				highlighted.style.border = "6px solid #fff723";
+			} else {
+				highlighted.style.backgroundColor = "rgba(1, 1, 1, 0.25)";
+				highlighted.style.border = "1px solid #a5a5a5";
+			}
+		}
 	}
+};
 
-	// if a value was passed, highlight this value
-	if (id) {
-		let highlighted = document.getElementById(id + "_area");
+SAGE2DisplayUI.prototype.setPartitionColor = function (data) {
+	if (data && data.id) {
+		var ptnWindowTitle = document.getElementById(data.id + "_title");
 
-		highlighted.style.backgroundColor = "rgba(1, 1, 1, 0.5)";
-		highlighted.style.border = "6px solid #fff723";
+		if (ptnWindowTitle) {
+			ptnWindowTitle.style.backgroundColor = data.color;
+		}
 	}
 };
 

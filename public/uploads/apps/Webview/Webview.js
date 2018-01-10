@@ -7,7 +7,7 @@
 
 "use strict";
 
-/* global  */
+/* global  require */
 
 var Webview = SAGE2_App.extend({
 	init: function(data) {
@@ -37,6 +37,14 @@ var Webview = SAGE2_App.extend({
 
 		// move and resize callbacks
 		this.resizeEvents = "continuous";
+		this.modifiers    = [];
+
+		// Content type: web, youtube, ..
+		this.contentType = "web";
+		// Muted audio or not, only on isMaster node
+		this.isMuted = false;
+		// Is the page loading
+		this.isLoading = false;
 
 		// not sure
 		this.element.style.display = "inline-flex";
@@ -46,14 +54,87 @@ var Webview = SAGE2_App.extend({
 		this.element.plugins   = "on";
 		this.element.allowpopups = false;
 		this.element.allowfullscreen = false;
+		// turn off nodejs intergration for now
 		this.element.nodeintegration = 0;
-		// this.element.disablewebsecurity = true;
+		// disable fullscreen
+		this.element.fullscreenable = false;
+		this.element.fullscreen = false;
+		// add the preload clause
+		this.addPreloadFile();
+		// security or not: this seems to be an issue often on Windows
+		this.element.disablewebsecurity = false;
 
+		// Set a session per webview, so not zoom sharing per origin
+		this.element.partition = data.id;
+
+		// initial size
 		this.element.minwidth  = data.width;
 		this.element.minheight = data.height;
 
+		// Default title
+		this.title = "Webview";
+
 		// Get the URL from parameter or session
-		this.element.src = data.params || this.state.url;
+		var view_url = data.params || this.state.file || this.state.url;
+		var video_id, ampersandPosition;
+
+		// A youtube URL with a 'watch' video
+		if (view_url.startsWith('https://www.youtube.com')) {
+			if (view_url.indexOf('embed') === -1 ||
+				view_url.indexOf("watch?v=") >= 0) {
+				// Search for the Youtube ID
+				video_id = view_url.split('v=')[1];
+				ampersandPosition = video_id.indexOf('&');
+				if (ampersandPosition != -1) {
+					video_id = video_id.substring(0, ampersandPosition);
+				}
+				view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
+			}
+			this.contentType = "youtube";
+		} else if (view_url.startsWith('https://youtu.be')) {
+			// youtube short URL (used in sharing)
+			video_id = view_url.split('/').pop();
+			view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
+			this.contentType = "youtube";
+		} else if (view_url.indexOf('vimeo') >= 0) {
+			// Search for the Vimeo ID
+			var m = view_url.match(/^.+vimeo.com\/(.*\/)?([^#?]*)/);
+			var vimeo_id =  m ? m[2] || m[1] : null;
+			if (vimeo_id) {
+				view_url = 'https://player.vimeo.com/video/' + vimeo_id;
+			}
+			this.contentType = "vimeo";
+		} else if (view_url.endsWith('.ipynb')) {
+			// ipython notebook file are link to nbviewer.jupyter.org online
+			var host = this.config.host + ':' + this.config.port;
+			view_url = "https://nbviewer.jupyter.org/url/" + host + view_url;
+			this.contentType = "ipython";
+		} else if (view_url.indexOf('twitch.tv') >= 0) {
+			// Twitch video from:
+			//    https://go.twitch.tv/videos/180266596
+			// to embedded:
+			//    https://player.twitch.tv/?!autoplay&video=v180266596
+
+			// Search for the Twitch ID
+			var tw = view_url.match(/^.+twitch.tv\/(.*\/)?([^#?]*)/);
+			var twitch_id =  tw ? tw[2] || tw[1] : null;
+			if (twitch_id) {
+				view_url = 'https://player.twitch.tv/?!autoplay&video=v' + twitch_id;
+			}
+			this.contentType = "twitch";
+		} else if (view_url.includes("http://" + this.config.host) && view_url.includes("/user/apps")) {
+			// Locally hosted WebViews are assumed to be Unity applications
+			// Move to more dedicated url later? //users/apps/unity ?
+			this.contentType = "unity";
+		} else if (view_url.indexOf('docs.google.com/presentation') >= 0) {
+			this.contentType = "google_slides";
+		} else if (view_url.indexOf('appear.in') >= 0) {
+			if (!view_url.endsWith('?widescreen')) {
+				// to enable non-cropped mode, in widescreen
+				view_url += '?widescreen';
+			}
+			this.contentType = "appearin";
+		}
 
 		// Store the zoom level, when in desktop emulation
 		this.zoomFactor = 1;
@@ -67,37 +148,83 @@ var Webview = SAGE2_App.extend({
 			_this.pre.innerHTML = "";
 			// update the emulation
 			_this.updateMode();
+			_this.isLoading = true;
+			_this.changeWebviewTitle();
 		});
 
-		// done loading
-		this.element.addEventListener("did-finish-load", function() {
+		// Intent to navigate: allows quick sync when the webview is shared
+		this.element.addEventListener("will-navigate", function(evt) {
 			// save the url
-			_this.state.url = _this.element.src;
+			_this.state.url = evt.url;
 			// set the zoom value
 			_this.element.setZoomFactor(_this.state.zoom);
 			// sync the state object
-			_this.SAGE2Sync(false);
-			_this.codeInject();
+			_this.SAGE2Sync(true);
 		});
 
 		// done loading
+		// this.element.addEventListener("did-finish-load", function() {
+		this.element.addEventListener("did-stop-loading", function() {
+			// code injection to support key translation
+			_this.codeInject();
+			// update the context menu with the current URL
+			_this.getFullContextMenuAndUpdate();
+			_this.isLoading = false;
+			_this.changeWebviewTitle();
+		});
+
+		// To handle navigation whithin the page (ie. anchors)
+		this.element.addEventListener("did-navigate-in-page", function(evt) {
+			// save the url
+			_this.state.url = evt.url;
+			// set the zoom value
+			_this.element.setZoomFactor(_this.state.zoom);
+			// sync the state object
+			_this.SAGE2Sync(true);
+		});
+
+		// To handle navigation with history: back and forward
+		this.element.addEventListener("did-navigate", function(evt) {
+			// save the url
+			_this.state.url = evt.url;
+			// set the zoom value
+			_this.element.setZoomFactor(_this.state.zoom);
+			// sync the state object
+			_this.SAGE2Sync(true);
+		});
+
+		// Error loading a page
+		// Source: https://cs.chromium.org/chromium/src/net/base/net_error_list.h
+		//
+		// ABORTED -3
+		// An operation was aborted (due to user action).
+		// BLOCKED_BY_RESPONSE -27
+		// The request failed because the response was delivered along with requirements
+		// which are not met ('X-Frame-Options' and 'Content-Security-Policy' ancestor
+		// checks, for instance).
+		// INSECURE_RESPONSE -501
+		// The server's response was insecure (e.g. there was a cert error).
+
 		this.element.addEventListener("did-fail-load", function(event) {
-			if (event.errorCode === -3 ||
+			// not loading anymore
+			_this.isLoading = false;
+			// Check the return code
+			if (event.errorCode ===   -3 ||
+				event.errorCode ===  -27 ||
 				event.errorCode === -501 ||
 				event.errorDescription === "OK") {
-				// it's a redirect
-				// _this.changeURL(event.validatedURL, false);
-				// nope
+				// it's a redirect (causes issues)
+				// _this.changeURL(event.validatedURL, true);
 			} else {
 				// real error
 				_this.element.src = 'data:text/html;charset=utf-8,<h1>Invalid URL</h1>';
-				_this.updateTitle('Webview');
+				_this.changeWebviewTitle();
 			}
 		});
 
 		// When the page changes its title
 		this.element.addEventListener("page-title-updated", function(event) {
-			_this.updateTitle('Webview: ' + event.title);
+			_this.changeWebviewTitle(event.title);
 		});
 
 		// When the page request fullscreen
@@ -112,22 +239,68 @@ var Webview = SAGE2_App.extend({
 			event.preventDefault();
 		});
 
+		// Emitted when page receives favicon urls
+		this.element.addEventListener("page-favicon-updated", function(event) {
+			if (event.favicons && event.favicons[0]) {
+				_this.state.favicon = event.favicons[0];
+				// sync the state object
+				_this.SAGE2Sync(false);
+			}
+		});
+
+		// Console message from the embedded page
 		this.element.addEventListener('console-message', function(event) {
 			console.log('Webview>	console:', event.message);
 			// Add the message to the console layer
 			_this.pre.innerHTML += 'Webview> ' + event.message + '\n';
 		});
 
-		// When the webview tries to open a new window
+		// When the webview tries to open a new window, for insance with ALT-click
 		this.element.addEventListener("new-window", function(event) {
 			// only accept http protocols
 			if (event.url.startsWith('http:') || event.url.startsWith('https:')) {
-				_this.changeURL(event.url, false);
+				// Do not open a new view, just navigate to the new URL
+				_this.changeURL(event.url, true);
+				// Request a new webview application
+				// wsio.emit('openNewWebpage', {
+				// 	// should be uniqueID, but no interactor object here
+				// 	id: this.id,
+				// 	// send the new URL
+				// 	url: event.url
+				// });
 			} else {
-				console.log('Webview>	Not http URL, not opening', event.url);
+				console.log('Webview>	Not a HTTP URL, not opening [', event.url, ']', event);
 			}
 		});
 
+		// Set the URL and starts loading
+		this.element.src = view_url;
+	},
+
+	/**
+	 * Change the title of the window
+	 *
+	 * @method     changeWebviewTitle
+	 * @param newtitle {String} new title
+	 */
+	changeWebviewTitle: function(newtitle) {
+		if (newtitle) {
+			// if parameter passed, we update the title
+			this.title = 'Webview: ' + newtitle;
+		}
+		var newtext = this.title;
+		// if the page has a reload timer
+		if (this.autoRefresh) {
+			// add a timer using a FontAwsome character
+			newtext += ' <i class="fa">\u{f017}</i>';
+		}
+		// if the page is loading
+		if (this.isLoading && this.contentType === "web") {
+			// add a spinner using a FontAwsome character
+			newtext += ' <i class="fa fa-spinner fa-spin"></i>';
+		}
+		// call the base class method
+		this.updateTitle(newtext);
 	},
 
 	/**
@@ -140,11 +313,46 @@ var Webview = SAGE2_App.extend({
 		return (typeof window !== 'undefined' && window.process && window.process.type === "renderer");
 	},
 
+	/**
+	 * Loads the components to do a file preload on a webpage.
+	 * Needs to be within an Electron browser to work.
+	 *
+	 * @method     addPreloadFile
+	 */
+	addPreloadFile: function() {
+		if (!this.isElectron()) {
+			return; // return if not electron.
+		}
+		// if it's not running inside Electron, do not bother
+		if (!this.isElectron) {
+			return;
+		}
+		// load the nodejs path module
+		var path = require("path");
+		// access the remote electron process
+		var app = require("electron").remote.app;
+		// get the application path
+		var appPath = app.getAppPath();
+		// // split the path at node_modules
+		// var subPath = appPath.split("node_modules");
+		// // take the first element which contains the current folder of the application
+		// var rootPath = subPath[0];
+		// // add the relative path to the webview folder
+		var rootPath = appPath;
+		var preloadPath = path.join(rootPath, 'public/uploads/apps/Webview', 'SAGE2_script_supplement.js');
+		// finally make it a local URL and pass it to the webview element
+		this.element.preload = "file://" + preloadPath;
+	},
+
+	// Sync event when shared
 	load: function(date) {
-		// sync the change
-		this.element.src = this.state.url;
-		this.updateMode();
-		this.refresh(date);
+		// only update if page changed.
+		if (this.element.src != this.state.url) {
+			// sync the change
+			this.element.src = this.state.url;
+			this.updateMode();
+			this.refresh(date);
+		}
 	},
 
 	draw: function(date) {
@@ -185,6 +393,7 @@ var Webview = SAGE2_App.extend({
 		// Called when window is resized
 		this.element.style.width  = this.sage2_width  + "px";
 		this.element.style.height = this.sage2_height + "px";
+
 		// resize the console layer
 		if (this.layer) {
 			// make sure the layer exist first
@@ -211,190 +420,335 @@ var Webview = SAGE2_App.extend({
 		);
 	},
 
-	/**
-	Initial testing reveals:
-		the page is for most intents and purposes fully visible.
-			the exception is if there is a scroll bar.
-		javascript operates in the given browser.
-		different displays will still have the same coordinate system
-			exception: random content can alter coordinate locations
-
-		sendInputEvent
-			accelerator events have names http://electron.atom.io/docs/api/accelerator/
-			SAGE2 buttons can't pass symbols
-
-
-	Things to look out for:
-		Most errors are silent
-			might be possible to use console-message event: http://electron.atom.io/docs/api/web-view-tag/#event-console-message
-		alert effects still produce another window on display host
-			AND pause the page
-
+	/*
+		Called after each page load, currentl prevents the lock from input focus.
 	*/
 	codeInject: function() {
-		/* eslint-disable */
-		this.element.executeJavaScript(
-			'\
-			var s2InjectForKeys = {};\
-			\
-			document.addEventListener("click", function(e) {\
-				s2InjectForKeys.lastClickedElement = document.elementFromPoint(e.clientX, e.clientY);\
-			});\
-			\
-			document.addEventListener("keydown", function(e) {\
-				/* Shift */\
-				if (e.keyCode == 16) {\
-					s2InjectForKeys.shift = true;\
-					return;\
-				}\
-				/* Backspace */\
-				if (e.keyCode == 8) {\
-					s2InjectForKeys.lastClickedElement.value = s2InjectForKeys.lastClickedElement.value.substring(0, s2InjectForKeys.lastClickedElement.value.length - 1);\
-					return;\
-				}\
-				/* Dont set keypress value if there was no clicked div */\
-				if (s2InjectForKeys.lastClickedElement.value == undefined) {\
-					return; \
-				}\
-				/* By default, characters are capitalized, if shift is not down, lower case them. */\
-				var sendChar = String.fromCharCode(e.keyCode);\
-				if (!s2InjectForKeys.shift) {\
-					sendChar = sendChar.toLowerCase();\
-				} else if(e.keyCode == 49) { /* 1 */\
-					sendChar =  "!";\
-				} else if(e.keyCode == 50) { /* 2 */\
-					sendChar =  "@";\
-				} else if(e.keyCode == 51) { /* 3 */\
-					sendChar =  "#";\
-				} else if(e.keyCode == 52) { /* 4 */\
-					sendChar =  "$";\
-				} else if(e.keyCode == 53) { /* 5 */\
-					sendChar =  "%";\
-				} else if(e.keyCode == 54) { /* 6 */\
-					sendChar =  "^";\
-				} else if(e.keyCode == 55) { /* 7 */\
-					sendChar =  "&";\
-				} else if(e.keyCode == 56) { /* 8 */\
-					sendChar =  "*";\
-				} else if(e.keyCode == 57) { /* 9 */\
-					sendChar =  "(";\
-				} else if(e.keyCode == 48) { /* 0 */\
-					sendChar =  ")";\
-				}\
-				s2InjectForKeys.lastClickedElement.value += sendChar;\
-			});\
-			document.addEventListener("keyup", function(e) {\
-				if (e.keyCode == 0x10) {\
-					s2InjectForKeys.shift = false;\
-				}\
-				if (e.keyCode == 8) {\
-					s2InjectForKeys.lastClickedElement.value = s2InjectForKeys.lastClickedElement.value.substring(0, s2InjectForKeys.lastClickedElement.value.length - 1);\
-				}\
-			});\
-			'
-		);
-		/* eslint-enable */
+		// Disabling text selection in page because it blocks the view sometimes
+		// done by injecting some CSS code
+		// Also disabling grab and drag events
+		this.element.insertCSS(":not(input):not(textarea), " +
+			":not(input):not(textarea)::after, " +
+			":not(input):not(textarea)::before { " +
+				"-webkit-user-select: none; " +
+				"user-select: none; " +
+				"cursor: default; " +
+				"-webkit-user-drag: none;" +
+				"-moz-user-drag: none;" +
+				"user-drag: none;" +
+			"} " +
+			"input, button, textarea, :focus { " +
+				"outline: none; " +
+			"}");
+	},
+
+
+	playPause: function(act) {
+		if (this.contentType === "youtube") {
+			// Simulate a mouse click
+			this.element.sendInputEvent({
+				type: "mouseDown",
+				x: 10, y: 10,
+				button: "left",
+				modifiers: null,
+				clickCount: 1
+			});
+			this.element.sendInputEvent({
+				type: "mouseUp",
+				x: 10, y: 10,
+				button: "left",
+				modifiers: null,
+				clickCount: 1
+			});
+		} else if (this.contentType === "vimeo" || this.contentType === "twitch") {
+			// Simulate a spacebar
+			this.element.sendInputEvent({
+				type: "char",
+				keyCode: ' '
+			});
+		}
+	},
+
+	startPresentation: function(act) {
+		var _this = this;
+		if (this.contentType === "google_slides") {
+			// Simulate a start of presentation CMD-Enter on Mac,
+			// Ctrl-F5 on Windows
+			var os = require('os').platform();
+			if (os === "darwin") {
+				// Cmd-Enter
+				this.element.sendInputEvent({
+					type: "keyDown",
+					keyCode: "Enter",
+					modifiers: ["Command"]
+				});
+			} else {
+				// Ctrl-F5
+				this.element.sendInputEvent({
+					type: "keyDown",
+					keyCode: "F5",
+					modifiers: ["Control"]
+				});
+			}
+			setTimeout(function() {
+				_this.element.sendInputEvent({
+					type: "keyUp",
+					keyCode: "Enter",
+					modifiers: null
+				});
+			}, 100);
+		}
+	},
+
+	sendESC: function(act) {
+		var _this = this;
+		if (this.contentType === "google_slides") {
+			// Simulate a start of presentation CMD-Enter
+			this.element.sendInputEvent({
+				type: "keyDown",
+				keyCode: "Escape",
+				modifiers: null
+			});
+			setTimeout(function() {
+				_this.element.sendInputEvent({
+					type: "keyUp",
+					keyCode: "Escape",
+					modifiers: null
+				});
+			}, 100);
+		}
+	},
+
+	muteUnmute: function(act) {
+		if (isMaster) {
+			var content = this.element.getWebContents();
+			if (this.isMuted) {
+				content.setAudioMuted(false);
+				this.isMuted = false;
+			} else {
+				content.setAudioMuted(true);
+				this.isMuted = true;
+			}
+		} else {
+			// Always muted on non-master display client
+			content.setAudioMuted(true);
+		}
 	},
 
 	getContextEntries: function() {
 		var entries = [];
 		var entry;
 
-		entry = {};
-		entry.description = "Back";
-		entry.callback = "navigation";
-		entry.parameters = {};
-		entry.parameters.action = "back";
-		entries.push(entry);
+		if (this.contentType === "youtube" ||
+			this.contentType === "vimeo" ||
+			this.contentType === "twitch") {
+			entry = {};
+			entry.description = "Play/Pause";
+			entry.accelerator = "P";
+			entry.callback = "playPause";
+			entry.parameters = {};
+			entries.push(entry);
 
-		entry = {};
-		entry.description = "Forward";
-		entry.callback = "navigation";
-		entry.parameters = {};
-		entry.parameters.action = "forward";
-		entries.push(entry);
+			entry = {};
+			entry.description = "Mute/Unmute";
+			entry.accelerator = "M";
+			entry.callback = "muteUnmute";
+			entry.parameters = {};
+			entries.push(entry);
 
-		entry = {};
-		entry.description = "Reload";
-		entry.callback = "reloadPage";
-		entry.parameters = {};
-		entries.push(entry);
+		} else if (this.contentType === "google_slides") {
+			entry = {};
+			entry.description = "Start Presentation";
+			entry.accelerator = "P";
+			entry.callback = "startPresentation";
+			entry.parameters = {};
+			entries.push(entry);
 
-		entry = {};
-		entry.description = "Auto refresh (5min)";
-		entry.callback = "reloadPage";
-		entry.parameters = {time: 5 * 60};
-		entries.push(entry);
+			entry = {};
+			entry.description = "Stop Presentation";
+			entry.callback = "sendESC";
+			entry.parameters = {};
+			entries.push(entry);
 
-		entries.push({description: "separator"});
+			// right arrow
+			entry = {};
+			entry.description = "Next Slide";
+			entry.accelerator = "\u2192";     // ->
+			entry.callback = "navigation";
+			entry.parameters = {};
+			entry.parameters.action = "forward";
+			entries.push(entry);
 
-		entry = {};
-		entry.description = "Mobile emulation";
-		entry.callback = "changeMode";
-		entry.parameters = {};
-		entry.parameters.mode = "mobile";
-		entries.push(entry);
+			// left arrow
+			entry = {};
+			entry.description = "Previous Slide";
+			entry.accelerator = "\u2190";     // <-
+			entry.callback = "navigation";
+			entry.parameters = {};
+			entry.parameters.action = "back";
+			entries.push(entry);
+		} else {
+			entry = {};
+			entry.description = "Back";
+			entry.accelerator = "Alt \u2190";     // ALT <-
+			entry.callback = "navigation";
+			entry.parameters = {};
+			entry.parameters.action = "back";
+			entries.push(entry);
 
-		entry = {};
-		entry.description = "Desktop emulation";
-		entry.callback = "changeMode";
-		entry.parameters = {};
-		entry.parameters.mode = "desktop";
-		entries.push(entry);
+			entry = {};
+			entry.description = "Forward";
+			entry.accelerator = "Alt \u2192";     // ALT ->
+			entry.callback = "navigation";
+			entry.parameters = {};
+			entry.parameters.action = "forward";
+			entries.push(entry);
 
-		entry = {};
-		entry.description = "Show/Hide the console";
-		entry.callback = "showConsole";
-		entry.parameters = {};
-		entries.push(entry);
+			entry = {};
+			entry.description = "Reload";
+			entry.accelerator = "Alt R";         // ALT r
+			entry.callback = "reloadPage";
+			entry.parameters = {};
+			entries.push(entry);
 
-		entries.push({description: "separator"});
+			entry = {};
+			entry.description = "Auto Refresh (5min)";
+			entry.callback = "reloadPage";
+			entry.parameters = {time: 5 * 60};
+			entries.push(entry);
 
-		entry = {};
-		entry.description = "Zoom in";
-		entry.callback = "zoomPage";
-		entry.parameters = {};
-		entry.parameters.dir = "zoomin";
-		entries.push(entry);
+			entries.push({description: "separator"});
 
-		entry = {};
-		entry.description = "Zoom out";
-		entry.callback = "zoomPage";
-		entry.parameters = {};
-		entry.parameters.dir = "zoomout";
-		entries.push(entry);
+			entry = {};
+			entry.description = "Mobile Emulation";
+			entry.callback = "changeMode";
+			entry.parameters = {};
+			entry.parameters.mode = "mobile";
+			entries.push(entry);
 
-		entries.push({description: "separator"});
+			entry = {};
+			entry.description = "Desktop Emulation";
+			entry.callback = "changeMode";
+			entry.parameters = {};
+			entry.parameters.mode = "desktop";
+			entries.push(entry);
 
-		entry   = {};
-		// label of them menu
-		entry.description = "Type a URL:";
-		// callback
-		entry.callback = "navigation";
-		// input setting
-		entry.inputField     = true;
-		entry.inputFieldSize = 20;
-		// parameters of the callback function
-		entry.parameters = {};
-		entry.parameters.action = "address";
-		entries.push(entry);
+			entry = {};
+			entry.description = "Show/Hide Console";
+			entry.callback = "showConsole";
+			entry.parameters = {};
+			entries.push(entry);
 
-		entry   = {};
-		// label of them menu
-		entry.description = "Web search:";
-		// callback
-		entry.callback = "navigation";
-		// input setting
-		entry.inputField     = true;
-		entry.inputFieldSize = 20;
-		// parameters of the callback function
-		entry.parameters = {};
-		entry.parameters.action = "search";
-		entries.push(entry);
+			entries.push({description: "separator"});
 
-		entries.push({description: "separator"});
+			entry = {};
+			entry.description = "Zoom In";
+			entry.accelerator = "Alt \u2191";     // ALT up-arrow
+			entry.callback = "zoomPage";
+			entry.parameters = {};
+			entry.parameters.dir = "zoomin";
+			entries.push(entry);
+
+			entry = {};
+			entry.description = "Zoom Out";
+			entry.accelerator = "Alt \u2193";     // ALT down-arrow
+			entry.callback = "zoomPage";
+			entry.parameters = {};
+			entry.parameters.dir = "zoomout";
+			entries.push(entry);
+
+			entries.push({description: "separator"});
+
+			entry   = {};
+			// label of them menu
+			entry.description = "Type URL:";
+			// callback
+			entry.callback = "navigation";
+			// input setting
+			entry.inputField = true;
+			// set the value to the current URL
+			entry.value = this.element.src;
+			entry.inputFieldSize = 20;
+			entry.inputDefault   = this.state.url;
+			// parameters of the callback function
+			entry.parameters = {};
+			entry.parameters.action = "address";
+			entries.push(entry);
+
+			entry   = {};
+			// label of them menu
+			entry.description = "Web Search:";
+			// callback
+			entry.callback = "navigation";
+			// input setting
+			entry.inputField     = true;
+			entry.inputFieldSize = 20;
+			// parameters of the callback function
+			entry.parameters = {};
+			entry.parameters.action = "search";
+			entries.push(entry);
+		}
+
+		/*
+		Disabling these entries for SC17 release since they do not consistently work yet.
+
+		entries.push({
+			description: "Type In Page:",
+			callback: "sendTextToLastClickedInputField",
+			inputField: true,
+			inputFieldSize: 20,
+			parameters: {}
+		});
+		entries.push({
+			description: "Find:",
+			callback: "findInPage",
+			inputField: true,
+			inputFieldSize: 20,
+			parameters: {}
+		});
+		*/
+
+		entries.push({
+			description: "Copy URL to Clipboard",
+			callback: "SAGE2_copyURL",
+			parameters: {
+				url: this.state.url
+			}
+		});
 
 		return entries;
+	},
+
+	/**
+	 * Will try send text to the focused element within the webview.
+	 * Possible that nothing will happen because the focused element doesn't have input.
+	 *
+	 * @method     sendTextToLastClickedInputField
+	 * @param      {Object}  responseObject  uses the clientInput
+	 */
+	sendTextToLastClickedInputField: function(responseObject) {
+		if (responseObject.clientInput && (responseObject.clientInput.length > 0)) {
+			this.element.insertText(responseObject.clientInput);
+
+			for (let i = 0; i < responseObject.clientInput.length; i++) {
+				this.element.sendInputEvent({ // Not sure why we need 'char' but it works ! -- Luc
+					type: "char",
+					keyCode: responseObject.clientInput.charAt(i)
+				});
+			}
+		}
+	},
+
+	/**
+	 * Will try to find in the page.
+	 *
+	 * @method     findInPage
+	 * @param      {Object}  responseObject  uses the clientInput
+	 */
+	findInPage: function(responseObject) {
+		if (responseObject.clientInput && (responseObject.clientInput.length > 0)) {
+			this.element.findInPage(responseObject.clientInput);
+		}
 	},
 
 	/**
@@ -416,9 +770,12 @@ var Webview = SAGE2_App.extend({
 						// send the message to the server to relay
 						_this.broadcast("reloadPage", {});
 					}, interval);
+					// change the title to add the spinner
+					this.changeWebviewTitle();
 				}
 			} else {
 				// Just reload once
+				this.isLoading = true;
 				this.element.reload();
 				this.element.setZoomFactor(this.state.zoom);
 			}
@@ -441,9 +798,29 @@ var Webview = SAGE2_App.extend({
 		if (this.isElectron) {
 			var action = responseObject.action;
 			if (action === "back") {
-				this.element.goBack();
+				if (this.contentType === "google_slides") {
+					// send the left arrow key
+					this.element.sendInputEvent({
+						type: "keyDown",
+						keyCode: "Left",
+						modifiers: null
+					});
+				} else {
+					// navigate the webview
+					this.element.goBack();
+				}
 			} else if (action === "forward") {
-				this.element.goForward();
+				if (this.contentType === "google_slides") {
+					// send the right arrow key
+					this.element.sendInputEvent({
+						type: "keyDown",
+						keyCode: "Right",
+						modifiers: null
+					});
+				} else {
+					// navigate the webview
+					this.element.goForward();
+				}
 			} else if (action === "address") {
 				if ((responseObject.clientInput.indexOf("://") === -1) &&
 					!responseObject.clientInput.startsWith("/")) {
@@ -462,13 +839,13 @@ var Webview = SAGE2_App.extend({
 
 			// zoomin
 			if (dir === "zoomin") {
-				this.state.zoom *= 1.25;
+				this.state.zoom *= 1.50;
 				this.element.setZoomFactor(this.state.zoom);
 			}
 
 			// zoomout
 			if (dir === "zoomout") {
-				this.state.zoom /= 1.25;
+				this.state.zoom /= 1.50;
 				this.element.setZoomFactor(this.state.zoom);
 			}
 
@@ -491,25 +868,29 @@ var Webview = SAGE2_App.extend({
 			var y = Math.round(position.y);
 			var _this = this;
 
-			if (eventType === "pointerPress" && (data.button === "left")) {
+			if (eventType === "pointerPress") {
 				// click
 				this.element.sendInputEvent({
 					type: "mouseDown",
 					x: x, y: y,
-					button: "left",
+					button: data.button,
+					modifiers: this.modifiers,
 					clickCount: 1
 				});
 			} else if (eventType === "pointerMove") {
 				// move
 				this.element.sendInputEvent({
-					type: "mouseMove", x: x, y: y
+					type: "mouseMove",
+					modifiers: this.modifiers,
+					x: x, y: y
 				});
-			} else if (eventType === "pointerRelease" && (data.button === "left")) {
+			} else if (eventType === "pointerRelease") {
 				// click release
 				this.element.sendInputEvent({
 					type: "mouseUp",
 					x: x, y: y,
-					button: "left",
+					button: data.button,
+					modifiers: this.modifiers,
 					clickCount: 1
 				});
 			} else if (eventType === "pointerScroll") {
@@ -518,11 +899,52 @@ var Webview = SAGE2_App.extend({
 					type: "mouseWheel",
 					deltaX: 0, deltaY: -1 * data.wheelDelta,
 					x: 0, y: 0,
+					modifiers: this.modifiers,
 					canScroll: true
 				});
 			} else if (eventType === "widgetEvent") {
 				// widget events
 			} else if (eventType === "keyboard") {
+				if (this.contentType !== "unity") {
+					this.element.focus();
+				}
+
+				if (this.contentType === "youtube" ||
+					this.contentType === "vimeo"   ||
+					this.contentType === "twitch") {
+					if (data.character === "m") {
+						// m mute
+						this.muteUnmute();
+						return;
+					} else if (data.character === "p") {
+						// p play
+						this.playPause();
+						return;
+					}
+				}
+				if (this.contentType === "google_slides") {
+					if (data.character === "p") {
+						// p play
+						this.startPresentation();
+						return;
+					} else if (data.character === " ") {
+						// send the right arrow key
+						this.element.sendInputEvent({
+							type: "keyDown",
+							keyCode: "Right",
+							modifiers: null
+						});
+						return;
+					}
+				}
+
+				if (this.contentType === "unity") {
+					// Bit of a hack to allow Unity InputManager controls to work
+					// Only upper case characters trigger InputManager -- Arthur
+					data.character = data.character.toUpperCase();
+				}
+
+				// send the character event
 				this.element.sendInputEvent({
 					// type: "keyDown",
 					// Not sure why we need 'char' but it works ! -- Luc
@@ -536,6 +958,25 @@ var Webview = SAGE2_App.extend({
 					});
 				}, 0);
 			} else if (eventType === "specialKey") {
+				// clear the array
+				this.modifiers = [];
+				// store the modifiers values
+				if (data.status && data.status.SHIFT) {
+					this.modifiers.push("shift");
+				}
+				if (data.status && data.status.CTRL) {
+					this.modifiers.push("control");
+				}
+				if (data.status && data.status.ALT) {
+					this.modifiers.push("alt");
+				}
+				if (data.status && data.status.CMD) {
+					this.modifiers.push("meta");
+				}
+				if (data.status && data.status.CAPS) {
+					this.modifiers.push("capsLock");
+				}
+
 				// SHIFT key
 				if (data.code === 16) {
 					if (data.state === "down") {
@@ -568,6 +1009,13 @@ var Webview = SAGE2_App.extend({
 					if (data.status.ALT) {
 						// navigate back
 						this.element.goBack();
+					} else {
+						// send the left arrow key
+						this.element.sendInputEvent({
+							type: "keyDown",
+							keyCode: "Left",
+							modifiers: null
+						});
 					}
 					this.refresh(date);
 				} else if (data.code === 38 && data.state === "down") {
@@ -577,11 +1025,18 @@ var Webview = SAGE2_App.extend({
 						this.zoomPage({dir: "zoomin"});
 					} else {
 						this.element.sendInputEvent({
-							type: "mouseWheel",
-							deltaX: 0, deltaY: 64,
-							x: 0, y: 0,
-							canScroll: true
+							type: "keyDown",
+							keyCode: "Up",
+							modifiers: null
 						});
+					}
+					this.refresh(date);
+				} else if (data.code === 82 && data.state === "down") {
+					// r key
+					if (data.status.ALT) {
+						// ALT-r reloads
+						this.isLoading = true;
+						this.reloadPage({});
 					}
 					this.refresh(date);
 				} else if (data.code === 39 && data.state === "down") {
@@ -589,6 +1044,13 @@ var Webview = SAGE2_App.extend({
 					if (data.status.ALT) {
 						// navigate forward
 						this.element.goForward();
+					} else {
+						// send the right arrow key
+						this.element.sendInputEvent({
+							type: "keyDown",
+							keyCode: "Right",
+							modifiers: null
+						});
 					}
 					this.refresh(date);
 				} else if (data.code === 40 && data.state === "down") {
@@ -598,10 +1060,9 @@ var Webview = SAGE2_App.extend({
 						this.zoomPage({dir: "zoomout"});
 					} else {
 						this.element.sendInputEvent({
-							type: "mouseWheel",
-							deltaX: 0, deltaY: -64,
-							x: 0, y: 0,
-							canScroll: true
+							type: "keyDown",
+							keyCode: "Down",
+							modifiers: null
 						});
 					}
 					this.refresh(date);
