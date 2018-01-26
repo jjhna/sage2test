@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech */
+/* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech, SAGE2_SnippetEditor */
 /* global removeAllChildren, SAGE2_copyToClipboard, parseBool */
 
 /**
@@ -69,6 +69,7 @@ var wsio;
 var displayUI;
 var interactor;
 var fileManager;
+var snippetEditor;
 var keyEvents;
 var touchMode;
 var touchDist;
@@ -445,6 +446,8 @@ function SAGE2_init() {
 	setupAppContextMenuDiv();
 	setupUiNoteMaker();
 	setupUiDrawCanvas();
+
+	snippetEditor = new SAGE2_SnippetEditor("codeSnippetEditor");
 }
 
 //
@@ -1488,6 +1491,8 @@ function handleClick(element) {
 		Dialog will not be shown here.
 		Rather than show the dialog, the client will respond back, then it will be shown.
 		*/
+	} else if (element.id === "code" || element.id === "codeContainer" || element.id === "codeLabel") {
+		snippetEditor.open();
 	} else if (element.id === "appOpenBtn") {
 		// App Launcher Dialog
 		loadSelectedApplication();

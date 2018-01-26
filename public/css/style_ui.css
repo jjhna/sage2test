@@ -795,28 +795,32 @@ The z-index is very important.
     background: white;
     z-index: 1999;
 }
+
 .appContextMenuEntry {
-	padding: 2px 5px;
-	cursor:default;
+    padding: 2px 5px;
+    cursor: default;
 }
+
 .appContextMenuEntry:first-of-type {
-	padding-top:5px;
+    padding-top: 5px;
 }
+
 .appContextMenuEntry:last-of-type {
-	padding-bottom:5px;
+    padding-bottom: 5px;
 }
+
 #appContextMenu .okButton {
-	border: 1px solid black;
-	padding:0 2px;
-	display:inline-block;
-	margin-left:5px;
-	cursor:pointer;
+    border: 1px solid black;
+    padding: 0 2px;
+    display: inline-block;
+    margin-left: 5px;
+    cursor: pointer;
 }
 
 #appContextMenu .okButton:hover,
 #appContextMenu .noInputEntry:hover {
-	cursor:pointer;
-	background:lightgray !important;
+    cursor: pointer;
+    background: lightgray !important;
 }
 
 #uiNoteMaker {
@@ -973,6 +977,7 @@ The z-index is very important.
     overflow: hidden;
     cursor: default;
 }
+
 
 /***** File Browser *****/
 
@@ -1314,4 +1319,187 @@ The z-index is very important.
 
 .contextMenuEntry:hover>.contextSubMenu {
     display: block;
+}
+
+
+
+/* ====================================== */
+/* ====== Code Snippets UI Styling ====== */
+/* ====================================== */
+
+#codeSnippetEditor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 1000;
+}
+
+#codeSnippetEditor.open {
+    pointer-events: initial;
+    opacity: 1;
+}
+
+#codeSnippetEditor .editorWrapper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 90%;
+    width: 50%;
+    max-width: 500px;
+    transform: translateX(-50%) translateY(-50%);
+    border: 1.25px solid rgba(100, 100, 100, 0.5);
+    background-color: white;
+    border-radius: 20px;
+    box-shadow: 1px 1px 50px black;
+    padding: 10px;
+    z-index: 1000;
+}
+
+/* ===================================== */
+/* ====== Editor Controls Styling ====== */
+/* ===================================== */
+
+#codeSnippetEditor #snippetEditorControls {
+    width: 100%;
+    height: 10%;
+    margin: 5px 0;
+}
+
+#codeSnippetEditor .controlRow {
+    width: 100%;
+    margin: 5px 0;
+}
+
+#codeSnippetEditor .controlButton {
+    float: left;
+    background-color: #eee;
+    border: 1.25px solid rgba(100, 100, 100, 0.25);
+    padding: 5px;
+    margin: 3px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#codeSnippetEditor .controlButton:hover {
+    background-color: #ccc;
+    border: 1.25px solid rgba(225, 225, 225, 0.5);
+}
+
+#codeSnippetEditor .controlButton.disabled {
+    background-color: #eee;
+    color: #aaa;
+    /* border-color: rgba(225, 225, 225, 0.5); */
+    pointer-events: none;
+}
+
+#codeSnippetEditor #snippetEditorCopy {
+    margin-left: 25px;
+}
+
+#codeSnippetEditor #snippetSelect {
+    margin: 6px 3px;
+    font-size: 1.25em;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+#codeSnippetEditor #snippetSelect>option.locked {
+    background-color: #d6604d;
+}
+
+#codeSnippetEditor #snippetSelect>option.loaded {
+    background-color: #74add1;
+}
+
+#codeSnippetEditor #snippetEditorHide {
+    float: right;
+}
+
+#codeSnippetEditor #snippetEditorClose {
+    float: right;
+}
+
+#codeSnippetEditor #snippetEditorClose:hover {
+    color: rgb(225, 0, 0);
+}
+
+#codeSnippetEditor #createNewScriptWrapper {
+    display: block;
+}
+
+#codeSnippetEditor #newSnippetLabel {
+    float: left;
+    padding: 6px;
+    margin: 3px 0;
+}
+
+.newSnippetButton {
+    float: left;
+    background-color: #eee;
+    border: 1.25px solid rgba(100, 100, 100, 0.1);
+    padding: 5px;
+    margin: 3px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.drawSnippetColor {
+    background-color: #fdcdac;
+}
+
+.drawSnippetColor:hover {
+    background-color: #fba76d;
+    color: white;
+}
+
+.dataSnippetColor {
+    background-color: #cbd5e8;
+}
+
+.dataSnippetColor:hover {
+    background-color: #9db0d3;
+    color: white;
+}
+
+.genSnippetColor {
+    background-color: #b3e2cd;
+}
+
+.genSnippetColor:hover {
+    background-color: #87d1b0;
+    color: white;
+}
+
+/* ============================ */
+/* ====== Editor Styling ====== */
+/* ============================ */
+
+#codeSnippetEditor #snippetEditor {
+    width: 100%;
+    height: 85%;
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+#codeSnippetEditor .overlay {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(100, 100, 100, 0.3)
+}
+
+/* override the span and * selectors for inside ace editor... */
+.ace_editor * {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace !important;
+}
+
+.ace_editor span {
+    color: white;
 }

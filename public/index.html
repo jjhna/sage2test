@@ -82,12 +82,17 @@
 <script async src="lib/webix/webix.js"></script>
 <script async src="lib/moment.min.js"></script>
 
+<!-- (Will need to change this to be local -- it relies on external theme now, however) -->
+<!-- <script async src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.9/ace.js"></script> -->
+<script async src="ace/ace.js"></script>
+
 <!-- SAGE2 code -->
 <script async src="src/websocket.io.js"></script>
 <script async src="src/SAGE2_runtime.js"></script>
 <script async src="src/SAGE2_interaction.js"></script>
 <script async src="src/SAGE2_DisplayUI.js"></script>
 <script async src="src/SAGE2_Speech.js"></script>
+<script async src="src/SAGE2_SnippetEditor.js"></script>
 <script async src="src/SAGE2_UI.js"></script>
 
 <!-- Style sheets -->
@@ -96,7 +101,6 @@
 <link rel="stylesheet" type="text/css" href="lib/webix/webix.css">
 <link rel="stylesheet" type="text/css" href="lib/webix/skins/compact.css">
 <link rel="stylesheet" type="text/css" href="css/fileManager.css" media="screen">
-
 
 </head>
 
@@ -138,6 +142,10 @@
 					<td id="mediabrowserContainer">
 						<img id="mediabrowser" alt="mediabrowser" src="images/ui/graycircle-mediabrowser.svg" width="48" height="48"/>
 						<p id="mediabrowserLabel">Media Browser</p>
+					</td>
+					<td id="codeContainer">
+						<img id="code" alt="code" src="images/ui/graycircle-codeeditor.svg" width="48" height="48"/>
+						<p id="codeLabel">Code Editor</p>
 					</td>
 					<!-- <td id="arrangementContainer">
 						<img id="arrangement"  alt="arrangement"  src="images/ui/graycircle-arrangement.svg"  width="48" height="48"/>
@@ -461,6 +469,39 @@
 			&nbsp&nbsp&nbsp
 			<span id="voiceTranscriptActual">
 			</span>
+		</div>
+	</div>
+
+	<div id="codeSnippetEditor" class="open">
+		<div class="overlay"></div>
+		<div class="editorWrapper">
+			<div id="snippetEditorControls">
+				<div class="controlRow">
+					<i id="snippetEditorSave" class="controlButton fa fa-2x fa-floppy-o"></i>
+					<i id="snippetEditorCopy" class="controlButton fa fa-2x fa-clone"></i>
+					<i id="snippetEditorLoad" class="controlButton fa fa-2x fa-folder-open-o"></i>
+					<select name="snippetOpen" id="snippetSelect">
+						<option value="snippet1" class="loaded">Test1</option>
+						<option value="snippet2">Test2</option>
+						<option value="snippet3" class="locked">Test3</option>
+						<option value="snippet4">Test4</option>
+					</select>
+					
+					<i id="snippetEditorClose" class="controlButton fa fa-2x fa-times-circle-o"></i>
+					<i id="snippetEditorHide" class="controlButton fa fa-2x fa-minus"></i>
+					<div style="clear: both;"></div>
+				</div>
+				<div class="controlRow">
+					<div id="createNewScriptWrapper">
+						<span id="newSnippetLabel">New Snippet:</span>
+						<span id="newSnippetGen" class="newSnippetButton genSnippetColor">Gen</span>
+						<span id="newSnippetData" class="newSnippetButton dataSnippetColor">Data</span>
+						<span id="newSnippetDraw" class="newSnippetButton drawSnippetColor">Draw</span>
+					</div>
+					<div style="clear: both;"></div>
+				</div>
+			</div>
+			<div id="snippetEditor"></div>
 		</div>
 	</div>
 
