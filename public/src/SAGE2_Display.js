@@ -17,7 +17,7 @@
 /* global insertTextIntoTextInputWidget, removeWidgetToAppConnector */
 /* global hideWidgetToAppConnectors */
 /* global createWidgetToAppConnector, getTextFromTextInputWidget */
-/* global SAGE2_Partition, require */
+/* global SAGE2_Partition, SAGE2_CodeSnippets, require */
 /* global SAGE2RemoteSitePointer */
 
 

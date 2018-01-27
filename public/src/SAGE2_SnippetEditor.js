@@ -54,13 +54,10 @@ let SAGE2_SnippetEditor = (function() {
 
 			// bind save and save copy actions
 			self.saveButton = self.div.querySelector("#snippetEditorSave");
-			self.saveButton.onclick = function() {
-				saveScript(false); // copy: false
-			};
+			self.saveButton.onclick = saveScript;
+
 			self.copyButton = self.div.querySelector("#snippetEditorCopy");
-			self.copyButton.onclick = function() {
-				saveScript(true); // copy: true
-			};
+			self.copyButton.onclick = saveCopy;
 
 			// bind new script type buttons
 			self.div.querySelector("#newSnippetGen").onclick = function() {
@@ -97,8 +94,17 @@ let SAGE2_SnippetEditor = (function() {
 			hideEditor();
 		}
 
-		function saveScript(copy) {
-			console.log("copy:", copy, self.editor.getValue());
+		function saveScript() {
+			// save script into current file, or create new file if one does not exist
+			console.log("save:", self.editor.getValue());
+		}
+
+		function saveCopy() {
+			// if -> script in dropdown !== current, clone that script in new file
+			// else -> save changes of current script into new file
+			// then open new file in editor
+			console.log("copy:", self.scriptSelect.value);
+
 		}
 
 		function unloadScript() {
