@@ -733,6 +733,16 @@ function setupListeners() {
 		// SAGE2_speech.failSound.play();
 		SAGE2_speech.textToSpeech(data.message);
 	});
+
+	// code snippets listeners
+	wsio.on("editorReceiveSnippetStates", function(data) {
+		console.log("editorReceiveSnippetStates", data);
+		snippetEditor.updateSnippetStates(data);
+	});
+	wsio.on('editorReceiveLoadedSnippet', function(data) {
+		console.log("editorReceiveLoadedSnippet", data);
+		snippetEditor.receiveLoadedSnippet(data);
+	});
 }
 
 /**

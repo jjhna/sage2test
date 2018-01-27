@@ -30,22 +30,7 @@ let SAGE2_SnippetEditor = (function() {
 			loadedSnippet: null,
 			loadedSnippetType: null,
 
-			// scriptStates: {},
-			// test values for now
-			scriptStates: {
-				"codeSnippet-0": {
-					locked: false
-				},
-				"codeSnippet-1": {
-					locked: false
-				},
-				"codeSnippet-2": {
-					locked: true
-				},
-				"codeSnippet-3": {
-					locked: false
-				}
-			}
+			scriptStates: {}
 		};
 
 		init();
@@ -116,6 +101,8 @@ let SAGE2_SnippetEditor = (function() {
 
 			wsio.emit('editorSaveSnippet', {
 				text: self.editor.getValue(),
+				type: self.loadedSnippetType,
+				desc: "custom-code",
 				scriptID: self.loadedSnippet
 			});
 		}
@@ -226,16 +213,26 @@ let SAGE2_SnippetEditor = (function() {
 
 		}
 
-		function updateScriptSelectorList(scriptStates) {
+		function updateSnippetStates(scriptStates) {
 			self.scriptStates = scriptStates;
+
+			console.log("scriptStates updated", scriptStates);
+		}
+
+		function receiveLoadedSnippet(data) {
+			self.editor.setValue(data.text);
+			self.editor.clearSelection();
+
+			self.loadedSnippet = data.scriptID;
+			console.log(self.loadedSnippet);
 		}
 
 		return {
 			open: openEditor,
 			hide: hideEditor,
 
-
-			updateScriptSelectorList
+			updateSnippetStates,
+			receiveLoadedSnippet
 		};
 	};
 }());

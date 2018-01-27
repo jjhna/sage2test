@@ -65,6 +65,15 @@ let SAGE2_CodeSnippets = (function() {
 		}
 
 		// send info for user who saved code to load
+		wsio.emit("snippetSendCodeOnLoad", {
+			scriptID: id,
+			to: definition.editor,
+			text: definition.text,
+			type: definition.type
+		});
+
+		let functionState = getFunctionInfo();
+		wsio.emit("snippetsStateUpdated", functionState);
 	}
 
 	function saveSnippet(uniqueID, code, desc, type, scriptID) {
@@ -125,7 +134,7 @@ let SAGE2_CodeSnippets = (function() {
 				src: document.currentScript.src !== "" ? document.currentScript.src : "user-defined",
 				type: "${type}",
 				desc: "${desc}",
-				editor: ${uniqueID},
+				editor: "${uniqueID}",
 				links: JSON.parse("${links ? JSON.stringify(links) : []}"),
 				text: \`${code.replace(/`/gi, "\\`")}\`,
 				code: `;
@@ -181,12 +190,20 @@ let SAGE2_CodeSnippets = (function() {
 
 	function requestSnippetLoad(uniqueID, scriptID) {
 		// send script to user
-		// wsio.emit( ... )
+		if (self.functions[scriptID] && !self.functions[scriptID].editor) {
+			self.functions[scriptID].editor = uniqueID;
+
+			wsio.emit("snippetSendCodeOnLoad", {
+				scriptID: scriptID,
+				to: self.functions[scriptID].editor,
+				text: self.functions[scriptID].text,
+				type: self.functions[scriptID].type
+			});
+		}
 
 		// broadcast update of function states
 		let functionState = getFunctionInfo();
-		console.log(functionState);
-		// wsio.emit ( ... )
+		wsio.emit("snippetsStateUpdated", functionState);
 	}
 
 	function notifySnippetClosed(uniqueID, scriptID) {
@@ -194,8 +211,7 @@ let SAGE2_CodeSnippets = (function() {
 
 		// broadcast update of function states
 		let functionState = getFunctionInfo();
-		console.log(functionState);
-		// wsio.emit ( ... )
+		wsio.emit("snippetsStateUpdated", functionState);
 	}
 
 	return {

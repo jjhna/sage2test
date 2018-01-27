@@ -1450,6 +1450,22 @@ function setupListeners() {
 			app.SAGE2Event('performanceData', null, null, data, data.date);
 		}
 	});
+
+	wsio.on("snippetLoadRequest", function(data) {
+		console.log("snippetLoadRequest", data);
+	});
+
+	wsio.on("snippetCloseNotify", function(data) {
+		console.log("snippetCloseNotify", data);
+
+	});
+
+	wsio.on("saveSnippet", function(data) {
+		console.log("saveSnippet", data);
+		// uniqueID, code, desc, type, scriptID
+		SAGE2_CodeSnippets.saveSnippet(data.from, data.text, data.desc, data.type, data.scriptID);
+	});
+
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {
