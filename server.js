@@ -1216,6 +1216,15 @@ function setupListeners(wsio) {
 
 	// message from performance page
 	wsio.on('requestClientUpdate',					wsRequestClientUpdate);
+
+	// == SAGE2_CodeSnippets messages ==
+	// - WebUI to Display
+	wsio.on('editorSnippetLoadRequest', wsEditorSnippetLoadRequest);
+	wsio.on('editorSnippetCloseNotify', wsEditorSnippetCloseNotify);
+	wsio.on('editorSaveSnippet', wsEditorSaveSnippet);
+
+	// - Display to WebUI
+
 }
 
 /**
@@ -10988,3 +10997,21 @@ function wsVoiceToAction(wsio, data) {
 function wsRequestClientUpdate(wsio) {
 	performanceManager.updateClient(wsio);
 }
+
+/* ======== Code Snippets Event Handlers ======== */
+
+/* ===== Code Snippets Messages from WebUI ====== */
+
+function wsEditorSnippetLoadRequest(wsio, data) {
+	console.log("Snippet Load Request", data);
+}
+
+function wsEditorSnippetCloseNotify(wsio, data) {
+	console.log("Snippet Close Notify", data);
+}
+
+function wsEditorSaveSnippet(wsio, data) {
+	console.log("Snippet Save", data);
+}
+
+/* ===== Code Snippets Messages from Display ===== */

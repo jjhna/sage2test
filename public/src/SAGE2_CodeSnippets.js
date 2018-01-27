@@ -42,8 +42,10 @@ let SAGE2_CodeSnippets = (function() {
 
 		Object.keys(self.functions).forEach(id => {
 			functionInfo[id] = {
+				id,
 				type: self.functions[id].type,
 				src: self.functions[id].src,
+				desc: self.functions[id].desc,
 				locked: self.functions[id].editor !== null
 			};
 		});
@@ -61,6 +63,8 @@ let SAGE2_CodeSnippets = (function() {
 				self.links[linkID].update();
 			}
 		}
+
+		// send info for user who saved code to load
 	}
 
 	function saveSnippet(uniqueID, code, desc, type, scriptID) {

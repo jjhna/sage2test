@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global ace displayUI */
+/* global ace displayUI wsio */
 
 let SAGE2_SnippetEditor = (function() {
 	return function(targetID) {
@@ -25,9 +25,27 @@ let SAGE2_SnippetEditor = (function() {
 			loadButton: null,
 
 			scriptSelect: null,
+			snippetChanged: false,
 
 			loadedSnippet: null,
-			loadedSnippetType: null
+			loadedSnippetType: null,
+
+			// scriptStates: {},
+			// test values for now
+			scriptStates: {
+				"codeSnippet-0": {
+					locked: false
+				},
+				"codeSnippet-1": {
+					locked: false
+				},
+				"codeSnippet-2": {
+					locked: true
+				},
+				"codeSnippet-3": {
+					locked: false
+				}
+			}
 		};
 
 		init();
@@ -77,8 +95,6 @@ let SAGE2_SnippetEditor = (function() {
 			// bind load script button
 			self.loadButton = self.div.querySelector("#snippetEditorLoad");
 			self.loadButton.onclick = loadScript;
-
-
 		}
 
 		function openEditor() {
@@ -95,20 +111,30 @@ let SAGE2_SnippetEditor = (function() {
 		}
 
 		function saveScript() {
-			// save script into current file, or create new file if one does not exist
+			// save script into current file, or create new file if one does not exist (new)
 			console.log("save:", self.editor.getValue());
+
+			wsio.emit('editorSaveSnippet', {
+				text: self.editor.getValue(),
+				scriptID: self.loadedSnippet
+			});
 		}
 
 		function saveCopy() {
-			// if -> script in dropdown !== current, clone that script in new file
-			// else -> save changes of current script into new file
-			// then open new file in editor
-			console.log("copy:", self.scriptSelect.value);
+			// if -> script !== new, clone that script with any current changes in new file
+			// then open new file in editor (will be sent through wsio)
 
+			console.log("copy:", self.scriptSelect.value);
+			wsio.emit('editorSaveSnippet', {
+				text: self.editor.getValue(),
+				scriptID: "new"
+			});
 		}
 
 		function unloadScript() {
 			console.log("Unload script -- unlock for others to edit:", self.loadedSnippet);
+
+			wsio.emit('editorSnippetCloseNotify', { scriptID: self.loadedSnippet });
 
 			self.loadedSnippet = null;
 		}
@@ -118,18 +144,32 @@ let SAGE2_SnippetEditor = (function() {
 				unloadScript();
 			}
 
-			console.log("Load script -- lock out editing:", self.scriptSelect.value);
+			console.log("Load script:", self.scriptSelect.value);
+
+			wsio.emit('editorSnippetLoadRequest', {
+				scriptID: self.scriptSelect.value
+			});
+
 			self.loadedSnippet = self.scriptSelect.value;
 
+			if (self.scriptStates[self.loadedSnippet] && self.scriptStates[self.loadedSnippet].locked) {
+				// script is uneditable & unsaveable
+				self.editor.setReadOnly(true);
+				self.saveButton.classList.add("disabled");
+			} else {
+				// otherwise, it is fine to edit
+				self.editor.setReadOnly(false);
+				self.saveButton.classList.remove("disabled");
+			}
 
-
-			// use this to update buttons
-			scriptSelectorChanged();
+			// you can always copy a script you loaded (since it's not new)
+			self.copyButton.classList.remove("disabled");
+			// you can't load what you just loaded
+			self.loadButton.classList.add("disabled");
 		}
 
 		function startNewScript(type) {
-			// d3.select("#script-select").node().value = "new";
-			// let type = d3.select("#type-select").node().value;
+
 
 			if (type === "draw") {
 				self.editor.setValue(`// function drawSnippet (data, svg) {
@@ -155,7 +195,18 @@ let SAGE2_SnippetEditor = (function() {
 //}`);
 			}
 
+
+			self.editor.setReadOnly(false);
 			self.editor.clearSelection();
+
+			// can save a new script
+			self.saveButton.classList.remove("disabled");
+
+			// can load a different script now
+			self.loadButton.classList.remove("disabled");
+
+			// can't copy something which isn't saved
+			self.copyButton.classList.add("disabled");
 
 			self.loadedSnippet = "new";
 			self.loadedSnippetType = type;
@@ -164,29 +215,26 @@ let SAGE2_SnippetEditor = (function() {
 		function scriptSelectorChanged() {
 			let option = self.scriptSelect.options[self.scriptSelect.selectedIndex];
 
-			let canLoad = option.value !== self.loadedSnippet && !option.classList.contains("locked");
+			// *** you can always load a script, but it won't necessarily be editable
+			let canLoad = option.value !== self.loadedSnippet;
 
 			if (canLoad) {
 				self.loadButton.classList.remove("disabled");
 			} else {
 				self.loadButton.classList.add("disabled");
 			}
+
 		}
 
 		function updateScriptSelectorList(scriptStates) {
-
-			/*{
-					id: {
-						type: ,
-						locked:
-					},
-					...
-				}*/
+			self.scriptStates = scriptStates;
 		}
 
 		return {
 			open: openEditor,
 			hide: hideEditor,
+
+
 			updateScriptSelectorList
 		};
 	};
