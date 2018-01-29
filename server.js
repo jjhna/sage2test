@@ -11006,36 +11006,32 @@ function wsRequestClientUpdate(wsio) {
 function wsEditorSnippetLoadRequest(wsio, data) {
 	data.from = wsio.id;
 
-	console.log("Snippet Load Request", data);
+	// console.log("Snippet Load Request", data);
 	broadcast("snippetLoadRequest", data);
-
-	// console.log(wsio);
-
-	console.log(clients[wsio.id]);
 }
 
 function wsEditorSnippetCloseNotify(wsio, data) {
-	console.log("Snippet Close Notify", data);
+	// console.log("Snippet Close Notify", data);
 	broadcast("snippetCloseNotify", data);
 }
 
 function wsEditorSaveSnippet(wsio, data) {
 	data.from = wsio.id;
 
-	console.log("Snippet Save", data);
+	// console.log("Snippet Save", data);
 	broadcast("saveSnippet", data);
 }
 
 /* ===== Code Snippets Messages from Display ===== */
 
 function wsSnippetsStateUpdated(wsio, data) {
-	console.log("SnippetsStateUpdated", data);
+	// console.log("SnippetsStateUpdated", data);
 
 	broadcast("editorReceiveSnippetStates", data);
 }
 
 function wsSnippetSendCodeOnLoad(wsio, data) {
-	console.log("SnippetSendCodeOnLoad", data);
+	// console.log("SnippetSendCodeOnLoad", data);
 
 	let ind = clients.findIndex(c => c.id === data.to);
 

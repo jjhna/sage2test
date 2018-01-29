@@ -1397,11 +1397,21 @@ The z-index is very important.
     pointer-events: none;
 }
 
+#codeSnippetEditor #snippetDescription {
+    float: left;
+    background-color: #eee;
+    border: 1.25px solid rgba(100, 100, 100, 0.25);
+    padding: 5px;
+    margin: 8px 3px;
+    border-radius: 5px;
+}
+
 #codeSnippetEditor #snippetEditorCopy {
     margin-left: 25px;
 }
 
 #codeSnippetEditor #snippetSelect {
+    float: right;
     margin: 6px 3px;
     font-size: 1.25em;
     padding: 5px;
@@ -1421,6 +1431,14 @@ The z-index is very important.
 }
 
 #codeSnippetEditor #snippetEditorClose {
+    float: right;
+}
+
+#codeSnippetEditor #snippetEditorCopy {
+    float: right;
+}
+
+#codeSnippetEditor #snippetEditorLoad {
     float: right;
 }
 

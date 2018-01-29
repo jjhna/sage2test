@@ -12,8 +12,8 @@
 
 /* global ace displayUI wsio */
 
-let SAGE2_SnippetEditor = (function() {
-	return function(targetID) {
+let SAGE2_SnippetEditor = (function () {
+	return function (targetID) {
 		let self = {
 			div: null,
 
@@ -27,7 +27,7 @@ let SAGE2_SnippetEditor = (function() {
 			scriptSelect: null,
 			snippetChanged: false,
 
-			loadedSnippet: null,
+			loadedSnippet: "new",
 			loadedSnippetType: null,
 
 			scriptStates: {}
@@ -55,21 +55,18 @@ let SAGE2_SnippetEditor = (function() {
 			// bind close action to click on overlay as well
 			self.div.querySelector(".overlay").onclick = hideEditor;
 
-			// bind save and save copy actions
+			// bind save action
 			self.saveButton = self.div.querySelector("#snippetEditorSave");
 			self.saveButton.onclick = saveScript;
 
-			self.copyButton = self.div.querySelector("#snippetEditorCopy");
-			self.copyButton.onclick = saveCopy;
-
 			// bind new script type buttons
-			self.div.querySelector("#newSnippetGen").onclick = function() {
+			self.div.querySelector("#newSnippetGen").onclick = function () {
 				startNewScript("gen");
 			};
-			self.div.querySelector("#newSnippetData").onclick = function() {
+			self.div.querySelector("#newSnippetData").onclick = function () {
 				startNewScript("data");
 			};
-			self.div.querySelector("#newSnippetDraw").onclick = function() {
+			self.div.querySelector("#newSnippetDraw").onclick = function () {
 				startNewScript("draw");
 			};
 
@@ -80,6 +77,12 @@ let SAGE2_SnippetEditor = (function() {
 			// bind load script button
 			self.loadButton = self.div.querySelector("#snippetEditorLoad");
 			self.loadButton.onclick = loadScript;
+
+			// bind copy action
+			self.copyButton = self.div.querySelector("#snippetEditorCopy");
+			self.copyButton.onclick = saveCopy;
+
+			startNewScript("gen");
 		}
 
 		function openEditor() {
@@ -97,7 +100,6 @@ let SAGE2_SnippetEditor = (function() {
 
 		function saveScript() {
 			// save script into current file, or create new file if one does not exist (new)
-			console.log("save:", self.editor.getValue());
 
 			wsio.emit('editorSaveSnippet', {
 				text: self.editor.getValue(),
@@ -111,9 +113,14 @@ let SAGE2_SnippetEditor = (function() {
 			// if -> script !== new, clone that script with any current changes in new file
 			// then open new file in editor (will be sent through wsio)
 
-			console.log("copy:", self.scriptSelect.value);
+			if (self.loadedSnippet !== "new") {
+				unloadScript();
+			}
+
 			wsio.emit('editorSaveSnippet', {
 				text: self.editor.getValue(),
+				type: self.loadedSnippetType,
+				desc: "custom-code",
 				scriptID: "new"
 			});
 		}
@@ -121,17 +128,22 @@ let SAGE2_SnippetEditor = (function() {
 		function unloadScript() {
 			console.log("Unload script -- unlock for others to edit:", self.loadedSnippet);
 
-			wsio.emit('editorSnippetCloseNotify', { scriptID: self.loadedSnippet });
+			if (self.loadedSnippet !== "new") {
+				wsio.emit('editorSnippetCloseNotify', {
+					scriptID: self.loadedSnippet
+				});
+			}
 
 			self.loadedSnippet = null;
 		}
 
 		function loadScript() {
-			if (self.loadedSnippet) {
-				unloadScript();
-			}
 
 			console.log("Load script:", self.scriptSelect.value);
+
+			if (self.loadedSnippet !== "new") {
+				unloadScript();
+			}
 
 			wsio.emit('editorSnippetLoadRequest', {
 				scriptID: self.scriptSelect.value
@@ -195,14 +207,21 @@ let SAGE2_SnippetEditor = (function() {
 			// can't copy something which isn't saved
 			self.copyButton.classList.add("disabled");
 
+			// unload old script
+			if (self.loadedSnippet !== "new") {
+				unloadScript();
+			}
+
 			self.loadedSnippet = "new";
 			self.loadedSnippetType = type;
+
+
 		}
 
 		function scriptSelectorChanged() {
 			let option = self.scriptSelect.options[self.scriptSelect.selectedIndex];
 
-			// *** you can always load a script, but it won't necessarily be editable
+			// *** you can always load a script, but it won't necessarily be editable (?)
 			let canLoad = option.value !== self.loadedSnippet;
 
 			if (canLoad) {
@@ -214,17 +233,41 @@ let SAGE2_SnippetEditor = (function() {
 		}
 
 		function updateSnippetStates(scriptStates) {
-			self.scriptStates = scriptStates;
 
 			console.log("scriptStates updated", scriptStates);
+
+			self.scriptStates = scriptStates;
+			self.scriptSelect.innerHTML = '';
+
+			for (let script of Object.values(scriptStates)) {
+				let newOption = document.createElement("option");
+
+				newOption.value = script.id;
+				newOption.innerHTML = `${script.type} - ${script.id.replace("codeSnippet", "cS")}`;
+
+				if (script.id === self.loadedSnippet) {
+					newOption.classList.add("loaded");
+				} else if (script.locked) {
+					newOption.classList.add("locked");
+				}
+
+				self.scriptSelect.appendChild(newOption);
+			}
 		}
 
 		function receiveLoadedSnippet(data) {
+
 			self.editor.setValue(data.text);
 			self.editor.clearSelection();
 
 			self.loadedSnippet = data.scriptID;
-			console.log(self.loadedSnippet);
+			self.loadedSnippetType = data.type;
+		}
+
+		function browserClose() {
+			if (self.loadedSnippet !== "new") {
+				unloadScript();
+			}
 		}
 
 		return {
@@ -232,7 +275,9 @@ let SAGE2_SnippetEditor = (function() {
 			hide: hideEditor,
 
 			updateSnippetStates,
-			receiveLoadedSnippet
+			receiveLoadedSnippet,
+
+			browserClose
 		};
 	};
 }());

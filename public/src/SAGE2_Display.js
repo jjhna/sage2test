@@ -1453,10 +1453,12 @@ function setupListeners() {
 
 	wsio.on("snippetLoadRequest", function(data) {
 		console.log("snippetLoadRequest", data);
+		SAGE2_CodeSnippets.requestSnippetLoad(data.from, data.scriptID);
 	});
 
 	wsio.on("snippetCloseNotify", function(data) {
 		console.log("snippetCloseNotify", data);
+		SAGE2_CodeSnippets.notifySnippetClosed(data.scriptID);
 
 	});
 

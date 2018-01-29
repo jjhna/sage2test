@@ -206,13 +206,18 @@ let SAGE2_CodeSnippets = (function() {
 		wsio.emit("snippetsStateUpdated", functionState);
 	}
 
-	function notifySnippetClosed(uniqueID, scriptID) {
+	function notifySnippetClosed(scriptID) {
 		self.functions[scriptID].editor = null;
 
 		// broadcast update of function states
 		let functionState = getFunctionInfo();
 		wsio.emit("snippetsStateUpdated", functionState);
 	}
+
+	// function wsLoadApplication() {
+	// 	// load an application on SAGE2
+	// 	wsio.emit("loadApplication", wsLoadApplication);
+	// }
 
 	return {
 		getNewFunctionID,

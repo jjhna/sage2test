@@ -130,6 +130,8 @@ window.addEventListener('unload', function(event) {
 			note.close();
 		}
 	}
+
+	snippetEditor.browserClose();
 });
 
 /**
@@ -736,11 +738,9 @@ function setupListeners() {
 
 	// code snippets listeners
 	wsio.on("editorReceiveSnippetStates", function(data) {
-		console.log("editorReceiveSnippetStates", data);
 		snippetEditor.updateSnippetStates(data);
 	});
 	wsio.on('editorReceiveLoadedSnippet', function(data) {
-		console.log("editorReceiveLoadedSnippet", data);
 		snippetEditor.receiveLoadedSnippet(data);
 	});
 }

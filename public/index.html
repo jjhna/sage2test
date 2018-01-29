@@ -478,10 +478,7 @@
 			<div id="snippetEditorControls">
 				<div class="controlRow">
 					<i id="snippetEditorSave" class="controlButton fa fa-2x fa-floppy-o"></i>
-					<i id="snippetEditorCopy" class="controlButton fa fa-2x fa-clone"></i>
-					<i id="snippetEditorLoad" class="controlButton fa fa-2x fa-folder-open-o"></i>
-					<select name="snippetOpen" id="snippetSelect">
-					</select>
+					<input type="text" id="snippetDescription">
 					
 					<i id="snippetEditorClose" class="controlButton fa fa-2x fa-times-circle-o"></i>
 					<i id="snippetEditorHide" class="controlButton fa fa-2x fa-minus"></i>
@@ -489,11 +486,16 @@
 				</div>
 				<div class="controlRow">
 					<div id="createNewScriptWrapper">
-						<span id="newSnippetLabel">New Snippet:</span>
+						<span id="newSnippetLabel">New:</span>
 						<span id="newSnippetGen" class="newSnippetButton genSnippetColor">Gen</span>
 						<span id="newSnippetData" class="newSnippetButton dataSnippetColor">Data</span>
 						<span id="newSnippetDraw" class="newSnippetButton drawSnippetColor">Draw</span>
 					</div>
+
+					<select name="snippetOpen" id="snippetSelect">
+					</select>
+					<i id="snippetEditorLoad" class="controlButton fa fa-2x fa-folder-open-o"></i>
+					<i id="snippetEditorCopy" class="controlButton fa fa-2x fa-clone"></i>
 					<div style="clear: both;"></div>
 				</div>
 			</div>
