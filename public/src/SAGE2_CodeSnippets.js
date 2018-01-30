@@ -65,12 +65,15 @@ let SAGE2_CodeSnippets = (function() {
 			}
 		}
 
+		console.log(definition);
+
 		// send info for user who saved code to load
 		wsio.emit("snippetSendCodeOnLoad", {
 			scriptID: id,
 			to: definition.editor,
 			text: definition.text,
-			type: definition.type
+			type: definition.type,
+			desc: definition.desc
 		});
 
 		let functionState = getFunctionInfo();
@@ -103,6 +106,16 @@ let SAGE2_CodeSnippets = (function() {
 
 		console.log("Appending script text");
 		document.body.appendChild(script);
+	}
+
+	function cloneSnippet(uniqueID, scriptID) {
+		let originalSnippet = self.functions[scriptID];
+
+		let code = originalSnippet.text;
+		let desc = originalSnippet.desc + " (copy)";
+		let type = originalSnippet.type;
+
+		saveSnippet(uniqueID, code, desc, type, "new");
 	}
 
 	function createScriptBody(uniqueID, code, desc, links, scriptID, type) {
@@ -198,7 +211,8 @@ let SAGE2_CodeSnippets = (function() {
 				scriptID: scriptID,
 				to: self.functions[scriptID].editor,
 				text: self.functions[scriptID].text,
-				type: self.functions[scriptID].type
+				type: self.functions[scriptID].type,
+				desc: self.functions[scriptID].desc
 			});
 		}
 
@@ -237,7 +251,14 @@ let SAGE2_CodeSnippets = (function() {
 
 	function displayApplicationLoaded(id, app) {
 		console.log("Application load notification", id, app);
+
+		if (app.application === "Snippets_Vis") {
+			self.drawings[id] = app;
+		} else if (app.application === "Snippets_Data") {
+			self.datasets[id] = app;
+		}
 	}
+
 
 	return {
 		getNewFunctionID,
@@ -245,6 +266,7 @@ let SAGE2_CodeSnippets = (function() {
 
 		getFunctionInfo,
 		saveSnippet,
+		cloneSnippet,
 
 		requestSnippetLoad,
 		notifySnippetClosed,

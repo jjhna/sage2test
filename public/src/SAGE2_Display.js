@@ -1469,6 +1469,13 @@ function setupListeners() {
 		SAGE2_CodeSnippets.saveSnippet(data.from, data.text, data.desc, data.type, data.scriptID);
 	});
 
+	wsio.on("cloneSnippet", function(data) {
+		console.log("cloneSnippet", data);
+
+		// uniqueID, code, desc, type, scriptID
+		SAGE2_CodeSnippets.cloneSnippet(data.from, data.scriptID);
+	});
+
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {

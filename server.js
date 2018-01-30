@@ -1222,6 +1222,7 @@ function setupListeners(wsio) {
 	wsio.on('editorSnippetLoadRequest', wsEditorSnippetLoadRequest);
 	wsio.on('editorSnippetCloseNotify', wsEditorSnippetCloseNotify);
 	wsio.on('editorSaveSnippet', wsEditorSaveSnippet);
+	wsio.on('editorCloneSnippet', wsEditorCloneSnippet);
 	// - Display to WebUI
 	wsio.on("snippetsStateUpdated", wsSnippetsStateUpdated);
 	wsio.on("snippetSendCodeOnLoad", wsSnippetSendCodeOnLoad);
@@ -11020,6 +11021,12 @@ function wsEditorSaveSnippet(wsio, data) {
 
 	// console.log("Snippet Save", data);
 	broadcast("saveSnippet", data);
+}
+
+function wsEditorCloneSnippet(wsio, data) {
+	data.from = wsio.id;
+
+	broadcast("cloneSnippet", data);
 }
 
 /* ===== Code Snippets Messages from Display ===== */

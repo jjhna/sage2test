@@ -21,6 +21,8 @@ let SAGE2_SnippetEditor = (function () {
 			editor: null,
 
 			saveButton: null,
+			descInput: null,
+
 			copyButton: null,
 			loadButton: null,
 
@@ -58,6 +60,10 @@ let SAGE2_SnippetEditor = (function () {
 			// bind save action
 			self.saveButton = self.div.querySelector("#snippetEditorSave");
 			self.saveButton.onclick = saveScript;
+
+			self.descInput = self.div.querySelector("#snippetDescription");
+			// self.descInput.text = "New Snippet";
+			console.log(self.descInput.value);
 
 			// bind new script type buttons
 			self.div.querySelector("#newSnippetGen").onclick = function () {
@@ -104,7 +110,7 @@ let SAGE2_SnippetEditor = (function () {
 			wsio.emit('editorSaveSnippet', {
 				text: self.editor.getValue(),
 				type: self.loadedSnippetType,
-				desc: "custom-code",
+				desc: self.descInput.value ? self.descInput.value : "Custom Snippet",
 				scriptID: self.loadedSnippet
 			});
 		}
@@ -117,11 +123,8 @@ let SAGE2_SnippetEditor = (function () {
 				unloadScript();
 			}
 
-			wsio.emit('editorSaveSnippet', {
-				text: self.editor.getValue(),
-				type: self.loadedSnippetType,
-				desc: "custom-code",
-				scriptID: "new"
+			wsio.emit('editorCloneSnippet', {
+				scriptID: self.scriptSelect.value
 			});
 		}
 
@@ -151,18 +154,6 @@ let SAGE2_SnippetEditor = (function () {
 
 			self.loadedSnippet = self.scriptSelect.value;
 
-			if (self.scriptStates[self.loadedSnippet] && self.scriptStates[self.loadedSnippet].locked) {
-				// script is uneditable & unsaveable
-				self.editor.setReadOnly(true);
-				self.saveButton.classList.add("disabled");
-			} else {
-				// otherwise, it is fine to edit
-				self.editor.setReadOnly(false);
-				self.saveButton.classList.remove("disabled");
-			}
-
-			// you can always copy a script you loaded (since it's not new)
-			self.copyButton.classList.remove("disabled");
 			// you can't load what you just loaded
 			self.loadButton.classList.add("disabled");
 		}
@@ -204,9 +195,6 @@ let SAGE2_SnippetEditor = (function () {
 			// can load a different script now
 			self.loadButton.classList.remove("disabled");
 
-			// can't copy something which isn't saved
-			self.copyButton.classList.add("disabled");
-
 			// unload old script
 			if (self.loadedSnippet !== "new") {
 				unloadScript();
@@ -215,7 +203,7 @@ let SAGE2_SnippetEditor = (function () {
 			self.loadedSnippet = "new";
 			self.loadedSnippetType = type;
 
-
+			self.descInput.value = '';
 		}
 
 		function scriptSelectorChanged() {
@@ -233,11 +221,10 @@ let SAGE2_SnippetEditor = (function () {
 		}
 
 		function updateSnippetStates(scriptStates) {
-
 			console.log("scriptStates updated", scriptStates);
 
 			self.scriptStates = scriptStates;
-			self.scriptSelect.innerHTML = '';
+			self.scriptSelect.innerHTML = ''; // This works to remove options... real method removing one-by-one was failing
 
 			for (let script of Object.values(scriptStates)) {
 				let newOption = document.createElement("option");
@@ -253,12 +240,23 @@ let SAGE2_SnippetEditor = (function () {
 
 				self.scriptSelect.appendChild(newOption);
 			}
+
+			if (self.loadedSnippet !== "new") {
+				self.scriptSelect.value = self.loadedSnippet;
+				self.loadButton.classList.add("disabled");
+			} else if (scriptStates[self.scriptSelect.value].locked) {
+				self.loadButton.classList.add("disabled");
+			} else {
+				self.loadButton.classList.remove("disabled");
+			}
 		}
 
 		function receiveLoadedSnippet(data) {
 
 			self.editor.setValue(data.text);
 			self.editor.clearSelection();
+
+			self.descInput.value = data.desc;
 
 			self.loadedSnippet = data.scriptID;
 			self.loadedSnippetType = data.type;
