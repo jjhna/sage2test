@@ -229,22 +229,23 @@ let SAGE2_CodeSnippets = (function() {
 		wsio.emit("snippetsStateUpdated", functionState);
 	}
 
-	function createDataApplication() {
+	function createDataApplication(snippetsID) {
 		wsio.emit("loadApplication", {
 			application: '/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Data',
 			color: '#ff0000',
 			data: {
-				snippetsID: "data-" + self.dataCount++
+				snippetsID
 			}
 		});
 	}
 
-	function createVisApplication() {
+	function createVisApplication(snippetsID) {
 		wsio.emit("loadApplication", {
-			application: '/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Vis',
-			color: '#ff0000',
+			application:
+				"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Vis",
+			color: "#ff0000",
 			data: {
-				snippetsID: "vis-" + self.visCount++
+				snippetsID
 			}
 		});
 	}
@@ -252,13 +253,131 @@ let SAGE2_CodeSnippets = (function() {
 	function displayApplicationLoaded(id, app) {
 		console.log("Application load notification", id, app);
 
+		// call required function, update reference
 		if (app.application === "Snippets_Vis") {
+			let primedLink = self.drawings[id];
+
+			primedLink.setChild(app);
+			primedLink.update();
+
+			app.setParentLink(primedLink);
+
+			// fix reference
 			self.drawings[id] = app;
+
 		} else if (app.application === "Snippets_Data") {
+			let primedLink = self.datasets[id];
+
+			console.log(app);
+			primedLink.setChild(app);
+			primedLink.update();
+
+			app.setParentLink(primedLink);
+
+			// fix reference
 			self.datasets[id] = app;
 		}
 	}
 
+	function executeCodeSnippet(snippetID, parentID) {
+		let snippet = self.functions[snippetID];
+
+		let parent = parentID ? self.datasets[parentID] : null;
+
+		let linkIndex = Object.keys(self.links).findIndex((link) => {
+			return self.links[link].getSnippetID() === snippetID && self.links[link].getParent() === parent;
+		});
+
+		if (linkIndex === -1) {
+			// then this is a new link that must be created
+			let newLink = new Link(parent, null, snippetID);
+
+			let linkID = "link-" + self.linkCount++;
+			self.links[linkID] = newLink;
+
+			self.functions[snippetID].links.push(linkID);
+
+			if (snippet.type === "draw") {
+				let snippetsID = "vis-" + self.visCount++;
+
+				// get link ready for application finish
+				self.drawings[snippetsID] = newLink;
+
+				createVisApplication(snippetsID);
+			} else {
+
+				let snippetsID = "data-" + self.dataCount++;
+
+				// get link ready for application finish
+				self.datasets[snippetsID] = newLink;
+
+				createDataApplication(snippetsID);
+			}
+
+		} else {
+			self.links[Object.keys(self.links)[linkIndex]].update();
+		}
+
+	}
+
+	// Link class used by SAGE2_CodeSnippets
+	const Link = (function() {
+		let curator = self; // alias enclosing scope's 'self'
+
+		return function(parent, child, transformID) {
+			let self = { parent, child, transformID };
+
+			init();
+
+			function init() {
+				// update();
+			}
+
+			function getParent() {
+				return self.parent;
+			}
+
+			function getChild() {
+				return self.child;
+			}
+
+			function setChild(child) {
+				self.child = child;
+			}
+
+			function getSnippetID() {
+				return self.transformID;
+			}
+
+			function update() {
+				let p = self.parent;
+				let c = self.child;
+				let id = self.transformID;
+
+				if (curator.functions[id].type === "data") {
+					// call function (calculates new dataset and updates child)
+					let result = curator.functions[id].code(p.getDataset());
+					child.updateDataset(result);
+				} else if (curator.functions[id].type === "draw") {
+					// call function (plots data on svg)
+					curator.functions[id].code(p.getDataset(), c.getElement());
+				} else if (curator.functions[id].type === "gen") {
+					// call function (this returns a promise)
+
+					curator.functions[id]
+						.code(c.getDataset())
+						.then(function(data) {
+							c.updateDataset(data);
+						})
+						.catch(err => {
+							throw err;
+						});
+				}
+			}
+
+			return { update, getParent, setChild, getChild, getSnippetID };
+		};
+	}());
 
 	return {
 		getNewFunctionID,
@@ -273,6 +392,7 @@ let SAGE2_CodeSnippets = (function() {
 
 		createDataApplication,
 		createVisApplication,
+		executeCodeSnippet,
 
 		displayApplicationLoaded
 	};

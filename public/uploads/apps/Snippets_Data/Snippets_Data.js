@@ -18,6 +18,11 @@ var Snippets_Data = SAGE2_App.extend({
 		// Set the background to black
 		this.element.style.backgroundColor = 'black';
 
+		this.dataset = {};
+
+		this.parentLink = null;
+		this.childLinks = [];
+
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
 		// this.moveEvents   = "continuous";
@@ -40,8 +45,31 @@ var Snippets_Data = SAGE2_App.extend({
 		console.log('Snippets_Data> Draw with state value', this.state.value);
 	},
 
-	updateContent: function (data, date) {
-		
+	getDataset: function (date) {
+		// update with new data and draw
+		return this.dataset;
+	},
+
+	updateDataset: function(data, date) {
+		// update dataset
+		console.log("Updated Dataset:", data);
+		this.dataset = data;
+
+		// draw
+		this.element.innerHTML = this.dataset;
+
+		// update all children
+		for (let childLink of this.childLinks) {
+			childLink.update();
+		}
+	},
+
+	addChildLink: function(data, date) {
+		this.children
+	},
+
+	setParentLink: function (link, date) {
+		// save the parent of the function
 	},
 
 	resize: function(date) {

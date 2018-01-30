@@ -18,6 +18,12 @@ var Snippets_Vis = SAGE2_App.extend({
 		// Set the background to black
 		this.element.style.backgroundColor = 'black';
 
+		this.svg = document.createElement("svg");
+
+		this.svg.width = "100%";
+		this.svg.height = "100%";
+
+		this.parentLink = null;
 
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
@@ -43,8 +49,14 @@ var Snippets_Vis = SAGE2_App.extend({
 		console.log('Snippets_Vis> Draw with state value', this.state.value);
 	},
 
-	updateContent: function (data, date) {
+	getElement: function (data, date) {
+		// update with new data and draw
+		return this.svg;
+	},
 
+	setParentLink: function (link, date) {
+		// save the parent of the function
+		self.parentLink = link;
 	},
 
 	resize: function(date) {
