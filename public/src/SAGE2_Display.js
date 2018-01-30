@@ -1464,6 +1464,7 @@ function setupListeners() {
 
 	wsio.on("saveSnippet", function(data) {
 		console.log("saveSnippet", data);
+
 		// uniqueID, code, desc, type, scriptID
 		SAGE2_CodeSnippets.saveSnippet(data.from, data.text, data.desc, data.type, data.scriptID);
 	});

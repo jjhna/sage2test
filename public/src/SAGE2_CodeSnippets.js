@@ -20,9 +20,10 @@ let SAGE2_CodeSnippets = (function() {
 		links: {},
 		linkCount: 0,
 
-		datasets: [],
-		drawings: []
-
+		datasets: {},
+		dataCount: 0,
+		drawings: {},
+		visCount: 0
 	};
 
 	init();
@@ -214,10 +215,29 @@ let SAGE2_CodeSnippets = (function() {
 		wsio.emit("snippetsStateUpdated", functionState);
 	}
 
-	// function wsLoadApplication() {
-	// 	// load an application on SAGE2
-	// 	wsio.emit("loadApplication", wsLoadApplication);
-	// }
+	function createDataApplication() {
+		wsio.emit("loadApplication", {
+			application: '/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Data',
+			color: '#ff0000',
+			data: {
+				snippetsID: "data-" + self.dataCount++
+			}
+		});
+	}
+
+	function createVisApplication() {
+		wsio.emit("loadApplication", {
+			application: '/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Vis',
+			color: '#ff0000',
+			data: {
+				snippetsID: "vis-" + self.visCount++
+			}
+		});
+	}
+
+	function displayApplicationLoaded(id, app) {
+		console.log("Application load notification", id, app);
+	}
 
 	return {
 		getNewFunctionID,
@@ -227,7 +247,12 @@ let SAGE2_CodeSnippets = (function() {
 		saveSnippet,
 
 		requestSnippetLoad,
-		notifySnippetClosed
+		notifySnippetClosed,
+
+		createDataApplication,
+		createVisApplication,
+
+		displayApplicationLoaded
 	};
 }());
 
