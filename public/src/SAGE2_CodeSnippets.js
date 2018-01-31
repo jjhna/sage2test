@@ -149,7 +149,7 @@ let SAGE2_CodeSnippets = (function() {
 				type: "${type}",
 				desc: "${desc}",
 				editor: "${uniqueID}",
-				links: JSON.parse("${links ? JSON.stringify(links) : []}"),
+				links: JSON.parse(\`${links ? JSON.stringify(links) : []}\`),
 				text: \`${code.replace(/`/gi, "\\`")}\`,
 				code: `;
 
@@ -257,6 +257,10 @@ let SAGE2_CodeSnippets = (function() {
 		if (app.application === "Snippets_Vis") {
 			let primedLink = self.drawings[id];
 
+			if (primedLink.getParent()) {
+				primedLink.getParent().addChildLink(primedLink);
+			}
+
 			primedLink.setChild(app);
 			primedLink.update();
 
@@ -268,7 +272,10 @@ let SAGE2_CodeSnippets = (function() {
 		} else if (app.application === "Snippets_Data") {
 			let primedLink = self.datasets[id];
 
-			console.log(app);
+			if (primedLink.getParent()) {
+				primedLink.getParent().addChildLink(primedLink);
+			}
+
 			primedLink.setChild(app);
 			primedLink.update();
 

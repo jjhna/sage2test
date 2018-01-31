@@ -18,10 +18,11 @@ var Snippets_Vis = SAGE2_App.extend({
 		// Set the background to black
 		this.element.style.backgroundColor = 'black';
 
-		this.svg = document.createElement("svg");
-
-		this.svg.width = "100%";
-		this.svg.height = "100%";
+		this.svg = d3.select(this.element)
+      .append("svg")
+      .attr("width", data.width)
+			.attr("height", data.height)
+			.style("background", "lightblue");
 
 		this.parentLink = null;
 
@@ -51,7 +52,7 @@ var Snippets_Vis = SAGE2_App.extend({
 
 	getElement: function (data, date) {
 		// update with new data and draw
-		return this.svg;
+		return this.svg.node();
 	},
 
 	setParentLink: function (link, date) {
@@ -61,10 +62,10 @@ var Snippets_Vis = SAGE2_App.extend({
 
 	resize: function(date) {
 		// Called when window is resized
-		this.img.style.width = this.sage2_width + "px";
-		this.img.style.height = this.sage2_height + "px";
 
-		// this.refresh(date);
+		this.svg
+			.attr("width",   this.sage2_width)
+			.attr("height",  this.sage2_height)
 	},
 
 	move: function(date) {

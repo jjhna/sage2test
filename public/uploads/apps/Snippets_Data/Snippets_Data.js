@@ -16,7 +16,9 @@ var Snippets_Data = SAGE2_App.extend({
 		// Set the DOM id
 		this.element.id = "div_" + data.id;
 		// Set the background to black
-		this.element.style.backgroundColor = 'black';
+		this.element.style.backgroundColor = 'white';
+		this.element.style.fontFamily = 'monospace';
+		this.element.style.whiteSpace = 'pre';
 
 		this.dataset = {};
 
@@ -56,16 +58,21 @@ var Snippets_Data = SAGE2_App.extend({
 		this.dataset = data;
 
 		// draw
-		this.element.innerHTML = this.dataset;
+		this.element.innerHTML = JSON.stringify(
+			this.dataset,
+			null,
+			2
+		).substring(0, 500) + "\n ...";
 
 		// update all children
 		for (let childLink of this.childLinks) {
+			console.log(childLink);
 			childLink.update();
 		}
 	},
 
 	addChildLink: function(data, date) {
-		this.children
+		this.childLinks.push(data);
 	},
 
 	setParentLink: function (link, date) {
