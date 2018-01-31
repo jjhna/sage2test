@@ -1079,6 +1079,10 @@ function processRPC(data, socket) {
 		console.log('Setting new launcher password', data.value[0]);
 		htdigest.htdigest_save("users.htpasswd", "sabi", "sage2", data.value[0]);
 	}
+	if (!found && data.method === "removeMeetingID") {
+		console.log('Removing meetingID');
+		removeMeetingID();
+	}
 	if (!found && data.method === "performGitUpdate") {
 		console.log('Rewriting launcher to initiate git update before launching sabi');
 
@@ -1112,6 +1116,14 @@ function getMeetingIDFromPasswd() {
 	var configdata = fs.readFileSync(pathToSageUiPwdFile);
 	var cfg = JSON5.parse(configdata);
 	return cfg.pwd;
+}
+
+function removeMeetingID() {
+	//if there is no passwd file, then can't do anything.
+	if (!fileExists(pathToSageUiPwdFile)) {
+		return null;
+	}
+	fs.unlinkSync(pathToSageUiPwdFile);
 }
 
 function updateCertificates() {
