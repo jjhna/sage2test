@@ -88,10 +88,10 @@ var hserver;
 // the HTTP port
 var hport = 9000;
 
-// the HTTP server
+// the TCP server
 var tcp_server;
-// the HTTP port
-var tcp_port = 11000;
+// the TCP port
+var tcp_port = -1; // 11000;
 var tcp_clients = [];
 
 var platform = os.platform() === "win32" ? "Windows" : os.platform() === "darwin" ? "Mac OS X" : "Linux";
@@ -929,12 +929,13 @@ function newTCPSocket(socket) {
 	});
 }
 
-// Create a new server and provide a callback for when a connection occurs
-tcp_server = net.createServer(newTCPSocket);
-
-// Listen on port tcp_port
-tcp_server.listen(tcp_port);
-// console.log("TCP server running at localhost:" + tcp_port);
+if (tcp_port != -1) {
+	// Create a new server and provide a callback for when a connection occurs
+	tcp_server = net.createServer(newTCPSocket);
+	// Listen on port tcp_port
+	tcp_server.listen(tcp_port);
+	console.log("TCP server running at localhost:" + tcp_port);
+}
 
 
 // ---------------------------------------------
