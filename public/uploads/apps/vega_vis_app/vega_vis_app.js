@@ -11,12 +11,12 @@ var vega_vis_app = SAGE2_App.extend( {
 		this.SAGE2Init("div", data);
 
 		this.vis = d3.select(this.element).append("vis"+this.id); //needed to make the vis app and make it unique
-			//wothout the vis+this.id it would overwrite a single vis app with new data 
+			//wothout the vis+this.id it would overwrite a single vis app with new data
 
 		// Set the background to black
 		this.element.style.backgroundColor = '#111111';//'ghostwhite';//'#f2f2f2';
 
-		// move and resize callbacks 
+		// move and resize callbacks
 		this.resizeEvents = "continuous"; //sometimes resizing doesn't work
 		this.moveEvents   = "continuous";
 
@@ -34,14 +34,14 @@ var vega_vis_app = SAGE2_App.extend( {
 		this.vegaCallbackFuncLine = this.vegaCallbackLine.bind(this);
 
 		//these are default specs that we overwrite with the data from the articulate ui
-		this.initBarSpec(); 
-		this.initLineSpec(); 
+		this.initBarSpec();
+		this.initLineSpec();
 
 		//access the data from the articualte ui that we need to draw this properly
 		//and then overwrite the default values in the app
 		if(this.state.type == "bar"){
-		
-			this.barSpec.marks[0].properties.update.fill.value = this.state.color; 
+
+			this.barSpec.marks[0].properties.update.fill.value = this.state.color;
 			this.barSpec.axes[0].title = this.state.x;
 			this.barSpec.axes[1].title = this.state.y;
 			this.barSpec.data[0].values = this.state.data;
@@ -57,16 +57,16 @@ var vega_vis_app = SAGE2_App.extend( {
 			this.parseLine(this.lineSpec);
 		}
 
-		// stuff I tried and didn't work... 
+		// stuff I tried and didn't work...
 
-		//updated = true; 
+		//updated = true;
 
 		//this.spec = "uploads/apps/vega_vis_app/data/spec.json";
-		//this.parse(this.spec); //moved this elsewhere/// 
+		//this.parse(this.spec); //moved this elsewhere///
 
-  		// this.sendResize(spec.width, spec.height); //nightmare- resizing problems 
+  		// this.sendResize(spec.width, spec.height); //nightmare- resizing problems
 
-		//this.updateTitle("title");	//this didn't work in the past, but might work now... 
+		//this.updateTitle("title");	//this didn't work in the past, but might work now...
 
 
 	},
@@ -82,8 +82,8 @@ var vega_vis_app = SAGE2_App.extend( {
 		// //this.spec = this.state.specFile;//"uploads/apps/vega_vis_app/data/spec.json";
 		// console.log(this.spec);
 		// if(this.state.type == "bar"){
-		
-		// 	this.barSpec.marks[0].properties.update.fill.value = this.state.color; //"red"; 
+
+		// 	this.barSpec.marks[0].properties.update.fill.value = this.state.color; //"red";
 		// 	this.barSpec.axes[0].title = this.state.x;
 		// 	this.barSpec.axes[1].title = this.state.y;
 		// 	this.barSpec.data[0].values = this.state.data;
@@ -102,7 +102,7 @@ var vega_vis_app = SAGE2_App.extend( {
 	},
 
 	//reszing is a BIG problem with line charts
-	// no fun trying to fix!!! 
+	// no fun trying to fix!!!
 	resize: function(date) {
 		if( this.state.type == "bar"){
 			// updated = false;
@@ -112,7 +112,7 @@ var vega_vis_app = SAGE2_App.extend( {
 	  		}
 	  		if( this.element.clientWidth > 400 ){
 	  			this.view.height(this.element.clientHeight-this.paddingHeight);
-	  			updated = true;	
+	  			updated = true;
 	  		}
 	  		if( updated )
 	  			this.view.renderer('svg').update();
@@ -182,17 +182,17 @@ var vega_vis_app = SAGE2_App.extend( {
 
 	},
 
-	//after it makes it, this is the callback 
-	vegaCallbackBar: function(error, chart) { 
-		// chart( {el:"vis"} ).update(); 
+	//after it makes it, this is the callback
+	vegaCallbackBar: function(error, chart) {
+		// chart( {el:"vis"} ).update();
 		this.view = chart({el:'vis'+this.id});
 		this.view.update();
-  		
+
 		//set width and height appropriately
 		this.paddingWidth = this.barSpec.padding.left + this.barSpec.padding.right;
 		this.paddingHeight = this.barSpec.padding.top + this.barSpec.padding.bottom;
   		this.view.width(this.element.clientWidth-this.paddingWidth).height(this.element.clientHeight-this.paddingHeight).renderer('svg').update();
-  		
+
 
   		this.box = "0,0," + this.element.clientWidth + "," + this.element.clientHeight;
 
@@ -220,7 +220,7 @@ var vega_vis_app = SAGE2_App.extend( {
 
 	},
 
-	//vega's parsing the line charts 
+	//vega's parsing the line charts
 	parseLine: function(spec) {
 		console.log("parse");
   		vg.parse.spec(spec, this.vegaCallbackFuncLine);
@@ -230,17 +230,17 @@ var vega_vis_app = SAGE2_App.extend( {
 
 	//here's where the chart is returned
 	// I made some effort here to fix the resizing problems, but it was monumentally frustrating!
-	vegaCallbackLine: function(error, chart) { 
-		// chart( {el:"vis"} ).update(); 
+	vegaCallbackLine: function(error, chart) {
+		// chart( {el:"vis"} ).update();
 		this.view = chart({el:'vis'+this.id});
 
 		// this.box = [this.element.width, this.element.height];
 		// var box = "0,0," + this.box[0] + "," + this.box[1];
 		// d3.select("svg").attr("viewBox", box);
-  		
+
 
 		this.view.update();
-  	
+
   		//in the end to make it fit in the window, I had this horrible hack that I hate with the passion of fire of a million suns
 
 		//set width and height appropriately
@@ -275,7 +275,7 @@ var vega_vis_app = SAGE2_App.extend( {
 
 
 	initLineSpec: function(){
-		this.lineSpec = 
+		this.lineSpec =
 		  {
 			  "width": 1240,//1260
 			  "height": 530,//530,
@@ -310,15 +310,15 @@ var vega_vis_app = SAGE2_App.extend( {
 			      "domain": {"data": "table", "field": "y"}
 			    },
 			    {
-			      "name": "color", 
-			      "type": "ordinal", 
+			      "name": "color",
+			      "type": "ordinal",
 			      "domain": {"data": "table", "field": "id"},
 			      "range": "category20"
 			    }
 			  ],
 			  "axes": [
-			    {"type": "x", 
-			    "scale": "x", 
+			    {"type": "x",
+			    "scale": "x",
 			    "tickSizeEnd": 0,
 			     "properties": {
 			        "labels": {
@@ -330,7 +330,7 @@ var vega_vis_app = SAGE2_App.extend( {
 		       		}
 			    }
 			},
-			    {"type": "y", 
+			    {"type": "y",
 			    "scale": "y",
 			   "properties": {
 			        "labels": {
@@ -428,7 +428,7 @@ var vega_vis_app = SAGE2_App.extend( {
 			  ],
 			  "axes": [
 			    {
-			    	"type": "x", 
+			    	"type": "x",
 			    	"scale": "x",
 				    "properties": {
 				      	 "ticks": {
@@ -452,7 +452,7 @@ var vega_vis_app = SAGE2_App.extend( {
 				       }
 				     }
 				},
-			    {"type": "y", 
+			    {"type": "y",
 			    "scale": "y",
 				    "properties": {
 				      	 "ticks": {
@@ -463,7 +463,7 @@ var vega_vis_app = SAGE2_App.extend( {
 				       },
 				       "labels": {
 				         "fill": {"value": "white"},
-				         "fontSize": {"value": 10} 
+				         "fontSize": {"value": 10}
 				         			       },
 				       "title": {
 				         "fontSize": {"value": 16}

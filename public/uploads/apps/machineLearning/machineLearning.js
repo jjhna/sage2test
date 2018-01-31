@@ -6,6 +6,27 @@
 //
 var newPosition = {x: 0, y: 0};
 var currentPosition = {x: 0, y: 0};
+var leftnewPosition = {x: 0, y: 0};
+
+var progress = 0;
+var startAngle = 4.75;
+var diff;
+var sim;
+var grapping = false;
+var dragging = false;
+var dropping = false;
+var Selected = false;
+var zooming = false;
+var stability = null;
+var grappingInProgress = false;
+var droppingInProgress = false;
+var zoomingInProgress = false;
+var newHandsDistance = 0;
+var oldHandsDistance = 0;
+var dragHoldX = 0;
+var dragHoldY = 0;
+
+
 let previousIDs = [];
 const bodyParts = {
 	"OMICRON_SKEL_HEAD": {
@@ -204,7 +225,7 @@ var machineLearning = SAGE2_App.extend( {
 		// SAGE2 Application Settings
 		//
 		// Control the frame rate for an animation application
-		this.maxFPS = 100.0;
+		this.maxFPS = 150.0;
 		// Not adding controls but making the default buttons available
 		this.controls.finishedAddingControls();
 		this.enableControls = true;
@@ -226,20 +247,20 @@ var machineLearning = SAGE2_App.extend( {
 		this.recognitionStatus = 'false';
 
 		// new parameters for dragging and zooming gestures
-		this.progress = 0;
-		this.startAngle = 4.75;
-		this.diff;
-		this.sim;
+		// this.progress = 0;
+		// this.startAngle = 4.75;
+		// this.diff;
+		// this.sim;
 
-		this.grapping = false;
-		this.dragging = false;
-		this.dropping = false;
-		this.Selected = false;
-		this.stability = null;
-		this.grappingInProgress = false;
-
-		this.dragHoldX = 0;
-		this.dragHoldY = 0;
+		// this.grapping = false;
+		// this.dragging = false;
+		// this.dropping = false;
+		// this.Selected = false;
+		// this.stability = null;
+		// this.grappingInProgress = false;
+		//
+		// this.dragHoldX = 0;
+		// this.dragHoldY = 0;
 
 		// this.newPosition = {x: 0, y: 0};
 		// this.currentPosition = {x: 0, y: 0};
@@ -256,13 +277,23 @@ var machineLearning = SAGE2_App.extend( {
 		this.physicalSpace = {
 			"minX": -2.0, // meters
 			"maxX": 2.0, // meters
-			"minY": -0.92, // meters
-			"maxY": 0.92, // meters
+
+			//"minY": -0.92, // meters
+			//"maxY": 0.92, // meters + 0.58 meters
+			"minY": -1.21, // meters
+			"maxY": 1.21, // meters + 0.58 meters
+
+
 			"heightOfKinect": 2.04, // meters
-			"kinectToCenterOfScreenVertical":1.0,// 0.92, // meters
-			"kinectToCenterOfScreenHorizontal": 0.06, // meters
+			//"kinectToCenterOfScreenVertical":1.0,// 0.92, // meters
+			"kinectToCenterOfScreenVertical":1.29,// 0.92, // meters
+
+			//"kinectToCenterOfScreenHorizontal": 0.06, // meters
+			"kinectToCenterOfScreenHorizontal": 0.0, // meters
+
 			"lengthFromDisplayToKinectGroundIntersect": 4.00, // meters
 			"angleFromKinectToDisplay": 63, // degrees
+
 			"rotationMatrix": [
 				1.0, 0.0, 0.0, 0.0,
 				0.0, 0.891, 0.454, 0.0,
@@ -310,7 +341,7 @@ var machineLearning = SAGE2_App.extend( {
 	},
 	startGestureRecognition: function(data, date){
 		this.recognitionStatus = data;
-		console.log("in machinesLearning App! "+this.recognitionStatus);
+		//console.log("in machinesLearning App! "+this.recognitionStatus);
 	},
 	// -------------- CALIBRATED TRIAL FUNCTIONS
 
@@ -848,13 +879,15 @@ drawSkeletonLines: function(){
 
 	recognizePoint: function () {
 
-	 const {head, rightShoulder, rightFingerTip} = this.mostRecentSkeleton;
+	 const {head, rightShoulder, rightFingerTip, leftFingerTip} = this.mostRecentSkeleton;
 
 	 //Centering head and rightFingerTip to create a virtual screen in front of the display
 	 const centroidHeadX = 0;
 	 const centroidHeadY = 0;
 	 const centroidRightFingerTipX = rightFingerTip.kinectX - head.kinectX;
 	 const centroidRightFingerTipY = rightFingerTip.kinectY - head.kinectY;
+	 const centroidLeftFingerTipX = leftFingerTip.kinectX - head.kinectX;
+	 const centroidLeftFingerTipY = leftFingerTip.kinectY - head.kinectY;
 
    //Dimensions of the physical space
 	 const spaceMinX = this.physicalSpace.minX;
@@ -904,7 +937,7 @@ drawSkeletonLines: function(){
 	 //const x = (head.z * (rightFingerTip.kinectX - head.kinectX))/(head.z - rightFingerTip.z) + head.kinectX;
 	 //const y = (head.z * (rightFingerTip.kinectY - head.kinectY))/(head.z - rightFingerTip.z) + head.kinectY;
 
-	 this.fillCircle(mappedX, mappedY, 20);
+	 //this.fillCircle(mappedX, mappedY, 20);
 
 
 	 //moved this!
@@ -912,7 +945,7 @@ drawSkeletonLines: function(){
 	 //  talking status sent, so will use that
 	 //console.log(this.mostRecentSkeleton);
 	 newPosition = {x: mappedX, y: mappedY};
-	 wsio.emit("pointingGesturePosition", {x: mappedX, y:mappedY, id: "kinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true')});
+	 wsio.emit("pointingGesturePosition", {x: mappedX, y:mappedY, id: "rkinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true')});
 
 
 
@@ -923,10 +956,32 @@ drawSkeletonLines: function(){
  // 	//  console.log("emit the point");
  //    wsio.emit("pointingGesturePosition", {x: mappedX, y:mappedY, id: "kinect"});
  //  }
- } else {
+ }
+	 if (this.inRange(centroidLeftFingerTipX, -centroidLeftFingerTipY, minX, maxX, minY, maxY)){
+
+	 //Factors to map point from virtual screen to large display
+	 const leftHandFactorX = (spaceMaxX - spaceMinX) / (maxX - minX);
+	 const leftHandFactorY = (spaceMaxY - spaceMinY) / (maxY - minY);
+
+	 //Mapping from virtual screen to large screen positions
+	 const leftHandAdjustedX = centroidLeftFingerTipX * leftHandFactorX;
+	 const leftHandAdjustedY = centroidLeftFingerTipY * leftHandFactorY;
+
+	 //Retranslating point to relative position
+	 const leftHandTranslatedX = leftHandAdjustedX + head.kinectX;
+	 const leftHandTranslatedY = leftHandAdjustedY + head.kinectY;
+
+	 //Mapping from physical coordinates to screen coordinates
+	 //   *** CHANGE: put in fixed dimensions, so now will do it to the screen size, not the app size
+	 const leftHandMappedX = this.map(leftHandTranslatedX, spaceMinX, spaceMaxX, 0, 5464);//this.element.width);
+	 const leftHandMappedY = this.map(-leftHandTranslatedY, spaceMinY, spaceMaxY, 0, 2304);//this.element.height);
+	 leftnewPosition = {x: leftHandMappedX, y: leftHandMappedY};
+	 wsio.emit("leftHandPosition", {x: leftHandMappedX, y:leftHandMappedY, id: "lkinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true')});
+	 }
+ //else {
 	 //stop pointer
 	//  wsio.emit("stopPointingGesturePosition", {id: "kinect_" + this.mostRecentSkeleton.id });
- }
+ //}
 
     //Old virtual screen by Rayan
 		// const {rightShoulder, rightFingerTip} = this.mostRecentSkeleton;
@@ -954,111 +1009,218 @@ drawSkeletonLines: function(){
 			//}
 		//}
 	},
+	resetGestureParameters: function(){
+		progress = 0;
+		startAngle = 4.75;
+		diff = 0;
+		sim = 0;
+		grapping = false;
+		dragging = false;
+		dropping = false;
+		Selected = false;
+		zooming = false;
+		stability = null;
+		grappingInProgress = false;
+		droppingInProgress = false;
+		zoomingInProgress = false;
+		newHandsDistance = 0;
+		oldHandsDistance = 0;
+		dragHoldX = 0;
+		dragHoldY = 0;
+	},
+	leftHandPointingToApp: function (data){
+		// if(data == null){
+		// 	if(zooming){
+		// 		this.resetGestureParameters();
+		// 	}
+		// 	zooming = false;
+		// }
+		// else{
+		// 	zooming = true;
+		// 	newHandsDistance = parseInt(Math.sqrt( Math.pow((leftnewPosition.x-newPosition.x), 2) + Math.pow((leftnewPosition.y-newPosition.y), 2) ), 10);
+		// }
+	},
+	DragAppWindow: function(cur_app_id){
+		console.log("drag app: ");
+		wsio.emit("gestureDragging", {uniqueID: "rkinect_" + this.mostRecentSkeleton.id, pointerX: currentPosition.x , pointerY: currentPosition.y , button: "left"});
+		//wsio.emit("gestureDragging", {app_id: cur_app_id, pointer_id: "kinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true'), this.dragHoldX, this.dragHoldY});
+	},
+
+	DropAppWindow: function(cur_app_id){
+		console.log("drop app: ");
+		wsio.emit("gestureRelease", {uniqueID: "rkinect_" + this.mostRecentSkeleton.id, pointerX: currentPosition.x, pointerY: currentPosition.y});
+		//wsio.emit("gestureDragging", {app_id: cur_app_id, pointer_id: "kinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true'), this.dragHoldX, this.dragHoldY});
+	},
 
 	pointedToApp: function(data){
-		this.cur_app = data;
-		this.cur_app_id = this.cur_app.id;
-		//console.log("Recieved " + this.cur_app_id);
-		//console.log("x "+this.newPosition.x+" y "+this.newPosition.y)
-		if(this.cur_app_id != null){
 
-			if(!this.grapping && !this.Selected){
 
+		if(data != null){
+
+			if(!grapping && !Selected && !zoomingInProgress){
+				this.cur_app = data;
+				this.cur_app_id = this.cur_app.id;
 				//the user is trying to grab? check pointing stability after 1 seconed
-				this.grapping = true;
+				grapping = true;
 				currentPosition.x = newPosition.x;
 				currentPosition.y = newPosition.y;
-				this.stability = setTimeout(this.positionMovement, 1000);
+				//this.positionMovement();
+				setTimeout(() => {this.positionMovement();}, 1000);
 			}
 
-			if(this.dragging){
-				this.DragAppWindow(this.cur_app_id);
-			}
-
-			if(this.Selected && !this.dropping){
-				this.dropping = true;
+			if(Selected && !dropping && !zoomingInProgress){
+				dropping = true;
 				currentPosition.x = newPosition.x;
 				currentPosition.y = newPosition.y;
-				this.stability = setTimeout(this.positionMovement, 1000);
-				// if(!stability)
-				// 	dropping = false;
-				// else if(stability){
-				// 	Selected = false;
-				// 	app.drag = false;
+				setTimeout(() => {this.positionMovement();}, 1000);
 			}
+
+			if(Selected && zoomingInProgress && !dropping){
+				dropping = true;
+				currentPosition.x = newPosition.x;
+				currentPosition.y = newPosition.y;
+				setTimeout(() => {this.positionMovement();}, 1000);
+			}
+
+			if(Selected && zoomingInProgress){
+				if(newHandsDistance > oldHandsDistance){
+					//zoomOut
+					wsio.emit("gestureZoomOut", this.cur_app_id);
+					console.log("zoomOut");
+				}
+				else{
+					//zoomIn
+					wsio.emit("gestureZoomIn", this.cur_app_id);
+					console.log("zoomIn");
+
+				}
+				oldHandsDistance = newHandsDistance;
+			}
+
 		}
+		else{
+			this.resetGestureParameters();
+			console.log("no app");
+		}
+	},
+
+	startIntervalTime: function(){
+		progress = 0;
+		console.log(" should call drawing");
+		if(grapping){
+			grappingInProgress = true;
+		}
+		else if(dropping){
+			droppingInProgress = true;
+		}
+		sim = setInterval(() =>{this.grappingInterval();}, 5);
+		console.log("sim " + sim);
 	},
 
 	//Checking positions in some interval
 	//setTimeout(positionMovement(currentposition), 30);
 	positionMovement: function(){
-		var dist = Math.sqrt( Math.pow((currentPosition.x-newPosition.x), 2) + Math.pow((currentPosition.y-newPosition.y), 2) );
-		var thr = 100;
-		console.log("dis "+ dist);
-		console.log("new "+ newPosition.x);
-		console.log("cur "+ currentPosition.x);
-		if (parseFloat(parseFloat(dist).toFixed(0)) < parseFloat(thr) && this.grapping == true){//threshold distance between pointing points
-			console.log = ("dis "+ dist+ " go to setIntervalTime");
-			this.setIntervalTime();
-		}
-		else if(parseFloat(parseFloat(dist).toFixed(0)) >= parseFloat(thr) && this.grapping == true){
-			console.log = ("dis " + dist + " just moving");
-			this.grapping = false;
-		}
-		else if(parseFloat(dist) < parseFloat(thr) && this.dropping){
-			console.log = ("dis " + dist + " want to drop");
-			this.dragging = false;
-			this.Selected = false;
-		}
-		else if(parseFloat(dist) >= parseFloat(thr) && this.dropping){
-			console.log = ("dis " + dist + "NOT want to drop");
-			this.dropping = false;
-		}
-	},
 
-	setIntervalTime: function(){
-		console.log = (" in setIntervalTime.. should start drawing");
-		this.grappingInProgress = true;
-		this.sim = setInterval(this.grappingInterval(), 3000);
-	},
 
+		//var dist = parseInt((Math.sqrt( Math.pow((currentPosition.x-newPosition.x), 2) + Math.pow((currentPosition.y-newPosition.y), 2) )).toFixed(2), 10);
+		//var thrs = parseInt('100', 10);
+
+		var dist = parseInt(Math.sqrt( Math.pow((currentPosition.x-newPosition.x), 2) + Math.pow((currentPosition.y-newPosition.y), 2) ), 10);
+		var thrs = parseInt(100, 10);
+	  // console.log("Here is dist "+ dist);
+		// console.log("Here is thrs "+ thrs);
+
+		if((dist <= thrs) && grapping){
+		//if (parseFloat(parseFloat(dist).toFixed(0)) < parseFloat(thr) && this.grapping == true){//threshold distance between pointing points
+			console.log("go to setIntervalTime");
+			this.startIntervalTime();
+		}
+		else if((dist > thrs) && grapping){
+		//else if(parseFloat(parseFloat(dist).toFixed(0)) >= parseFloat(thr) && this.grapping == true){
+			console.log("just moving");
+			grapping = false;
+
+		}
+		else if((dist <= thrs) && dropping){
+
+			this.startIntervalTime();
+		}
+		else if((dist > thrs) && dropping){
+		// 	console.log = ("dis " + dist + "NOT want to drop");
+		dropping = false;
+	}
+
+},
 
 	grappingInterval: function(){
-		console.log = (" in grappingInterval.. should start looping");
-		this.ctx.clearRect(currentPosition.x, currentPosition.y, 10, 10);
+		//console.log(" in grappingInterval..");
+		//this.ctx.clearRect(currentPosition.x, currentPosition.y, 10, 10);
 
 		var dist = Math.sqrt( Math.pow((currentPosition.x-newPosition.x), 2) + Math.pow((currentPosition.y-newPosition.y), 2) );
-		if (dist > 200){
-			this.grappingInProgress = false;
+		if (dist > 100){
+			console.log("shutdown..");
+			grappingInProgress = false;
+			droppingInProgress = false;
+			clearTimeout(sim);
 		}
 
-		if(this.grappingInProgress){
-			this.diff = ((this.progress / 100) * Math.PI*2*10).toFixed(2);
-			this.ctx.beginPath();
+		if(grappingInProgress || droppingInProgress){
+			console.log("Drawing..");
+			diff = ((progress / 100) * Math.PI*2*10).toFixed(2);
+			//this.ctx.beginPath();
 			//ctx.arc(x, y, radius, startAngle, endAngle, anticlockwise);
-			this.ctx.arc(this.currentPosition.x, this.currentPosition.y, 30, this.startAngle, this.diff/10+this.startAngle, false);
-			this.ctx.stroke();
+			//this.ctx.arc(currentPosition.x, currentPosition.y, 300, startAngle, diff/10+startAngle, false);
+			//this.ctx.stroke();
 
-			if(this.progress >= 100){
-				clearTimeout(this.sim);
-				this.Selected = true;
-				this.grapping = false;
-				this.dragging = true;//tell server to drag
-				this.dragHoldX = newPosition.x - cur_app.left;
-				this.dragHoldY = newPosition.y - cur_app.top;
-				//DragAppWindow(cur_app_id);
-				//wsio.emit("gesturePress", {id: "kinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true'), button: "left"});
-				//run your script
+			console.log("progress= " + progress)
+			if(progress >= 100){
+				clearTimeout(sim);
+
+				if(grapping && !zooming){
+					console.log("grapping && !zooming");
+					Selected = true;
+					grapping = false;
+					dragging = true;//tell server to drag
+					grappingInProgress = false;
+					zoomingInProgress = false;
+					zooming = false;
+					this.DragAppWindow(this.cur_app_id);
+				}
+				else if(dropping && !zooming){
+					console.log("dropping && !zooming");
+					Selected = false;
+					dropping = false;
+					dragging = false;//tell server to drag
+					draggingInProgress = false;
+					zoomingInProgress = false;
+					zooming = false;
+					this.DropAppWindow(this.cur_app_id);
+				}
+				else if(grapping && zooming){
+					console.log("grapping && zooming");
+					Selected = true;
+					grapping = false;
+					dragging = false;//tell server to drag
+					grappingInProgress = false;
+					zoomingInProgress = true;
+					oldHandsDistance = newHandsDistance;
+					zooming = false;
+				}
+				else if(dropping && zooming){
+					console.log("dropping && zooming");
+					Selected = false;
+					dropping = false;
+					dragging = false;//tell server to drag
+					draggingInProgress = false;
+					zoomingInProgress = false;
+					zooming = false;
+				}
 			}
-
-			this.progress++;
+			progress++;
 		}
 	},
 
-	DragAppWindow: function(cur_app_id){
-		console.log("drag app: "+cur_app_id);
-		//wsio.emit("gestureDragging", {app_id: cur_app_id, pointer_id: "kinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true'), this.dragHoldX, this.dragHoldY});
-	},
+
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	//------------------------------------------//

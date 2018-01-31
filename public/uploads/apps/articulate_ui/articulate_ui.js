@@ -10,13 +10,14 @@ var articulate_ui = SAGE2_App.extend( {
 		// Create div into the DOM
 		this.SAGE2Init("canvas", data);
 		// Set the background to black
-		this.element.style.backgroundColor = '#000000';
+		this.element.style.backgroundColor = '#404040';
 		this.element.style.opacity = 1.0;
-
+		//this.element.width = 5464;
+		//this.element.height = 2304;
 		// move and resize callbacks
 		this.resizeEvents = "continuous";
 		this.moveEvents   = "continuous";
-
+    this.systemInstruction = ">> Begin Speaking . . .";
 		// SAGE2 Application Settings
 		//
 		// Control the frame rate for an animation application
@@ -29,7 +30,6 @@ var articulate_ui = SAGE2_App.extend( {
 
 		this.counter = 0;
 		this.debugMode = true;
-		this.targetAppID = null;
 
 		//-------- THIS IS JUST FOR DEBUGGING - quickly launching pre-loaded visualization specs, rather than
 		//------------- basically rather than complete the circuit from the input UI, to the NLP server, back to this app
@@ -64,12 +64,17 @@ var articulate_ui = SAGE2_App.extend( {
 		this.statusBar = {x: this.gap, y: this.gap, w: this.element.width-this.gap*2.0, h: 50};
 		this.userInputArea = {x: this.gap, y: this.statusBar.h+this.gap+this.statusBar.y, w:this.statusBar.w/2.0-this.gap/2.0, h: this.element.height-this.statusBar.h-this.gap*3.0};
 		this.systemInputArea = {x: this.userInputArea.x+this.userInputArea.w+this.gap, y: this.userInputArea.y, w: this.userInputArea.w, h:this.userInputArea.h};
+
+		//this.contactArticulateHub("https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/show me thefts in the loop by crime types", 0);
+		this.targetAppID = null;
+		this.requests = new Array();
+		this.responces = new Array();
+		this.sessionId = null;
+
 	},
 
 	load: function(date) {
 		console.log('articulate_ui> Load with state value', this.state.value);
-
-
 		this.refresh(date);
 	},
 
@@ -92,8 +97,19 @@ var articulate_ui = SAGE2_App.extend( {
 		//status bar
 		this.ctx.fillStyle = "rgba(23, 191, 140, 1.0)"
 		this.ctx.fillRect(this.statusBar.x, this.statusBar.y, this.statusBar.w, this.statusBar.h);
+		this.ctx.fillStyle = "rgba(0, 0, 0, 1.0)"
+		this.ctx.fillRect(this.statusBar.x, this.statusBar.y + this.statusBar.h + 10, 1100, 600);
+		//this.ctx.fillRect(this.statusBar.x, this.statusBar.y + this.statusBar.h + 10, this.element.width / 5, this.element.height / 4);
 		this.ctx.fillStyle = "rgba(0, 0, 0, 1.0)";
 		this.ctx.fillText( "Connected", this.statusBar.x+this.gap, this.statusBar.y+this.statusBar.h/2.0+16);
+
+		//System instruction bar at the bottom of the screen
+		this.ctx.fillStyle = "rgba(38, 38, 38, 1.0)"
+		this.ctx.fillRect(this.statusBar.x, this.element.height - 200, this.statusBar.w, this.statusBar.h * 2.5);
+		this.ctx.fillStyle = "rgba(23, 191, 140, 1.0)"
+		this.ctx.font = "64px Helvetica";
+		var w = this.ctx.measureText( this.systemInstruction).width;
+		this.ctx.fillText( this.systemInstruction, this.element.width / 2 - w / 2, this.element.height - 175 + this.statusBar.h);
 
 		//this.ctx.fillRect(this.userInputArea.x, this.userInputArea.y, this.userInputArea.w, this.userInputArea.h);
 		//this.ctx.fillRect(this.systemInputArea.x, this.systemInputArea.y, this.systemInputArea.w, this.systemInputArea.h);
@@ -125,7 +141,6 @@ var articulate_ui = SAGE2_App.extend( {
 		// this.ctx.textAlign="left";
 		// this.ctx.fillText("generate vis", 110, this.element.height - 50 );
 	},
-
 
 	//--------------------------------------------//
 	//--------- WINDOW CHANGE FUNCTIONS ----------//
@@ -194,18 +209,38 @@ var articulate_ui = SAGE2_App.extend( {
 		}
 	},
 
+articulateDebugInfo: function(data, date){
+console.log("debugDatagram: "+ data);
+},
 	// this is where commands come from the UI
 	// so when the user speaks, and presses 'send to sage2', it ends up here
+	//recieves data.data: {text: data.text, orderedItems: orderedItems} , data.targetAppID??
+	//orderedItems Array[name: appId, count: Occurances]
 	textInputEvent: function(data, date){
-		console.log("in articulate");
+		//console.log("in articulate");
 		this.orderedItems = data.orderedItems;
-		console.log("targetApp " + this.orderedItems);
+		//console.log("targetApp " + this.orderedItems);
 		this.commands[this.commands.length-1] = data.text;
 		this.commands.push(">");
+		this.refresh();
+		this.systemInstruction = "";
+		this.refresh();
+		this.systemInstruction = ">> Sending Request . . ."
+		this.refresh();
+		//new logic to maintain the same sessionId
+		var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/";
+		var requestIndex = this.requests.push(base_url + data.text); //returns the number of elements
+		//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
+
+		//only send url and the index of the request
+		this.contactArticulateHub(base_url+data.text, requestIndex - 1);  //send to the articulate hub
+
+		//----------------------------------------
 
 		//if( isMaster ){
-			//send to articulate hub...
-			this.contactArticulateHub(data.text, data.orderedItems);  //send to the articulate hub
+		//send to articulate hub...
+		//this.contactArticulateHub(data.text, data.orderedItems);  //send to the articulate hub
+
 		//}
 
 
@@ -224,41 +259,74 @@ var articulate_ui = SAGE2_App.extend( {
 	//---------------------------------------------
 	//------------ CONNECTION FUNCTIONS -----------
 	//---------------------------------------------
-
 	//contact the smart hub-- only called by master
-	contactArticulateHub: function(msg, orderedItems){
-		console.log("sending msg: " , msg);
-		//if(msg.includes("Close")){
-
-		//}else{
-			//msg = "Can I see crimes on streets by crime type"; //msg.replace(" ", "%");
-		//}
-		url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/";
-
-		//url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/can%we%look%at%total%crime%by%locationtype%in%2013%for%UIC";
-		var temp= JSON.stringify(orderedItems);
-		console.log(temp);
-		url = url+msg+temp;
+	//contactArticulateHub: function(url, orderedItems, requestIndex){
+	contactArticulateHub: function(url, requestIndex){
+		//msg.replace(" ", "%");
+		console.log("sending msg: " , url);
+		//var temp= JSON.stringify(orderedItems);
+		//console.log("orderedItems: " + temp);
+		url = url.replace(/"/g,"");
 
 		this.callbackFunc = this.callback.bind(this);
-
-		this.postRequest(url, this.callbackFunc, 'JSON');
+		this.postRequest(url, this.callbackFunc, 'JSON', requestIndex);
 	},
+
+	// //contact the smart hub-- only called by master
+	// contactArticulateHub: function(msg, orderedItems){
+	// 	//msg.replace(" ", "%");
+	// 	console.log("sending msg: " , msg);
+  //
+  //
+  //
+	// 	//if(msg.includes("Close")){
+  //
+	// 	//}else{
+	// 		//msg = "Can I see crimes on streets by crime type"; //msg.replace(" ", "%");
+	// 	//}
+	// 	url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/";
+  //
+	// 	//url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/can%we%look%at%total%crime%by%locationtype%in%2013%for%UIC";
+	// 	var temp= JSON.stringify(orderedItems);
+	// 	console.log(temp);
+	// 	msg = msg.replace(/"/g,"");
+	// 	url = url+msg;//+temp;
+	// 	console.log(url);
+	// 	this.callbackFunc = this.callback.bind(this);
+  //
+	// 	this.postRequest(url, this.callbackFunc, 'JSON');
+	// },
 
 	//this sends the request to the rest service
 	//only called by master
-	postRequest: function(filename, callback, type) {
+	postRequest: function(url, callback, type, requestIndex) {
 		var dataType = type || "TEXT";
 
 		var xhr = new XMLHttpRequest();
-		xhr.open("GET", filename, true);
+
+		if(requestIndex >= 1){
+			//for (var i = 0; i < this.responces.length; i++){
+			//	if(this.responces[i].sessionId != null)
+			final_url = url + ";jsessionid=" + this.sessionId;
+			//final_url = url + ";jsessionid=" + this.responces[requestIndex-1].sessionId;
+			//}
+			console.log("supsequent call " + final_url);
+			xhr.open("GET", final_url, true);
+		} else {
+			console.log("first call " + url);
+			xhr.open("GET", url, true);
+		}
+
 		xhr.onreadystatechange = function() {
 			if (xhr.readyState === 4) {
 				if (xhr.status === 200) {
 					if (dataType === "TEXT") {
 						callback(null, xhr.responseText);
 					} else if (dataType === "JSON") {
-						callback(null, JSON.parse(xhr.responseText));
+
+						callback(null, JSON.parse(xhr.responseText), requestIndex);
+
+
 					} else if (dataType === "CSV") {
 						callback(null, csvToArray(xhr.responseText));
 					} else if (dataType === "SVG") {
@@ -275,19 +343,44 @@ var articulate_ui = SAGE2_App.extend( {
 	},
 
 	//this gets the data from the smart hub, in a callback
-	callback: function(err, specObj) {
-			if (err)			{
-				console.log("error connecting to articulate smart hub");
+	callback: function(err, specObj, requestIndex) {
+			if (err){
+				console.log("error connecting to articulate smart hub" + err);
+				this.refresh();
+				this.systemInstruction = "";
+				this.refresh();
+				this.systemInstruction = ">> Error connecting to articulate smart hub";
+				this.refresh();
+				this.refresh();
 				//return;
-			}
-			console.log("GOT THE RESPONSE: ");
-			console.log(specObj);
+				}
 
+			if(specObj != null && specObj["dataQuery"] != null){
+				console.log("GOT THE RESPONSE: ");
+				this.refresh();
+				this.systemInstruction = "";
+				this.refresh();
+				this.systemInstruction = ">> Response Recieved . . .";
+				console.log(specObj);
+				this.responces[requestIndex] = specObj;
+				console.log("sess id all " + this.responces[requestIndex].sessionId);
+				this.sessionId = specObj.sessionId;
+				this.refresh();
 			//OLD
 			//this.handleResponse(specObj);
-			if( isMaster)
-				this.readExample2(specObj, this.colors[this.counter]); // call the parser
+				if( isMaster){
+					this.readExample2(specObj, this.colors[this.counter]); // call the parser
+				}
+			}
+			else if(specObj["dataQuery"] == null){
+				this.refresh();
+				this.systemInstruction = "";
+				this.refresh();
+				this.systemInstruction = ">> Cannot understand the request! Try again . . .";
+				console.log("Cannot understand the request! Try again");
+				this.refresh();
 
+			}
 			//then broadcast the results to display nodes!
 			//broadcast( "handleResponse", {response:"responseTest"} );
 		},
@@ -303,7 +396,7 @@ var articulate_ui = SAGE2_App.extend( {
 				if(this.childList[key].childId == this.targetAppID)
 				var closeAppIndex = this.childList.indexOf(this.childList[key]);
 				this.closeChild(closeAppIndex);
-				console.log("Cloose "+this.childList[key].childId);
+				console.log("Close "+this.childList[key].childId);
 			}
 			//this.closeChild(this.getNumberOfChildren()-1); //right now we just close the last one, later will use a unique id of the vis
 		}
@@ -313,7 +406,7 @@ var articulate_ui = SAGE2_App.extend( {
 				if(this.childList[key].childId == this.targetAppID)
 				var closeAppIndex = this.childList.indexOf(this.childList[key]);
 				this.closeChild(closeAppIndex);
-				console.log("Cloose "+this.childList[key].childId);
+				console.log("Close "+this.childList[key].childId);
 			}
 		}
 		else if( specificationObj.specType == "Layout") //only used for close operations
@@ -346,6 +439,7 @@ var articulate_ui = SAGE2_App.extend( {
 
 			//print for sanity
 			console.log('type' + type + "x " + x + " y " + y + " hub_id " + hub_id);
+
 			maxVal = 0;
 
 			//handling individual types
@@ -511,29 +605,32 @@ var articulate_ui = SAGE2_App.extend( {
 			// launch the app we created!
 
 			this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
-			this.childList[this.getNumberOfChildren()-1].hub_id = hub_id;
+			console.log(hub_id);
+			console.log(this.childList[this.getNumberOfChildren()-1]);
+			this.childList[this.getNumberOfChildren()-1].hub_id_YO = hub_id;
+			console.log(this.childList[this.getNumberOfChildren()-1]);
 			//this.closeChild(this.getNumberOfChildren()-1);
 			//console.log("after " + this.childList.length);
 		}
 
 	},
-	childMonitorEvent: function(childId, type, data, date){
-		// if( type == "childMoveEvent")
-		// 	this.monitoringText = "child: " + childId + " " + type + " x: " + data.x + "y: " + data.y;
-		// if( type == "childResizeEvent")
-		// 	this.monitoringText = "child: " + childId + " " + type + " w: " + data.w + "h: " + data.h;
-		// if( type == "childMoveAndResizeEvent")
-		// 	this.monitoringText = "child: " + childId + " " + type +  " x: " + data.x + "y: " + data.y + " w: " + data.w + "h: " + data.h;
-		// if( type == "childCloseEvent" )
-		// 	this.monitoringText = "child: " + childId + " closed";
-		if( type == "childOpenEvent") {
-			//this.monitoringText = "child: " + childId + " opened";
-		}
-		// if( type == "childReopenEvent"){
-		// 	this.monitoringText = "child: " + childId + " reopened ";
-		// }
-		this.refresh(date);
-	}
+	// childMonitorEvent: function(childId, type, data, date){
+	// 	// if( type == "childMoveEvent")
+	// 	// 	this.monitoringText = "child: " + childId + " " + type + " x: " + data.x + "y: " + data.y;
+	// 	// if( type == "childResizeEvent")
+	// 	// 	this.monitoringText = "child: " + childId + " " + type + " w: " + data.w + "h: " + data.h;
+	// 	// if( type == "childMoveAndResizeEvent")
+	// 	// 	this.monitoringText = "child: " + childId + " " + type +  " x: " + data.x + "y: " + data.y + " w: " + data.w + "h: " + data.h;
+	// 	// if( type == "childCloseEvent" )
+	// 	// 	this.monitoringText = "child: " + childId + " closed";
+	// 	if( type == "childOpenEvent") {
+	// 		//this.monitoringText = "child: " + childId + " opened";
+	// 	}
+	// 	// if( type == "childReopenEvent"){
+	// 	// 	this.monitoringText = "child: " + childId + " reopened ";
+	// 	// }
+	// 	this.refresh(date);
+	// }
 
 
 //OLD stuff

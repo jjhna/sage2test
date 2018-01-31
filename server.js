@@ -630,7 +630,7 @@ var stickyAppHandler     = new StickyItems();
 process.on('uncaughtException', function(err) {
 	// handle the error safely
 	//kinect comment out is better
-	//console.trace("SAGE2>	", err); //TURN BACK ON VIJAY AND JOE
+	console.trace("SAGE2>	", err); //TURN BACK ON VIJAY AND JOE
 });
 
 
@@ -902,7 +902,8 @@ function setupListeners(wsio) {
 
 	wsio.on('checkKinectPointers',									wsCheckKinectPointers);
 	wsio.on('removeKinectPointer',									wsRemoveKinectPointer);
-	wsio.on('gestureDragging',									wsGestureDragging);
+	wsio.on('gestureDragging',									    wsGestureDragging);
+	wsio.on('gestureRelease',												wsGestureRelease);
 
 	wsio.on('pointerPress',                         wsPointerPress);
 	wsio.on('pointerRelease',                       wsPointerRelease);
@@ -1069,12 +1070,12 @@ function setupListeners(wsio) {
 	wsio.on('partitionsGrabAllContent',             wsPartitionsGrabAllContent);
 
 	//linked child parent functions
-	wsio.on('launchLinkedChildApp',					wsLaunchLinkedChildApp);
-	wsio.on('messageToParent',						wsMessageToParent);
-	wsio.on('messageToChild',						wsMessageToChild);
-	wsio.on('closeLinkedChildApp',					wsCloseLinkedChildApp);
-	wsio.on('moveLinkedChildApp',					wsMoveLinkedChildApp);
-	wsio.on('resizeLinkedChildApp',					wsResizeLinkedChildApp);
+	wsio.on('launchLinkedChildApp',									wsLaunchLinkedChildApp);
+	wsio.on('messageToParent',											wsMessageToParent);
+	wsio.on('messageToChild',												wsMessageToChild);
+	wsio.on('closeLinkedChildApp',									wsCloseLinkedChildApp);
+	wsio.on('moveLinkedChildApp',										wsMoveLinkedChildApp);
+	wsio.on('resizeLinkedChildApp',									wsResizeLinkedChildApp);
 
 	//articulate input service
 	//voice command from VoiceUI
@@ -1085,7 +1086,11 @@ function setupListeners(wsio) {
 	wsio.on('gestureRecognitionStatus',             wsGestureRecognitionStatus);
 	//pointing gesture position from kinect App
   wsio.on('pointingGesturePosition',              wsPointingGesturePosition);
+	wsio.on('leftHandPosition',             			  wsLeftHandPosition);
 	wsio.on('stopPointingGesturePosition',          wsStopPointingGesturePosition);
+	wsio.on('gestureZoomOut',          							wsGestureZoomOut);
+	wsio.on('gestureZoomIn',          							wsGestureZoomIn);
+
 }
 
 /**
@@ -1460,30 +1465,129 @@ function wsCheckKinectPointers(wsio,data){
 		}
 	}
 }
+function wsGestureRelease(wsio, data){
 
+	var btn = {button: "left"};
+	pointerRelease(data.uniqueID, data.pointerX, data.pointerY, btn);
+
+}
 function wsGestureDragging(wsio, data) {
-	if (SAGE2Items.applications.list.hasOwnProperty(data.app_id)) {
-		var app = SAGE2Items.applications.list[data.app_id];
-		// Values in percent if smaller than 1
-		var pointer = sagePointers[data.pointer_id];
-
-		var posX = pointer.left - data.dragHoldX;
-		var posY = pointer.top - data.dragHoldY;
-
-		app.left = posX;
-		app.top  = posY;
-		// build the object to be sent
-		var updateItem = {
-			elemId: app.id,
-			elemLeft: app.left,
-			elemTop: app.top,
-			elemWidth: app.width,
-			elemHeight: app.height,
-			force: true,
-			date: Date.now()
-		};
-		moveApplicationWindow(updateItem);
+	//(uniqueID, pointerX, pointerY, data, obj, localPt, null)
+	var obj = interactMgr.searchGeometry({x: data.pointerX, y: data.pointerY});
+	var localPt = globalToLocal(data.pointerX, data.pointerY, obj.type, obj.geometry);
+	var im = findInteractableManager(obj.data.id);
+	im.moveObjectToFront(obj.id, "applications", ["portals"]);
+	var stickyList = stickyAppHandler.getStickingItems(obj.id);
+	for (var idx in stickyList) {
+		im.moveObjectToFront(stickyList[idx].id, "applications", ["portals"]);
 	}
+	var newOrder = im.getObjectZIndexList("applications", ["portals"]);
+	broadcast('updateItemOrder', newOrder);
+
+	// if (portalId !== undefined && portalId !== null) {
+	// 	var ts = Date.now() + remoteSharingSessions[portalId].timeOffset;
+	// 	remoteSharingSessions[portalId].wsio.emit('updateApplicationOrder', {order: newOrder, date: ts});
+	// }
+
+	var btn = SAGE2Items.applications.findButtonByPoint(obj.id, localPt);
+
+	// pointer press on app window
+	if (btn === null) {
+		if (data.button === "right") {
+			var elemCtrl = SAGE2Items.widgets.list[obj.id + data.uniqueID + "_controls"];
+			if (!elemCtrl) {
+				// if no UI element, send event to app if in interaction mode
+				if (remoteInteraction[data.uniqueID].appInteractionMode()) {
+					sendPointerPressToApplication(data.uniqueID, obj.data, data.pointerX, data.pointerY, data);
+				}
+				// Request a control (do not know in advance)
+				broadcast('requestNewControl', {elemId: obj.id, user_id: data.uniqueID,
+					user_label: sagePointers[data.uniqueID] ? sagePointers[data.uniqueID].label : "",
+					x: data.pointerX, y: data.pointerY, date: Date.now() });
+			} else if (elemCtrl.show === false) {
+				showControl(elemCtrl, data.uniqueID, data.pointerX, data.pointerY);
+				addEventToUserLog(data.uniqueID, {type: "widgetMenu", data: {action: "open", application:
+					{id: obj.id, type: obj.data.application}}, time: Date.now()});
+			} else {
+				moveControlToPointer(elemCtrl, data.uniqueID, data.pointerX, data.pointerY);
+			}
+		} else {
+			if (remoteInteraction[data.uniqueID].appInteractionMode()) {
+				sendPointerPressToApplication(data.uniqueID, obj.data, data.pointerX, data.pointerY, data);
+			} else {
+				selectApplicationForMove(data.uniqueID, obj.data, data.pointerX, data.pointerY, null);
+			}
+		}
+		return;
+	}
+
+	switch (btn.id) {
+		case "titleBar":
+			if (drawingManager.paletteID !== data.uniqueID) {
+				selectApplicationForMove(data.uniqueID, obj.data, data.pointerX, data.pointerY, null);
+			}
+			break;
+		case "dragCorner":
+			if (obj.data.application === "Webview") {
+				// resize with corner only in window mode
+				if (!sagePointers[data.uniqueID].visible || remoteInteraction[data.uniqueID].windowManagementMode()) {
+					selectApplicationForResize(data.uniqueID, obj.data, data.pointerX, data.pointerY, null);
+				} else {
+					// if corner click and webview, then send the click to app
+					sendPointerPressToApplication(data.uniqueID, obj.data, data.pointerX, data.pointerY, data);
+				}
+			} else {
+				selectApplicationForResize(data.uniqueID, obj.data, data.pointerX, data.pointerY, null);
+			}
+			break;
+		case "syncButton":
+			if (sagePointers[data.uniqueID].visible) {
+				// only if pointer on the wall, not the web UI
+				broadcast('toggleSyncOptions', {id: obj.data.id});
+			}
+			break;
+		case "fullscreenButton":
+			if (sagePointers[data.uniqueID].visible) {
+				// only if pointer on the wall, not the web UI
+				toggleApplicationFullscreen(data.uniqueID, obj.data, null);
+			}
+			break;
+		case "pinButton":
+			if (sagePointers[data.uniqueID].visible) {
+				// only if pointer on the wall, not the web UI
+				toggleStickyPin(obj.data.id);
+			}
+			break;
+		case "closeButton":
+			if (sagePointers[data.uniqueID].visible) {
+				// only if pointer on the wall, not the web UI
+				deleteApplication(obj.data.id, null);
+			}
+			break;
+	}
+	//---------------------- minimized functionality -----------------
+	// if (SAGE2Items.applications.list.hasOwnProperty(data.app_id)) {
+	// 	var app = SAGE2Items.applications.list[data.app_id];
+	// 	// Values in percent if smaller than 1
+	// 	var pointer = sagePointers[data.pointer_id];
+	//
+	// 	var posX = pointer.left - data.dragHoldX;
+	// 	var posY = pointer.top - data.dragHoldY;
+	//
+	// 	app.left = posX;
+	// 	app.top  = posY;
+	// 	// build the object to be sent
+	// 	var updateItem = {
+	// 		elemId: app.id,
+	// 		elemLeft: app.left,
+	// 		elemTop: app.top,
+	// 		elemWidth: app.width,
+	// 		elemHeight: app.height,
+	// 		force: true,
+	// 		date: Date.now()
+	// 	};
+	// 	moveApplicationWindow(updateItem);
+	// }
 
 }
 
@@ -2931,9 +3035,26 @@ function validParentChildPair(parentId, childId) {
 //saving to make sure we can go back to it easily
 function wsGoogleVoiceSpeechInput(wsio, data){
 	//console.log(data);
+	console.log(JSON.stringify(data));
 
 
-		var orderedItems = mostItems(pointedToApps);
+	var orderedItems = mostItems(pointedToApps);
+
+
+	var commandText = data.text.toUpperCase();
+	var appList = SAGE2Items.applications.list;
+	var finalAppList = {};
+	for( var appid in appList)
+	{
+		finalAppList[appid] = appList[appid].title;
+	}
+	//console.log("Command Text3:", commandText);
+	var time = new Date();
+	var debugDatagram = 	{ "timestamp":time,
+										"commandText":commandText,
+										"currentApps":finalAppList,
+										"mostOccurantItems": orderedItems };
+
 	//find articulate app (just articulate app for now)
 	var app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui");
 	//console.log(app);
@@ -2944,6 +3065,11 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 		console.log("targetAppID in server " + targetAppID);
 		var data = {id: app.id, data: {text: data.text, orderedItems: orderedItems}, date: Date.now()};
 		broadcast('textInputEvent', data);
+
+		var data = {id: app.id, data: {timestamp: debugDatagram.timestamp, commandText: debugDatagram.commandText, currentApps: debugDatagram.currentApps, mostOccurantItems: debugDatagram.mostOccurantItems}};
+		broadcast('articulateDebugInfo', data);
+
+
 	}
 	else{
 		//launch articulate app ...?
@@ -3228,6 +3354,7 @@ function wsGestureRecognitionStatus(wsio, data){
 //receiving pointing positions and finding pointed to apps
 let cur_app_id;
 function wsPointingGesturePosition(wsio, data){
+	var rightPointing = false;
 	//make a pointer on screen
 	//  see if kinect pointer exists (for now just one)
 	if (sagePointers[data.id] === undefined) {
@@ -3255,6 +3382,7 @@ function wsPointingGesturePosition(wsio, data){
 		var app = SAGE2Items.applications.list[key];
 		if(app.title != "machineLearning" && app.title != "articulate_ui" && app.title != "background"){
 			if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){//*****
+				rightPointing = true;
 				if( data.recognitionStatus ){
 					// pointedToApps[pointedToApps.length]= {appId: app.id, pointerId: data.id};
 					pointedToApps.push({appId: app.id, pointerId: data.id});
@@ -3264,14 +3392,22 @@ function wsPointingGesturePosition(wsio, data){
 				}
 				//get position <-> send pointed to app to kinect app
 				//Always send pointed to app to machine learning app
-				// var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
-				// if( ml != null ){
-				// 	var data = {id: ml.id, data: app, date: Date.now()};
-					//broadcast('pointedToApp', data);
+				var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
+				if( ml != null ){
+					var data = {id: ml.id, data: app, date: Date.now()};
+					broadcast('pointedToApp', data);
 				}
 			}
 		}
 	}
+	if(!rightPointing){
+		var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
+		if( ml != null ){
+			var data = {id: ml.id, data: null, date: Date.now()};
+			broadcast('leftHandPointingToApp', data);
+		}
+	}
+}
 
 function mostOccurrenceItem(array){
 	if(array.length == 0){
@@ -3337,6 +3473,131 @@ function wsStopPointingGesturePosition(wsio, data){
 	hidePointer(data.id);
 }
 
+function wsLeftHandPosition(wsio, data){
+	var pointing = false;
+
+	var obj = interactMgr.searchGeometry({x: data.x, y: data.y});
+
+	for (var key in SAGE2Items.applications.list){
+		var app = SAGE2Items.applications.list[key];
+		if(app.title != "machineLearning" && app.title != "articulate_ui" && app.title != "background"){
+			if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){
+				pointing = true;
+
+				//create interaction pointer
+				if (sagePointers[data.id] === undefined) {
+					createSagePointer(data.id);
+					showPointer(data.id, {label: data.id, color: data.color, sourceType: "kinect"});
+
+					// remoteInteraction[data.id].saveMode();
+					// if (remoteInteraction[data.id].appInteractionMode()) {
+					// 	remoteInteraction[data.id].toggleModes();
+					// 	broadcast('changeSagePointerMode', {id: sagePointers[data.id].id, mode: remoteInteraction[data.id].interactionMode});
+					// }
+					// addEventToUserLog(data.id, {type: "SAGE2PointerEnd", data: null, time: Date.now()});
+
+				}
+				sagePointers[data.id].lastUsed = new Date();
+				sagePointers[data.id].isKinect = true;
+				pointerPosition(data.id, {pointerX: data.x, pointerY: data.y} );
+				//send left hand pointing position
+				var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
+				if( ml != null ){
+					var data = {id: ml.id, data: app, date: Date.now()};
+					broadcast('leftHandPointingToApp', data);
+				}
+			}
+		}
+	}
+	if(!pointing){
+		if (sagePointers[data.id] === undefined) {
+
+		}
+		else{
+			stopSageKinectPointer(data.id);
+		}
+		var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
+		if( ml != null ){
+			var data = {id: ml.id, data: null, date: Date.now()};
+			broadcast('leftHandPointingToApp', data);
+		}
+	}
+}
+
+function wsGestureZoomOut(wsio, data){
+	console.log("To zoomout app " + data);
+	//for (key in SAGE2Items.applications.list) {
+		//var app = SAGE2Items.applications.list[key];
+		//if(app.id == data) {
+		var app =  SAGE2Items.applications.list[data];
+		if (SAGE2Items.applications.list.hasOwnProperty(app.id)) {
+
+			if(app.width < config.totalWidth && app.height < config.totalHeight){
+				console.log("found " + app.id);
+				console.log("old W " + app.width);
+				app.width = app.width + (app.width*0.0006);
+				app.height = app.height + (app.height*0.0006);
+				app.top = app.top - (app.height*0.0006)/2;
+				app.left = app.left - (app.width*0.0006)/2;
+				console.log("new W " + app.width);
+				var updateItem = {
+					elemId: app.id,
+					elemLeft: app.left,
+					elemTop: app.top,
+					elemWidth: app.width,
+					elemHeight: app.height,
+					force: true,
+					date: Date.now()
+				};
+				broadcast('startMove', {id: updateItem.elemId, date: updateItem.date});
+				broadcast('startResize', {id: updateItem.elemId, date: updateItem.date});
+
+				moveAndResizeApplicationWindow(updateItem);
+
+				broadcast('finishedMove', {id: updateItem.elemId, date: updateItem.date});
+				broadcast('finishedResize', {id: updateItem.elemId, date: updateItem.date});
+				console.log("resized " + data);
+			}
+		}
+	//}
+}
+function wsGestureZoomIn(wsio, data){
+	console.log("To zoomin app " + data);
+	//for (key in SAGE2Items.applications.list) {
+		//var app = SAGE2Items.applications.list[key];
+		//if(app.id == data) {
+		var app =  SAGE2Items.applications.list[data];
+		if (SAGE2Items.applications.list.hasOwnProperty(app.id)) {
+
+			if(app.width > 300){
+				console.log("found " + app.id);
+				console.log("old W " + app.width);
+				app.width = app.width - (app.width*0.0006);
+				app.height = app.height - (app.height*0.0006);
+				app.top = app.top + (app.height*0.0006)/2;
+				app.left = app.left + (app.width*0.0006)/2;
+				console.log("new W " + app.width);
+				var updateItem = {
+					elemId: app.id,
+					elemLeft: app.left,
+					elemTop: app.top,
+					elemWidth: app.width,
+					elemHeight: app.height,
+					force: true,
+					date: Date.now()
+				};
+				broadcast('startMove', {id: updateItem.elemId, date: updateItem.date});
+				broadcast('startResize', {id: updateItem.elemId, date: updateItem.date});
+
+				moveAndResizeApplicationWindow(updateItem);
+
+				broadcast('finishedMove', {id: updateItem.elemId, date: updateItem.date});
+				broadcast('finishedResize', {id: updateItem.elemId, date: updateItem.date});
+				console.log("resized " + data);
+			}
+		}
+	//}
+}
 // **************  Information Functions *****************
 
 function listClients() {
@@ -7227,6 +7488,7 @@ function pointerPressInDataSharingArea(uniqueID, portalId, scaledPt, data) {
 
 function selectApplicationForMove(uniqueID, app, pointerX, pointerY, portalId) {
 	remoteInteraction[uniqueID].selectMoveItem(app, pointerX, pointerY);
+
 	broadcast('startMove', {id: app.id, date: Date.now()});
 
 	if (portalId !== undefined && portalId !== null) {

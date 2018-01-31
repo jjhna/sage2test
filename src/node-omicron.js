@@ -570,6 +570,8 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 
 		skeletonData["skeletonID"] = sourceID;
 		skeletonData["type"] = "kinectInput";
+		//skeletonData["leftHandState"] = e.orw;
+		//skeletonData["rightHandState"] = e.orx;
 
 		this.kinectInput(sourceID, skeletonData);
 	} else if (serviceType === 8 ) { // speech input

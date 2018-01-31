@@ -1157,8 +1157,16 @@ var SAGE2_App = Class.extend({
 		this.textInputEvent(data.data, data.targetAppID, data.date);
 	},
 
+	SAGE2articulateDebugInfo: function(data){
+		this.articulateDebugInfo(data.data);
+	},
+
 	SAGE2PointedToApp: function(data){
 		this.pointedToApp(data.data, data.date);
+	},
+
+	SAGE2LeftHandPointingToApp: function(data){
+		this.leftHandPointingToApp(data.data, data.date);
 	},
 
 	SAGE2StartGestureRecognition: function(data){
