@@ -2,7 +2,6 @@
 	"global": {
 		"security"    : "true",
 		"server_port" : "10000", 
-		"tcp_port"    : "11000"
 	},
 	"main": {
 		"header" : "<h4>SAGE2 Control Interface</h4>",
