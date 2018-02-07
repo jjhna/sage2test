@@ -1339,9 +1339,16 @@ The z-index is very important.
     z-index: 1000;
 }
 
+#codeSnippetEditor .ace_gutter-layer {
+    pointer-events: none;
+}
+
 #codeSnippetEditor.open {
     pointer-events: initial;
     opacity: 1;
+}
+#codeSnippetEditor.open .ace_gutter-layer {
+    pointer-events: auto;
 }
 
 #codeSnippetEditor .editorWrapper {

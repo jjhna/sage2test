@@ -35,9 +35,18 @@ var Snippets_Data = SAGE2_App.extend({
 		this.controls.finishedAddingControls();
 		this.enableControls = true;
 
-		this.updateTitle("SAGE2 Code Snippets - " + this.state.snippetsID);
-
+		// set up link to parent
 		SAGE2_CodeSnippets.displayApplicationLoaded(this.state.snippetsID, this);
+
+		if (this.parentLink) {
+      if (this.parentLink.getParent()) {
+        this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().state.snippetsID})`);
+      } else {
+        this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}()`);
+      }
+    } else {
+      this.updateTitle("Snippets - " + this.state.snippetsID);
+    }
 	},
 
 	load: function(date) {
@@ -79,6 +88,7 @@ var Snippets_Data = SAGE2_App.extend({
 
 	setParentLink: function (link, date) {
 		// save the parent of the function
+		this.parentLink = link;
 	},
 
 	resize: function(date) {

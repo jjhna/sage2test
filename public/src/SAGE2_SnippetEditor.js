@@ -186,7 +186,7 @@ let SAGE2_SnippetEditor = (function () {
 			} else if (type === "gen") {
 				self.editor.setValue(`// function generatorSnippet (resolve, reject, previousData) {
 	// write your code here:
-	let newData;
+	let newData = [];
 	
 	resolve(newData);
 //}`);

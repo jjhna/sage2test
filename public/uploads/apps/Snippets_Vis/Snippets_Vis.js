@@ -38,9 +38,18 @@ var Snippets_Vis = SAGE2_App.extend({
 
 		console.log(data);
 
-		this.updateTitle("SAGE2 Code Snippets - " + this.state.snippetsID);
-
 		SAGE2_CodeSnippets.displayApplicationLoaded(this.state.snippetsID, this);
+
+		// give descriptive title to app
+		if (this.parentLink) {
+			if (this.parentLink.getParent()) {
+				this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().state.snippetsID})`);
+			} else {
+				this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}()`);
+			}
+		} else {
+				this.updateTitle("Snippets - " + this.state.snippetsID);
+		}
 	},
 
 	load: function(date) {
@@ -59,7 +68,7 @@ var Snippets_Vis = SAGE2_App.extend({
 
 	setParentLink: function (link, date) {
 		// save the parent of the function
-		self.parentLink = link;
+		this.parentLink = link;
 	},
 
 	resize: function(date) {
@@ -69,7 +78,7 @@ var Snippets_Vis = SAGE2_App.extend({
 			.attr("width",   this.sage2_width)
 			.attr("height",  this.sage2_height);
 
-		self.parentLink.update(); // redraw
+		this.parentLink.update(); // redraw
 	},
 
 	move: function(date) {

@@ -51,8 +51,14 @@ let SAGE2_CodeSnippets = (function() {
 				src: self.functions[id].src,
 				desc: self.functions[id].desc,
 				locked: self.functions[id].editor !== null,
-				editor: self.functions[id].editor
+				editor: self.functions[id].editor,
+				selectors: []
 			};
+		});
+
+		Object.keys(self.userInteractions).forEach(userID => {
+			let operation = self.userInteractions[userID];
+			functionInfo[operation.func.id].selectors.push(operation.user);
 		});
 
 		return functionInfo;
@@ -357,11 +363,19 @@ let SAGE2_CodeSnippets = (function() {
 			// run gen functions without parent selection
 			executeCodeSnippet(func.id, null);
 		} else {
-			// otherwise, save function selection and user for dataset selection
-			self.userInteractions[user.id] = {
-				user,
-				func
-			};
+			if (self.userInteractions[user.id] && self.userInteractions[user.id].func.id === func.id) {
+				// allow users to toggle selection
+				delete self.userInteractions[user.id];
+			} else {
+				// otherwise, save function selection and user for dataset selection
+				self.userInteractions[user.id] = {
+					user,
+					func
+				};
+			}
+
+
+			updateListApps();
 		}
 
 	}
@@ -371,7 +385,9 @@ let SAGE2_CodeSnippets = (function() {
 		if (self.userInteractions[user.id]) {
 			executeCodeSnippet(self.userInteractions[user.id].func.id, dataID);
 
-			self.userInteractions[user.id] = null;
+			delete self.userInteractions[user.id];
+
+			updateListApps();
 		}
 	}
 

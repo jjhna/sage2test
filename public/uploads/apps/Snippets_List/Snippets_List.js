@@ -80,6 +80,42 @@ var Snippets_List = SAGE2_App.extend({
 				that.lastUserClick = null;
 			}
 
+			// create the indicator for selector users
+			if (func.selectors) {
+				// create element to wrap around user tags
+				let selectorWrapper = document.createElement("div");
+				selectorWrapper.style.margin = "5px";
+
+				console.log(func);
+				for (let user of func.selectors) {
+					// create colored block to wrap the nametag
+					let userBg = document.createElement("div");
+					userBg.style.background = user.color;
+					userBg.style.borderRadius = "7px";
+					userBg.style.padding = "7px";
+					userBg.style.display = "inline-block";
+					userBg.style.border = "2px solid #333";
+
+					// create name tag
+					let userTag = document.createElement("div");
+
+					userTag.style.padding = "3px 6px";
+					userTag.style.borderRadius = "12px";
+					userTag.style.background = "#333";
+					userTag.style.display = "inline-block";
+					userTag.style.color = "white";
+					
+					userTag.innerHTML = user.label;
+
+
+					userBg.appendChild(userTag);
+					selectorWrapper.appendChild(userBg);
+				}
+
+				fElem.appendChild(selectorWrapper);
+			}
+
+
 			this.element.appendChild(fElem);
 		}
 	},
