@@ -18,6 +18,7 @@ let SAGE2_CodeSnippets = (function() {
 		functionCount: 0,
 
 		listApps: {},
+		userInteractions: {},
 
 		links: {},
 		linkCount: 0,
@@ -351,6 +352,29 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	function notifyUserListClick(user, func) {
+		if (func.type === "gen") {
+			// run gen functions without parent selection
+			executeCodeSnippet(func.id, null);
+		} else {
+			// otherwise, save function selection and user for dataset selection
+			self.userInteractions[user.id] = {
+				user,
+				func
+			};
+		}
+
+	}
+
+	function notifyUserDataClick(user, dataID) {
+		// if the user has queued up a function
+		if (self.userInteractions[user.id]) {
+			executeCodeSnippet(self.userInteractions[user.id].func.id, dataID);
+
+			self.userInteractions[user.id] = null;
+		}
+	}
+
 	// Link class used by SAGE2_CodeSnippets
 	const Link = (function() {
 		let curator = self; // alias enclosing scope's 'self'
@@ -427,7 +451,9 @@ let SAGE2_CodeSnippets = (function() {
 		displayApplicationLoaded,
 		executeCodeSnippet,
 
-		registerSnippetListApp
+		registerSnippetListApp,
+		notifyUserListClick,
+		notifyUserDataClick
 	};
 }());
 

@@ -1,8 +1,8 @@
 //
-// SAGE2 application: JupyterLab
+// SAGE2 application: Snippets_Data
 // by: Andrew Burks <andrewtburks@gmail.com>
 //
-// Copyright (c) 2015
+// Copyright (c) 2017
 //
 
 "use strict";
@@ -100,6 +100,7 @@ var Snippets_Data = SAGE2_App.extend({
 	event: function(eventType, position, user_id, data, date) {
 		if (eventType === "pointerPress" && (data.button === "left")) {
 			// click
+			SAGE2_CodeSnippets.notifyUserDataClick(user_id, this.state.snippetsID);
 		} else if (eventType === "pointerMove" && this.dragging) {
 			// move
 		} else if (eventType === "pointerRelease" && (data.button === "left")) {

@@ -1,13 +1,13 @@
 //
-// SAGE2 application: JupyterLab
+// SAGE2 application: Snippets_Vis
 // by: Andrew Burks <andrewtburks@gmail.com>
 //
-// Copyright (c) 2015
+// Copyright (c) 2017
 //
 
 "use strict";
 
-/* global  */
+/* global d3 */
 
 var Snippets_Vis = SAGE2_App.extend({
 	init: function(data) {

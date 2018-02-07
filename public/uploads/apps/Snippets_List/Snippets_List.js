@@ -1,8 +1,8 @@
 //
-// SAGE2 application: JupyterLab
+// SAGE2 application: Snippets_List
 // by: Andrew Burks <andrewtburks@gmail.com>
 //
-// Copyright (c) 2015
+// Copyright (c) 2017
 //
 
 "use strict";
@@ -69,9 +69,15 @@ var Snippets_List = SAGE2_App.extend({
 			fElem.style.overflow = "hidden";
 			
 			fElem.innerHTML = func.id + " - " + func.type + " - " + func.desc;
-			
+
+			let that = this;
+
 			fElem.onclick = function(e) {
 				console.log("Function clicked", func, e);
+				console.log(that.lastUserClick);
+
+				SAGE2_CodeSnippets.notifyUserListClick(that.lastUserClick, func);
+				that.lastUserClick = null;
 			}
 
 			this.element.appendChild(fElem);
@@ -106,6 +112,7 @@ var Snippets_List = SAGE2_App.extend({
 	event: function(eventType, position, user_id, data, date) {
 		if (eventType === "pointerPress" && (data.button === "left")) {
 			// click
+			this.lastUserClick = user_id;
 		} else if (eventType === "pointerMove" && this.dragging) {
 			// move
 		} else if (eventType === "pointerRelease" && (data.button === "left")) {
