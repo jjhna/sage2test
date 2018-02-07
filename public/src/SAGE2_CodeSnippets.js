@@ -17,6 +17,8 @@ let SAGE2_CodeSnippets = (function() {
 		functions: {},
 		functionCount: 0,
 
+		listApps: {},
+
 		links: {},
 		linkCount: 0,
 
@@ -47,7 +49,8 @@ let SAGE2_CodeSnippets = (function() {
 				type: self.functions[id].type,
 				src: self.functions[id].src,
 				desc: self.functions[id].desc,
-				locked: self.functions[id].editor !== null
+				locked: self.functions[id].editor !== null,
+				editor: self.functions[id].editor
 			};
 		});
 
@@ -106,6 +109,8 @@ let SAGE2_CodeSnippets = (function() {
 
 		console.log("Appending script text");
 		document.body.appendChild(script);
+
+		updateListApps();
 	}
 
 	function cloneSnippet(uniqueID, scriptID) {
@@ -116,6 +121,8 @@ let SAGE2_CodeSnippets = (function() {
 		let type = originalSnippet.type;
 
 		saveSnippet(uniqueID, code, desc, type, "new");
+
+		updateListApps();
 	}
 
 	function createScriptBody(uniqueID, code, desc, links, scriptID, type) {
@@ -219,6 +226,8 @@ let SAGE2_CodeSnippets = (function() {
 		// broadcast update of function states
 		let functionState = getFunctionInfo();
 		wsio.emit("snippetsStateUpdated", functionState);
+
+		updateListApps();
 	}
 
 	function notifySnippetClosed(scriptID) {
@@ -227,6 +236,8 @@ let SAGE2_CodeSnippets = (function() {
 		// broadcast update of function states
 		let functionState = getFunctionInfo();
 		wsio.emit("snippetsStateUpdated", functionState);
+
+		updateListApps();
 	}
 
 	function createDataApplication(snippetsID) {
@@ -251,8 +262,6 @@ let SAGE2_CodeSnippets = (function() {
 	}
 
 	function displayApplicationLoaded(id, app) {
-		console.log("Application load notification", id, app);
-
 		// call required function, update reference
 		if (app.application === "Snippets_Vis") {
 			let primedLink = self.drawings[id];
@@ -327,6 +336,21 @@ let SAGE2_CodeSnippets = (function() {
 
 	}
 
+	function registerSnippetListApp(id, app) {
+		console.log("SAGE2_CodeSnippets> Registered", id);
+
+		self.listApps[id] = app;
+		app.updateFunctionBank(getFunctionInfo());
+	}
+
+	function updateListApps() {
+		let functionInfo = getFunctionInfo();
+
+		for (let id of Object.keys(self.listApps)) {
+			self.listApps[id].updateFunctionBank(functionInfo);
+		}
+	}
+
 	// Link class used by SAGE2_CodeSnippets
 	const Link = (function() {
 		let curator = self; // alias enclosing scope's 'self'
@@ -364,7 +388,7 @@ let SAGE2_CodeSnippets = (function() {
 				if (curator.functions[id].type === "data") {
 					// call function (calculates new dataset and updates child)
 					let result = curator.functions[id].code(p.getDataset());
-					child.updateDataset(result);
+					c.updateDataset(result);
 				} else if (curator.functions[id].type === "draw") {
 					// call function (plots data on svg)
 					curator.functions[id].code(p.getDataset(), c.getElement());
@@ -399,9 +423,11 @@ let SAGE2_CodeSnippets = (function() {
 
 		createDataApplication,
 		createVisApplication,
+
+		displayApplicationLoaded,
 		executeCodeSnippet,
 
-		displayApplicationLoaded
+		registerSnippetListApp
 	};
 }());
 

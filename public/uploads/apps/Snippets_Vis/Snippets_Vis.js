@@ -38,6 +38,8 @@ var Snippets_Vis = SAGE2_App.extend({
 
 		console.log(data);
 
+		this.updateTitle("SAGE2 Code Snippets - " + this.state.snippetsID);
+
 		SAGE2_CodeSnippets.displayApplicationLoaded(this.state.snippetsID, this);
 	},
 
@@ -65,7 +67,9 @@ var Snippets_Vis = SAGE2_App.extend({
 
 		this.svg
 			.attr("width",   this.sage2_width)
-			.attr("height",  this.sage2_height)
+			.attr("height",  this.sage2_height);
+
+		self.parentLink.update(); // redraw
 	},
 
 	move: function(date) {

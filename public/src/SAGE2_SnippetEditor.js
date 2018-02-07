@@ -50,6 +50,18 @@ let SAGE2_SnippetEditor = (function () {
 			self.editor.setTheme("ace/theme/monokai");
 			self.editor.getSession().setMode("ace/mode/javascript");
 
+			self.editor.commands.addCommand({
+				name: "saveFile",
+				bindKey: {
+					win: "Ctrl-S",
+					mac: "Command-S",
+					sender: "editor|cli"
+				},
+				exec: function(env, args, request) {
+					saveScript();
+				}
+			});
+
 			// bind hide and close button
 			self.div.querySelector("#snippetEditorHide").onclick = hideEditor;
 			self.div.querySelector("#snippetEditorClose").onclick = closeScript;
@@ -67,12 +79,15 @@ let SAGE2_SnippetEditor = (function () {
 
 			// bind new script type buttons
 			self.div.querySelector("#newSnippetGen").onclick = function () {
+				unloadScript();
 				startNewScript("gen");
 			};
 			self.div.querySelector("#newSnippetData").onclick = function () {
+				unloadScript();
 				startNewScript("data");
 			};
 			self.div.querySelector("#newSnippetDraw").onclick = function () {
+				unloadScript();
 				startNewScript("draw");
 			};
 
@@ -101,6 +116,7 @@ let SAGE2_SnippetEditor = (function () {
 
 		function closeScript() {
 			unloadScript();
+			startNewScript(self.loadedSnippetType);
 			hideEditor();
 		}
 
@@ -136,8 +152,6 @@ let SAGE2_SnippetEditor = (function () {
 					scriptID: self.loadedSnippet
 				});
 			}
-
-			self.loadedSnippet = null;
 		}
 
 		function loadScript() {
@@ -195,11 +209,6 @@ let SAGE2_SnippetEditor = (function () {
 			// can load a different script now
 			self.loadButton.classList.remove("disabled");
 
-			// unload old script
-			if (self.loadedSnippet !== "new") {
-				unloadScript();
-			}
-
 			self.loadedSnippet = "new";
 			self.loadedSnippetType = type;
 
@@ -217,7 +226,6 @@ let SAGE2_SnippetEditor = (function () {
 			} else {
 				self.loadButton.classList.add("disabled");
 			}
-
 		}
 
 		function updateSnippetStates(scriptStates) {
