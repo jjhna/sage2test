@@ -29,6 +29,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	* @param data {Object} contains initialization values (id, width, height, ...)
 	*/
 	init: function(data) {
+
 		this.blockStreamInit(data);
 
 		this.firstLoad();
@@ -40,6 +41,11 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		// command variables
 		this.shouldSendCommands = false;
 		this.shouldReceiveCommands = false;
+
+		if (this.isOnlyDisplay() && this.isFileTypeSupportedByHtmlPlayer(this.state.video_url)) {
+			// console.log(this.state.video_url);
+			this.makeHtmlPlayer(this.state.video_url);
+		}
 	},
 
 	/**
@@ -223,6 +229,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.refresh(date);
 		this.playPauseBtn.state = (this.state.paused) ? 0 : 1;
 		this.getFullContextMenuAndUpdate();
+		this.htmlSetPlayPauseStatus();
 	},
 
 	/**
@@ -244,6 +251,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.state.muted = true;
 		}
 		this.muteBtn.state = (this.state.muted) ? 0 : 1;
+		this.htmlSetMuteStatus();
 	},
 
 	/**
@@ -266,6 +274,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		}
 		this.loopBtn.state = (this.state.looped) ? 0 : 1;
 		this.getFullContextMenuAndUpdate();
+		this.htmlSetLoopStatus();
 	},
 
 	stopVideo: function() {
@@ -290,6 +299,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		// must change play-pause button (should show 'play' icon)
 		this.playPauseBtn.state = 0;
 		this.getFullContextMenuAndUpdate();
+		this.htmlStop();
 	},
 
 
@@ -341,7 +351,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		entry.callback = "openInHtmlPlayer";
 		entry.parameters = {};
 		entries.push(entry);
-		
+
 		entry = {};
 		entry.description = "separator";
 		entries.push(entry);
@@ -674,6 +684,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 					switch (data.action) {
 						case "sliderLock":
 							if (this.state.paused === false) {
+								this.htmlSetPlayPauseStatus();
 								if (isMaster) {
 									wsio.emit('pauseVideo', {id: this.div.id});
 								}
@@ -684,6 +695,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 						case "sliderUpdate":
 							break;
 						case "sliderRelease":
+							this.htmlSetSeekTime();
 							if (isMaster) {
 								wsio.emit('updateVideoTime', {
 									id: this.div.id,
@@ -712,5 +724,102 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			}
 			this.refresh(date);
 		}
+	},
+
+
+
+
+
+	// Functions for html player
+	isOnlyDisplay() {
+		let totalDisplays = ui.json_cfg.layout.columns * ui.json_cfg.layout.rows;
+		let displayClientList = ui.json_cfg.displays;
+		let currentDisplay, w, h;
+		for (let i = 0; i < displayClientList.length; i++) {
+			currentDisplay = displayClientList[i];
+			w = currentDisplay.width;
+			h = currentDisplay.height;
+			// If w and h have values
+			if (w && h) {
+				if (totalDisplays == (w * h)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	},
+
+	isFileTypeSupportedByHtmlPlayer: function(file) {
+		// supportedTypes based on https://developer.mozilla.org/en-US/docs/Web/HTML/Supported_media_formats
+		let supportedTypes = ["webm", "ogg", "mp4", "mov"]; // flac
+		let ext = file.lastIndexOf(".");
+		if (ext > -1) {
+			ext = file.substring(ext + 1);
+			ext = ext.trim().toLowerCase();
+			for (let i = 0; i < supportedTypes.length; i++) {
+				if (ext === supportedTypes[i]) {
+					console.log("Extension " + file + " supported by html player");
+					return true;
+				}
+			}
+			console.log("Extension " + file + " didn't match any of the known player formats: " + supportedTypes);
+		} else {
+			console.log("No extension in: " + file);
+		}
+		return false;
+	},
+
+	makeHtmlPlayer: function(url) {
+		// Create elements
+		this.videoElement = document.createElement("video");
+		this.videoElement.style.width = "100%";
+		this.videoElement.style.height = "100%";
+		this.sourceElement = document.createElement("source");
+		this.sourceElement.src = url;
+		// Add Them
+		this.videoElement.appendChild(this.sourceElement);
+		this.element.appendChild(this.videoElement);
+
+		// Hide default
+		console.log("Hiding canvas. From " + this.canvas.style.display);
+		this.canvas.style.display = "none";
+		console.log(".. to " + this.canvas.style.display);
+		this.canvas.style.width = "1px";
+		this.canvas.style.height = "1px";
+
+		this.isUsingHtmlPlayer = true;
+	},
+
+	htmlSetPlayPauseStatus: function() {
+		this.htmlSetSeekTime();
+		if (this.state.paused === true) {
+			this.videoElement.pause();
+		} else {
+			this.videoElement.play();
+		}
+	},
+
+	htmlSetMuteStatus: function() {
+		this.videoElement.muted = this.state.muted;
+	},
+
+	htmlSetLoopStatus: function() {
+		if (this.state.looped === false) {
+			this.videoElement.removeAttribute("loop");
+		} else {
+			this.videoElement.setAttribute("loop", "");
+		}
+	},
+
+	htmlStop: function() {
+		// This pauses and sets html player to beginning
+		this.videoElement.pause();
+		this.videoElement.currentTime = 0;
+	},
+
+	htmlSetSeekTime: function() {
+		let time = parseInt((this.state.frame / this.state.framerate), 10);
+		console.log(time);
+		this.videoElement.currentTime = time;
 	}
 });
