@@ -53,6 +53,10 @@ var WhiteboardPalette = SAGE2_App.extend({
 		this.pointerColorMode = false;
 		this.svg = d3.select(this.element).append("svg").attr("id", "paletteSVG");
 		this.drawingSVG = d3.select("#drawingSVG");
+		// At 10000 it triggers partitions. Codewise it shouldn't. But it does.
+		// Fix is to add additional drawing mode check in server.js function pointerPressOnOpenSpace
+		this.drawingSVG.style("z-index", "10000");
+		this.drawingSVG.style("pointer-events", "none");
 		this.drawingSVG.style("visibility", "visible");
 		// Tutorial div over me
 		this.tutorial = d3.select("#main").append("div").style("visibility", "hidden");
@@ -345,6 +349,17 @@ var WhiteboardPalette = SAGE2_App.extend({
 		this.parent.createPalette();
 	},
 	takeScreenshot: function() {
+		try {
+			// Try do Electron screenshot to take a "normal" screenshot
+			if (__SAGE2__.browser.isElectron) {
+				wsio.emit("startWallScreenshot", {});
+				return;
+			}
+		} catch (e) {
+			// Most likely the above errored due to not being electron
+		}
+
+		// Getting here means was not able to use Electron screenshot
 		d3.select("#drawingSVG")
 			.attr("version", 1.1)
 			.attr("xmlns", "http://www.w3.org/2000/svg");
@@ -361,8 +376,6 @@ var WhiteboardPalette = SAGE2_App.extend({
 			wsio.emit("saveScreenshot", data);
 			d3.select("#screenshotCanvas").remove();
 		};
-
-
 	},
 	changeStroke: function() {
 		this.parent.strokeWidth += this.increment;
