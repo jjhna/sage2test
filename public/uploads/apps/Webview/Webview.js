@@ -25,6 +25,8 @@ var Webview = SAGE2_App.extend({
 			// Add it to the layer
 			this.layer.appendChild(this.pre);
 			this.console = false;
+			// Add certificate error handler, it needs electron reference
+			this.handleCertificateError();
 		} else {
 			// Create div into the DOM
 			this.SAGE2Init("div", data);
@@ -275,6 +277,33 @@ var Webview = SAGE2_App.extend({
 
 		// Set the URL and starts loading
 		this.element.src = view_url;
+	},
+
+	/**
+	 * Handles certificate errors from loading webpages.
+	 *
+	 * @method     handleCertificateError
+	 */
+	handleCertificateError: function() {
+		if (this.addedHandlerForCertificteError) {
+			return;
+		}
+		var content = this.element.getWebContents();
+		var _this = this;
+		if (!content) {
+			window.requestAnimationFrame(function() {
+				_this.handleCertificateError();
+			});
+		} else {
+			content.on('certificate-error', function(event) {
+				console.log('Webview>	certificate error:', event);
+				// Add the message to the console layer
+				_this.pre.innerHTML += 'Webview>	certificate error:' + event + '\n';
+				_this.element.executeJavaScript(
+					"document.body.innerHTML = '<h1>This webpage has invalid certificates and cannot be loaded</h1>'");
+			});
+			this.addedHandlerForCertificteError = true;
+		}
 	},
 
 	/**
