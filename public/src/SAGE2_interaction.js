@@ -190,6 +190,20 @@ const SAGE2_interaction = (function() {
 		*/
 		this.setInteractionId = function(id) {
 			this.uniqueID = id;
+
+			if (!viewOnlyMode) {
+				// Check if user email / name exists
+				var cookieUserName = getCookie('SAGE2_userName')  || '';
+				var cookieEmail    = getCookie('SAGE2_userEmail') || '';
+
+				wsio.emit('loginUser', {
+					name: cookieUserName,
+					email: cookieEmail,
+					SAGE2_ptrName: _userSettings.SAGE2_ptrName,
+					SAGE2_ptrColor: _userSettings.SAGE2_ptrColor,
+					init: true
+				});
+			}
 		};
 
 		/**
@@ -646,6 +660,16 @@ const SAGE2_interaction = (function() {
 		};
 
 		/**
+		* Screen sharing has to stop
+		*
+		* @method streamEnd
+		*/
+		this.streamEnd = function() {
+			this.broadcasting = false;
+			cancelIdleCallback(this.req);
+		};
+
+		/**
 		* Using requestIdleCallback from Chrome for screen capture
 		*
 		* @method stepMethod
@@ -1009,8 +1033,28 @@ const SAGE2_interaction = (function() {
 			addCookie('SAGE2_ptrColor', _userSettings.SAGE2_ptrColor);
 			if ($$("settings_dialog")) {
 				// this should be the same as in settingsdialog
+				// webix.ui({
+				// 	view: "colorpicker", id: "user_color", label: "Color", value: _userSettings.SAGE2_ptrColor
+				// }, $$("user_color"));
+
+				// not sure what that code does
 				webix.ui({
-					view: "colorpicker", id: "user_color", label: "Color", value: _userSettings.SAGE2_ptrColor
+					cols: [
+						{
+							view: "label",
+							align: "left",
+							label: "Color"
+						},
+						{
+							view: "colorboard",
+							id: "user_color",
+							label: "Color",
+							value: _userSettings.SAGE2_ptrColor,
+							width: 290, height: 100,
+							cols: 12, rows: 5,
+							minLightness: 0.3, maxLightness: 0.9
+						}
+					]
 				}, $$("user_color"));
 			}
 		};
@@ -1256,17 +1300,39 @@ const SAGE2_interaction = (function() {
 							label: "Name",
 							value: username
 						},
+
+						// {
+						// 	// this should be the same as in changeSage2PointerColorMethod
+						// 	view: "colorpicker",
+						// 	id: "user_color",
+						// 	label: "Color",
+						// 	value: color
+						// },
+
+						// Alternate version with just a colorboard
 						{
-							// this should be the same as in changeSage2PointerColorMethod
-							view: "colorpicker",
-							id: "user_color",
-							label: "Color",
-							value: color
+							cols: [
+								{
+									view: "label",
+									align: "left",
+									label: "Color"
+								},
+								{
+									view: "colorboard",
+									id: "user_color",
+									label: "Color",
+									value: color,
+									width: 295, height: 100,
+									cols: 12, rows: 5,
+									minLightness: 0.3, maxLightness: 0.9
+								}
+							]
 						},
-						loginElement,
-						{
-							view: "button", id: "user_login"
-						}
+
+						loginElement
+						// {
+						// 	view: "button", id: "user_login"
+						// }
 					],
 					elementsConfig: {
 						// labelPosition: "top"
@@ -1276,7 +1342,7 @@ const SAGE2_interaction = (function() {
 
 			switch (type) {
 				case 'init':
-					webixOptions.head = "Set your pointer name and color";
+					webixOptions.head = "Enter your name or nickname and choose a pointer color";
 					break;
 				case 'main':
 					// also show screen resolution options when called via toolbar
@@ -1286,14 +1352,14 @@ const SAGE2_interaction = (function() {
 
 					elements.unshift(
 						{
-							view: "label", label: "Pointer", align: "center"
+							view: "label", label: "Enter your name or nickname and choose a pointer color", align: "center"
 						},
 						{
 							type: "space",
 							rows: userElements
 						},
 						{
-							view: "label", label: "Screen sharing", align: "center"
+							view: "label", label: "Screen sharing settings", align: "center"
 						},
 						{
 							type: "space",
@@ -1471,20 +1537,6 @@ const SAGE2_interaction = (function() {
 			_userSettings.SAGE2_ptrColor === null) {
 			_userSettings.SAGE2_ptrColor = randomHexColor();
 			addCookie('SAGE2_ptrColor', _userSettings.SAGE2_ptrColor);
-		}
-
-		// Check if user email / name exists
-		var cookieUserName = getCookie('SAGE2_userName') || '';
-		var cookieEmail = getCookie('SAGE2_userEmail') || '';
-
-		if (!viewOnlyMode) {
-			wsio.emit('loginUser', {
-				name: cookieUserName,
-				email: cookieEmail,
-				SAGE2_ptrName: _userSettings.SAGE2_ptrName,
-				SAGE2_ptrColor: _userSettings.SAGE2_ptrColor,
-				init: true
-			});
 		}
 
 		this.wsio.on('loginStateChanged', handleLoginStateChange.bind(this));

@@ -128,6 +128,12 @@ var Webview = SAGE2_App.extend({
 			this.contentType = "unity";
 		} else if (view_url.indexOf('docs.google.com/presentation') >= 0) {
 			this.contentType = "google_slides";
+		} else if (view_url.indexOf('appear.in') >= 0) {
+			if (!view_url.endsWith('?widescreen')) {
+				// to enable non-cropped mode, in widescreen
+				view_url += '?widescreen';
+			}
+			this.contentType = "appearin";
 		}
 
 		// Store the zoom level, when in desktop emulation
@@ -157,7 +163,8 @@ var Webview = SAGE2_App.extend({
 		});
 
 		// done loading
-		this.element.addEventListener("did-finish-load", function() {
+		// this.element.addEventListener("did-finish-load", function() {
+		this.element.addEventListener("did-stop-loading", function() {
 			// code injection to support key translation
 			_this.codeInject();
 			// update the context menu with the current URL
