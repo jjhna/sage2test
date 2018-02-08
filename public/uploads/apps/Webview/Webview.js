@@ -136,6 +136,16 @@ var Webview = SAGE2_App.extend({
 				view_url += '?widescreen';
 			}
 			this.contentType = "appearin";
+		} else if (view_url.endsWith('.pptx')) {
+			// try to handle Office file. Starting with PPTX
+			let localurl = view_url;
+			view_url = "https://view.officeapps.live.com/op/embed.aspx?src=";
+			// alternativ using Google docs
+			// https://docs.google.com/viewer?url= URL &embedded=true&chrome=false
+			let host = this.config.host + ':' + this.config.port + '/';
+			view_url += encodeURIComponent('http://' + host + localurl);
+			view_url += "&wdAr=1.7777777777777777";
+			this.contentType = "msoffice";
 		}
 
 		// Store the zoom level, when in desktop emulation
