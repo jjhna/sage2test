@@ -584,7 +584,17 @@ function FileManager(wsio, mydiv, uniqueID) {
 		borderless: true,
 		rows: [{
 			view: "toolbar",
-			cols: [topmenu, advancedToolbar]
+			cols: [
+				topmenu,
+				// Label with hostnamae in middle of menubar
+				{
+					view: "label",
+					id: "host_label",
+					label: "",
+					align: "center"
+				},
+				advancedToolbar
+			]
 		}]
 	});
 
@@ -2039,5 +2049,13 @@ function FileManager(wsio, mydiv, uniqueID) {
 			submenu: displayList
 		});
 
+		// Set the hostname in the label in the menubar
+		let hostLabel = "";
+		if (this.json_cfg.name) {
+			hostLabel = this.json_cfg.name + ' (' + this.json_cfg.host + ')';
+		} else {
+			hostLabel = this.json_cfg.host;
+		}
+		$$('host_label').setValue(hostLabel);
 	};
 }
