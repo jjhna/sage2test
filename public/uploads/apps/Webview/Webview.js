@@ -276,7 +276,7 @@ var Webview = SAGE2_App.extend({
 		});
 
 		// Set the URL and starts loading
-		this.element.src = view_url;
+		this.changeURL(view_url, false);
 	},
 
 	/**
@@ -389,7 +389,7 @@ var Webview = SAGE2_App.extend({
 
 	changeURL: function(newlocation, remoteSync) {
 		// trigger the change
-		this.element.src = newlocation;
+		this.element.src = this.addSessionAsUrlParamIfConnectingToSelf(newlocation);
 		// save the url
 		this.state.url   = newlocation;
 		this.SAGE2Sync(remoteSync);
@@ -416,6 +416,40 @@ var Webview = SAGE2_App.extend({
 				});
 			}
 		}
+	},
+
+	addSessionAsUrlParamIfConnectingToSelf: function(newlocation) {
+		var modUrl = new URL(newlocation);
+		// If there is a session
+		if (this.sessionHash === undefined) {
+			this.sessionHash = getCookie("session");
+		}
+		if (this.sessionHash) {
+			// Combine the hostnames/IPs listed in the configuration file
+			var allHostNames = [].concat(
+				ui.json_cfg.alternate_hosts,
+				ui.json_cfg.host);
+			var connectingToSageHostedFile = true;
+			// Check if newlocation has any of the hostnames
+			for (let i = 0; i < allHostNames.length; i++) {
+				if (allHostNames[i].trim().length > 1) {
+					if (newlocation.includes(allHostNames[i])) {
+						connectingToSageHostedFile = true;
+						break;
+					}
+				}
+			}
+			// If newlocation contains a hostname, append hash as url param
+			if (connectingToSageHostedFile) {
+				if (modUrl.search.length > 0) {
+					// if there are already url parameters
+					modUrl.search += "&hash=" + this.sessionHash;
+				} else {
+					modUrl.search += "hash=" + this.sessionHash;
+				}
+			}
+		}
+		return modUrl.href;
 	},
 
 	resize: function(date) {
