@@ -568,6 +568,10 @@ AppLoader.prototype.loadAppFromFileFromRegistry = function(file, mime_type, aUrl
 	// Find the app!!
 	var appName = registry.getDefaultApp(file);
 	var localPath = getSAGE2Path(appName);
+	// not pretty, should be better (luc)
+	if (appName === 'Webview') {
+		localPath = getSAGE2Path('/uploads/apps/Webview');
+	}
 	var instructionsFile = path.join(localPath, "instructions.json");
 
 	var _this = this;
