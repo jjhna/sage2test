@@ -1974,6 +1974,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 
 	// Server sends the wall configuration
 	this.serverConfiguration = function(data) {
+		var _this = this;
 		// Add the media folders to the tree
 		var f, folder;
 		this.json_cfg  = data;
@@ -2052,10 +2053,24 @@ function FileManager(wsio, mydiv, uniqueID) {
 		// Set the hostname in the label in the menubar
 		let hostLabel = "";
 		if (this.json_cfg.name) {
-			hostLabel = this.json_cfg.name + ' (' + this.json_cfg.host + ')';
+			hostLabel = this.json_cfg.name;
+			this.showHostname = true;
 		} else {
 			hostLabel = this.json_cfg.host;
+			this.showHostname = false;
 		}
 		$$('host_label').setValue(hostLabel);
+		// Click on the label to flip wallname and hostname display
+		$$('host_label').attachEvent("onItemClick", function(id, evt) {
+			if (_this.showHostname) {
+				hostLabel = _this.json_cfg.host;
+				$$('host_label').setValue(hostLabel);
+				_this.showHostname = false;
+			} else {
+				hostLabel = _this.json_cfg.name || '-';
+				$$('host_label').setValue(hostLabel);
+				_this.showHostname = true;
+			}
+		});
 	};
 }
