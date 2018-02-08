@@ -1138,6 +1138,11 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 			if (appData.compressed === true) {
 				var name = path.basename(appData.name, path.extname(appData.name));
 				var dir  = registry.getDirectory(appData.type);
+				// Temporary fix of directory association for zipped applications
+				// Currently there is no directory associated. Removed due to web app zips?
+				if (appData.type === "application/zip" && (!dir || dir.length === 0)) {
+					dir = "apps";
+				}
 				var futurePath = this.publicDir + dir + "/" + name;
 				var localPath  = getSAGE2Path(futurePath);
 				var aUrl = getSAGE2URL(localPath);
