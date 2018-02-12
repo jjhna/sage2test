@@ -23,6 +23,8 @@ var sprint  = require('sprint');
 var sageutils = require('../src/node-utils');
 
 var os = require('os');
+var fs = require('fs');
+var path = require('path');
 
 /**
   * @class PerformanceManager
@@ -113,6 +115,10 @@ function PerformanceManager() {
 	// default to 2 second - 'normal'
 	this.samplingInterval  = 2;
 
+	// Write to file periodically
+
+	this.saveInterval = 30; // In seconds
+
 	// Loop handle is used to clear the interval and restart when sampling rate is changed
 	// samplingInterval in seconds
 	this.loopHandle = setInterval(this.collectMetrics.bind(this),
@@ -126,6 +132,56 @@ PerformanceManager.prototype.initializeConfiguration = function(cfg) {
 };
 
 
+
+PerformanceManager.prototype.writeToFile = function() {
+	var saveEndIdx = this.performanceMetrics.history.cpuLoad.length - 1;
+	var numberOfEntries = parseInt(this.saveInterval / this.samplingInterval); // In 30 seconds
+	var saveStartIdx = saveEndIdx + 1 - numberOfEntries;
+	var saveData = {
+		clients: this.performanceMetrics.history.clients.slice(saveStartIdx, saveEndIdx),
+		server: {
+			cpuLoad: this.performanceMetrics.history.cpuLoad.slice(saveStartIdx, saveEndIdx),
+			serverLoad: this.performanceMetrics.history.serverLoad.slice(saveStartIdx, saveEndIdx),
+			memUsage: this.performanceMetrics.history.memUsage.slice(saveStartIdx, saveEndIdx),
+			serverTraffic: this.performanceMetrics.history.serverTraffic.slice(saveStartIdx, saveEndIdx),
+			network: this.performanceMetrics.history.network.slice(saveStartIdx, saveEndIdx)
+		}
+	};
+
+	var filePath = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "performance");
+	if (!fs.existsSync(filePath)) {
+		fs.mkdirSync(filePath);
+	}
+	filePath = path.join(filePath, this.saveDataFileName);
+
+	fs.appendFile(filePath, JSON.stringify(saveData) + "\n", (err) => {
+		if (err) {
+			sageutils.log('Perf', err);
+		}
+	});
+};
+
+PerformanceManager.prototype.toggleDataSaveToFile = function() {
+	if (this.saveDataLoopHandle !== null && this.saveDataLoopHandle !== undefined) {
+		clearInterval(this.saveDataLoopHandle);
+		clearInterval(this.newFileNameLoopHandle);
+		this.saveDataLoopHandle = null;
+		sageutils.log('Perf', 'Stopped saving performance data to file');
+	} else {
+		var date = new Date();
+		this.saveDataFileName = date.getDate() + "_" + (date.getMonth() + 1) + "_"
+			+ date.getFullYear() + "_" + date.getHours() + "_" + date.getMinutes() + ".txt";
+		this.saveDataLoopHandle = setInterval(this.writeToFile.bind(this),
+			this.saveInterval * 1000);
+		sageutils.log('Perf', 'Saving performance data to file');
+		//New file to save data to every hour
+		this.newFileNameLoopHandle = setInterval(function() {
+			var date = new Date();
+			this.saveDataFileName = date.getDate() + "_" + (date.getMonth() + 1) + "_"
+			+ date.getFullYear() + "_" + date.getHours() + "_" + date.getMinutes() + ".txt";
+		}.bind(this), 60 * 60 * 1000);
+	}
+};
 
 /**
  * Adds data for a display client.
@@ -575,16 +631,15 @@ PerformanceManager.prototype.saveDisplayPerformanceData = function(id, idx, data
 		idle: data.cpuLoad.raw_currentload_idle
 	};
 	var clientSystemMem = {
-		total:  data.mem.total,  // total memory in bytes
-		used:   data.mem.used,   // incl. buffers/cache
-		free:   data.mem.free,
-		active: data.mem.active  // used actively (excl. buffers/cache)
+		total:  data.mem.total * 1024,  // total memory in bytes
+		free:   data.mem.free * 1024
 	};
+
+	clientSystemMem.used = clientSystemMem.total - clientSystemMem.free;
 
 	var clientProcessLoad = {
 		cpuPercent: data.processLoad.cpuPercent,
 		memPercent: data.processLoad.memPercent,
-		memVirtual: data.processLoad.memVirtual * 1024,
 		memResidentSet: data.processLoad.memResidentSet * 1024
 	};
 
@@ -1040,6 +1095,16 @@ function checkForNegatives(obj) {
 	return false;
 }
 
+PerformanceManager.prototype.sendHistoryFileNames = function(wsio) {
+	var filePath = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "performance");
+	fs.readdir(filePath, function(err, files) {
+		if (err) {
+			sageutils.log('performance', err);
+		} else {
+			wsio.emit('performanceDataFilenames', {path: filePath, files: files});
+		}
+	});
+};
 
 
 // export the PerformanceManager class
