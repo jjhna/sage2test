@@ -17,6 +17,7 @@ var Snippets_List = SAGE2_App.extend({
 		this.element.id = "div_" + data.id;
 		// Set the background to black
 		this.element.style.backgroundColor = "#525252";
+		// this.element.style.padding = "5px 0";
 		this.element.style.fontFamily = 'monospace';
 		this.element.style.whiteSpace = 'pre';
 

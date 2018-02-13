@@ -66,6 +66,10 @@ var Snippets_Vis = SAGE2_App.extend({
 		return this.svg.node();
 	},
 
+	displayError: function(err) {
+		console.log(err);
+	},
+
 	setParentLink: function (link, date) {
 		// save the parent of the function
 		this.parentLink = link;

@@ -427,11 +427,19 @@ let SAGE2_CodeSnippets = (function() {
 
 				if (curator.functions[id].type === "data") {
 					// call function (calculates new dataset and updates child)
-					let result = curator.functions[id].code(p.getDataset());
-					c.updateDataset(result);
+					try {
+						let result = curator.functions[id].code(p.getDataset());
+						c.updateDataset(result);
+					} catch (err) {
+						c.displayError(err);
+					}
 				} else if (curator.functions[id].type === "draw") {
 					// call function (plots data on svg)
-					curator.functions[id].code(p.getDataset(), c.getElement());
+					try {
+						curator.functions[id].code(p.getDataset(), c.getElement());
+					} catch (err) {
+						c.displayError(err);
+					}
 				} else if (curator.functions[id].type === "gen") {
 					// call function (this returns a promise)
 
@@ -441,7 +449,7 @@ let SAGE2_CodeSnippets = (function() {
 							c.updateDataset(data);
 						})
 						.catch(err => {
-							throw err;
+							c.displayError(err);
 						});
 				}
 			}
