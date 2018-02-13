@@ -19,7 +19,7 @@
 /* global createWidgetToAppConnector, getTextFromTextInputWidget */
 /* global SAGE2_Partition, SAGE2_CodeSnippets, require */
 /* global SAGE2RemoteSitePointer */
-
+/* global process */
 
 /* global require */
 
@@ -182,9 +182,15 @@ function setupFocusHandlers() {
 				wsio.emit('displayHardware', message);
 			}
 		});
-		// Receive hardware info from the main process (electron node)
+		// Receive performance info from the main process (electron node)
 		require('electron').ipcRenderer.on('performanceData', function(event, message) {
 			if (wsio !== undefined) {
+				// Add renderer process load info
+				var procMem = process.getProcessMemoryInfo();
+				var procCPU = process.getCPUUsage();
+				message.processLoad.memResidentSet += procMem.workingSetSize;
+				message.processLoad.memPercent += (procMem.workingSetSize / message.mem.total) * 100;
+				message.processLoad.cpuPercent += procCPU.percentCPUUsage;
 				// and send it to the server
 				wsio.emit('performanceData', message);
 			}

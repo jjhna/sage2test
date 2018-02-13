@@ -223,10 +223,10 @@ function setupListeners(wsio) {
 
 	wsio.on('addDisplayHardwareInformation', function(data) {
 		if (Array.isArray(data) === true) {
-			clients.hardware = data;
+			clients.hardware = [...new Set(data)];
 		} else {
-			console.log(data);
 			clients.hardware.push(data);
+			clients.hardware = [...new Set(clients.hardware)];
 		}
 		showDisplayHardwareInformation();
 	});
