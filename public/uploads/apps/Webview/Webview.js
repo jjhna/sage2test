@@ -431,7 +431,7 @@ var Webview = SAGE2_App.extend({
 	addSessionAsUrlParamIfConnectingToSelf: function(newlocation) {
 		// Added catch to prevent crash when addressing local files
 		var modUrl;
-		try{
+		try {
 			modUrl = new URL(newlocation);
 		} catch (e) {
 			return newlocation;
