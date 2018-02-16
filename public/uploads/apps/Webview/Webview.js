@@ -429,7 +429,13 @@ var Webview = SAGE2_App.extend({
 	},
 
 	addSessionAsUrlParamIfConnectingToSelf: function(newlocation) {
-		var modUrl = new URL(newlocation);
+		// Added catch to prevent crash when addressing local files
+		var modUrl;
+		try{
+			modUrl = new URL(newlocation);
+		} catch (e) {
+			return newlocation;
+		}
 		// If there is a session
 		if (this.sessionHash === undefined) {
 			this.sessionHash = getCookie("session");
