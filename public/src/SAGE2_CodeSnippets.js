@@ -164,7 +164,7 @@ let SAGE2_CodeSnippets = (function() {
 				desc: "${desc}",
 				editor: "${uniqueID}",
 				links: JSON.parse(\`${links ? JSON.stringify(links) : []}\`),
-				text: \`${code.replace(/`/gi, "\\`")}\`,
+				text: \`${code.replace(/`/gi, "\\`").replace(/\$/gi, "\\$")}\`,
 				code: `;
 
 		let endBlock = `
@@ -302,6 +302,29 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	function getAppAncestry(app) {
+		let idAncestry = [];
+
+		let currentApp = app;
+
+		while (currentApp && currentApp.parentLink) {
+			let link = currentApp.parentLink;
+
+			idAncestry.unshift(link.getSnippetID());
+			currentApp = link.getParent();
+		}
+
+		let ancestry = idAncestry.map(id => {
+			return {
+				desc: self.functions[id].desc,
+				type: self.functions[id].type,
+				id
+			};
+		});
+
+		return ancestry;
+	}
+
 	function executeCodeSnippet(snippetID, parentID) {
 		let snippet = self.functions[snippetID];
 
@@ -391,6 +414,32 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	function outputAppClosed(app) {
+		console.log("App Closed", app);
+		for (let linkID of Object.keys(self.links)) {
+			let parent = self.links[linkID].getParent();
+			let child = self.links[linkID].getChild();
+			let func = self.functions[self.links[linkID].getSnippetID()];
+
+			if (child === app || parent === app) {
+				if (parent === app) {
+					child.removeParentLink();
+				} else if (parent !== null) {
+					parent.removeChildLink(self.links[linkID]);
+				}
+
+				console.log("Removing Link:", self.links[linkID]);
+
+				// remove ID from function's links
+				let funcLinkIndex = func.links.indexOf(linkID);
+				func.links.splice(funcLinkIndex, 1);
+
+				delete self.links[linkID];
+			}
+
+		}
+	}
+
 	// Link class used by SAGE2_CodeSnippets
 	const Link = (function() {
 		let curator = self; // alias enclosing scope's 'self'
@@ -473,6 +522,8 @@ let SAGE2_CodeSnippets = (function() {
 		createVisApplication,
 
 		displayApplicationLoaded,
+		outputAppClosed,
+		getAppAncestry,
 		executeCodeSnippet,
 
 		registerSnippetListApp,
