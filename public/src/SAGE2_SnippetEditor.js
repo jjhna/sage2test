@@ -126,7 +126,7 @@ let SAGE2_SnippetEditor = (function () {
 			wsio.emit('editorSaveSnippet', {
 				text: self.editor.getValue(),
 				type: self.loadedSnippetType,
-				desc: self.descInput.value ? self.descInput.value : "untitled " + self.loadedSnippetType,
+				desc: self.descInput.value ? self.descInput.value : self.loadedSnippetType + " snippet",
 				scriptID: self.loadedSnippet
 			});
 		}

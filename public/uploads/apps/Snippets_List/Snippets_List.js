@@ -78,6 +78,40 @@ var Snippets_List = SAGE2_App.extend({
 		SAGE2_CodeSnippets.registerSnippetListApp(data.id, this);
 	},
 
+	createBlockPath: function(type, width, offset) {
+		let mult = [width, 30];
+
+		let points = {
+			gen: [
+				[0, 0],
+				[0.925, 0],
+				[1, 0.5],
+				[0.925, 1],
+				[0, 1]
+			],
+			data: [
+				[0, 0],
+				[0.925, 0],
+				[1, 0.5],
+				[0.925, 1],
+				[0, 1],
+				[0.075, 0.5]
+			],
+			draw: [
+				[0, 0],
+				[1, 0],
+				[1, 1],
+				[0, 1],
+				[0.075, 0.5]
+			]
+		};
+
+		return "M " + points[type].map(point => 
+			point.map((coord, i) => 
+				(coord * mult[i]) + offset[i]
+			).join(" ")).join(" L ") + " Z";
+	},
+
 	updateFunctionBank: function(data, date) {
 		console.log("Snippets_List> Update Functions", data);
 
@@ -99,6 +133,8 @@ var Snippets_List = SAGE2_App.extend({
 			let col = this.cols[type];
 			let funcs = Object.values(data).filter(f => f.type === type);
 
+			let colWidth = that.sage2_width / 3;
+
 			col.selectAll(".snippetFuncBlock").remove();
 
 			col.selectAll(".snippetFuncBlock")
@@ -110,24 +146,32 @@ var Snippets_List = SAGE2_App.extend({
 
 					group.append("path")
 						.attr("class", "snippetPath")
-						.attr("d", that.createBlockPath(type, that.sage2_width / 3 - 10, [5, i * 38 + 8]))
+						.attr("d", that.createBlockPath(type, colWidth - 10, [5, i * 38 + 8]))
 						.style("fill", d.locked ? "#525252" : lightColor[d.type])
 						.style("stroke-width", 2)
-						.style("stroke", function() {
-							if (d.selectors.length) {
-								return d.selectors[d.selectors.length-1].color;
-							} else {
-								return d.locked ? lightColor[d.type] : darkColor[d.type];
-							} 
-						})
+						.style("stroke", () => d.locked ? lightColor[d.type] : darkColor[d.type])
 						.on("click", function(e) {
 							SAGE2_CodeSnippets.notifyUserListClick(that.lastUserClick, d);
 							that.lastUserClick = null;
 						});
 
+					let selectorWidth = (((colWidth - 10) * 0.8) - (d.selectors.length + 1) * 3) / d.selectors.length;
+
+					group.selectAll(".snippetSelectors")
+						.data(d.selectors)
+					.enter().append("line")
+						.attr("class", "snippetSelectors")
+						.attr("y1", (1 + i) * 38 - 4)
+						.attr("y2", (1 + i) * 38 - 4)
+						.attr("x1", (d, i) => colWidth/10 + ((selectorWidth + 3) * i) + 13)
+						.attr("x2", (d, i) => colWidth/10 + ((selectorWidth + 3) * i) + selectorWidth - 3)
+						.style("stroke-width", 4)
+						.style("stroke-linecap", "round")
+						.style("stroke", d => d.color);
+
 					group.append("text")
 						.attr("class", "snippetName")
-						.attr("x", that.sage2_width / 6)
+						.attr("x", colWidth/2)
 						.attr("y", (1 + i) * 38 - 9)
 						.style("text-anchor", "middle")
 						.style("font-weight", "bold")
@@ -139,106 +183,6 @@ var Snippets_List = SAGE2_App.extend({
 				});
 		}
 
-		// for (let func of Object.values(data)) {
-
-		// 	let fElem = document.createElement("div")
-		// 	fElem.style.width = "90%";
-		// 	fElem.style.padding = "10px";
-		// 	fElem.style.margin = "5px";
-			
-		// 	fElem.style.border = "3px solid " + (func.locked ? lightColor[func.type] : darkColor[func.type]);
-		// 	fElem.style.background = func.locked ? "#525252" : lightColor[func.type];
-		// 	fElem.style.borderRadius = "5px";
-			
-		// 	fElem.style.color = func.locked ? lightColor[func.type] : "black";
-		// 	fElem.style.wordWrap = "break-word";
-		// 	fElem.style.fontWeight = "bold";
-		// 	fElem.style.overflow = "hidden";
-			
-		// 	fElem.innerHTML = `cS-${func.id.split("-")[1]} - ${func.type} - ${func.desc}`;
-
-		// 	let that = this;
-
-		// 	fElem.onclick = function(e) {
-		// 		console.log("Function clicked", func, e);
-		// 		console.log(that.lastUserClick);
-
-		// 		SAGE2_CodeSnippets.notifyUserListClick(that.lastUserClick, func);
-		// 		that.lastUserClick = null;
-		// 	}
-
-		// 	// create the indicator for selector users
-		// 	if (func.selectors) {
-		// 		// create element to wrap around user tags
-		// 		let selectorWrapper = document.createElement("div");
-		// 		selectorWrapper.style.margin = "5px";
-
-		// 		console.log(func);
-		// 		for (let user of func.selectors) {
-		// 			// create colored block to wrap the nametag
-		// 			let userBg = document.createElement("div");
-		// 			userBg.style.background = user.color;
-		// 			userBg.style.borderRadius = "7px";
-		// 			userBg.style.padding = "7px";
-		// 			userBg.style.display = "inline-block";
-		// 			userBg.style.border = "2px solid #333";
-
-		// 			// create name tag
-		// 			let userTag = document.createElement("div");
-
-		// 			userTag.style.padding = "3px 6px";
-		// 			userTag.style.borderRadius = "12px";
-		// 			userTag.style.background = "#333";
-		// 			userTag.style.display = "inline-block";
-		// 			userTag.style.color = "white";
-					
-		// 			userTag.innerHTML = user.label;
-
-
-		// 			userBg.appendChild(userTag);
-		// 			selectorWrapper.appendChild(userBg);
-		// 		}
-
-		// 		fElem.appendChild(selectorWrapper);
-		// 	}
-
-
-		// 	this.cols[func.type].appendChild(fElem);
-		// }
-
-		this.createBlockPath = function(type, width, offset) {
-			let mult = [width, 30];
-
-			let points = {
-				gen: [
-					[0, 0],
-					[0.925, 0],
-					[1, 0.5],
-					[0.925, 1],
-					[0, 1]
-				],
-				data: [
-					[0, 0],
-					[0.925, 0],
-					[1, 0.5],
-					[0.925, 1],
-					[0, 1],
-					[0.075, 0.5]
-				],
-				draw: [
-					[0, 0],
-					[1, 0],
-					[1, 1],
-					[0, 1],
-					[0.075, 0.5]
-				]
-			};
-
-			return "M " + points[type].map(point => 
-				point.map((coord, i) => 
-					(coord * mult[i]) + offset[i]
-				).join(" ")).join(" L ") + " Z";
-		}
 	},
 
 	load: function(date) {
@@ -262,15 +206,24 @@ var Snippets_List = SAGE2_App.extend({
       .attr("width", this.sage2_width);
 
 		this.svg.selectAll(".snippetTypeColGroup")
-			.attr("transform", (d, i) => `translate(${ i * colWidth}, 0)`)
-			.each(function(d) {
+			.attr("transform", (d, i) => `translate(${i * colWidth}, 0)`)
+			.each(function(type) {
 
 				d3.select(this).selectAll(".snippetFuncBlock")
-					.each(function(d2, i) {
+					.each(function(func, i) {
 
 						d3.select(this).selectAll(".snippetPath")
-							.attr("d", that.createBlockPath(d, colWidth - 10, [5, i * 38 + 8]))
+							.attr("d", that.createBlockPath(type, colWidth - 10, [5, i * 38 + 8]))
 						
+						let selectorWidth = (((colWidth - 10) * 0.8) - (func.selectors.length + 1) * 3) / func.selectors.length;
+
+						d3.select(this).selectAll(".snippetSelectors")
+							.attr("x1", (d, i) => colWidth/10 + ((selectorWidth + 3) * i) + 13)
+							.attr("x2", (d, i) => colWidth/10 + ((selectorWidth + 3) * i) + selectorWidth - 3)
+							.style("stroke-width", 4)
+							.style("stroke-linecap", "round")
+							.style("stroke", d => d.color);
+
 						d3.select(this).selectAll(".snippetName")
 							.attr("x", colWidth / 2)
 					});
