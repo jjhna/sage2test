@@ -5715,6 +5715,7 @@ function processInputCommand(line) {
 			sageutils.log('Console', 'update\t\trun a git update');
 			sageutils.log('Console', 'performance\tshow performance information');
 			sageutils.log('Console', 'perfsampling\tset performance metric sampling rate');
+			sageutils.log('Console', 'saveperfdata\tsave performance data to file');
 			sageutils.log('Console', 'hardware\tget an summary of the hardware running the server');
 			sageutils.log('Console', 'update\t\trun a git update');
 			sageutils.log('Console', 'version\tprint SAGE2 version');
@@ -5902,6 +5903,9 @@ function processInputCommand(line) {
 			break;
 		case 'hardware':
 			performanceManager.printServerHardware();
+			break;
+		case 'saveperfdata':
+			performanceManager.toggleDataSaveToFile();
 			break;
 		case 'exit':
 		case 'quit':

@@ -147,6 +147,10 @@ PerformanceManager.prototype.writeToFile = function() {
 			network: this.performanceMetrics.history.network.slice(saveStartIdx, saveEndIdx)
 		}
 	};
+	if (this.newDataFile === true) {
+		saveData.server.hardware = this.performanceMetrics.staticInformation;
+		this.newDataFile = false;
+	}
 
 	var filePath = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "performance");
 	if (!fs.existsSync(filePath)) {
@@ -168,20 +172,29 @@ PerformanceManager.prototype.toggleDataSaveToFile = function() {
 		this.saveDataLoopHandle = null;
 		sageutils.log('Perf', 'Stopped saving performance data to file');
 	} else {
-		var date = new Date();
-		this.saveDataFileName = date.getDate() + "_" + (date.getMonth() + 1) + "_"
-			+ date.getFullYear() + "_" + date.getHours() + "_" + date.getMinutes() + ".txt";
+		this.changeFileName();
+		sageutils.log('Perf', 'Saving performance data to file');
 		this.saveDataLoopHandle = setInterval(this.writeToFile.bind(this),
 			this.saveInterval * 1000);
-		sageutils.log('Perf', 'Saving performance data to file');
-		//New file to save data to every hour
-		this.newFileNameLoopHandle = setInterval(function() {
-			var date = new Date();
-			this.saveDataFileName = date.getDate() + "_" + (date.getMonth() + 1) + "_"
-			+ date.getFullYear() + "_" + date.getHours() + "_" + date.getMinutes() + ".txt";
-		}.bind(this), 60 * 60 * 1000);
+		setTimeout(function() {
+			this.changeFileName();
+			//New file to save data to every hour
+			this.newFileNameLoopHandle = setInterval(this.changeFileName.bind(this), 60 * 60 * 1000);	
+		}.bind(this), getTimeTillNextHour());
+		
 	}
 };
+
+PerformanceManager.prototype.changeFileName = function() {
+	var date = new Date();
+	this.saveDataFileName = (date.getMonth() + 1) + "_" + date.getDate() + "_"
+	+ date.getFullYear() + "_" + date.getHours() + ".txt";
+	this.newDataFile = true;
+}
+
+function getTimeTillNextHour() {
+    return 3600000 - new Date().getTime() % 3600000;
+}
 
 /**
  * Adds data for a display client.
