@@ -379,33 +379,3 @@ body {
 	border-width: 13px;
 	margin-top: -13px;
 }
-
-/* .snippetsExecutionOrderBlock:not(:last-child) {
-	padding: 5px 3px 5px 5px;
-}
-
-.snippetsExecutionOrderBlock:not(:last-child)::after {
-	display: block;
-	content: ' ';
-	float: right;
-	width: 0;
-	height: 0;
-	border-color: transparent;
-	border-style: solid;
-	border-width: 5px 0 5px 5px;
-	border-left-color: black;
-	margin: 1px 5px;
-}
-
-.snippetsExecutionOrderBlock:last-child::after {
-	display: block;
-	content: ' ';
-	float: right;
-	width: 0;
-	height: 0;
-	border-color: transparent;
-	border-style: solid;
-	border-width: 5px 5px 0 5px;
-	border-top-color: black;
-	margin: 4px 5px 0;
-} */

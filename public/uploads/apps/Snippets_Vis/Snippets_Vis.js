@@ -27,6 +27,7 @@ var Snippets_Vis = SAGE2_App.extend({
 			.style("box-sizing", "border-box");
 
 		this.parentLink = null;
+		this.childLinks = [];
 
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
@@ -141,9 +142,17 @@ var Snippets_Vis = SAGE2_App.extend({
 			block.style.border = "2px solid " + darkColor[ancestor.type];
 			block.style.background = lightColor[ancestor.type];
 			
-			block.innerHTML = ancestor.desc;
+			block.innerHTML = `cS-${ancestor.id.split("-")[1]}: ${ancestor.desc}`;
 
 			this.ancestry.appendChild(block);
+		}
+	},
+
+	updateAncestorTree: function() {
+		this.createAncestorList();
+
+		for (let link of this.childLinks) {
+			link.getChild().updateAncestorTree();
 		}
 	},
 

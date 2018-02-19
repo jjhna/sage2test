@@ -69,7 +69,7 @@ var Snippets_List = SAGE2_App.extend({
 			fElem.style.fontWeight = "bold";
 			fElem.style.overflow = "hidden";
 			
-			fElem.innerHTML = func.id + " - " + func.type + " - " + func.desc;
+			fElem.innerHTML = `cS-${func.id.split("-")[1]} - ${func.type} - ${func.desc}`;
 
 			let that = this;
 
@@ -144,6 +144,7 @@ var Snippets_List = SAGE2_App.extend({
 
 	quit: function() {
 		// Make sure to delete stuff (timers, ...)
+		SAGE2_CodeSnippets.unregisterSnippetListApp(this.id);
 	},
 
 	event: function(eventType, position, user_id, data, date) {

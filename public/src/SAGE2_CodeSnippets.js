@@ -117,6 +117,10 @@ let SAGE2_CodeSnippets = (function() {
 		console.log("Appending script text");
 		document.body.appendChild(script);
 
+		if (Object.values(self.listApps).length === 0) {
+			createListApplication();
+		}
+
 		updateListApps();
 	}
 
@@ -268,6 +272,14 @@ let SAGE2_CodeSnippets = (function() {
 		});
 	}
 
+	function createListApplication() {
+		wsio.emit("loadApplication", {
+			application:
+				"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_List",
+			color: "#ff0000"
+		});
+	}
+
 	function displayApplicationLoaded(id, app) {
 		// call required function, update reference
 		if (app.application === "Snippets_Vis") {
@@ -373,6 +385,12 @@ let SAGE2_CodeSnippets = (function() {
 		app.updateFunctionBank(getFunctionInfo());
 	}
 
+	function unregisterSnippetListApp(id) {
+		console.log("SAGE2_CodeSnippets> Unregistered", id);
+
+		delete self.listApps[id];
+	}
+
 	function updateListApps() {
 		let functionInfo = getFunctionInfo();
 
@@ -423,7 +441,9 @@ let SAGE2_CodeSnippets = (function() {
 
 			if (child === app || parent === app) {
 				if (parent === app) {
-					child.removeParentLink();
+					self.links[linkID].setParent(null);
+
+					child.updateAncestorTree();
 				} else if (parent !== null) {
 					parent.removeChildLink(self.links[linkID]);
 				}
@@ -457,6 +477,10 @@ let SAGE2_CodeSnippets = (function() {
 				return self.parent;
 			}
 
+			function setParent(parent) {
+				self.parent = parent;
+			}
+
 			function getChild() {
 				return self.child;
 			}
@@ -474,7 +498,7 @@ let SAGE2_CodeSnippets = (function() {
 				let c = self.child;
 				let id = self.transformID;
 
-				if (curator.functions[id].type === "data") {
+				if (curator.functions[id].type === "data" && p) {
 					// call function (calculates new dataset and updates child)
 					try {
 						let result = curator.functions[id].code(p.getDataset());
@@ -482,7 +506,7 @@ let SAGE2_CodeSnippets = (function() {
 					} catch (err) {
 						c.displayError(err);
 					}
-				} else if (curator.functions[id].type === "draw") {
+				} else if (curator.functions[id].type === "draw" && p) {
 					// call function (plots data on svg)
 					try {
 						curator.functions[id].code(p.getDataset(), c.getElement());
@@ -503,7 +527,7 @@ let SAGE2_CodeSnippets = (function() {
 				}
 			}
 
-			return { update, getParent, setChild, getChild, getSnippetID };
+			return { update, setParent, getParent, setChild, getChild, getSnippetID };
 		};
 	}());
 
@@ -527,6 +551,7 @@ let SAGE2_CodeSnippets = (function() {
 		executeCodeSnippet,
 
 		registerSnippetListApp,
+		unregisterSnippetListApp,
 		notifyUserListClick,
 		notifyUserDataClick
 	};

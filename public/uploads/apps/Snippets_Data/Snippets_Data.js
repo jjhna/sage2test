@@ -125,14 +125,18 @@ var Snippets_Data = SAGE2_App.extend({
 			(dataString).substring(0, 500) + "\n\n..." : 
 			(dataString);
 
+		this.updateChildren();
+
+		// refresh ancestor list (in case of name change)
+		this.createAncestorList();
+	},
+
+	updateChildren: function(date) {
 		// update all children
 		for (let childLink of this.childLinks) {
 			console.log(childLink);
 			childLink.update();
 		}
-
-		// refresh ancestor list (in case of name change)
-		this.createAncestorList();
 	},
 
 	displayError: function(err) {
@@ -176,9 +180,17 @@ var Snippets_Data = SAGE2_App.extend({
 			block.style.border = "2px solid " + darkColor[ancestor.type];
 			block.style.background = lightColor[ancestor.type];
 			
-			block.innerHTML = ancestor.desc;
+			block.innerHTML = `cS-${ancestor.id.split("-")[1]}: ${ancestor.desc}`;
 
 			this.ancestry.appendChild(block);
+		}
+	},
+
+	updateAncestorTree: function() {
+		this.createAncestorList();
+
+		for (let link of this.childLinks) {
+			link.getChild().updateAncestorTree();
 		}
 	},
 
