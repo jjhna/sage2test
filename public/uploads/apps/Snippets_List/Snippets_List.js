@@ -214,7 +214,7 @@ var Snippets_List = SAGE2_App.extend({
 
 						d3.select(this).selectAll(".snippetPath")
 							.attr("d", that.createBlockPath(type, colWidth - 10, [5, i * 38 + 8]))
-						
+							
 						let selectorWidth = (((colWidth - 10) * 0.8) - (func.selectors.length + 1) * 3) / func.selectors.length;
 
 						d3.select(this).selectAll(".snippetSelectors")

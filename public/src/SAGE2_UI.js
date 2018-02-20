@@ -655,23 +655,27 @@ function setupListeners() {
 		document.getElementById('pdfs-dir').checked     = false;
 		document.getElementById('videos-dir').checked   = false;
 		document.getElementById('sessions-dir').checked = false;
+		document.getElementById('snippets-dir').checked = false;
 
 		var images   = document.getElementById('images');
 		var videos   = document.getElementById('videos');
 		var pdfs     = document.getElementById('pdfs');
 		var sessions = document.getElementById('sessions');
+		var snippets = document.getElementById('snippets');
 
 		removeAllChildren(images);
 		removeAllChildren(videos);
 		removeAllChildren(pdfs);
 		removeAllChildren(sessions);
+		removeAllChildren(snippets);
 
 		var longestImageName   = createFileList(data, "images",   images);
 		var longestVideoName   = createFileList(data, "videos",   videos);
 		var longestPdfName     = createFileList(data, "pdfs",     pdfs);
 		var longestSessionName = createFileList(data, "sessions", sessions);
+		var longestSnippetName = createFileList(data, "snippets", snippets);
 
-		var longest = Math.max(longestImageName, longestVideoName, longestPdfName, longestSessionName);
+		var longest = Math.max(longestImageName, longestVideoName, longestPdfName, longestSessionName, longestSnippetName);
 		document.getElementById('fileListElems').style.width = (longest + 60).toString() + "px";
 
 		// showDialog('mediaBrowserDialog');

@@ -74,6 +74,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				{id: "App:/",     value: "Application", icon: "search", data: [], tooltip: "Show all the applications"},
 				{id: "Session:/", value: "Session", icon: "search", data: [], tooltip: "Show all the sessions"},
 				{id: "Link:/",    value: "Link", icon: "search", data: [], tooltip: "Show all the links"},
+				{id: "Snippet:/", value: "Snippet", icon: "search", data: [], tooltip: "Show all the code snippets"},
 				{id: "Mine:/",    value: "My files", icon: "search", data: [], tooltip: "Show all my uploaded files"}
 			]
 		}
@@ -973,6 +974,15 @@ function FileManager(wsio, mydiv, uniqueID) {
 				value: _this.allFiles[elt.id].exif.Creator || '-'});
 			metadata.config.elements.push({label: "File",
 				value: _this.allFiles[elt.id].exif.MIMEType || '-'});
+		} else if (_this.allFiles[elt.id].exif.MIMEType.indexOf('sage2/snippet') >= 0) {
+			// Clear the panel
+			metadata.config.elements = [];
+
+			metadata.config.elements.push({label: "Metadata", type: "label"});
+			metadata.config.elements.push({label: "Author",
+				value: _this.allFiles[elt.id].exif.Creator || '-'});
+			metadata.config.elements.push({label: "File",
+				value: _this.allFiles[elt.id].exif.MIMEType || '-'});
 		}
 
 		// Done updating metadata
@@ -1071,6 +1081,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			context.target.startsWith("App:")     ||
 			context.target.startsWith("Session:") ||
 			context.target.startsWith("Link:")     ||
+			context.target.startsWith("Snippet:")  ||
 			context.target.startsWith("Mine:")) {
 			// No DnD on search icons
 			return false;
@@ -1472,6 +1483,13 @@ function FileManager(wsio, mydiv, uniqueID) {
 				user: _this.uniqueID,
 				position: position
 			});
+		} else if (appType === "sage2/snippet") {
+			wsio.emit('loadFileFromServer',	{
+				application: 'load_snippet',
+				filename: tid,
+				user: _this.uniqueID,
+				position: position
+			});
 		} else {
 			// Opening a file
 			wsio.emit('loadFileFromServer', {
@@ -1500,6 +1518,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 				response = "load_session";
 			} else if (elt.exif.MIMEType.indexOf('sage2/url') >= 0) {
 				response = "sage2/url";
+			} else if (elt.exif.MIMEType.indexOf('sage2/snippet') >= 0) {
+				response = "load_snippet";
 			}
 		}
 		// send the result
@@ -1611,6 +1631,10 @@ function FileManager(wsio, mydiv, uniqueID) {
 		} else if (searchParam === "Link:/") {
 			_this.allTable.filter(function(obj) {
 				return _this.allFiles[obj.id].exif.MIMEType.indexOf('sage2/url') >= 0;
+			});
+		} else if (searchParam === "Snippet:/") {
+			_this.allTable.filter(function(obj) {
+				return _this.allFiles[obj.id].exif.MIMEType.indexOf('sage2/snippet') >= 0;
 			});
 		} else if (searchParam === "Mine:/") {
 			_this.allTable.filter(function(obj) {
@@ -1768,6 +1792,10 @@ function FileManager(wsio, mydiv, uniqueID) {
 			f = data.links[i];
 			this.allFiles[f.id] = f;
 		}
+		for (i = 0; i < data.snippets.length; i++) {
+			f = data.snippets[i];
+			this.allFiles[f.id] = f;
+		}
 
 		i = 0;
 		var mm, createDate;
@@ -1809,6 +1837,18 @@ function FileManager(wsio, mydiv, uniqueID) {
 					date: mm.format("YYYY/MM/DD HH:mm:ss"),
 					ago:  mm.fromNow(),
 					type: "LINK",
+					size: fileSizeIEC(f.exif.FileSize)
+				});
+			} else if (f.exif.MIMEType.indexOf('sage2/snippet') >= 0) {
+				// It's a SAGE2 session
+				mm = moment(f.exif.FileDate, 'YYYY/MM/DD HH:mm:ssZ');
+				f.exif.FileModifyDate = mm;
+				this.allTable.data.add({id: f.id,
+					name: f.exif.FileName,
+					user: f.exif.SAGE2user ? f.exif.SAGE2user : "-",
+					date: mm.format("YYYY/MM/DD HH:mm:ss"),
+					ago:  mm.fromNow(),
+					type: "SNIPPET",
 					size: fileSizeIEC(f.exif.FileSize)
 				});
 			} else {

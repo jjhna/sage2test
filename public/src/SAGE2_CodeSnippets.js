@@ -75,7 +75,23 @@ let SAGE2_CodeSnippets = (function() {
 			}
 		}
 
-		console.log(definition);
+		// set string to null value
+		if (func.editor === "null") {
+			func.editor = null;
+		}
+
+		if (isMaster) {
+			// loadable script defitition in server
+      // let savedScriptBody = createScriptBody(null, func.text, func.desc, [], "new", func.type, func.src);
+
+      wsio.emit("snippetSaveIntoServer", {
+				text: func.text,
+				type: func.type,
+				desc: func.desc,
+        snippetID: id,
+        filename: func.src ? func.src : null
+      });
+    }
 
 		// send info for user who saved code to load
 		wsio.emit("snippetSendCodeOnLoad", {
@@ -94,6 +110,7 @@ let SAGE2_CodeSnippets = (function() {
 		var script = document.createElement("script");
 
 		let links;
+		let src = null;
 
 		if (scriptID !== "new") {
 			let oldFunction = self.functions[scriptID];
@@ -101,6 +118,7 @@ let SAGE2_CodeSnippets = (function() {
 			// save the links, remove the old script
 			document.getElementById(scriptID).remove();
 			links = oldFunction.links;
+			src = oldFunction.src;
 
 			// clear any intervals remaining from a generator script
 			if (oldFunction.interval) {
@@ -110,7 +128,7 @@ let SAGE2_CodeSnippets = (function() {
 			links = [];
 		}
 
-		script.text = createScriptBody(uniqueID, code, desc, links, scriptID, type);
+		script.text = createScriptBody(uniqueID, code, desc, links, scriptID, type, src);
 
 		script.charset = "utf-8";
 
@@ -136,7 +154,28 @@ let SAGE2_CodeSnippets = (function() {
 		updateListApps();
 	}
 
-	function createScriptBody(uniqueID, code, desc, links, scriptID, type) {
+	function sourceFileUpdated(scriptID, filename) {
+		console.log(scriptID, filename);
+		self.functions[scriptID].src = filename;
+
+		console.log(self.functions[scriptID]);
+	}
+
+	function loadFromFile(func, filename) {
+
+		var script = document.createElement("script");
+		script.text = createScriptBody(null, func.text, func.desc, [], "new", func.type, filename);
+    script.charset = "utf-8";
+    document.body.appendChild(script);
+
+    if (Object.values(self.listApps).length === 0) {
+      createListApplication();
+    }
+
+    updateListApps();
+	}
+
+	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src) {
 		let startBlock = `(function() {
 			console.log('Sandbox script Loading');
 			// check if script with same src exists
@@ -144,26 +183,25 @@ let SAGE2_CodeSnippets = (function() {
 			let key;
 			let srcLoadedIn;
 
-			let allFunctionInfo = SAGE2_CodeSnippets.getFunctionInfo();
+			let functionInfo = SAGE2_CodeSnippets.getFunctionInfo();
 
 			// check for scripts loaded from .js file
-			if (document.currentScript.src !== "") {
+			if ("${src}" !== "null") {
 				srcLoadedIn = Object.keys(functionInfo).find(f => {
-					return functionInfo[f].src === document.currentScript.src
+					return functionInfo[f].src === "${src}"
 				});
 			}
 
 			if (srcLoadedIn) {
 				key = srcLoadedIn;
-
-				document.getElementById(key).remove();
 			} else {
 				key = "${scriptID}" === "new" ? SAGE2_CodeSnippets.getNewFunctionID() : "${scriptID}";
 			}
 
 			// loaded from script
 			let functionDefinition = {
-				src: document.currentScript.src !== "" ? document.currentScript.src : "user-defined",
+				// src: document.currentScript.src !== "" ? document.currentScript.src : "user-defined",
+				src: "${src}",
 				type: "${type}",
 				desc: "${desc}",
 				editor: "${uniqueID}",
@@ -252,32 +290,38 @@ let SAGE2_CodeSnippets = (function() {
 	}
 
 	function createDataApplication(snippetsID) {
-		wsio.emit("loadApplication", {
-			application: '/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Data',
-			color: '#ff0000',
-			data: {
-				snippetsID
-			}
-		});
+		if (isMaster) {
+			wsio.emit("loadApplication", {
+				application: '/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Data',
+				color: '#ff0000',
+				data: {
+					snippetsID
+				}
+			});
+		}
 	}
 
 	function createVisApplication(snippetsID) {
-		wsio.emit("loadApplication", {
-			application:
-				"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Vis",
-			color: "#ff0000",
-			data: {
-				snippetsID
-			}
-		});
+		if (isMaster) {
+			wsio.emit("loadApplication", {
+				application:
+					"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Vis",
+				color: "#ff0000",
+				data: {
+					snippetsID
+				}
+			});
+		}
 	}
 
 	function createListApplication() {
-		wsio.emit("loadApplication", {
-			application:
-				"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_List",
-			color: "#ff0000"
-		});
+		if (isMaster) {
+			wsio.emit("loadApplication", {
+				application:
+					"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_List",
+				color: "#ff0000"
+			});
+		}
 	}
 
 	function displayApplicationLoaded(id, app) {
@@ -538,6 +582,8 @@ let SAGE2_CodeSnippets = (function() {
 		getFunctionInfo,
 		saveSnippet,
 		cloneSnippet,
+		loadFromFile,
+		sourceFileUpdated,
 
 		requestSnippetLoad,
 		notifySnippetClosed,

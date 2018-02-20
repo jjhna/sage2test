@@ -1218,6 +1218,8 @@ function setupListeners(wsio) {
 	wsio.on('requestClientUpdate',					wsRequestClientUpdate);
 
 	// == SAGE2_CodeSnippets messages ==
+	// - Display to Server
+	wsio.on('snippetSaveIntoServer', wsSnippetSaveIntoServer);
 	// - WebUI to Display
 	wsio.on('editorSnippetLoadRequest', wsEditorSnippetLoadRequest);
 	wsio.on('editorSnippetCloseNotify', wsEditorSnippetCloseNotify);
@@ -3491,6 +3493,8 @@ function wsLoadFileFromServer(wsio, data) {
 		return;
 	}
 
+	console.log("wsLoadFileFromServer");
+
 	if (data.application === "load_session") {
 		// if it's a session, then load it
 		loadSession(data.filename);
@@ -3498,6 +3502,14 @@ function wsLoadFileFromServer(wsio, data) {
 		broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
 		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
 			application: {id: null, type: "session"}}, time: Date.now()});
+	} else if (data.application === "load_snippet") {
+		console.log("wsLoadFileFromServer - load_snippet");
+		// load snippet into browser
+		loadSnippet(data.filename);
+
+		broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
+		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
+			application: {id: null, type: "snippet"}}, time: Date.now()});
 	} else {
 		appLoader.loadFileFromLocalStorage(data, function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
@@ -5061,10 +5073,14 @@ function getSavedFilesList() {
 	var savedSessions  = listSessions();
 	savedSessions.sort(sageutils.compareFilename);
 
+	var savedSnippets = listSnippets();
+	savedSnippets.sort(sageutils.compareFilename);
+
 	// Get everything from the asset manager
 	var list = assets.listAssets();
 	// add the sessions
 	list.sessions = savedSessions;
+	list.snippets = savedSnippets;
 
 	return list;
 }
@@ -11002,6 +11018,89 @@ function wsRequestClientUpdate(wsio) {
 }
 
 /* ======== Code Snippets Event Handlers ======== */
+
+function listSnippets() {
+	var thelist = [];
+	let snippetDirectory = path.join(mediaFolders.user.path, "snippets");
+	// Walk through the session files: sync I/Os to build the array
+	var files = fs.readdirSync(snippetDirectory);
+	for (var i = 0; i < files.length; i++) {
+		var file = files[i];
+		var filename = path.join(snippetDirectory, file);
+		var stat = fs.statSync(filename);
+		// is it a file
+		if (stat.isFile()) {
+			// doest it ends in .snip
+			if (filename.indexOf(".snip", filename.length - 5) >= 0) {
+				// use its change time (creation, update, ...)
+				var ad = new Date(stat.mtime);
+				var strdate = sprint("%4d/%02d/%02d %02d:%02d:%02s",
+					ad.getFullYear(), ad.getMonth() + 1, ad.getDate(),
+					ad.getHours(), ad.getMinutes(), ad.getSeconds()
+				);
+				
+				// Make it look like an exif data structure
+				thelist.push({id: filename,
+					sage2URL: '/uploads/' + file,
+					exif: { FileName: file.slice(0, -5),
+						FileSize: stat.size,
+						FileDate: strdate,
+						MIMEType: 'sage2/snippet'
+					}
+				});
+			}
+		}
+	}
+	return thelist;
+}
+
+function loadSnippet(filename) {
+	console.log("Load snippet:", filename);
+	// let snippetPath = path.join(mediaFolders.user.path, "snippets", filename);
+
+	let content = JSON.parse(fs.readFileSync(filename).toString());
+
+	broadcast("createSnippetFromFile", {
+		snippet: content,
+		filename: path.basename(filename)
+	});
+}
+
+function wsSnippetSaveIntoServer(wsio, data) {
+	let snippetWritePath = path.join(mediaFolders.user.path, "snippets");
+
+	var now = new Date();
+	// Assign a unique name
+	let oldname = data.filename;
+	var filename = `${data.type}-${data.desc.replace(" ", "_")}-${now.getTime()}.snip`;
+	var fullpath = path.join(snippetWritePath, filename);
+
+	console.log("Write To:", fullpath);
+	let fileContents = {
+		text: data.text,
+		type: data.type,
+		desc: data.desc
+	};
+
+	let fileString = JSON.stringify(fileContents);
+
+	if (oldname !== "null" && oldname !== filename) {
+		let oldpath = path.join(snippetWritePath, oldname);
+
+		console.log("Rename:", oldname, filename);
+
+		fs.renameSync(oldpath, fullpath)
+	}
+
+	fs.writeFileSync(fullpath, fileString);
+
+	console.log("Info:", data.snippetID, data.type);
+
+	broadcast("snippetSourceFileUpdated", {
+		snippetID: data.snippetID,
+		filename
+	});
+}
 
 /* ===== Code Snippets Messages from WebUI ====== */
 
