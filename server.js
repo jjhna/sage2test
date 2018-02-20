@@ -11038,7 +11038,7 @@ function listSnippets() {
 					ad.getFullYear(), ad.getMonth() + 1, ad.getDate(),
 					ad.getHours(), ad.getMinutes(), ad.getSeconds()
 				);
-				
+
 				// Make it look like an exif data structure
 				thelist.push({id: filename,
 					sage2URL: '/uploads/' + file,
@@ -11089,7 +11089,7 @@ function wsSnippetSaveIntoServer(wsio, data) {
 
 		console.log("Rename:", oldname, filename);
 
-		fs.renameSync(oldpath, fullpath)
+		fs.renameSync(oldpath, fullpath);
 	}
 
 	fs.writeFileSync(fullpath, fileString);

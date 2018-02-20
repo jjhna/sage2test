@@ -66,7 +66,7 @@ RegistryManager.prototype.initialize = function(assetsFolder) {
 
 	// Add the jupyter notebook mime definition
 	mime.define({'application/x-ipynb+json': ['ipynb']}, true);
-	mime.define({'sage2/snippet': ['snip']}, true)
+	mime.define({'sage2/snippet': ['snip']}, true);
 
 	// mime version 2 removed the load function
 	var content = fs.readFileSync(path.join(this.mimeFile), 'ascii');

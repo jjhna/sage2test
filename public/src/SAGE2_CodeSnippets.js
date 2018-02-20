@@ -82,16 +82,16 @@ let SAGE2_CodeSnippets = (function() {
 
 		if (isMaster) {
 			// loadable script defitition in server
-      // let savedScriptBody = createScriptBody(null, func.text, func.desc, [], "new", func.type, func.src);
+			// let savedScriptBody = createScriptBody(null, func.text, func.desc, [], "new", func.type, func.src);
 
-      wsio.emit("snippetSaveIntoServer", {
+			wsio.emit("snippetSaveIntoServer", {
 				text: func.text,
 				type: func.type,
 				desc: func.desc,
-        snippetID: id,
-        filename: func.src ? func.src : null
-      });
-    }
+				snippetID: id,
+				filename: func.src ? func.src : null
+			});
+		}
 
 		// send info for user who saved code to load
 		wsio.emit("snippetSendCodeOnLoad", {
@@ -165,14 +165,14 @@ let SAGE2_CodeSnippets = (function() {
 
 		var script = document.createElement("script");
 		script.text = createScriptBody(null, func.text, func.desc, [], "new", func.type, filename);
-    script.charset = "utf-8";
-    document.body.appendChild(script);
+		script.charset = "utf-8";
+		document.body.appendChild(script);
 
-    if (Object.values(self.listApps).length === 0) {
-      createListApplication();
-    }
+		if (Object.values(self.listApps).length === 0) {
+			createListApplication();
+		}
 
-    updateListApps();
+		updateListApps();
 	}
 
 	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src) {
