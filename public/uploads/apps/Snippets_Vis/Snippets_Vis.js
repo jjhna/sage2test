@@ -160,8 +160,8 @@ var Snippets_Vis = SAGE2_App.extend({
 		// Called when window is resized
 
 		this.svg
-			.attr("width",   this.sage2_width - 32)
-			.attr("height",  this.sage2_height);
+      .attr("width", this.sage2_width)
+      .attr("height", this.sage2_height - 32);
 
 		if (this.parentLink) {
 			this.parentLink.update(); // redraw

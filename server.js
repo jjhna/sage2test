@@ -11100,6 +11100,8 @@ function wsSnippetSaveIntoServer(wsio, data) {
 		snippetID: data.snippetID,
 		filename
 	});
+
+	broadcast('storedFileList', getSavedFilesList());
 }
 
 /* ===== Code Snippets Messages from WebUI ====== */
