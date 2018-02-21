@@ -2,7 +2,6 @@
 	"global": {
 		"security"    : "true",
 		"server_port" : "10000", 
-		"tcp_port"    : "11000"
 	},
 	"main": {
 		"header" : "<h4>SAGE2 Control Interface</h4>",
@@ -20,6 +19,7 @@
 		"edit-assist":       { "openurl": "assistedConfig.html" },
 
 		"submitMA":          { "sendData": "forMA", "dataID": "inputMA", "sendPurpose": "makeNewMeetingID" },
+		"removeMA":          { "sendData": "forMA", "dataID": "removeMA", "sendPurpose": "removeMeetingID" },
 		"inputMA":           { "ignore" :  "Not sending"},
 
 		"submitLP":          { "sendData": "forLP", "dataID": "inputLP", "sendPurpose": "makeNewLauncherPassword" },
@@ -49,11 +49,12 @@
 		},
 		"setMA" : { 
 			"title": "Set Meeting Access",
-			"description": "Allows changing the Meeting ID. SAGE2 must be restarted before changes take effect.",
+			"description": "Allows changing the Meeting ID. SAGE2 must be restarted before changes take effect. A blank meeting access password can be set, requiring user to enter with a blank input field. To completely remove the prompt, use the Remove Meeting Access button.",
 			"image": "images/settings.png",
 			"actions": [
 				{"title": "", "action": "inputMA", "role": "inputPassword", "placeholder":"Enter new MeetingID here"},
-				{"title": "Set Meeting Access", "action": "submitMA", "theme": "b"}
+				{"title": "Set Meeting Access", "action": "submitMA", "theme": "b"},
+				{"title": "Remove Meeting Access", "action": "removeMA", "theme": "b"}
 			]
 		}
 	},
@@ -61,7 +62,7 @@
 	"Admin" : {
 		"title"  : "Admin",
 		"navbar" : "true",
-		"groups" : [ "group2", "update" ],
+		"groups" : [ "group2" ],
 		"group2" : {
 			"title": "Configure SAGE2",
 			"image": "images/settings.png",
@@ -72,14 +73,6 @@
 				{"title": "Wall configuration -  <em>expert</em>", "action": "edit-config" },
 				{"title": "", "action": "inputLP", "role": "inputPassword", "placeholder":"Enter new launcher password"},
 				{"title": "Reset launcher password", "action": "submitLP", "theme": "b"}
-			]
-		},
-		"update" : {
-			"title": "Update SAGE2",
-			"image": "images/settings.png",
-			"description": "Choosing to update will edit the startup file and then restart the computer.<br> Be sure to save all work before updating.",
-			"actions": [
-				{"title": "Update (will cause the computer to restart)", "action": "updateSage" }
 			]
 		}
 	}

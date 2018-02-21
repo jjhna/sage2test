@@ -87,6 +87,10 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 		this.controls.finishedAddingControls();
 
+		// Calculate human readable string for the length of the video
+		var clipLength = this.state.numframes / this.state.framerate;
+		this.lengthString = formatHHMMSS(1000 * clipLength);
+
 		setTimeout(function() {
 			_this.muteBtn.state      = _this.state.muted  ? 0 : 1;
 			_this.loopBtn.state      = _this.state.looped ? 0 : 1;
@@ -114,8 +118,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.state.looped === false) {
 			this.stopVideo();
 		} else if (this.shouldSendCommands) {
-			wsio.emit("csdMessage", {
-				type: "setValue",
+			wsio.emit("serverDataSetValue", {
 				nameOfValue: "videoSyncCommandVariable",
 				value: {
 					command: "seek",
@@ -151,13 +154,16 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		// new code: put current time in title bar
 		var duration = parseInt(1000 * (this.state.frame / this.state.framerate), 10);
 		var current  = formatHHMMSS(duration);
+
 		// modified to have (frame) [(Sending / Receiving Commands)]
 		if (this.shouldSendCommands) {
 			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")(Sending Commands)");
 		} else if (this.shouldReceiveCommands) {
 			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")(Receiving Commands)");
 		} else {
-			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")");
+			// Default mode: show current time and duration
+			this.updateTitle(this.title + " - " + current + " / " + this.lengthString);
+			// var currentFrame = Math.floor(this.state.frame % this.state.framerate) + 1;
 		}
 	},
 
@@ -181,8 +187,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 				// if this is a sender, also send the command to the server holding variable
 				if (this.shouldSendCommands) {
-					wsio.emit("csdMessage", {
-						type: "setValue",
+					wsio.emit("serverDataSetValue", {
 						nameOfValue: "videoSyncCommandVariable",
 						value: {
 							command: "play",
@@ -201,8 +206,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 				// if this is a sender, also send the command to the server holding variable
 				if (this.shouldSendCommands) {
-					wsio.emit("csdMessage", {
-						type: "setValue",
+					wsio.emit("serverDataSetValue", {
 						nameOfValue: "videoSyncCommandVariable",
 						value: {
 							command: "pause",
@@ -217,7 +221,8 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.state.paused = true;
 		}
 		this.refresh(date);
-		this.playPauseBtn.state = 1 - this.playPauseBtn.state;
+		this.playPauseBtn.state = (this.state.paused) ? 0 : 1;
+		this.getFullContextMenuAndUpdate();
 	},
 
 	/**
@@ -238,7 +243,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			}
 			this.state.muted = true;
 		}
-		this.muteBtn.state = 1 - this.muteBtn.state;
+		this.muteBtn.state = (this.state.muted) ? 0 : 1;
 	},
 
 	/**
@@ -259,7 +264,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			}
 			this.state.looped = true;
 		}
-		this.loopBtn.state = 1 - this.loopBtn.state;
+		this.loopBtn.state = (this.state.looped) ? 0 : 1;
 		this.getFullContextMenuAndUpdate();
 	},
 
@@ -269,8 +274,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 			// if this is a sender, also send the command to the server holding variable
 			if (this.shouldSendCommands) {
-				wsio.emit("csdMessage", {
-					type: "setValue",
+				wsio.emit("serverDataSetValue", {
 					nameOfValue: "videoSyncCommandVariable",
 					value: {
 						command: "stop",
@@ -285,6 +289,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.state.paused = true;
 		// must change play-pause button (should show 'play' icon)
 		this.playPauseBtn.state = 0;
+		this.getFullContextMenuAndUpdate();
 	},
 
 	/**
@@ -308,12 +313,14 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.state.paused) {
 			entry = {};
 			entry.description = "Play";
+			entry.accelerator = "P";
 			entry.callback = "contextTogglePlayPause";
 			entry.parameters = {};
 			entries.push(entry);
 		} else {
 			entry = {};
 			entry.description = "Pause";
+			entry.accelerator = "P";
 			entry.callback = "contextTogglePlayPause";
 			entry.parameters = {};
 			entries.push(entry);
@@ -321,6 +328,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 		entry = {};
 		entry.description = "Stop";
+		entry.accelerator = "S";
 		entry.callback = "stopVideo";
 		entry.parameters = {};
 		entries.push(entry);
@@ -333,11 +341,13 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			entry = {};
 			entry.description = "Unmute";
 			entry.callback = "contextToggleMute";
+			entry.accelerator = "M";
 			entry.parameters = {};
 			entries.push(entry);
 		} else {
 			entry = {};
 			entry.description = "Mute";
+			entry.accelerator = "M";
 			entry.callback = "contextToggleMute";
 			entry.parameters = {};
 			entries.push(entry);
@@ -347,63 +357,16 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.state.looped) {
 			entry = {};
 			entry.description = "Stop looping";
+			entry.accelerator = "L";
 			entry.callback = "toggleLoop";
 			entry.parameters = {};
 			entries.push(entry);
 		} else {
 			entry = {};
 			entry.description = "Loop video";
+			entry.accelerator = "L";
 			entry.callback = "toggleLoop";
 			entry.parameters = {};
-			entries.push(entry);
-		}
-
-		/*
-			This next section is synchronized controls for video player.
-			One cannot send and receive.
-		*/
-
-		entry = {};
-		entry.description = "separator";
-		entries.push(entry);
-
-		if (this.shouldSendCommands) {
-			entry = {};
-			entry.description = "Stop sending commands";
-			entry.callback = "contextVideoSyncHandler";
-			entry.parameters = {
-				send: false,
-				receive: false
-			};
-			entries.push(entry);
-		} else {
-			entry = {};
-			entry.description = "Send commands";
-			entry.callback = "contextVideoSyncHandler";
-			entry.parameters = {
-				send: true,
-				receive: false
-			};
-			entries.push(entry);
-		}
-
-		if (this.shouldReceiveCommands) {
-			entry = {};
-			entry.description = "Stop receiving commands";
-			entry.callback = "contextVideoSyncHandler";
-			entry.parameters = {
-				send: false,
-				receive: false
-			};
-			entries.push(entry);
-		} else {
-			entry = {};
-			entry.description = "Receive commands";
-			entry.callback = "contextVideoSyncHandler";
-			entry.parameters = {
-				send: false,
-				receive: true
-			};
 			entries.push(entry);
 		}
 
@@ -440,6 +403,13 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		entries.push({
 			description: "Download video",
 			callback: "SAGE2_download",
+			parameters: {
+				url: this.state.video_url
+			}
+		});
+		entries.push({
+			description: "Copy URL",
+			callback: "SAGE2_copyURL",
 			parameters: {
 				url: this.state.video_url
 			}
@@ -482,8 +452,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.shouldSendCommands = true;
 			this.shouldReceiveCommands = false;
 			// no purpose behind this other than to ensure variable exists after a sender is specified.
-			wsio.emit("csdMessage", {
-				type: "setValue",
+			wsio.emit("serverDataSetValue", {
 				nameOfValue: "videoSyncCommandVariable",
 				value: {
 					command: "newSender",
@@ -497,8 +466,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.shouldSendCommands = false;
 			this.shouldReceiveCommands = true;
 
-			wsio.emit("csdMessage", {
-				type: "subscribeToValue",
+			wsio.emit("serverDataSubscribeToValue", {
 				nameOfValue: "videoSyncCommandVariable",
 				app: this.id,
 				func: "videoSyncCommandHandler",
@@ -556,8 +524,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 				play: false
 			});
 
-			wsio.emit("csdMessage", {
-				type: "setValue",
+			wsio.emit("serverDataSetValue", {
 				nameOfValue: "videoSyncCommandVariable",
 				value: {
 					command: "seek",
@@ -581,9 +548,6 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	* @param valueUpdate {Object} contains last sent command
 	*/
 	videoSyncCommandHandler: function(valueUpdate) {
-		if (!this.shouldReceiveCommands) {
-			return;
-		}
 		var playStatusToSend = false;
 		var timestampToSend = valueUpdate.timestamp;
 		var shouldSendTimeUpdate = false;
@@ -602,6 +566,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.playPauseBtn.state = 0; // show play
 			shouldSendTimeUpdate = true;
 		} else if (valueUpdate.command == "seek") {
+			this.state.playAfterSeek = valueUpdate.play;
 			playStatusToSend = valueUpdate.play;
 			this.playPauseBtn.state = playStatusToSend ? 1 : 0;
 			shouldSendTimeUpdate = true;
@@ -645,7 +610,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 					}
 					this.state.muted = true;
 				}
-			} else if (data.character === "1" || data.character === "r") {
+			} else if (data.character === "1" || data.character === "s") {
 				// 1 start of video
 				this.stopVideo();
 			}
@@ -688,8 +653,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 									play: !this.state.paused
 								});
 								if (this.shouldSendCommands) {
-									wsio.emit("csdMessage", {
-										type: "setValue",
+									wsio.emit("serverDataSetValue", {
 										nameOfValue: "videoSyncCommandVariable",
 										value: {
 											command: "seek",
