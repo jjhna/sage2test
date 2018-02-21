@@ -10,8 +10,10 @@
         {
             "name": "Webview",
             "types": [
-                "application/url"
-            ]
+                "application/url",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            ],
+            "directory": "web"
         },
         {
             "name": "image_viewer",

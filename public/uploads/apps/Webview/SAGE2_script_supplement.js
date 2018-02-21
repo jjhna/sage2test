@@ -166,10 +166,8 @@ function processAppearIn() {
 			// if all done, cancel the timer
 			clearInterval(scriptSearch);
 			console.log('Appear.in> All done hacking');
-		} else {
-			console.log('Appear.in> Still trying');
 		}
-		// try every 500ms till done
-	}, 500);
+		// try every 1s till done
+	}, 1000);
 }
 
