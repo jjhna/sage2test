@@ -321,7 +321,7 @@ var Webview = SAGE2_App.extend({
 					event.preventDefault();
 					callback(true);
 				} else {
-					// More troubling error. No 
+					// More troubling error
 					console.log('Webview>certificate error2:', url, error, certificate);
 					// Add the message to the console layer
 					_this.pre.innerHTML += 'Webview>certificate error:' + event + '\n';
