@@ -42,8 +42,8 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.shouldSendCommands = false;
 		this.shouldReceiveCommands = false;
 
+		// Determine if should use HTML player mode
 		if (this.isOnlyDisplay() && this.isFileTypeSupportedByHtmlPlayer(this.state.video_url)) {
-			// console.log(this.state.video_url);
 			this.makeHtmlPlayer(this.state.video_url);
 		}
 	},
@@ -168,7 +168,13 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")(Receiving Commands)");
 		} else {
 			// Default mode: show current time and duration
-			this.updateTitle(this.title + " - " + current + " / " + this.lengthString);
+			let titleString = this.title + " - " + current + " / " + this.lengthString;
+			// Show that it is using HTML player instead of the standard block streaming
+			// TODO: should server side actions also stop?
+			if (this.isUsingHtmlPlayer) {
+				titleString += " (HTML player mode)";
+			}
+			this.updateTitle(titleString);
 			// var currentFrame = Math.floor(this.state.frame % this.state.framerate) + 1;
 		}
 	},
@@ -726,11 +732,13 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		}
 	},
 
-
-
-
-
-	// Functions for html player
+	/**
+	* Checks the configuration to see if there are multiple displays.
+	* If there is only one display listed, or if there is an entry that covers all, then will return true.
+	*
+	* @method isOnlyDisplay
+	* @return {bool} If config shows only one display.
+	*/
 	isOnlyDisplay() {
 		let totalDisplays = ui.json_cfg.layout.columns * ui.json_cfg.layout.rows;
 		let displayClientList = ui.json_cfg.displays;
@@ -749,8 +757,15 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		return false;
 	},
 
+	/**
+	* Checks the file extension to see if it is supported by the HTML player.
+	* Based on https://developer.mozilla.org/en-US/docs/Web/HTML/Supported_media_formats
+	*
+	* @method isFileTypeSupportedByHtmlPlayer
+	* @param file {string} URL path of hte file to be played.
+	* @return {bool} True if supported. Otherwise false.
+	*/
 	isFileTypeSupportedByHtmlPlayer: function(file) {
-		// supportedTypes based on https://developer.mozilla.org/en-US/docs/Web/HTML/Supported_media_formats
 		let supportedTypes = ["webm", "ogg", "mp4", "mov"]; // flac
 		let ext = file.lastIndexOf(".");
 		if (ext > -1) {
@@ -769,6 +784,13 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		return false;
 	},
 
+	/**
+	* Creates video and source. Then appends to the application.
+	* HTML player is currently muted by default so sound should come from audioManager.
+	*
+	* @method makeHtmlPlayer
+	* @param url {string} URL path of hte file to be played.
+	*/
 	makeHtmlPlayer: function(url) {
 		// Create elements
 		this.videoElement = document.createElement("video");
@@ -776,16 +798,18 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.videoElement.style.height = "100%";
 		this.sourceElement = document.createElement("source");
 		this.sourceElement.src = url;
+		// Keep the html player muted, let the sound come through the audioManager.
+		this.videoElement.muted = true;
 		// Add Them
 		this.videoElement.appendChild(this.sourceElement);
 		this.element.appendChild(this.videoElement);
 
 		// Hide default
-		console.log("Hiding canvas. From " + this.canvas.style.display);
 		this.canvas.style.display = "none";
-		console.log(".. to " + this.canvas.style.display);
 		this.canvas.style.width = "1px";
 		this.canvas.style.height = "1px";
+		// Remove the draw calculations, this prevents some cases of flickering while updating.
+		this.draw = function() {};
 
 		this.isUsingHtmlPlayer = true;
 	},
@@ -800,7 +824,9 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	},
 
 	htmlSetMuteStatus: function() {
-		this.videoElement.muted = this.state.muted;
+		// TODO determine if this should just be removed later
+		// this.videoElement.muted = this.state.muted;
+		this.videoElement.muted = true;
 	},
 
 	htmlSetLoopStatus: function() {
@@ -819,7 +845,6 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 	htmlSetSeekTime: function() {
 		let time = parseInt((this.state.frame / this.state.framerate), 10);
-		console.log(time);
 		this.videoElement.currentTime = time;
 	}
 });
