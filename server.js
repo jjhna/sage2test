@@ -2940,16 +2940,19 @@ function loadSession(filename) {
 
 function listClients() {
 	var i;
-	console.log("Clients (%d)\n------------", clients.length);
+	sageutils.log("Clients", "# of clients:", clients.length);
 	for (i = 0; i < clients.length; i++) {
 		if (clients[i].clientType === "display") {
 			if (clients[i] === masterDisplay) {
-				console.log(sprint("%2d: %s (%s %s) master", i, clients[i].id, clients[i].clientType, clients[i].clientID));
+				sageutils.log("Clients", sprint("%2d: %s (%s %s) master",
+					i, clients[i].id, clients[i].clientType, clients[i].clientID));
 			} else {
-				console.log(sprint("%2d: %s (%s %s)", i, clients[i].id, clients[i].clientType, clients[i].clientID));
+				sageutils.log("Clients", sprint("%2d: %s (%s %s)",
+					i, clients[i].id, clients[i].clientType, clients[i].clientID));
 			}
 		} else {
-			console.log(sprint("%2d: %s (%s)", i, clients[i].id, clients[i].clientType));
+			sageutils.log("Clients", sprint("%2d: %s (%s)",
+				i, clients[i].id, clients[i].clientType));
 		}
 	}
 }
@@ -5690,32 +5693,32 @@ function processInputCommand(line) {
 			break;
 		}
 		case 'help': {
-			console.log('help\t\tlist commands');
-			console.log('kill\t\tclose application: appid');
-			console.log('apps\t\tlist running applications');
-			console.log('clients\t\tlist connected clients');
-			console.log('streams\t\tlist media streams');
-			console.log('clear\t\tclose all running applications');
-			console.log('tile\t\tlayout all running applications');
-			console.log('fullscreen\tmaximize one application: appid');
-			console.log('save\t\tsave state of running applications into a session');
-			console.log('load\t\tload a session and restore applications');
-			console.log('open\t\topen a file: open file_url [0.5, 0.5]');
-			console.log('resize\t\tresize a window: appid width height');
-			console.log('moveby\t\tshift a window: appid dx dy');
-			console.log('moveto\t\tmove a window: appid x y');
-			console.log('assets\t\tlist the assets in the file library');
-			console.log('regenerate\tregenerates the assets');
-			console.log('hideui\t\thide/show/delay the user interface');
-			console.log('sessions\tlist the available sessions');
-			console.log('screenshot\ttake a screenshot of the wall');
-			console.log('update\t\trun a git update');
-			console.log('performance\tshow performance information');
-			console.log('perfsampling\tset performance metric sampling rate');
-			console.log('hardware\tget an summary of the hardware running the server');
-			console.log('update\t\trun a git update');
-			console.log('version\t\tprint SAGE2 version');
-			console.log('exit\t\tstop SAGE2');
+			sageutils.log('Console', 'help\t\tlist commands');
+			sageutils.log('Console', 'kill\t\tclose application: appid');
+			sageutils.log('Console', 'apps\t\tlist running applications');
+			sageutils.log('Console', 'clients\tlist connected clients');
+			sageutils.log('Console', 'streams\tlist media streams');
+			sageutils.log('Console', 'clear\t\tclose all running applications');
+			sageutils.log('Console', 'tile\t\tlayout all running applications');
+			sageutils.log('Console', 'fullscreen\tmaximize one application: appid');
+			sageutils.log('Console', 'save\t\tsave state of running applications into a session');
+			sageutils.log('Console', 'load\t\tload a session and restore applications');
+			sageutils.log('Console', 'open\t\topen a file: open file_url [0.5, 0.5]');
+			sageutils.log('Console', 'resize\t\tresize a window: appid width height');
+			sageutils.log('Console', 'moveby\t\tshift a window: appid dx dy');
+			sageutils.log('Console', 'moveto\t\tmove a window: appid x y');
+			sageutils.log('Console', 'assets\t\tlist the assets in the file library');
+			sageutils.log('Console', 'regenerate\tregenerates the assets');
+			sageutils.log('Console', 'hideui\t\thide/show/delay the user interface');
+			sageutils.log('Console', 'sessions\tlist the available sessions');
+			sageutils.log('Console', 'screenshot\ttake a screenshot of the wall');
+			sageutils.log('Console', 'update\t\trun a git update');
+			sageutils.log('Console', 'performance\tshow performance information');
+			sageutils.log('Console', 'perfsampling\tset performance metric sampling rate');
+			sageutils.log('Console', 'hardware\tget an summary of the hardware running the server');
+			sageutils.log('Console', 'update\t\trun a git update');
+			sageutils.log('Console', 'version\tprint SAGE2 version');
+			sageutils.log('Console', 'exit\t\tstop SAGE2');
 			break;
 		}
 		case 'version': {
@@ -5907,7 +5910,7 @@ function processInputCommand(line) {
 			break;
 		}
 		default: {
-			console.log('Say what? I might have heard `' + line.trim() + '`');
+			sageutils.log('Console', 'Say what? I might have heard `' + line.trim() + '`');
 			break;
 		}
 	}
@@ -6314,7 +6317,8 @@ function pointerPressOnOpenSpace(uniqueID, pointerX, pointerY, data) {
 	if (data.button === "right") {
 		// Right click opens the radial menu
 		createRadialMenu(uniqueID, pointerX, pointerY);
-	} else if (data.button === "left" && sagePointers[uniqueID].visible && remoteInteraction[uniqueID].CTRL) {
+	} else if (data.button === "left" && sagePointers[uniqueID].visible && remoteInteraction[uniqueID].CTRL
+		&& !drawingManager.drawingMode) {
 		// CTRL with pointer open will begin to drag to create a new parititon
 		// start tracking size to create new partition
 		draggingPartition[uniqueID] = {};

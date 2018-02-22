@@ -73,7 +73,7 @@
 		"websocketio": "https://github.com/renambot-uic/websocketio.git",
 		"rimraf": "latest",
 		"node-pre-gyp": "latest",
-		"electron": "latest",
+		"electron": "1.8.2-beta.3",
 		"electron-squirrel-startup": "latest",
 		"systeminformation": "latest"
 	},
