@@ -1978,7 +1978,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 		// Add the media folders to the tree
 		var f, folder;
 		this.json_cfg  = data;
-		this.http_port = this.json_cfg.port === 80 ? "" : ":" + this.json_cfg.port;
+		this.http_port  = this.json_cfg.port === 80 ? "" : ":" + this.json_cfg.port;
+		this.https_port = this.json_cfg.secure_port === 443 ? "" : ":" + this.json_cfg.secure_port;
 		this.mediaFolders = data.folders;
 		for (f in data.folders) {
 			folder = data.folders[f];
@@ -2056,14 +2057,16 @@ function FileManager(wsio, mydiv, uniqueID) {
 			hostLabel = this.json_cfg.name;
 			this.showHostname = true;
 		} else {
-			hostLabel = this.json_cfg.host;
+			// Setting the UI URL
+			hostLabel = "https://" + window.location.hostname + _this.https_port +  "/";
 			this.showHostname = false;
 		}
 		$$('host_label').setValue(hostLabel);
 		// Click on the label to flip wallname and hostname display
 		$$('host_label').attachEvent("onItemClick", function(id, evt) {
 			if (_this.showHostname) {
-				hostLabel = _this.json_cfg.host;
+				// Setting the UI URL
+				hostLabel = "https://" + window.location.hostname + _this.https_port +  "/";
 				$$('host_label').setValue(hostLabel);
 				_this.showHostname = false;
 			} else {
