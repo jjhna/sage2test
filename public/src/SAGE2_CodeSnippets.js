@@ -504,6 +504,195 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	// function to create script from wall which can be run on personal computer
+	function generateScriptFromWall() {
+		let functionBodies = {};
+
+		for (let id of Object.keys(self.functions)) {
+			functionBodies[id] = createFunctionBlock(self.functions[id].type, self.functions[id].text);
+		}
+
+		let newWindow = window.open();
+		let newDocument = newWindow.document;
+
+		let script = newDocument.createElement("script");
+		script.text = createScriptText(
+			createInitBody(
+				createFunctionObject(functionBodies),
+				convertLinksToIDForest()
+			),
+			""
+		);
+		script.id = "codeSnippetsScript";
+		script.async = false;
+
+		// add d3 to new page
+		let d3Script = newDocument.createElement("script");
+		d3Script.src = "https://d3js.org/d3.v4.min.js";
+
+		d3Script.onload = function() {
+			newDocument.head.appendChild(script);
+		};
+
+		newDocument.head.appendChild(d3Script);
+
+
+		let downloadWrapper = newDocument.createElement("div");
+		let downloadButton = newDocument.createElement("input");
+
+		downloadButton.type = "button";
+		downloadButton.value = "Download Page";
+		downloadButton.id = "downloadButton";
+
+		downloadWrapper.appendChild(downloadButton);
+		newDocument.body.appendChild(downloadWrapper);
+
+		// ======================================================
+		// helper functions for creating script
+		function createFunctionObject(functionBodies) {
+			let startText = `functions = {\n\t`;
+			let endText = `\n};`;
+
+			let keyFunctionPairs = Object.keys(functionBodies).map(
+				key => `"${key}": {
+					type: "${self.functions[key].type}",
+					desc: "${self.functions[key].desc}",
+					code: ${functionBodies[key]}
+				}`.replace(/\t\t\t\t/, ""));
+
+			return startText + keyFunctionPairs.join(",\n\t") + endText;
+		}
+
+		function createInitBody(functionObject, links) {
+			return `
+				${functionObject}
+
+				linkForest = ${JSON.stringify(links)};
+				`.replace(/\t\t\t\t/gi, "");
+		}
+
+		function createScriptText(initBody, runBody) {
+			return `
+				let functions;
+				let linkForest;
+
+				let runFunction = {
+					gen: function (input, link) {
+						let func = functions[link.snippetID];
+
+						// call function
+						func.code(input)
+							.then(function(result) {
+								invokeChildFunctions(result, link.children, [link.snippetID]);
+							})
+					},
+					data: function(input, link, prevFunctions) {
+						let func = functions[link.snippetID];
+						let result = func.code(input);
+
+						invokeChildFunctions(result, link.children, prevFunctions.concat(link.snippetID));
+
+					},
+					draw: function(input, link, prevFunctions) {
+						let func = functions[link.snippetID];
+
+						let funcOrder = prevFunctions.concat(link.snippetID).map(f => functions[f].desc);
+						console.log(funcOrder);
+
+						// add svg and supplementary info
+						let div = d3.select("body").append("div")
+							.style("display", "inline-block")
+
+						div.append("div")
+							.style("text-align", "center")
+							.style("font-family", "sans-serif")
+							.style("font-weight", "bold")
+							.text(funcOrder.join(" -> "));
+
+						let svg = div.append("svg")
+							.attr("width", 600).attr("height", 300)
+							.style("margin", "10px")
+							.node();
+
+						func.code(input, svg);
+					}
+				}
+
+				init();
+
+				function init() {
+					${initBody}
+
+					if (document.getElementById("downloadButton")) {
+						document.getElementById("downloadButton").onclick = download;
+					}
+
+					console.log("Init Done", functions);
+					run();
+				}
+
+				function download() {
+					// create dom clone in order to clear body for download
+					let domCopy = document.documentElement.cloneNode(true);
+					let body = domCopy.getElementsByTagName("body")[0];
+					body.innerHTML = "";
+					body.onload = "run";
+
+					var element = document.createElement('a');
+					element.setAttribute('href', 'data:text/html;charset=utf-8,' 
+					+ encodeURIComponent(domCopy.outerHTML));
+					element.setAttribute('download', "snippetsOutput.html");
+
+					element.style.display = 'none';
+					document.body.appendChild(element);
+
+					element.click();
+
+					document.body.removeChild(element);
+					domCopy.remove();
+				}
+
+				function invokeChildFunctions(data, children, prevFunctions) {
+					for (let child of children) {
+						let { type } = functions[child.snippetID];
+
+						runFunction[type](data, child, prevFunctions);
+					}
+				}
+
+				function run() {
+					// for each root, invoke the function
+					for (let root of linkForest) {
+						let { type } = functions[root.snippetID];
+
+						runFunction[type](null, root);
+					}
+
+					${runBody}
+				}`.replace(/\t\t\t\t/gi, "");
+
+			// replace is to unindent the code and make it readable in the output
+			// since string template preserves extra 4 tab indentation from this file's src
+		}
+	}
+
+	function convertLinksToIDForest() {
+		let rootIDs = Object.keys(self.links).filter(id => self.functions[self.links[id].getSnippetID()].type === "gen");
+
+		let forest = rootIDs.map(id => createSubtree(self.links[id], id));
+
+		return forest;
+
+		// helper method
+		function createSubtree(link/*, linkID*/) {
+			return {
+				// linkID,
+				snippetID: link.getSnippetID(),
+				children: link.getChild().childLinks.map(createSubtree)
+			};
+		}
+	}
+
 	// Link class used by SAGE2_CodeSnippets
 	const Link = (function() {
 		let curator = self; // alias enclosing scope's 'self'
@@ -599,7 +788,9 @@ let SAGE2_CodeSnippets = (function() {
 		registerSnippetListApp,
 		unregisterSnippetListApp,
 		notifyUserListClick,
-		notifyUserDataClick
+		notifyUserDataClick,
+
+		generateScriptFromWall
 	};
 }());
 
