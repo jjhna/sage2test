@@ -1252,6 +1252,11 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 
 AppLoader.prototype.readInstructionsFile = function(json_str, file, mime_type, external_url) {
 	var instructions = JSON.parse(json_str);
+
+	// Make sure the width and height are numbers
+	instructions.width  = parseInt(instructions.width,  10) || 720;
+	instructions.height = parseInt(instructions.height, 10) || 405;
+
 	var appName = instructions.main_script.substring(0, instructions.main_script.lastIndexOf('.'));
 	var aspectRatio = instructions.width / instructions.height;
 
