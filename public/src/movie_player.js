@@ -257,7 +257,6 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.state.muted = true;
 		}
 		this.muteBtn.state = (this.state.muted) ? 0 : 1;
-		this.htmlSetMuteStatus();
 	},
 
 	/**
@@ -308,31 +307,6 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.htmlStop();
 	},
 
-
-
-
-
-	openInHtmlPlayer: function(responseObject) {
-		this.launchAppWithValues(
-			"htmlVideo",
-			{
-				width: this.sage2_width,
-				height: this.sage2_height,
-				url: this.state.video_url
-			},
-			this.sage2_x + 100,
-			this.sage2_y + 100 - ui.titleBarHeight
-		);
-		console.log(this.state.video_url);
-	},
-
-
-
-
-
-
-
-
 	/**
 	* To enable right click context menu support this function needs to be present with this format.
 	*
@@ -350,19 +324,6 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	getContextEntries: function() {
 		var entries = [];
 		var entry;
-
-
-		entry = {};
-		entry.description = "Open with HTML video player";
-		entry.callback = "openInHtmlPlayer";
-		entry.parameters = {};
-		entries.push(entry);
-
-		entry = {};
-		entry.description = "separator";
-		entries.push(entry);
-
-
 
 		if (this.state.paused) {
 			entry = {};
@@ -446,8 +407,6 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			};
 			entries.push(entry);
 		}
-
-
 
 		entry = {};
 		entry.description = "separator";
@@ -760,6 +719,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	/**
 	* Checks the file extension to see if it is supported by the HTML player.
 	* Based on https://developer.mozilla.org/en-US/docs/Web/HTML/Supported_media_formats
+	* Special check for .mov, needed additional exif data from the server.
 	*
 	* @method isFileTypeSupportedByHtmlPlayer
 	* @param file {string} URL path of hte file to be played.
@@ -773,13 +733,15 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			ext = ext.trim().toLowerCase();
 			for (let i = 0; i < supportedTypes.length; i++) {
 				if (ext === supportedTypes[i]) {
-					console.log("Extension " + file + " supported by html player");
+					// mov is a container. If contents aren't H.264, probably can't decode.
+					if ((ext === "mov") && (this.state.CompressorName !== "H.264")) {
+						// Clear out state to reduce workload
+						this.state.exif = {};
+						continue;
+					}
 					return true;
 				}
 			}
-			console.log("Extension " + file + " didn't match any of the known player formats: " + supportedTypes);
-		} else {
-			console.log("No extension in: " + file);
 		}
 		return false;
 	},
@@ -798,13 +760,13 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.videoElement.style.height = "100%";
 		this.sourceElement = document.createElement("source");
 		this.sourceElement.src = url;
-		// Keep the html player muted, let the sound come through the audioManager.
+		// Keep the HTML player muted, let the sound come through the audioManager.
 		this.videoElement.muted = true;
 		// Add Them
 		this.videoElement.appendChild(this.sourceElement);
 		this.element.appendChild(this.videoElement);
 
-		// Hide default
+		// Hide default. This doesn't remove them.
 		this.canvas.style.display = "none";
 		this.canvas.style.width = "1px";
 		this.canvas.style.height = "1px";
@@ -814,7 +776,15 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.isUsingHtmlPlayer = true;
 	},
 
+	/**
+	* Sets the play and pause status of the HTML player.
+	*
+	* @method htmlSetPlayPauseStatus
+	*/
 	htmlSetPlayPauseStatus: function() {
+		if (!this.isUsingHtmlPlayer) {
+			return;
+		}
 		this.htmlSetSeekTime();
 		if (this.state.paused === true) {
 			this.videoElement.pause();
@@ -823,13 +793,15 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		}
 	},
 
-	htmlSetMuteStatus: function() {
-		// TODO determine if this should just be removed later
-		// this.videoElement.muted = this.state.muted;
-		this.videoElement.muted = true;
-	},
-
+	/**
+	* Sets the loop status of the HTML player
+	*
+	* @method htmlSetLoopStatus
+	*/
 	htmlSetLoopStatus: function() {
+		if (!this.isUsingHtmlPlayer) {
+			return;
+		}
 		if (this.state.looped === false) {
 			this.videoElement.removeAttribute("loop");
 		} else {
@@ -837,13 +809,29 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		}
 	},
 
+	/**
+	* Stops the HTML player by pausing and seeking to 0.
+	*
+	* @method htmlStop
+	*/
 	htmlStop: function() {
-		// This pauses and sets html player to beginning
+		if (!this.isUsingHtmlPlayer) {
+			return;
+		}
+		// This pauses and sets HTML player to beginning
 		this.videoElement.pause();
 		this.videoElement.currentTime = 0;
 	},
 
+	/**
+	* This seek will reset to the state value of frame position calculation for current time.
+	*
+	* @method htmlSetSeekTime
+	*/
 	htmlSetSeekTime: function() {
+		if (!this.isUsingHtmlPlayer) {
+			return;
+		}
 		let time = parseInt((this.state.frame / this.state.framerate), 10);
 		this.videoElement.currentTime = time;
 	}
