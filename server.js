@@ -630,7 +630,7 @@ var stickyAppHandler     = new StickyItems();
 process.on('uncaughtException', function(err) {
 	// handle the error safely
 	//kinect comment out is better
-	console.trace("SAGE2>	", err); //TURN BACK ON VIJAY AND JOE
+	//console.trace("SAGE2>	", err); //TURN BACK ON VIJAY AND JOE
 });
 
 

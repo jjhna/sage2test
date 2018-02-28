@@ -233,7 +233,8 @@ console.log("debugDatagram: "+ data);
 		//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
 
 		//only send url and the index of the request
-		this.contactArticulateHub(base_url+data.text, requestIndex - 1);  //send to the articulate hub
+		if( isMaster )
+			this.contactArticulateHub(base_url+data.text, requestIndex - 1);  //send to the articulate hub
 
 		//----------------------------------------
 
@@ -614,6 +615,37 @@ console.log("debugDatagram: "+ data);
 		}
 
 	},
+
+
+	childMonitorEvent: function(childId, type, data, date){
+		if( type == "childMoveEvent"){
+			console.log(data);
+			console.log("child move");
+		}
+		if( type == "childResizeEvent")
+			console.log("child resize");
+		if( type == "childMoveAndResizeEvent")
+			console.log("child move and resize");
+		if( type == "childCloseEvent" )
+			console.log("child close");
+		if( type == "childOpenEvent") {
+			//center and resize the current child
+			if( this.getNumberOfChildren() > 1){
+				this.resizeChild(this.getNumberOfChildren()-2, 400, 300, false);
+				this.moveChild(this.getNumberOfChildren()-2, 50, 2000) //move aside
+			}
+			this.moveChild(this.getNumberOfChildren()-1, 2000, 750); //center
+			this.resizeChild(this.getNumberOfChildren()-1, 1600, 1200, false);
+			console.log("child open");
+			this.refresh(date);
+		}
+		if( type == "childReopenEvent"){
+			console.log("child reopen");
+		}
+		this.refresh(date);
+		resetIdle();
+	},
+
 	// childMonitorEvent: function(childId, type, data, date){
 	// 	// if( type == "childMoveEvent")
 	// 	// 	this.monitoringText = "child: " + childId + " " + type + " x: " + data.x + "y: " + data.y;

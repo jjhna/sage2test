@@ -978,13 +978,13 @@ var SAGE2_App = Class.extend({
 			user: "parentApp", //would be nice to have actual app name... or sth
 			id: this.id,
 			msg: message,
-			childId: null,
+			childId: "",
 			initState: initState,  //note: doesn't get updated as child's state changes...
 		};
+		this.childList.push( data );
 		if( isMaster ){
 			launchLinkedChildApp(data); //defined in runtime
 		}
-		this.childList.push( data );
 	},
 
 	/**
@@ -1118,6 +1118,7 @@ var SAGE2_App = Class.extend({
 				console.log("child open event");
 				if( data.data.success ){
 					console.log("child app launch success " + data.childId);
+					console.log(this.childList[this.childList.length-1]);
 					this.childList[this.childList.length-1].childId = data.childId; //put the id into the obj
 				}
 				else{
