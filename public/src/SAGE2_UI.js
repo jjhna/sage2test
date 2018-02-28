@@ -747,6 +747,9 @@ function setupListeners() {
 	wsio.on('editorReceiveLoadedSnippet', function(data) {
 		snippetEditor.receiveLoadedSnippet(data);
 	});
+	wsio.on('editorReceiveSnippetsExport', function(data) {
+		snippetEditor.receiveProjectExport(data);
+	});
 }
 
 /**

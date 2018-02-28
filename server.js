@@ -1225,9 +1225,11 @@ function setupListeners(wsio) {
 	wsio.on('editorSnippetCloseNotify', wsEditorSnippetCloseNotify);
 	wsio.on('editorSaveSnippet', wsEditorSaveSnippet);
 	wsio.on('editorCloneSnippet', wsEditorCloneSnippet);
+	wsio.on("editorRequestSnippetsExport", wsEditorRequestSnippetsExport);
 	// - Display to WebUI
 	wsio.on("snippetsStateUpdated", wsSnippetsStateUpdated);
 	wsio.on("snippetSendCodeOnLoad", wsSnippetSendCodeOnLoad);
+	wsio.on("snippetsSendProjectExport", wsSnippetsSendProjectExport);
 
 }
 
@@ -11131,6 +11133,11 @@ function wsEditorCloneSnippet(wsio, data) {
 	broadcast("cloneSnippet", data);
 }
 
+function wsEditorRequestSnippetsExport(wsio, data) {
+
+	broadcast("snippetsExportRequest", {from: wsio.id});
+}
+
 /* ===== Code Snippets Messages from Display ===== */
 
 function wsSnippetsStateUpdated(wsio, data) {
@@ -11146,6 +11153,15 @@ function wsSnippetSendCodeOnLoad(wsio, data) {
 
 	if (ind !== -1) {
 		clients[ind].emit("editorReceiveLoadedSnippet", data);
+	}
+}
+
+function wsSnippetsSendProjectExport(wsio, data) {
+
+	let ind = clients.findIndex(c => c.id === data.to);
+
+	if (ind !== -1) {
+		clients[ind].emit("editorReceiveSnippetsExport", data);
 	}
 }
 

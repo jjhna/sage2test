@@ -1449,6 +1449,18 @@ The z-index is very important.
     float: right;
 }
 
+#codeSnippetEditor #exportProject {
+    margin-left: 8px;
+}
+
+#codeSnippetEditor #exportProject div {
+    font-family: Arimo, Helvetica, sans-serif;
+    vertical-align: middle;
+    font-size: 14px;
+    padding: 4px;
+    display: inline-block;
+}
+
 #codeSnippetEditor #snippetEditorClose:hover {
     color: rgb(225, 0, 0);
 }

@@ -1492,6 +1492,10 @@ function setupListeners() {
 		SAGE2_CodeSnippets.loadFromFile(data.snippet, data.filename);
 	});
 
+	wsio.on("snippetsExportRequest", function(data) {
+		console.log("Snippet Export Project Request");
+		SAGE2_CodeSnippets.requestSnippetsProjectExport(data.from);
+	});
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {

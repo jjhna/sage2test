@@ -103,6 +103,8 @@ let SAGE2_SnippetEditor = (function () {
 			self.copyButton = self.div.querySelector("#snippetEditorCopy");
 			self.copyButton.onclick = saveCopy;
 
+			self.div.querySelector("#exportProject").onclick = requestProjectExport;
+
 			startNewScript("gen");
 		}
 
@@ -276,12 +278,207 @@ let SAGE2_SnippetEditor = (function () {
 			}
 		}
 
+		function requestProjectExport() {
+			wsio.emit("editorRequestSnippetsExport");
+		}
+
+		function receiveProjectExport(data) {
+			console.log("Editor receive Project Export", data);
+
+			generateScriptFromWall(data.functions, data.links);
+		}
+
+		// function to create script from wall which can be run/developed on personal computer
+		function generateScriptFromWall(functions, links) {
+			console.log(functions, links);
+
+			let newWindow = window.open();
+			let newDocument = newWindow.document;
+
+			let scripts = {
+				gen: newDocument.createElement("script"),
+				data: newDocument.createElement("script"),
+				draw: newDocument.createElement("script")
+			};
+
+			let mainScript = newDocument.createElement("script");
+			let downloadScript = newDocument.createElement("script");
+
+			for (let type of Object.keys(scripts)) {
+				scripts[type].text = createTypedScriptText(
+					functions.filter(f => f.type === type)
+				);
+
+				scripts[type].id = "codeSnippets-" + type;
+				scripts[type].async = false;
+			}
+
+			mainScript.text = createMainScriptText(links);
+
+			mainScript.id = "codeSnippets-main";
+			mainScript.async = false;
+
+			downloadScript.text = createDownloadScriptText();
+
+			// add d3 to new page
+			let d3Script = newDocument.createElement("script");
+			d3Script.src = "https://d3js.org/d3.v4.min.js";
+
+			d3Script.onload = function() {
+				newDocument.body.appendChild(downloadScript);
+
+				newDocument.head.appendChild(scripts.gen);
+				newDocument.head.appendChild(scripts.data);
+				newDocument.head.appendChild(scripts.draw);
+
+				newDocument.head.appendChild(mainScript);
+			};
+
+			newDocument.head.appendChild(d3Script);
+
+			// ======================================================
+			// helper functions for creating scripts
+
+			function createTypedScriptText(functions) {
+				let scriptText = `
+				var functions = functions || {};
+				console.log(document.currentScript.id, "Loaded");
+				`.replace(/\t\t\t/gi, "");
+
+				for (let func of functions) {
+					scriptText += `\n
+					functions["${func.id}"] = {
+						type: "${func.type}",
+						desc: "${func.desc}",
+						code: ${func.code}
+					}`.replace(/\t\t\t\t/gi, "");
+				}
+
+				return scriptText;
+			}
+
+			function createMainScriptText(links) {
+				return `
+					var functions = functions || {};
+					let linkForest;
+					console.log(document.currentScript.id, "Loaded");
+
+					let runFunction = {
+						gen: function (input, link) {
+							let func = functions[link.snippetID];
+
+							// call function
+							func.code(input)
+								.then(function(result) {
+									invokeChildFunctions(result, link.children, [link.snippetID]);
+								})
+						},
+						data: function(input, link, prevFunctions) {
+							let func = functions[link.snippetID];
+							let result = func.code(input);
+
+							invokeChildFunctions(result, link.children, prevFunctions.concat(link.snippetID));
+
+						},
+						draw: function(input, link, prevFunctions) {
+							let func = functions[link.snippetID];
+
+							let funcOrder = prevFunctions.concat(link.snippetID).map(f => functions[f].desc);
+							console.log(funcOrder);
+
+							// add svg and supplementary info
+							let div = d3.select("body").append("div")
+								.style("display", "inline-block")
+
+							div.append("div")
+								.style("text-align", "center")
+								.style("font-family", "sans-serif")
+								.style("font-weight", "bold")
+								.text(funcOrder.join(" -> "));
+
+							let svg = div.append("svg")
+								.attr("width", 600).attr("height", 300)
+								.style("margin", "10px")
+								.node();
+
+							func.code(input, svg);
+						}
+					}
+
+					init();
+
+					function init() {
+						linkForest = ${JSON.stringify(links)};
+
+						console.log("Init Done", functions);
+						run();
+					}
+
+					function invokeChildFunctions(data, children, prevFunctions) {
+						for (let child of children) {
+							let { type } = functions[child.snippetID];
+
+							runFunction[type](data, child, prevFunctions);
+						}
+					}
+
+					function run() {
+
+						// for each root, invoke the function
+						for (let root of linkForest) {
+							let { type } = functions[root.snippetID];
+
+							runFunction[type](null, root);
+						}
+					}`.replace(/\t\t\t\t/gi, "");
+
+				// replace is to unindent the code and make it readable in the output
+				// since string template preserves extra 4 tab indentation from this file's src
+			}
+
+			function createDownloadScriptText() {
+				return `
+					let downloadWrapper = document.createElement("div");
+					let downloadButton = document.createElement("input");
+
+					downloadButton.type = "button";
+					downloadButton.value = "Download Page";
+					downloadButton.id = "downloadButton";
+					downloadButton.onclick = download;
+
+					downloadWrapper.appendChild(downloadButton);
+					document.body.appendChild(downloadWrapper);
+
+					function download() {
+						// create dom clone in order to clear body for download
+						let domCopy = document.documentElement.cloneNode(true);
+						let body = domCopy.getElementsByTagName("body")[0];
+						body.innerHTML = "";
+						body.onload = "run";
+
+						var element = document.createElement('a');
+						element.setAttribute('href', 'data:text/html;charset=utf-8,' 
+						+ encodeURIComponent(domCopy.outerHTML));
+						element.setAttribute('download', "snippetsOutput.html");
+
+						element.style.display = 'none';
+						document.body.appendChild(element);
+
+						element.click();
+
+						document.body.removeChild(element);
+						domCopy.remove();
+					}`.replace(/\t\t\t\t/gi, "");
+			}
+		}
+
 		return {
 			open: openEditor,
 			hide: hideEditor,
 
 			updateSnippetStates,
 			receiveLoadedSnippet,
+			receiveProjectExport,
 
 			browserClose
 		};

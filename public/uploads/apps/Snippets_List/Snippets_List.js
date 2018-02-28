@@ -146,9 +146,10 @@ var Snippets_List = SAGE2_App.extend({
 
 					group.append("path")
 						.attr("class", "snippetPath")
-						.attr("d", that.createBlockPath(type, colWidth - 10, [5, i * 38 + 8]))
+						.attr("d", that.createBlockPath(type, colWidth - 12, [6, i * 38 + 8]))
+						.style("stroke-linejoin", "round")
 						.style("fill", d.locked ? "#525252" : lightColor[d.type])
-						.style("stroke-width", 2)
+						.style("stroke-width", 3)
 						.style("stroke", () => d.locked ? lightColor[d.type] : darkColor[d.type])
 						.on("click", function(e) {
 							SAGE2_CodeSnippets.notifyUserListClick(that.lastUserClick, d);
@@ -179,7 +180,6 @@ var Snippets_List = SAGE2_App.extend({
 						.style("fill", d.locked ? lightColor[d.type] : "black")
 						.style("pointer-events", "none")
 						.text(`cS-${d.id.split("-")[1]}: ${d.desc}`);
-
 				});
 		}
 
