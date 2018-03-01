@@ -389,12 +389,22 @@ let SAGE2_SnippetEditor = (function () {
 							// add svg and supplementary info
 							let div = d3.select("body").append("div")
 								.style("display", "inline-block")
+								.style("padding", "5px")
+								.style("margin", "8px")
+								// .style("border", "2px solid gray")
+								.style("border-radius", "5px")
+								.style("box-shadow", "0 0 10px 2px gray")
+								.style("background", "lightgray");
 
 							div.append("div")
 								.style("text-align", "center")
-								.style("font-family", "sans-serif")
+								.style("font-family", "'Lucida Console', Monaco, monospace")
 								.style("font-weight", "bold")
-								.text(funcOrder.join(" -> "));
+								.style("padding", "8px")
+								.style("border-radius", "3px")
+								.style("background-color", "white")
+								.style("box-shadow", "inset 0 0 5px 1px gray")
+								.html(funcOrder.join(" &#9656; "));
 
 							let svg = div.append("svg")
 								.attr("width", 600).attr("height", 300)
@@ -442,9 +452,16 @@ let SAGE2_SnippetEditor = (function () {
 					let downloadButton = document.createElement("input");
 
 					downloadButton.type = "button";
-					downloadButton.value = "Download Page";
-					downloadButton.id = "downloadButton";
+					downloadButton.value = "Download Project";
 					downloadButton.onclick = download;
+
+					downloadButton.style.backgroundColor = "#b9e1f1";
+					downloadButton.style.border = "3px solid rgba(42, 165, 213, 0.25)";
+					downloadButton.style.padding = "8px";
+					downloadButton.style.margin = "8px";
+					downloadButton.style.borderRadius = "5px";
+					downloadButton.style.fontSize = "16px";
+					downloadButton.style.cursor = "pointer";
 
 					downloadWrapper.appendChild(downloadButton);
 					document.body.appendChild(downloadWrapper);
