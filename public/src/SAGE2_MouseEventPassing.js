@@ -1079,12 +1079,16 @@ var SAGE2PointerToNativeMouseEvent = {
 	 */
 	handleClickTarget: function(e) {
 		var appId = false;
-		console.log("Document click x,y:" + e.x + "," + e.y);
-		console.dir(e);
 		var currentElement = e.target;
 		var idWhole, idNumber;
+		var currentClassValue;
+
 		while (!appId) {
-			if (currentElement.className.includes("windowItem")) {
+			// Using getAttribute will work on SVG elements that have className as objects
+			currentClassValue = currentElement.getAttribute("class");
+			// But it returns null when no classNames have been applied
+			currentClassValue = currentClassValue ? currentClassValue : "";
+			if (currentClassValue.includes("windowItem")) {
 				idWhole = currentElement.id;
 				if (idWhole.indexOf("app_") === 0) {
 					idNumber = idWhole.substring(4); // app_ is 4 chars. starts at 0.
@@ -1095,10 +1099,11 @@ var SAGE2PointerToNativeMouseEvent = {
 					}
 				}
 			}
-			if (!currentElement.parentNode) {
+			// Using element instead of node to avoid document node.
+			if (!currentElement.parentElement) {
 				break;
 			}
-			currentElement = currentElement.parentNode;
+			currentElement = currentElement.parentElement;
 		}
 		if (!appId) {
 			return; // dont do anything, might have been a native click.
