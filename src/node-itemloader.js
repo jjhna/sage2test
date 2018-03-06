@@ -397,7 +397,7 @@ AppLoader.prototype.loadVideoFromFile = function(file, mime_type, aUrl, external
 				url: external_url,
 				data: {
 					// Using CompressorName to determine if should be html player or use the server side decoding
-					CompressorName: exif.CompressorName,
+					CompressorName: (exif) ? ((exif.CompressorName) ? exif.CompressorName : "") : "",
 					width: data.width,
 					height: data.height,
 					colorspace: "YUV420p",
