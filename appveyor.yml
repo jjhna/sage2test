@@ -38,8 +38,8 @@ install:
   - npm install npm
   - npm install -g kthxbai
   - kthxbai
-#  - curl -LsSO http://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-3.0.1-win64-shared.7z
-  - curl -LsSO https://bitbucket.org/sage2/binaries/downloads/ffmpeg-3.2.4-win64-shared.zip
+  - curl -LsSO https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-3.2.4-win64-dev.zip
+# - curl -LsSO https://bitbucket.org/sage2/binaries/downloads/ffmpeg-3.2.4-win64-shared.zip
   - 7z x ffmpeg-3.2.4-win64-shared.zip -o.  > nul
   - copy ffmpeg-3.2.4-win64-shared\bin\*.dll node_modules\node-demux\build\Release\
   - copy ffmpeg-3.2.4-win64-shared\bin\*.dll bin\
