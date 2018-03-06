@@ -10,7 +10,7 @@
 /* global  */
 
 var Snippets_List = SAGE2_App.extend({
-	init: function(data) {
+	init: function (data) {
 		// Create div into the DOM
 		this.SAGE2Init("div", data);
 		// Set the DOM id
@@ -26,7 +26,7 @@ var Snippets_List = SAGE2_App.extend({
 		this.cols = {};
 
 		this.svg = d3.select(this.element)
-		.append("svg")
+			.append("svg")
 			.attr("width", data.width)
 			.attr("height", data.height)
 			.style("background", "#525252");
@@ -44,17 +44,17 @@ var Snippets_List = SAGE2_App.extend({
 
 		this.svg
 			.selectAll(".snippetTypeColGroup").data(colNames)
-		.enter().append("g")
+			.enter().append("g")
 			.attr("class", "snippetTypeColGroup")
-			.each(function(d, i) {
+			.each(function (d, i) {
 				let col = that.cols[d] = d3.select(this);
 
-				col.attr("transform", `translate(${ i * data.width/3}, 0)`)
+				col.attr("transform", `translate(0, ${i * 46})`)
 
 				col.append("rect")
 					.attr("class", "snippetTypeColBG")
-					.attr("width", data.width / 3)
-					.attr("height", data.height)
+					.attr("width", data.width)
+					.attr("height", 46)
 					.style("fill", bgColor[d])
 					.style("opacity", 0.25)
 					.style("stroke", "white");
@@ -78,7 +78,7 @@ var Snippets_List = SAGE2_App.extend({
 		SAGE2_CodeSnippets.registerSnippetListApp(data.id, this);
 	},
 
-	createBlockPath: function(type, width, offset) {
+	createBlockPath: function (type, width, offset) {
 		let mult = [width, 30];
 
 		let points = {
@@ -106,14 +106,14 @@ var Snippets_List = SAGE2_App.extend({
 			]
 		};
 
-		return "M " + points[type].map(point => 
-			point.map((coord, i) => 
+		return "M " + points[type].map(point =>
+			point.map((coord, i) =>
 				(coord * mult[i]) + offset[i]
 			).join(" ")).join(" L ") + " Z";
 	},
 
-	updateFunctionBank: function(data, date) {
-		console.log("Snippets_List> Update Functions", data);
+	updateFunctionBank: function (data, date) {
+		// console.log("Snippets_List> Update Functions", data);
 
 		let lightColor = {
 			gen: "#b3e2cd",
@@ -129,19 +129,40 @@ var Snippets_List = SAGE2_App.extend({
 
 		let that = this;
 
+		let lengths = {};
+		let currentY = 0;
+
+		for (let type of Object.keys(lightColor)) {
+			let funcsOfType = Object.values(data).filter(f => f.type === type);
+
+			lengths[type] = funcsOfType.length;
+
+			// resize the column background
+			let col = this.cols[type];
+
+			let thisHeight = Math.max(38 * lengths[type] + 8, this.sage2_height / 3);
+			col.select("rect")
+				.datum(38 * lengths[type] + 8)
+				.attr("height", thisHeight);
+
+			col.attr("transform", `translate(0, ${currentY})`);
+			currentY += thisHeight;
+		}
+
+
 		for (let type of Object.keys(lightColor)) {
 			let col = this.cols[type];
 			let funcs = Object.values(data).filter(f => f.type === type);
 
-			let colWidth = that.sage2_width / 3;
+			let colWidth = that.sage2_width;
 
 			col.selectAll(".snippetFuncBlock").remove();
 
 			col.selectAll(".snippetFuncBlock")
 				.data(funcs)
-			.enter().append("g")
+				.enter().append("g")
 				.attr("class", "snippetFuncBlock")
-				.each(function(d, i) {
+				.each(function (d, i) {
 					let group = d3.select(this);
 
 					group.append("path")
@@ -151,7 +172,7 @@ var Snippets_List = SAGE2_App.extend({
 						.style("fill", d.locked ? "#525252" : lightColor[d.type])
 						.style("stroke-width", 3)
 						.style("stroke", () => d.locked ? lightColor[d.type] : darkColor[d.type])
-						.on("click", function(e) {
+						.on("click", function (e) {
 							SAGE2_CodeSnippets.notifyUserListClick(that.lastUserClick, d);
 							that.lastUserClick = null;
 						});
@@ -160,19 +181,19 @@ var Snippets_List = SAGE2_App.extend({
 
 					group.selectAll(".snippetSelectors")
 						.data(d.selectors)
-					.enter().append("line")
+						.enter().append("line")
 						.attr("class", "snippetSelectors")
 						.attr("y1", (1 + i) * 38 - 4)
 						.attr("y2", (1 + i) * 38 - 4)
-						.attr("x1", (d, i) => colWidth/10 + ((selectorWidth + 3) * i) + 13)
-						.attr("x2", (d, i) => colWidth/10 + ((selectorWidth + 3) * i) + selectorWidth - 3)
+						.attr("x1", (d, i) => colWidth / 10 + ((selectorWidth + 3) * i) + 13)
+						.attr("x2", (d, i) => colWidth / 10 + ((selectorWidth + 3) * i) + selectorWidth - 3)
 						.style("stroke-width", 4)
 						.style("stroke-linecap", "round")
 						.style("stroke", d => d.color);
 
 					group.append("text")
 						.attr("class", "snippetName")
-						.attr("x", colWidth/2)
+						.attr("x", colWidth / 2)
 						.attr("y", (1 + i) * 38 - 9)
 						.style("text-anchor", "middle")
 						.style("font-weight", "bold")
@@ -185,41 +206,44 @@ var Snippets_List = SAGE2_App.extend({
 
 	},
 
-	load: function(date) {
+	load: function (date) {
 		console.log("Snippets_List> Load with state value", this.state.value);
 		this.refresh(date);
 	},
 
-	draw: function(date) {
+	draw: function (date) {
 		console.log('Snippets_List> Draw with state value', this.state.value);
 	},
 
-	resize: function(date) {
+	resize: function (date) {
 		// Called when window is resized
-		let colWidth = this.sage2_width / 3;
-		let colHeight = this.sage2_height;
+		let colWidth = this.sage2_width;
+		let colHeight = this.sage2_height / 3;
 
 		let that = this;
-		
+
 		this.svg
-      .attr("height", this.sage2_height)
-      .attr("width", this.sage2_width);
+			.attr("height", this.sage2_height)
+			.attr("width", this.sage2_width);
+
+		let currentY = 0;
 
 		this.svg.selectAll(".snippetTypeColGroup")
-			.attr("transform", (d, i) => `translate(${i * colWidth}, 0)`)
-			.each(function(type) {
+			.each(function (type) {
+				d3.select(this).attr("transform", (d, i) => `translate(0, ${currentY})`);
 
 				d3.select(this).selectAll(".snippetFuncBlock")
-					.each(function(func, i) {
+					.each(function (func, i) {
+
 
 						d3.select(this).selectAll(".snippetPath")
 							.attr("d", that.createBlockPath(type, colWidth - 10, [5, i * 38 + 8]))
-							
+
 						let selectorWidth = (((colWidth - 10) * 0.8) - (func.selectors.length + 1) * 3) / func.selectors.length;
 
 						d3.select(this).selectAll(".snippetSelectors")
-							.attr("x1", (d, i) => colWidth/10 + ((selectorWidth + 3) * i) + 13)
-							.attr("x2", (d, i) => colWidth/10 + ((selectorWidth + 3) * i) + selectorWidth - 3)
+							.attr("x1", (d, i) => colWidth / 10 + ((selectorWidth + 3) * i) + 13)
+							.attr("x2", (d, i) => colWidth / 10 + ((selectorWidth + 3) * i) + selectorWidth - 3)
 							.style("stroke-width", 4)
 							.style("stroke-linecap", "round")
 							.style("stroke", d => d.color);
@@ -230,23 +254,29 @@ var Snippets_List = SAGE2_App.extend({
 
 				d3.select(this).selectAll(".snippetTypeColBG")
 					.attr("width", colWidth)
-					.attr("height", colHeight);
+					.attr("height", d => {
+						let height = Math.max(d, colHeight);
+
+						currentY += height;
+
+						return height;
+					});
 			});
 
 		// this.refresh(date);
 	},
 
-	move: function(date) {
+	move: function (date) {
 		// Called when window is moved (set moveEvents to continuous)
 		this.refresh(date);
 	},
 
-	quit: function() {
+	quit: function () {
 		// Make sure to delete stuff (timers, ...)
 		SAGE2_CodeSnippets.unregisterSnippetListApp(this.id);
 	},
 
-	event: function(eventType, position, user_id, data, date) {
+	event: function (eventType, position, user_id, data, date) {
 		if (eventType === "pointerPress" && (data.button === "left")) {
 			// click
 			this.lastUserClick = user_id;

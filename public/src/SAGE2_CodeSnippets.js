@@ -23,6 +23,8 @@ let SAGE2_CodeSnippets = (function() {
 		links: {},
 		linkCount: 0,
 
+		inputs: {},
+
 		datasets: {},
 		dataCount: 0,
 		drawings: {},
@@ -68,6 +70,29 @@ let SAGE2_CodeSnippets = (function() {
 		// update the saved function definition
 		let func = self.functions[id] = definition;
 
+		console.log(func.inputs, func.state);
+
+		// default values for different types of inputs (limited for now)
+		let stateDefaults = {
+			range: 0,
+			text: "",
+			checkbox: true
+		};
+
+		// initialize state values based on input types
+		for (let input of Object.keys(func.inputs)) {
+			if (!func.state[input]) {
+				func.state[input] = stateDefaults[func.inputs[input].type];
+			}
+		}
+
+		// bind the state values as 'this' for function call
+		// -- this matches the replaced strings in code
+		func.code = func.code.bind({
+			inputs: func.state
+		});
+
+
 		// update links which use this function
 		if (func.links) {
 			for (let linkID of func.links) {
@@ -109,8 +134,9 @@ let SAGE2_CodeSnippets = (function() {
 	function saveSnippet(uniqueID, code, desc, type, scriptID) {
 		var script = document.createElement("script");
 
-		let links;
+		let links = [];
 		let src = null;
+		let state = {};
 
 		if (scriptID !== "new") {
 			let oldFunction = self.functions[scriptID];
@@ -119,16 +145,15 @@ let SAGE2_CodeSnippets = (function() {
 			document.getElementById(scriptID).remove();
 			links = oldFunction.links;
 			src = oldFunction.src;
+			state = oldFunction.state;
 
 			// clear any intervals remaining from a generator script
 			if (oldFunction.interval) {
 				clearInterval(oldFunction.interval);
 			}
-		} else {
-			links = [];
 		}
 
-		script.text = createScriptBody(uniqueID, code, desc, links, scriptID, type, src);
+		script.text = createScriptBody(uniqueID, code, desc, links, scriptID, type, src, state);
 
 		script.charset = "utf-8";
 
@@ -175,7 +200,14 @@ let SAGE2_CodeSnippets = (function() {
 		updateListApps();
 	}
 
-	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src) {
+	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src, state) {
+		// replace special syntax pieces using RegExp
+		let inputs = {};
+		let inputsRegex = new SnippetsInputRegExp(/SAGE2.Input\(({[\w,\W]*?})\)/, "gm");
+
+		// "compile" code and replace/extract special syntax values
+		let compiledCode = code.replace(inputsRegex, inputs);
+
 		let startBlock = `(function() {
 			console.log('Sandbox script Loading');
 			// check if script with same src exists
@@ -205,6 +237,8 @@ let SAGE2_CodeSnippets = (function() {
 				type: "${type}",
 				desc: "${desc}",
 				editor: "${uniqueID}",
+				inputs: ${JSON.stringify(inputs)},
+				state: ${state ? JSON.stringify(state) : '{}'},
 				links: JSON.parse(\`${links ? JSON.stringify(links) : []}\`),
 				text: \`${code.replace(/`/gi, "\\`").replace(/\$/gi, "\\$")}\`,
 				code: `;
@@ -220,7 +254,7 @@ let SAGE2_CodeSnippets = (function() {
 
 		})();`;
 
-		return startBlock + createFunctionBlock(type, code) + endBlock;
+		return startBlock + createFunctionBlock(type, compiledCode) + endBlock;
 	}
 
 	function createFunctionBlock(type, code) {
@@ -244,7 +278,7 @@ let SAGE2_CodeSnippets = (function() {
 			})`,
 			gen: `(function (previousData) {
 				// Promise to handle async
-				return new Promise(function(resolve, reject) {
+				return new Promise((resolve, reject) => {
 					/* USER DEFINED CODE */
 					// Code written by user will be inserted here
 
@@ -648,4 +682,47 @@ let SAGE2_CodeSnippets = (function() {
 		requestSnippetsProjectExport
 	};
 }());
+
+// Regular Expression which will replace SAGE2.Input({ ... })
+//   syntax, extracting input element parameters and replacing
+//   with a future bound reference
+class SnippetsInputRegExp extends RegExp {
+	// change the replace function
+	[Symbol.replace](str, inputs) {
+		let output = ``;
+
+		console.log("Input Code:\n\n" + str);
+
+		let result;
+		let lastIndex = 0;
+		while ((result = this.exec(str))) {
+			// parse properties of the inputs
+			let properties = JSON.parse(result[1]);
+
+			if (!properties.name) {
+				throw new ReferenceError("'name' not found in SAGE2.Input specification");
+			}
+
+			if (!properties.type) {
+				throw new ReferenceError("'type' not found in SAGE2.Input specification");
+			}
+
+			// save these values into the input object
+			inputs[properties.name] = properties;
+			// state[properties.name] = 10; // this will be dependent on input Type
+
+			// reconstruct code string with SAGE2.Input calls transformed to this.inputs["inputName"] syntax
+			output += str.substring(lastIndex, result.index) + `this.inputs["${properties.name}"]`;
+			lastIndex = result.index + result[0].length;
+		}
+
+		// append rest of code
+		output += str.substring(lastIndex);
+
+		console.log("Output Code:\n\n", output);
+
+		return output;
+	}
+}
+
 
