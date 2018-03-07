@@ -448,7 +448,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	},
 
 	/**
-	* Calls togglePlayPause passing the given time.
+	* Calls toggleMute passing the given time.
 	*
 	* @method contextToggleMute
 	* @param responseObject {Object} contains response from entry selection
@@ -796,6 +796,31 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		} else {
 			this.videoElement.play();
 		}
+		// requestAnimationFrame(() => { this.htmlTimeCheckers(); });
+	},
+
+	/**
+	* Using this to figure out if the server or the player is time-wise wrong.
+	*
+	* @method htmlTimeCheckers
+	*/
+	htmlTimeCheckers: function() {
+		if (!this.timeCheckStart) {
+			this.timeCheckStart = Date.now();
+		}
+
+		// 5 seconds later
+		if (Date.now() >= this.timeCheckStart + 5000) {
+			console.log("state frame:" + this.state.frame + "(" + (this.state.frame / this.state.framerate) + ")");
+			console.log("video frame:" + this.videoElement.currentTime);
+			this.togglePlayPause(new Date(Date.now()));
+			this.timeCheckStart = false;
+			console.log("stopping");
+		} else {
+			requestAnimationFrame(() => {
+				this.htmlTimeCheckers();
+			});
+		}
 	},
 
 	/**
@@ -837,7 +862,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (!this.isUsingHtmlPlayer) {
 			return;
 		}
-		let time = parseInt((this.state.frame / this.state.framerate), 10);
+		let time = this.state.frame / this.state.framerate;
 		this.videoElement.currentTime = time;
 	}
 });
