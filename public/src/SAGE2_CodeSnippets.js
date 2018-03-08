@@ -17,6 +17,7 @@ let SAGE2_CodeSnippets = (function() {
 		functions: {},
 		functionCount: 0,
 
+		isOpeningList: false,
 		listApps: {},
 		userInteractions: {},
 
@@ -70,27 +71,25 @@ let SAGE2_CodeSnippets = (function() {
 		// update the saved function definition
 		let func = self.functions[id] = definition;
 
-		console.log(func.inputs, func.state);
-
 		// default values for different types of inputs (limited for now)
-		let stateDefaults = {
-			range: 0,
-			text: "",
-			checkbox: true
-		};
+		// let stateDefaults = {
+		// 	range: 0,
+		// 	text: "",
+		// 	checkbox: true
+		// };
 
-		// initialize state values based on input types
-		for (let input of Object.keys(func.inputs)) {
-			if (!func.state[input]) {
-				func.state[input] = stateDefaults[func.inputs[input].type];
-			}
-		}
+		// // initialize state values based on input types
+		// for (let input of Object.keys(func.inputs)) {
+		// 	if (!func.state[input]) {
+		// 		func.state[input] = stateDefaults[func.inputs[input].type];
+		// 	}
+		// }
 
-		// bind the state values as 'this' for function call
-		// -- this matches the replaced strings in code
-		func.code = func.code.bind({
-			inputs: func.state
-		});
+		// // bind the state values as 'this' for function call
+		// // -- this matches the replaced strings in code
+		// func.code = func.code.bind({
+		// 	inputs: func.state
+		// });
 
 
 		// update links which use this function
@@ -116,19 +115,20 @@ let SAGE2_CodeSnippets = (function() {
 				snippetID: id,
 				filename: func.src ? func.src : null
 			});
+
+			// send info for user who saved code to load
+			wsio.emit("snippetSendCodeOnLoad", {
+				scriptID: id,
+				to: definition.editor,
+				text: definition.text,
+				type: definition.type,
+				desc: definition.desc
+			});
+
+			let functionState = getFunctionInfo();
+			wsio.emit("snippetsStateUpdated", functionState);
 		}
 
-		// send info for user who saved code to load
-		wsio.emit("snippetSendCodeOnLoad", {
-			scriptID: id,
-			to: definition.editor,
-			text: definition.text,
-			type: definition.type,
-			desc: definition.desc
-		});
-
-		let functionState = getFunctionInfo();
-		wsio.emit("snippetsStateUpdated", functionState);
 	}
 
 	function saveSnippet(uniqueID, code, desc, type, scriptID) {
@@ -202,11 +202,13 @@ let SAGE2_CodeSnippets = (function() {
 
 	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src, state) {
 		// replace special syntax pieces using RegExp
-		let inputs = {};
-		let inputsRegex = new SnippetsInputRegExp(/SAGE2.Input\(({[\w,\W]*?})\)/, "gm");
+		// let inputs = {};
+
+		let inputsRegex = new SnippetsInputRegExp(/SAGE2.SnippetInput\(({[\w,\W]*?})\)/, "gm");
 
 		// "compile" code and replace/extract special syntax values
-		let compiledCode = code.replace(inputsRegex, inputs);
+		let compiledCode = code.replace(inputsRegex);
+		// let compiledCode = code.replace(inputsRegex, inputs);
 
 		let startBlock = `(function() {
 			console.log('Sandbox script Loading');
@@ -237,8 +239,6 @@ let SAGE2_CodeSnippets = (function() {
 				type: "${type}",
 				desc: "${desc}",
 				editor: "${uniqueID}",
-				inputs: ${JSON.stringify(inputs)},
-				state: ${state ? JSON.stringify(state) : '{}'},
 				links: JSON.parse(\`${links ? JSON.stringify(links) : []}\`),
 				text: \`${code.replace(/`/gi, "\\`").replace(/\$/gi, "\\$")}\`,
 				code: `;
@@ -255,11 +255,12 @@ let SAGE2_CodeSnippets = (function() {
 		})();`;
 
 		return startBlock + createFunctionBlock(type, compiledCode) + endBlock;
+		// return startBlock + createFunctionBlock(type, code) + endBlock;
 	}
 
 	function createFunctionBlock(type, code) {
 		let functionBlocks = {
-			data: `(function (data) {
+			data: `(function (data, link) {
 				/* USER DEFINED CODE */
 				// Code written by user will be inserted here
 				
@@ -267,7 +268,7 @@ let SAGE2_CodeSnippets = (function() {
 
 				/* END USER DEFINED CODE*/
 			})`,
-			draw: `(function (data, svg) {
+			draw: `(function (data, svg, link) {
 				/* USER DEFINED CODE */
 				// Code written by user will be inserted here
 
@@ -276,7 +277,7 @@ let SAGE2_CodeSnippets = (function() {
 				/* END USER DEFINED CODE*/
 		
 			})`,
-			gen: `(function (previousData) {
+			gen: `(function (previousData, link) {
 				// Promise to handle async
 				return new Promise((resolve, reject) => {
 					/* USER DEFINED CODE */
@@ -297,18 +298,22 @@ let SAGE2_CodeSnippets = (function() {
 		if (self.functions[scriptID] && !self.functions[scriptID].editor) {
 			self.functions[scriptID].editor = uniqueID;
 
-			wsio.emit("snippetSendCodeOnLoad", {
-				scriptID: scriptID,
-				to: self.functions[scriptID].editor,
-				text: self.functions[scriptID].text,
-				type: self.functions[scriptID].type,
-				desc: self.functions[scriptID].desc
-			});
+			if (isMaster) {
+				wsio.emit("snippetSendCodeOnLoad", {
+					scriptID: scriptID,
+					to: self.functions[scriptID].editor,
+					text: self.functions[scriptID].text,
+					type: self.functions[scriptID].type,
+					desc: self.functions[scriptID].desc
+				});
+			}
 		}
 
 		// broadcast update of function states
-		let functionState = getFunctionInfo();
-		wsio.emit("snippetsStateUpdated", functionState);
+		if (isMaster) {
+			let functionState = getFunctionInfo();
+			wsio.emit("snippetsStateUpdated", functionState);
+		}
 
 		updateListApps();
 	}
@@ -349,7 +354,11 @@ let SAGE2_CodeSnippets = (function() {
 	}
 
 	function createListApplication() {
-		if (isMaster) {
+		console.log("createListApplication", isMaster, !self.isOpeningList);
+		if (isMaster && !self.isOpeningList) {
+			self.isOpeningList = true;
+			console.log("Opening List");
+
 			wsio.emit("loadApplication", {
 				application:
 					"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_List",
@@ -460,6 +469,7 @@ let SAGE2_CodeSnippets = (function() {
 		console.log("SAGE2_CodeSnippets> Registered", id);
 
 		self.listApps[id] = app;
+		self.isOpeningList = false;
 		app.updateFunctionBank(getFunctionInfo());
 	}
 
@@ -587,7 +597,27 @@ let SAGE2_CodeSnippets = (function() {
 		let curator = self; // alias enclosing scope's 'self'
 
 		return function(parent, child, transformID) {
-			let self = { parent, child, transformID };
+			let self = {
+				parent,
+				child,
+				transformID,
+
+				inputs: {}
+			};
+
+			let publicMethods = {
+				update,
+				setParent,
+				getParent,
+				setChild,
+				getChild,
+				getSnippetID,
+
+				createInput,
+				getInputState,
+				mergeInputState,
+				getAllInputStates
+			};
 
 			init();
 
@@ -615,6 +645,22 @@ let SAGE2_CodeSnippets = (function() {
 				return self.transformID;
 			}
 
+			function createInput(inputObject) {
+
+			}
+
+			function getInputState(inputName) {
+
+			}
+
+			function mergeInputState(inputName, newState) {
+
+			}
+
+			function getAllInputStates() {
+
+			}
+
 			function update() {
 				let p = self.parent;
 				let c = self.child;
@@ -623,7 +669,7 @@ let SAGE2_CodeSnippets = (function() {
 				if (curator.functions[id].type === "data" && p) {
 					// call function (calculates new dataset and updates child)
 					try {
-						let result = curator.functions[id].code(p.getDataset());
+						let result = curator.functions[id].code.call(c, p.getDataset(), publicMethods);
 						c.updateDataset(result);
 					} catch (err) {
 						c.displayError(err);
@@ -631,7 +677,7 @@ let SAGE2_CodeSnippets = (function() {
 				} else if (curator.functions[id].type === "draw" && p) {
 					// call function (plots data on svg)
 					try {
-						curator.functions[id].code(p.getDataset(), c.getElement());
+						curator.functions[id].code.call(c, p.getDataset(), c.getElement(), publicMethods);
 					} catch (err) {
 						c.displayError(err);
 					}
@@ -639,7 +685,7 @@ let SAGE2_CodeSnippets = (function() {
 					// call function (this returns a promise)
 
 					curator.functions[id]
-						.code(c.getDataset())
+						.code.call(c, c.getDataset(), publicMethods)
 						.then(function(data) {
 							c.updateDataset(data);
 						})
@@ -649,7 +695,7 @@ let SAGE2_CodeSnippets = (function() {
 				}
 			}
 
-			return { update, setParent, getParent, setChild, getChild, getSnippetID };
+			return publicMethods;
 		};
 	}());
 
@@ -691,35 +737,27 @@ class SnippetsInputRegExp extends RegExp {
 	[Symbol.replace](str, inputs) {
 		let output = ``;
 
-		console.log("Input Code:\n\n" + str);
+		// console.log("Input Code:\n\n" + str);
 
 		let result;
 		let lastIndex = 0;
 		while ((result = this.exec(str))) {
 			// parse properties of the inputs
-			let properties = JSON.parse(result[1]);
-
-			if (!properties.name) {
-				throw new ReferenceError("'name' not found in SAGE2.Input specification");
-			}
-
-			if (!properties.type) {
-				throw new ReferenceError("'type' not found in SAGE2.Input specification");
-			}
+			// let properties = JSON.parse(result[1]);
 
 			// save these values into the input object
-			inputs[properties.name] = properties;
+			// inputs[properties.name] = properties;
 			// state[properties.name] = 10; // this will be dependent on input Type
 
-			// reconstruct code string with SAGE2.Input calls transformed to this.inputs["inputName"] syntax
-			output += str.substring(lastIndex, result.index) + `this.inputs["${properties.name}"]`;
+			// reconstruct code string with SAGE2.Input calls given an extra property of link
+			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, link)`;
 			lastIndex = result.index + result[0].length;
 		}
 
 		// append rest of code
 		output += str.substring(lastIndex);
 
-		console.log("Output Code:\n\n", output);
+		// console.log("Output Code:\n\n", output);
 
 		return output;
 	}

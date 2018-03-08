@@ -1494,7 +1494,9 @@ function setupListeners() {
 
 	wsio.on("snippetsExportRequest", function(data) {
 		console.log("Snippet Export Project Request");
-		SAGE2_CodeSnippets.requestSnippetsProjectExport(data.from);
+		if (isMaster) {
+			SAGE2_CodeSnippets.requestSnippetsProjectExport(data.from);
+		}
 	});
 }
 
