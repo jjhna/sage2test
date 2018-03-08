@@ -1,5 +1,7 @@
 version: 3.0.{build}
 
+image: Visual Studio 2017
+
 branches:
   only:
   - master
@@ -20,7 +22,7 @@ install:
   - node -v
   - cd %APPVEYOR_BUILD_FOLDER%
   - cd client
-  - npm install --msvs_version=2013
+  - npm install --msvs_version=2017
   # - copy /Y ..\electron.js  electron.js
   - dir
   - mkdir public
