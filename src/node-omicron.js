@@ -29,6 +29,8 @@ var sageutils           = require('./node-utils');            // provides the cu
 var CoordinateCalculator = require('./node-coordinateCalculator');
 var OneEuroFilter        = require('./node-1euro');
 
+var WebSocket = require('ws'); // Communication between SAGE2 and Unity Webviews
+
 /* eslint consistent-this: ["error", "omicronManager"] */
 var omicronManager; // Handle to OmicronManager inside of udp blocks (instead of this)
 var drawingManager; // Connect to the node-drawing
@@ -88,6 +90,10 @@ function OmicronManager(sysConfig) {
 
 	this.wandXFilter = new OneEuroFilter(freq, mincutoff, beta, dcutoff);
 	this.wandYFilter = new OneEuroFilter(freq, mincutoff, beta, dcutoff);
+
+	this.curTime = 0;
+	this.lastEventTime = 0;
+	this.updateEventTimer = 0;
 
 	if (sysConfig.experimental !== undefined) {
 		this.config = sysConfig.experimental.omicron;
@@ -252,10 +258,37 @@ function OmicronManager(sysConfig) {
 
 		omicronManager.runTracker();
 	}
+
+
+	// Unity WebView
+	var wsPort = 19090;
+
+	// Note this is not secure!!!!
+	this.wsServer = new WebSocket.Server({ port: wsPort });
+	sageutils.log('Omicron', 'Starting WebSocketIO on port ' + wsPort);
+	this.wsServer.on('connection', this.openWebSocketClient);
+
+	this.wsServer.broadcast = function broadcast(data) {
+		omicronManager.wsServer.clients.forEach(function each(client) {
+			if (client.readyState === WebSocket.OPEN) {
+				client.send(data);
+			}
+		});
+	};
 }
 
+OmicronManager.prototype.openWebSocketClient = function(ws, req) {
+	sageutils.log('Omicron', 'WebSocket Client connected: ' + req.connection.remoteAddress);
+	omicronManager.sendToWebSocketClient({msg: "SAGE2_Hello"});
+};
+
+OmicronManager.prototype.sendToWebSocketClient = function(data) {
+	omicronManager.wsServer.broadcast(JSON.stringify(data));
+};
+
+
 /**
- * Initalizes connection with Omicron input servr
+ * Initializes connection with Omicron input server
  *
  * @method connect
  */
@@ -411,10 +444,7 @@ OmicronManager.prototype.sageToOmicronEvent = function(uniqueID, pointerX, point
 };
 
 OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
-	var dstart = Date.now();
-	var emit   = 0;
-	this.nonCriticalEventDelay = -1;
-	this.lastNonCritEventTime = dstart;
+	omicronManager.curTime = Date.now();
 
 	/*
 	if(rinfo == undefined) {
@@ -502,6 +532,12 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 
 	var sourceID = e.sourceId;
 
+	var time = new Date();
+	var timeStr = time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds() + "." + time.getMilliseconds();
+
+	omicronManager.updateEventTimer += time - omicronManager.lastEventTime;
+	omicronManager.lastEventTime = time;
+
 	// serviceType:
 	// 0 = Pointer
 	// 1 = Mocap
@@ -534,7 +570,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 	// ServiceTypePointer
 	//
 	if (serviceType === 0 && omicronManager.enableTouch) {
-		omicronManager.processPointerEvent(e, sourceID, posX, posY, msg, offset, address, emit, dstart);
+		omicronManager.processPointerEvent(e, sourceID, posX, posY, msg, offset, address);
 	} else if (serviceType === 1 && omicronManager.enableMocap) {
 
 		// Kinect v2.0 data has 29 extra data fields
@@ -699,7 +735,6 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 						omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
 						omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
 
-						// console.log((Date.now() - dstart) + "] Wand drag");
 						omicronManager.lastNonCritEventTime = Date.now();
 					}
 				}
@@ -786,10 +821,8 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
  * @param posY {Float} Pointer y position in screen coordinates
  * @param msg {Binary} Binary message. Used to get extraData values
  * @param offset {Integer} Current offset position of msg
- * @param emit {}
- * @param dstart {}
  */
-OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY, msg, offset, address, emit, dstart) {
+OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY, msg, offset, address) {
 	var touchWidth  = 0;
 	var touchHeight = 0;
 
@@ -882,8 +915,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		initY = posY;
 	}
 
-	// var timeSinceLastNonCritEvent = Date.now() - omicronManager.lastNonCritEventTime;
-
 	var flagStrings = {};
 	flagStrings[FLAG_SINGLE_TOUCH] = "FLAG_SINGLE_TOUCH";
 	flagStrings[FLAG_BIG_TOUCH] = "FLAG_BIG_TOUCH";
@@ -922,7 +953,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		// Update pointer position
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
 		omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
-
+		
 		/*
 		if (timeSinceLastNonCritEvent > omicronManager.nonCriticalEventDelay) {
 			if (e.flags == 0 || e.flags == FLAG_SINGLE_TOUCH) { // Basic touch event, non-gesture
@@ -957,7 +988,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Create the pointer
 		omicronManager.createSagePointer(address);
-
+		
 		// Set the pointer style
 		var pointerStyle = "Touch";
 		if (omicronManager.config.style !== undefined) {
@@ -981,7 +1012,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Set the initial pointer position
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
-
+				
 		// Send 'click' event
 		omicronManager.pointerPress(address, posX, posY, { button: "left" });
 
@@ -1069,11 +1100,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		}
 	} else {
 		console.log("\t UNKNOWN event type ", e.type, typeStrings[e.type]);
-	}
-
-	if (emit > 2) {
-		dstart = Date.now();
-		emit = 0;
 	}
 };
 
