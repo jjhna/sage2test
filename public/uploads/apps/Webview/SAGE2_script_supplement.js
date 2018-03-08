@@ -29,7 +29,14 @@ Quote from MDN:
 Nodes without value should NOT be checking for keypress.
 And checks for keydown will not be normally activated. This has been confirmed Youtube and spacebar for pausing video.
 */
+
+document.addEventListener("keydown", function(e) {
+	console.log("keydown:" + e.keyCode);
+});
+
+
 document.addEventListener("keypress", function(e) {
+	console.log("keypress:" + e.keyCode);
 	var kue = new CustomEvent("keydown", {bubbles:true});
 	kue.target = e.target;
 	kue.view = e.view;
@@ -53,46 +60,97 @@ document.addEventListener("keypress", function(e) {
 		s2InjectForKeys.lastClickedElement.dispatchEvent(kue);
 		// should this be prevented? what if something check for keypress?
 		e.preventDefault();
+	} else { // else it was an input target
+		addDeleteBackspaceHandlerToInputElement(e.target);
 	}
 });
 
 // after any click, track the node clicked to send further events to it.
 document.addEventListener("click", function(e) {
-	s2InjectForKeys.lastClickedElement = document.elementFromPoint(e.clientX, e.clientY);
+	// s2InjectForKeys.lastClickedElement = document.elementFromPoint(e.clientX, e.clientY);
+	addDeleteBackspaceHandlerToInputElement(e.target);
 });
+
+
+/**
+ * Adds handler to input element to remove text.
+ *
+ * @method     addDeleteBackspaceHandlerToInputElement
+ * @param      {Object} element The input element
+ */
+function addDeleteBackspaceHandlerToInputElement(element) {
+	// Only add to elements which have text input
+	if ((!element) || (element.value === undefined) || (element.type !== "text")) {
+		return;
+	}
+	// Prevent double add
+	if (element.deleteKeyHandler === undefined){
+		element.deleteKeyHandler = function(e) {
+			if (e.keyCode == 8) {
+				console.log("bck / del");
+				elem = this;
+				let tempValue, tempSelectionStart;
+				// check if there is a selection
+				if (elem.selectionStart !== undefined && (elem.selectionStart !== elem.selectionEnd)) {
+					tempSelectionStart = elem.selectionStart;
+					tempValue = "";
+					tempValue = elem.value.substring(0, elem.selectionStart);
+					tempValue += elem.value.substring(elem.selectionEnd);
+					elem.value = tempValue;
+					elem.selectionStart = tempSelectionStart;
+					elem.selectionEnd = tempSelectionStart;
+				} else if (elem.selectionStart !== undefined) {
+					tempSelectionStart = elem.selectionStart;
+					tempValue = "";
+					tempValue = elem.value.substring(0, elem.selectionStart - 1); // Removes character at selection start
+					tempValue += elem.value.substring(elem.selectionStart);
+					elem.value = tempValue;
+					elem.selectionStart = tempSelectionStart - 1;
+					elem.selectionEnd = tempSelectionStart - 1;
+				}
+				else {
+					this.value = this.value.substring(0, this.value.length - 1);
+				}
+			}
+		};
+		element.addEventListener("keyup", element.deleteKeyHandler);
+	}
+}
+
 /*
 Delete from value using keyup.
 Keydown not activated due to squelch in keypress->keydown conversion to prevent double event if value field exists.
 Normal keypress doesn't cause the backspace action either. Is this because backspace is not an input value?
 */
-document.addEventListener("keyup", function(e) {
-	if (e.keyCode == 8 && s2InjectForKeys.lastClickedElement.value !== undefined) {
-		console.log("bck / del:" + e.keyCode);
-		elem = s2InjectForKeys.lastClickedElement;
-		let tempValue, tempSelectionStart;
-		// check if there is a selection
-		if (elem.selectionStart !== undefined && (elem.selectionStart !== elem.selectionEnd)) {
-			tempSelectionStart = elem.selectionStart;
-			tempValue = "";
-			tempValue = elem.value.substring(0, elem.selectionStart);
-			tempValue += elem.value.substring(elem.selectionEnd);
-			elem.value = tempValue;
-			elem.selectionStart = tempSelectionStart;
-			elem.selectionEnd = tempSelectionStart;
-		} else if (elem.selectionStart !== undefined) {
-			tempSelectionStart = elem.selectionStart;
-			tempValue = "";
-			tempValue = elem.value.substring(0, elem.selectionStart - 1); // Removes character at selection start
-			tempValue += elem.value.substring(elem.selectionStart);
-			elem.value = tempValue;
-			elem.selectionStart = tempSelectionStart - 1;
-			elem.selectionEnd = tempSelectionStart - 1;
-		}
-		else {
-			s2InjectForKeys.lastClickedElement.value = s2InjectForKeys.lastClickedElement.value.substring(0, s2InjectForKeys.lastClickedElement.value.length - 1);
-		}
-	}
-});
+// document.addEventListener("keyup", function(e) {
+// 	console.log("keyup:" + e.keyCode);
+// 	if (e.keyCode == 8 && s2InjectForKeys.lastClickedElement.value !== undefined) {
+// 		console.log("bck / del:" + e.keyCode);
+// 		elem = s2InjectForKeys.lastClickedElement;
+// 		let tempValue, tempSelectionStart;
+// 		// check if there is a selection
+// 		if (elem.selectionStart !== undefined && (elem.selectionStart !== elem.selectionEnd)) {
+// 			tempSelectionStart = elem.selectionStart;
+// 			tempValue = "";
+// 			tempValue = elem.value.substring(0, elem.selectionStart);
+// 			tempValue += elem.value.substring(elem.selectionEnd);
+// 			elem.value = tempValue;
+// 			elem.selectionStart = tempSelectionStart;
+// 			elem.selectionEnd = tempSelectionStart;
+// 		} else if (elem.selectionStart !== undefined) {
+// 			tempSelectionStart = elem.selectionStart;
+// 			tempValue = "";
+// 			tempValue = elem.value.substring(0, elem.selectionStart - 1); // Removes character at selection start
+// 			tempValue += elem.value.substring(elem.selectionStart);
+// 			elem.value = tempValue;
+// 			elem.selectionStart = tempSelectionStart - 1;
+// 			elem.selectionEnd = tempSelectionStart - 1;
+// 		}
+// 		else {
+// 			s2InjectForKeys.lastClickedElement.value = s2InjectForKeys.lastClickedElement.value.substring(0, s2InjectForKeys.lastClickedElement.value.length - 1);
+// 		}
+// 	}
+// });
 
 
 /**
