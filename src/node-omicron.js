@@ -533,7 +533,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 	var sourceID = e.sourceId;
 
 	var time = new Date();
-	var timeStr = time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds() + "." + time.getMilliseconds();
+	// var timeStr = time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds() + "." + time.getMilliseconds();
 
 	omicronManager.updateEventTimer += time - omicronManager.lastEventTime;
 	omicronManager.lastEventTime = time;
@@ -953,7 +953,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		// Update pointer position
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
 		omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
-		
+
 		/*
 		if (timeSinceLastNonCritEvent > omicronManager.nonCriticalEventDelay) {
 			if (e.flags == 0 || e.flags == FLAG_SINGLE_TOUCH) { // Basic touch event, non-gesture
@@ -988,7 +988,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Create the pointer
 		omicronManager.createSagePointer(address);
-		
+
 		// Set the pointer style
 		var pointerStyle = "Touch";
 		if (omicronManager.config.style !== undefined) {
@@ -1012,7 +1012,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Set the initial pointer position
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
-				
+
 		// Send 'click' event
 		omicronManager.pointerPress(address, posX, posY, { button: "left" });
 
