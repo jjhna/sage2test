@@ -37,7 +37,7 @@ install:
   - .\keys\GO-windows.bat
   - cd %APPVEYOR_BUILD_FOLDER%
   - npm install --production --msvs_version=2017
-  - npm install npm
+#  - npm install npm
   - npm install -g kthxbai
   - kthxbai
   - cat package.json
@@ -103,6 +103,8 @@ install:
   - move electron.js SAGE2
   - move generate-service-worker.js SAGE2
   - move src SAGE2
+  - dir SAGE2
+  - dir SAGE2\node_modules
   - ren SAGE2 SAGE2-%APPVEYOR_BUILD_VERSION%
   - 7z a -sfx7z.sfx SAGE2-win64-%APPVEYOR_BUILD_VERSION%-%APPVEYOR_REPO_BRANCH%.exe SAGE2-%APPVEYOR_BUILD_VERSION% > nul
 
