@@ -29,7 +29,7 @@ var sageutils           = require('./node-utils');            // provides the cu
 var CoordinateCalculator = require('./node-coordinateCalculator');
 var OneEuroFilter        = require('./node-1euro');
 
-var WebSocket = require('ws');
+var WebSocket = require('ws'); // Communication between SAGE2 and Unity Webviews
 
 /* eslint consistent-this: ["error", "omicronManager"] */
 var omicronManager; // Handle to OmicronManager inside of udp blocks (instead of this)
@@ -278,8 +278,14 @@ function OmicronManager(sysConfig) {
 }
 
 OmicronManager.prototype.openWebSocketClient = function(ws, req) {
-	sageutils.log('Omicron', 'Client connected: ' + req.connection.remoteAddress);
+	sageutils.log('Omicron', 'WebSocket Client connected: ' + req.connection.remoteAddress);
+	omicronManager.sendToWebSocketClient({msg: "SAGE2_Hello"});
 };
+
+OmicronManager.prototype.sendToWebSocketClient = function(data) {
+	omicronManager.wsServer.broadcast(JSON.stringify(data));
+};
+
 
 /**
  * Initializes connection with Omicron input server
@@ -531,20 +537,6 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 
 	omicronManager.updateEventTimer += time - omicronManager.lastEventTime;
 	omicronManager.lastEventTime = time;
-
-	// Insert a delay for constant data, still immediately send
-	// one-time events
-	if (e.type == 3 || e.type == 4) {
-		// if (omicronManager.updateEventTimer > 1000) {
-		omicronManager.wsServer.broadcast(msg);
-		console.log("[" + timeStr + "]: " + "Sending event type: " + e.type);
-		omicronManager.updateEventTimer = 0;
-		// }
-	} else {
-		omicronManager.wsServer.broadcast(msg);
-		console.log("[" + timeStr + "]: " + "Sending event type: " + e.type);
-	}
-
 
 	// serviceType:
 	// 0 = Pointer
@@ -961,7 +953,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		// Update pointer position
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
 		omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
-
+		
 		/*
 		if (timeSinceLastNonCritEvent > omicronManager.nonCriticalEventDelay) {
 			if (e.flags == 0 || e.flags == FLAG_SINGLE_TOUCH) { // Basic touch event, non-gesture
@@ -996,7 +988,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Create the pointer
 		omicronManager.createSagePointer(address);
-
+		
 		// Set the pointer style
 		var pointerStyle = "Touch";
 		if (omicronManager.config.style !== undefined) {
@@ -1020,7 +1012,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Set the initial pointer position
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
-
+				
 		// Send 'click' event
 		omicronManager.pointerPress(address, posX, posY, { button: "left" });
 
