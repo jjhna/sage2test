@@ -1457,43 +1457,45 @@ function setupListeners() {
 		}
 	});
 
+	/*
+	 * SAGE2 Code Snippets WebSocketIO Handlers
+	 */
 	wsio.on("snippetLoadRequest", function(data) {
-		console.log("snippetLoadRequest", data);
+
 		SAGE2_CodeSnippets.requestSnippetLoad(data.from, data.scriptID);
 	});
 
 	wsio.on("snippetCloseNotify", function(data) {
-		console.log("snippetCloseNotify", data);
+
 		SAGE2_CodeSnippets.notifySnippetClosed(data.scriptID);
 
 	});
 
 	wsio.on("saveSnippet", function(data) {
-		console.log("saveSnippet", data);
 
-		// uniqueID, code, desc, type, scriptID
+		// { uniqueID, code, desc, type, scriptID }
 		SAGE2_CodeSnippets.saveSnippet(data.from, data.text, data.desc, data.type, data.scriptID);
 	});
 
 	wsio.on("cloneSnippet", function(data) {
-		console.log("cloneSnippet", data);
 
-		// uniqueID, code, desc, type, scriptID
+		// { uniqueID, code, desc, type, scriptID }
 		SAGE2_CodeSnippets.cloneSnippet(data.from, data.scriptID);
 	});
 
 	wsio.on("snippetSourceFileUpdated", function(data) {
-		console.log("Snippet Source File Update listener");
+
 		SAGE2_CodeSnippets.sourceFileUpdated(data.snippetID, data.filename);
 	});
 
 	wsio.on("createSnippetFromFile", function(data) {
-		console.log("Snippet From File");
+
 		SAGE2_CodeSnippets.loadFromFile(data.snippet, data.filename);
 	});
 
 	wsio.on("snippetsExportRequest", function(data) {
-		console.log("Snippet Export Project Request");
+
+		// only package export on master display client
 		if (isMaster) {
 			SAGE2_CodeSnippets.requestSnippetsProjectExport(data.from);
 		}

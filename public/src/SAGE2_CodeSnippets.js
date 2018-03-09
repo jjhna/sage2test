@@ -205,10 +205,11 @@ let SAGE2_CodeSnippets = (function() {
 		// let inputs = {};
 
 		let inputsRegex = new SnippetsInputRegExp(/SAGE2.SnippetInput\(({[\w,\W]*?})\)/, "gm");
+		let visElemRegex = new SnippetsVisElementRegExp(/SAGE2.SnippetVisElement\(({[\w,\W]*?})\)/, "gm");
 
 		// "compile" code and replace/extract special syntax values
-		let compiledCode = code.replace(inputsRegex);
-		// let compiledCode = code.replace(inputsRegex, inputs);
+		let codeCompile_1 = code.replace(inputsRegex);
+		let codeComile_final = codeCompile_1.replace(visElemRegex);
 
 		let startBlock = `(function() {
 			console.log('Sandbox script Loading');
@@ -254,7 +255,7 @@ let SAGE2_CodeSnippets = (function() {
 
 		})();`;
 
-		return startBlock + createFunctionBlock(type, compiledCode) + endBlock;
+		return startBlock + createFunctionBlock(type, codeComile_final) + endBlock;
 		// return startBlock + createFunctionBlock(type, code) + endBlock;
 	}
 
@@ -710,9 +711,8 @@ let SAGE2_CodeSnippets = (function() {
 	};
 }());
 
-// Regular Expression which will replace SAGE2.Input({ ... })
-//   syntax, extracting input element parameters and replacing
-//   with a future bound reference
+// Regular Expression which will find SAGE2.SnippetInput({ ... })
+//	and add an extra link parameter to the calls
 class SnippetsInputRegExp extends RegExp {
 	// change the replace function
 	[Symbol.replace](str, inputs) {
@@ -723,12 +723,6 @@ class SnippetsInputRegExp extends RegExp {
 		let result;
 		let lastIndex = 0;
 		while ((result = this.exec(str))) {
-			// parse properties of the inputs
-			// let properties = JSON.parse(result[1]);
-
-			// save these values into the input object
-			// inputs[properties.name] = properties;
-			// state[properties.name] = 10; // this will be dependent on input Type
 
 			// reconstruct code string with SAGE2.Input calls given an extra property of link
 			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, link)`;
@@ -739,6 +733,30 @@ class SnippetsInputRegExp extends RegExp {
 		output += str.substring(lastIndex);
 
 		// console.log("Output Code:\n\n", output);
+
+		return output;
+	}
+}
+
+// Regular Expression which will find SAGE2.SnippetVisElement({ ... })
+//	and add an extra link parameter to the calls
+class SnippetsVisElementRegExp extends RegExp {
+	// change the replace function
+	[Symbol.replace](str, inputs) {
+		// code replaced with new string
+		let output = ``;
+
+		let result;
+		let lastIndex = 0;
+		while ((result = this.exec(str))) {
+
+			// reconstruct code string with SAGE2.Input calls given an extra property of app reference
+			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, this)`;
+			lastIndex = result.index + result[0].length;
+		}
+
+		// append rest of code
+		output += str.substring(lastIndex);
 
 		return output;
 	}

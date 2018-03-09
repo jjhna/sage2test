@@ -18,13 +18,13 @@ var Snippets_Vis = SAGE2_App.extend({
 		// Set the background to black
 		this.element.style.backgroundColor = 'white';
 
-		this.svg = d3.select(this.element)
-			.append("svg")
-			.attr("width", data.width)
-			.attr("height", data.height - 32)
-			.style("margin-top", "32px")
-			.style("background", "white")
-			.style("box-sizing", "border-box");
+		// this.svg = d3.select(this.element)
+		// 	.append("svg")
+		// 	.attr("width", data.width)
+		// 	.attr("height", data.height - 32)
+		// 	.style("margin-top", "32px")
+		// 	.style("background", "white")
+		// 	.style("box-sizing", "border-box");
 
 		this.parentLink = null;
 		this.childLinks = [];
@@ -107,7 +107,7 @@ var Snippets_Vis = SAGE2_App.extend({
 		// refresh ancestor list (in case of name change)
 		this.createAncestorList();
 
-		return this.svg.node();
+		return this.element;
 	},
 
 	displayError: function(err) {
@@ -158,10 +158,6 @@ var Snippets_Vis = SAGE2_App.extend({
 
 	resize: function(date) {
 		// Called when window is resized
-
-		this.svg
-      .attr("width", this.sage2_width)
-      .attr("height", this.sage2_height - 32);
 
 		if (this.parentLink) {
 			this.parentLink.update(); // redraw

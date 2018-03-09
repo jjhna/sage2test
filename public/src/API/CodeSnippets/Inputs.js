@@ -5,38 +5,44 @@ let CodeSnippetInput = (function () {
 	 * SnippetInput base-class
 	 */
 	class SnippetInput {
-		constructor(specification) {
-			this._spec = specification;
-			this._state = new SnippetInputState(this.defaultValue);
+    constructor(specification) {
+      this._spec = specification;
+      this._state = new SnippetInputState(this.defaultValue);
 
-			console.log("Creating:", this.constructor.name);
-		}
+      this._inputElement = null;
 
-		get state() {
-			return this._state.value;
-		}
+      console.log("Creating:", this.constructor.name);
+    }
 
-		get spec() {
-			return this._spec;
-		}
+    get state() {
+      return this._state.value;
+    }
 
-		set spec (newSpec) {
-			this.updateStateFromSpec(newSpec);
+    get spec() {
+      return this._spec;
+    }
 
-			this._spec = newSpec;
-		}
+    set spec(newSpec) {
+      this.updateStateFromSpec(newSpec);
 
-		/*
+      this._spec = newSpec;
+    }
+
+    /*
 		 * SnippetInput abstract methods -- must be implemented to avoid Error
 		 */
-		get defaultValue() {
-			throw new Error(`get defaultValue() method must be implemented in ${this.spec.type} SnippetInput`);
-		}
+    get defaultValue() {
+      throw new Error(`get defaultValue() method must be implemented in ${this.spec.type} SnippetInput`);
+    }
 
-		updateStateFromSpec(newSpec) {
-			throw new Error(`updateStateFromSpec() method must be implemented in ${this.spec.type} SnippetInput`);
-		}
-	}
+    updateStateFromSpec(newSpec) {
+      throw new Error(`updateStateFromSpec() method must be implemented in ${this.spec.type} SnippetInput`);
+    }
+
+    createInputElement(parentNode) {
+      throw new Error(`createInputElement() method must be implemented in ${this.spec.type} SnippetInput`);
+    }
+  }
 
 	/*
 	 * SnippetInput State class
@@ -76,6 +82,9 @@ let CodeSnippetInput = (function () {
 
 		get defaultValue() {
 			// default input value is the first value in the range
+			if (this._spec.defaultVal > this._spec.range[0] && this._spec.defaultVal < this._spec.range[1]) {
+        return this._spec.defaultVal;
+      }
 			return this._spec.range[0];
 		}
 
@@ -88,6 +97,10 @@ let CodeSnippetInput = (function () {
 			}
 			// TODO: round state value to step size (?)
 		}
+
+    createInputElement(parentNode) {
+			console.log(`Creating ${this.constructor.name}:`, parentNode);
+    }
 	}
 
 	/*
@@ -101,13 +114,17 @@ let CodeSnippetInput = (function () {
 		}
 
 		get defaultValue() {
-			return false;
+			return this._spec.defaultVal !== undefined ? this._spec.defaultVal : false;
 		}
 
 		updateStateFromSpec(newSpec) {
 			// no merge required for SnippetText
 			// --> state and spec never deviate
 		}
+
+    createInputElement(parentNode) {
+			console.log(`Creating ${this.constructor.name}:`, parentNode);
+    }
 	}
 
 	/*
@@ -121,12 +138,22 @@ let CodeSnippetInput = (function () {
 		}
 
 		get defaultValue() {
-			return this.spec.options[0];
+			if (this._spec.defaultValue !== undefined && this._spec.options.includes(this.spec.default)) {
+        return this._spec.defaultValue;
+      }
+
+			return this._spec.options[0];
 		}
 
 		updateStateFromSpec(newSpec) {
-			return !newSpec.options.includes(this._state.value);
+			if (!newSpec.options.includes(this._state.value)) {
+				this._state.value = newSpec.options[0];
+			}
 		}
+
+    createInputElement(parentNode) {
+			console.log(`Creating ${this.constructor.name}:`, parentNode);
+    }
 	}
 
 	/*
@@ -140,13 +167,17 @@ let CodeSnippetInput = (function () {
 		}
 
 		get defaultValue() {
-			return "";
+			return this._spec.defaultVal !== undefined ? this._spec.defaultVal : "";
 		}
 
 		updateStateFromSpec(newSpec) {
 			// no merge required for SnippetText
 			// --> state and spec never deviate
 		}
+
+    createInputElement(parentNode) {
+			console.log(`Creating ${this.constructor.name}:`, parentNode);
+    }
 	}
 
 	/*
