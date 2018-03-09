@@ -605,7 +605,7 @@ let SAGE2_CodeSnippets = (function() {
 				inputs: {}
 			};
 
-			let publicMethods = {
+			let publicObject = {
 				update,
 				setParent,
 				getParent,
@@ -613,10 +613,8 @@ let SAGE2_CodeSnippets = (function() {
 				getChild,
 				getSnippetID,
 
-				createInput,
-				getInputState,
-				mergeInputState,
-				getAllInputStates
+				// expose inputs object for now
+				inputs: self.inputs
 			};
 
 			init();
@@ -645,22 +643,6 @@ let SAGE2_CodeSnippets = (function() {
 				return self.transformID;
 			}
 
-			function createInput(inputObject) {
-
-			}
-
-			function getInputState(inputName) {
-
-			}
-
-			function mergeInputState(inputName, newState) {
-
-			}
-
-			function getAllInputStates() {
-
-			}
-
 			function update() {
 				let p = self.parent;
 				let c = self.child;
@@ -669,7 +651,7 @@ let SAGE2_CodeSnippets = (function() {
 				if (curator.functions[id].type === "data" && p) {
 					// call function (calculates new dataset and updates child)
 					try {
-						let result = curator.functions[id].code.call(c, p.getDataset(), publicMethods);
+						let result = curator.functions[id].code.call(c, p.getDataset(), publicObject);
 						c.updateDataset(result);
 					} catch (err) {
 						c.displayError(err);
@@ -677,15 +659,14 @@ let SAGE2_CodeSnippets = (function() {
 				} else if (curator.functions[id].type === "draw" && p) {
 					// call function (plots data on svg)
 					try {
-						curator.functions[id].code.call(c, p.getDataset(), c.getElement(), publicMethods);
+						curator.functions[id].code.call(c, p.getDataset(), c.getElement(), publicObject);
 					} catch (err) {
 						c.displayError(err);
 					}
 				} else if (curator.functions[id].type === "gen") {
 					// call function (this returns a promise)
-
 					curator.functions[id]
-						.code.call(c, c.getDataset(), publicMethods)
+						.code.call(c, c.getDataset(), publicObject)
 						.then(function(data) {
 							c.updateDataset(data);
 						})
@@ -695,7 +676,7 @@ let SAGE2_CodeSnippets = (function() {
 				}
 			}
 
-			return publicMethods;
+			return publicObject;
 		};
 	}());
 
