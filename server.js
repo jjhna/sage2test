@@ -961,7 +961,7 @@ function wsAddClient(wsio, data) {
  */
 function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 	setupListeners(wsio);
-
+	var key;
 	wsio.emit('initialize', {UID: wsio.id, time: Date.now(), start: startTime});
 	if (wsio === masterDisplay) {
 		wsio.emit('setAsMasterDisplay');
@@ -992,7 +992,6 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 		initializeExistingAppsAudio(wsio);
 	} else if (wsio.clientType === "sageUI") {
 		createSagePointer(wsio.id);
-		var key;
 		for (key in remoteSharingSessions) {
 			remoteSharingSessions[key].wsio.emit('createRemoteSagePointer', {
 				id: wsio.id, portal: {host: config.host, port: config.port}
@@ -1002,7 +1001,6 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 		initializeExistingPartitionsUI(wsio);
 	} else if (wsio.clientType === "standAloneApp") {
 		createSagePointer(wsio.id);
-		var key;
 		for (key in remoteSharingSessions) {
 			remoteSharingSessions[key].wsio.emit('createRemoteSagePointer', {
 				id: wsio.id, portal: {host: config.host, port: config.port}
@@ -1385,7 +1383,7 @@ function initializeExistingApps(wsio, appID) {
 		var newOrder = interactMgr.getObjectZIndexList("applications", ["portals"]);
 		wsio.emit('updateItemOrder', newOrder);
 	}
-	
+
 }
 
 function initializeExistingPartitions(wsio) {
@@ -10040,29 +10038,29 @@ function wsZipFolderForDownload(wsio, data) {
 		return new Promise(function(resolve, reject) {
 			fs.readdir(dirname, function(err, filenames) {
 				if (err) {
-					reject(err); 
+					reject(err);
 				} else {
 					resolve(filenames);
 				}
 			});
 		});
-	};
+	}
 
 	// make Promise version of fs.readFile()
 	function readFileAsync(filename) {
 		return new Promise(function(resolve, reject) {
 			fs.readFile(filename, function(err, fileContent) {
 				if (err) {
-					reject(err); 
+					reject(err);
 				} else {
 					var shortName = filename.substring(filename.lastIndexOf(path.sep) + 1, filename.length);
 					resolve({filename: shortName, content: fileContent});
 				}
 			});
 		});
-	};
+	}
 
-	
+
 	var zip = new JSZip();
 	var folderPath = data.folder.replace(mediaFolders.user.url, mediaFolders.user.path);
 	var filename = data.filename.replace(mediaFolders.user.url, mediaFolders.user.path);
@@ -10103,6 +10101,7 @@ function wsDeleteDownloadedZip(wsio, data) {
 		}
 	});
 }
+
 /**
  * Will launch app with specified name and call the given function after.
  * The function doesn't need to be called to give the parameters.

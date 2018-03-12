@@ -33,7 +33,7 @@ function StandAloneApp(id, wsio) {
 	this.wsio = wsio;
 	// set the default style sheet
 	this.csssheet = "css/style.css";
-	
+
 	// Get handle on the main div
 	this.bg   = document.getElementById("background");
 	this.main = document.getElementById("main");
@@ -45,13 +45,14 @@ function StandAloneApp(id, wsio) {
 	this.appHeight;
 
 	this.application = null;
+	this.dependencies = {};
 	this.controlObjects = {};
 	this.user = {
 		label: localStorage.SAGE2_ptrName,
 		color: localStorage.SAGE2_ptrColor,
 		sourceType: "Pointer"
 	};
-	this.appPositionOnDisplay = {left:0, top: 0, width: 0, height: 0};
+	this.appPositionOnDisplay = {left: 0, top: 0, width: 0, height: 0};
 	this.localPointerID = null;
 
 	this.setup = function(ui) {
@@ -62,11 +63,11 @@ function StandAloneApp(id, wsio) {
 		this.titleTextSize  = this.json_cfg.ui.titleTextSize;
 		// background color
 		if (this.json_cfg.background) {
-			this.bg.style.backgroundColor = this.json_cfg.background.color || "#333333";	
+			this.bg.style.backgroundColor = this.json_cfg.background.color || "#333333";
 		} else {
 			this.bg.style.backgroundColor = "#333333";
 		}
-		
+
 		this.bg.style.top    = "0px";
 		this.bg.style.left   = "0px";
 		this.main.style.left = "0px";
@@ -86,21 +87,19 @@ function StandAloneApp(id, wsio) {
 
 		this.mainWidth  = this.browserWidth;
 		this.mainHeight = this.browserHeight;
-		
+
 		this.bg.style.width    = this.browserWidth  + "px";
 		this.bg.style.height   = this.browserHeight + "px";
-		
-		
+
 		this.main.style.width  = this.mainWidth + "px";
 		this.main.style.height = this.mainHeight + "px";
-		// Bringing main to the center
-		
-		
+
+
 		//Calculating new scale for pointers
 		var wallWidth  = this.json_cfg.resolution.width  * this.json_cfg.layout.columns;
 		var wallHeight = this.json_cfg.resolution.height * this.json_cfg.layout.rows;
 		var wallRatio = wallWidth / wallHeight;
-		
+
 		var browserRatio = document.documentElement.clientWidth / document.documentElement.clientHeight;
 		var newratio;
 		if (wallRatio >= browserRatio) {
@@ -138,7 +137,6 @@ function StandAloneApp(id, wsio) {
 			this.sageItem.tagName.toLowerCase() === "webview") {
 			this.sageItem.style.width  = Math.round(this.appPositionOnDisplay.width) + "px";
 			this.sageItem.style.height = Math.round(this.appPositionOnDisplay.height) + "px";
-			
 		} else {
 			// if it's a canvas or else, just use width and height
 			this.sageItem.width  = Math.round(this.appPositionOnDisplay.width);
@@ -151,9 +149,8 @@ function StandAloneApp(id, wsio) {
 		this.sageItem.style.transform       = scale;
 		this.appParentDiv.style.width 		= Math.round(this.appPositionOnDisplay.width) + "px";
 		this.appParentDiv.style.height = Math.round(this.appPositionOnDisplay.height) + "px";
-
 	};
-	
+
 	this.computeWindowFit = function(data) {
 		//Find the app window dimensions that fit into the current browser size
 		var mainAspect = this.mainWidth / this.mainHeight;
@@ -177,6 +174,7 @@ function StandAloneApp(id, wsio) {
 		this.appLeft = Math.round((this.mainWidth - this.appWidth) / 2);
 		this.appTop = Math.round((this.mainHeight - this.appHeight) / 2);
 	};
+
 	this.createAppWindow = function(data) {
 		var _this = this;
 		this.saveAppPositionAndSize(data);
@@ -189,11 +187,10 @@ function StandAloneApp(id, wsio) {
 		windowItem.style.top      = "0px";
 
 		windowItem.style.overflow = "hidden";
-		windowItem.style.zIndex   = (itemCount + 1).toString();
 		if (ui.noDropShadow === true) {
 			windowItem.style.boxShadow = "none";
 		}
-		
+
 		var windowState = document.createElement("div");
 		windowState.id = data.id + "_state";
 		windowState.style.position = "absolute";
@@ -302,7 +299,7 @@ function StandAloneApp(id, wsio) {
 			var loadResource = function(idx) {
 				var resourceUrl = data.resrc[idx];
 
-				if (dependencies[resourceUrl] !== undefined) {
+				if (_this.dependencies[resourceUrl] !== undefined) {
 					if ((idx + 1) < data.resrc.length) {
 						loadResource(idx + 1);
 					} else {
@@ -314,7 +311,7 @@ function StandAloneApp(id, wsio) {
 				}
 
 				// Not loaded yet
-				dependencies[resourceUrl] = false;
+				_this.dependencies[resourceUrl] = false;
 
 				// Check the type
 				var loaderType;
@@ -339,7 +336,7 @@ function StandAloneApp(id, wsio) {
 					// When done, try next dependency in the list
 					loader.addEventListener('load', function(event) {
 						// Success, mark as loaded
-						dependencies[data.resrc[idx]] = true;
+						_this.dependencies[data.resrc[idx]] = true;
 						if ((idx + 1) < data.resrc.length) {
 							// load the next one
 							loadResource(idx + 1);
@@ -392,16 +389,16 @@ function StandAloneApp(id, wsio) {
 	};
 	this.updateSagePointerPosition = function(pointer_data) {
 		var inside = false;
-		if (pointer_data.left > this.appPositionOnDisplay.left && 
+		if (pointer_data.left > this.appPositionOnDisplay.left &&
 			pointer_data.left < (this.appPositionOnDisplay.left + this.appPositionOnDisplay.width) &&
 			pointer_data.top > this.appPositionOnDisplay.top &&
 			pointer_data.top < (this.appPositionOnDisplay.top + this.appPositionOnDisplay.height)) {
-				pointer_data.left = this.appLeft + this.appWidth * 
-					(pointer_data.left - this.appPositionOnDisplay.left) / this.appPositionOnDisplay.width;
-				pointer_data.top = this.appTop - this.titleBarHeight + this.appHeight *
-					(pointer_data.top - this.appPositionOnDisplay.top) / this.appPositionOnDisplay.height;
+			pointer_data.left = this.appLeft + this.appWidth *
+				(pointer_data.left - this.appPositionOnDisplay.left) / this.appPositionOnDisplay.width;
+			pointer_data.top = this.appTop - this.titleBarHeight + this.appHeight *
+				(pointer_data.top - this.appPositionOnDisplay.top) / this.appPositionOnDisplay.height;
 
-				inside = true;
+			inside = true;
 		}
 		if (inside === true && this.ui.isPointerShown(pointer_data.id) === false) {
 			pointer_data.label = localStorage.SAGE2_ptrName;
@@ -429,10 +426,9 @@ function StandAloneApp(id, wsio) {
 		};
 		if (event.x > this.appLeft && event.x < (this.appLeft + this.appWidth) &&
 			event.y > this.appTop && event.y < (this.appTop + this.appHeight)) {
-				
-				inside = true;
-				pointer_data.left = event.x;
-				pointer_data.top = event.y;
+			inside = true;
+			pointer_data.left = event.x;
+			pointer_data.top = event.y;
 		}
 		if (inside === true && this.ui.isPointerShown(pointer_data.id) === false) {
 			pointer_data.label = this.user.label;

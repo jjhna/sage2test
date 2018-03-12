@@ -8,19 +8,9 @@
 //
 // Copyright (c) 2014-15
 
-/* global ignoreFields, hostAlias, SAGE2WidgetControlInstance */
-/* global makeSvgBackgroundForWidgetConnectors, addStyleElementForTitleColor */
-/* global removeStyleElementForTitleColor */
-/* global clearConnectorColor, moveWidgetToAppConnector */
-/* global showWidgetToAppConnectors, getWidgetControlInstanceById */
-/* global mapMoveToSlider, getPropertyHandle */
-/* global insertTextIntoTextInputWidget, removeWidgetToAppConnector */
-/* global hideWidgetToAppConnectors */
-/* global createWidgetToAppConnector, getTextFromTextInputWidget */
-/* global SAGE2_Partition, require */
+/* global ignoreFields, hostAlias */
 /* global SAGE2RemoteSitePointer */
-/* global process */
-
+/* global process, StandAloneApp*/
 /* global require */
 
 "use strict";
@@ -287,18 +277,18 @@ function mouseCheck(event) {
 	document.addEventListener('click',      pointerClick,    false);
 	document.addEventListener('mouseup',    pointerRelease,  false);*/
 	if (standAloneApp) {
-		document.addEventListener('mousemove',  standAloneApp.pointerMove.bind(standAloneApp),     false);	
+		document.addEventListener('mousemove', standAloneApp.pointerMove.bind(standAloneApp), false);
 	} else {
 		setTimeout(function() {
-			document.addEventListener('mousemove',  standAloneApp.pointerMove.bind(standAloneApp),     false);	
+			document.addEventListener('mousemove', standAloneApp.pointerMove.bind(standAloneApp), false);
 		}, 1000);
 	}
-	
+
 	/*document.addEventListener('wheel',      pointerScroll,   false);
-	
+
 	document.addEventListener('dblclick',   pointerDblClick, false);*/
 
-	
+
 }
 
 
@@ -323,7 +313,7 @@ function setupListeners() {
 			var app = standAloneApp.application;
 			if (app) {
 				// Send the call to the application
-				app.callback(data.func, data.data);	
+				app.callback(data.func, data.data);
 			} else {
 				setTimeout(function() {
 					if (app) {
@@ -333,7 +323,7 @@ function setupListeners() {
 				}, 500);
 			}
 		}
-		
+
 	});
 
 	wsio.on('addScript', function(script_data) {
@@ -363,7 +353,6 @@ function setupListeners() {
 		standAloneApp.setup(new UIBuilder(json_cfg, clientID));
 		standAloneApp.user.id = wsioID;
 		ui = standAloneApp.ui;
-		
 	});
 
 	wsio.on('setItemPosition', function(position_data) {
@@ -392,27 +381,11 @@ function setupListeners() {
 	wsio.on('hideSagePointer', function(pointer_data) {
 		SAGE2RemoteSitePointer.notifyAppsPointerIsHidden(pointer_data);
 		standAloneApp.hideSagePointer(pointer_data);
-		var uniqueID = pointer_data.id.slice(0, pointer_data.id.lastIndexOf("_"));
-		var re = /\.|:/g;
-		var stlyeCaption = uniqueID.split(re).join("");
-		removeStyleElementForTitleColor(stlyeCaption, pointer_data.color);
 	});
 
 	wsio.on('updateSagePointerPosition', function(pointer_data) {
 		if (standAloneApp) {
-			var pointerStatus = standAloneApp.updateSagePointerPosition(pointer_data);
-			var uniqueID, re, stlyeCaption;
-			if (pointerStatus === "hide") {
-				uniqueID = pointer_data.id.slice(0, pointer_data.id.lastIndexOf("_"));
-				re = /\.|:/g;
-				stlyeCaption = uniqueID.split(re).join("");
-				removeStyleElementForTitleColor(stlyeCaption, pointer_data.color);
-			} else if (pointerStatus === "show") {
-				uniqueID = pointer_data.id.slice(0, pointer_data.id.lastIndexOf("_"));
-				re = /\.|:/g;
-				stlyeCaption = uniqueID.split(re).join("");
-				addStyleElementForTitleColor(stlyeCaption, pointer_data.color);
-			}
+			standAloneApp.updateSagePointerPosition(pointer_data);
 		}
 	});
 
@@ -501,15 +474,15 @@ function setupListeners() {
 	wsio.on('createAppWindow', function(data) {
 		if (standAloneApp.application === null) {
 			document.title = "SAGE2: " + data.title;
-			standAloneApp.createAppWindow(data);	
-		}		
+			standAloneApp.createAppWindow(data);
+		}
 	});
 
 	wsio.on('deleteElement', function(elem_data) {
 		if (standAloneApp.id === elem_data.id) {
-			window.close();	
+			window.close();
 		}
-	});	
+	});
 
 	wsio.on('animateCanvas', function(data) {
 		if (standAloneApp.application && data.id === standAloneApp.application.id) {
@@ -524,10 +497,7 @@ function setupListeners() {
 			var date = new Date(event_data.date);
 			standAloneApp.application.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, date);
 		}
-		
 	});
-
-	
 
 	wsio.on('setTitle', function(data) {
 		if (data.id !== null && data.id !== undefined) {

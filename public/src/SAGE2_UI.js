@@ -750,7 +750,7 @@ function setupListeners() {
 			});
 			link.addEventListener('click', function(event) {
 				//wsio.emit('deleteDownloadedZip', data);
-			})
+			});
 			link.dispatchEvent(event);
 		}
 	});
@@ -2574,13 +2574,14 @@ function setAppContextMenuEntries(data) {
 	removeAllChildren('appContextMenu');
 	// for each entry
 	var i;
+	var url;
 	for (i = 0; i < entriesToAdd.length; i++) {
 		// if func is defined add buttonEffect
 		if (entriesToAdd[i].callback !== undefined && entriesToAdd[i].callback !== null) {
 			entriesToAdd[i].buttonEffect = function() {
 				if (this.callback === "SAGE2_download") {
 					// special case: want to download the file
-					var url = this.parameters.url;
+					url = this.parameters.url;
 					console.log('Download>	content', url);
 					if (url) {
 						// Download the file
@@ -2599,17 +2600,17 @@ function setAppContextMenuEntries(data) {
 						}
 					}
 				} else if (this.callback === "SAGE2_zipDownload") {
-					var url = this.parameters.url;
+					url = this.parameters.url;
 					console.log('Download>	content', url);
 					if (url) {
-						var data = {};
+						data = {};
 						data.app = this.app;
 						data.folder = url.substring(0, url.lastIndexOf('/'));
 						data.filename = url.substring(0, url.lastIndexOf('.')) + '.zip';
 						wsio.emit('zipFolderForDownload', data);
 					}
 				} else if (this.callback === "SAGE2_standAloneApp") {
-					var url = 'sage2StandAloneApp.html?appID=' + this.app;
+					url = 'sage2StandAloneApp.html?appID=' + this.app;
 					var appWin = window.open(url, '_blank');
 					appWin.focus();
 				} else if (this.callback === "SAGE2_editQuickNote") {
@@ -2653,7 +2654,7 @@ function setAppContextMenuEntries(data) {
 						this.parameters.clientInput = inputField.value;
 					}
 					// create data to send, then emit
-					var data = {};
+					data = {};
 					data.app = this.app;
 					data.func = this.callback;
 					data.parameters = this.parameters;
