@@ -1017,6 +1017,7 @@ function UIBuilder(json_cfg, clientID) {
 
 		// keep track of the pointers
 		this.pointerItems[pointerElem.id] = ptr;
+		console.log(ptr);
 	};
 
 	/**
@@ -1048,6 +1049,7 @@ function UIBuilder(json_cfg, clientID) {
 		this.pointerItems[pointerElem.id].updateBox(this.scale);
 
 		this.pointerItems[pointerElem.id].isShown = true;
+		console.log(pointerElem.id, this.pointerItems[pointerElem.id]);
 	};
 
 	/**
@@ -1519,5 +1521,32 @@ function UIBuilder(json_cfg, clientID) {
 			}
 			this.uiHidden = false;
 		}
+	};
+
+	this.buildStandAlone = function() {
+		this.offsetX = 0;
+		this.offsetY = 0;
+		this.width   = this.json_cfg.totalWidth;
+		this.height  = this.json_cfg.totalHeight;
+		this.titleBarHeight = this.json_cfg.ui.titleBarHeight;
+		this.titleTextSize  = this.json_cfg.ui.titleTextSize;
+		this.pointerWidth   = this.json_cfg.ui.pointerSize * 3;
+		this.pointerHeight  = this.json_cfg.ui.pointerSize;
+		this.widgetControlSize = this.json_cfg.ui.widgetControlSize;
+		this.pointerOffsetX = Math.round(0.27917 * this.pointerHeight);
+		this.pointerOffsetY = Math.round(0.24614 * this.pointerHeight);
+	};
+
+	//Called when the browser of standalone app resizes
+	this.resizePointers = function(newScale) {
+		// Rescale the box around the pointers
+		for (var key in this.pointerItems) {
+			var ptr = this.pointerItems[key];
+			ptr.updateBox(this.scale);
+		}
+	};
+
+	this.isPointerShown = function(id) {
+		return this.pointerItems[id].isShown;
 	};
 }

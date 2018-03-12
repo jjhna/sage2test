@@ -730,6 +730,30 @@ function setupListeners() {
 		// SAGE2_speech.failSound.play();
 		SAGE2_speech.textToSpeech(data.message);
 	});
+	wsio.on('zipFolderPathForDownload', function(data) {
+		var url = data.filename;
+		console.log(url);
+		if (url) {
+			// Download the file
+			var link = document.createElement('a');
+			link.href = url;
+			if (link.download !== undefined) {
+				// Set HTML5 download attribute. This will prevent file from opening if supported.
+				var fileName = url.substring(url.lastIndexOf('/') + 1, url.length);
+				link.download = fileName;
+			}
+			// Dispatching click event
+			var event = new MouseEvent('click', {
+				view: window,
+				bubbles: true,
+				cancelable: true
+			});
+			link.addEventListener('click', function(event) {
+				//wsio.emit('deleteDownloadedZip', data);
+			})
+			link.dispatchEvent(event);
+		}
+	});
 }
 
 /**
@@ -2574,6 +2598,20 @@ function setAppContextMenuEntries(data) {
 							link.dispatchEvent(me);
 						}
 					}
+				} else if (this.callback === "SAGE2_zipDownload") {
+					var url = this.parameters.url;
+					console.log('Download>	content', url);
+					if (url) {
+						var data = {};
+						data.app = this.app;
+						data.folder = url.substring(0, url.lastIndexOf('/'));
+						data.filename = url.substring(0, url.lastIndexOf('.')) + '.zip';
+						wsio.emit('zipFolderForDownload', data);
+					}
+				} else if (this.callback === "SAGE2_standAloneApp") {
+					var url = 'sage2StandAloneApp.html?appID=' + this.app;
+					var appWin = window.open(url, '_blank');
+					appWin.focus();
 				} else if (this.callback === "SAGE2_editQuickNote") {
 					// special case: reopen the QuickNote editor, but with a "save" button instead of "create"
 					var sendButton = document.getElementById('uiNoteMakerSendButton');
