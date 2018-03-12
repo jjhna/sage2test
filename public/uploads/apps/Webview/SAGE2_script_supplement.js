@@ -48,11 +48,11 @@ document.addEventListener("keypress", function(e) {
 	kue.metaKey = e.metaKey;
 	// if a keypress is received and the target isn't an input node
 	if (e.target.value === undefined) {
-			// set the lastClickedElement to the target of event (since it needs to get there)
-			s2InjectForKeys.lastClickedElement = e.target;
-			s2InjectForKeys.lastClickedElement.dispatchEvent(kue);
-			// should this be prevented? what if something check for keypress?
-			e.preventDefault();
+		// set the lastClickedElement to the target of event (since it needs to get there)
+		s2InjectForKeys.lastClickedElement = e.target;
+		s2InjectForKeys.lastClickedElement.dispatchEvent(kue);
+		// should this be prevented? what if something check for keypress?
+		e.preventDefault();
 	}
 });
 
@@ -67,7 +67,30 @@ Normal keypress doesn't cause the backspace action either. Is this because backs
 */
 document.addEventListener("keyup", function(e) {
 	if (e.keyCode == 8 && s2InjectForKeys.lastClickedElement.value !== undefined) {
-		s2InjectForKeys.lastClickedElement.value = s2InjectForKeys.lastClickedElement.value.substring(0, s2InjectForKeys.lastClickedElement.value.length - 1);
+		console.log("bck / del:" + e.keyCode);
+		elem = s2InjectForKeys.lastClickedElement;
+		let tempValue, tempSelectionStart;
+		// check if there is a selection
+		if (elem.selectionStart !== undefined && (elem.selectionStart !== elem.selectionEnd)) {
+			tempSelectionStart = elem.selectionStart;
+			tempValue = "";
+			tempValue = elem.value.substring(0, elem.selectionStart);
+			tempValue += elem.value.substring(elem.selectionEnd);
+			elem.value = tempValue;
+			elem.selectionStart = tempSelectionStart;
+			elem.selectionEnd = tempSelectionStart;
+		} else if (elem.selectionStart !== undefined) {
+			tempSelectionStart = elem.selectionStart;
+			tempValue = "";
+			tempValue = elem.value.substring(0, elem.selectionStart - 1); // Removes character at selection start
+			tempValue += elem.value.substring(elem.selectionStart);
+			elem.value = tempValue;
+			elem.selectionStart = tempSelectionStart - 1;
+			elem.selectionEnd = tempSelectionStart - 1;
+		}
+		else {
+			s2InjectForKeys.lastClickedElement.value = s2InjectForKeys.lastClickedElement.value.substring(0, s2InjectForKeys.lastClickedElement.value.length - 1);
+		}
 	}
 });
 
@@ -166,10 +189,8 @@ function processAppearIn() {
 			// if all done, cancel the timer
 			clearInterval(scriptSearch);
 			console.log('Appear.in> All done hacking');
-		} else {
-			console.log('Appear.in> Still trying');
 		}
-		// try every 500ms till done
-	}, 500);
+		// try every 1s till done
+	}, 1000);
 }
 

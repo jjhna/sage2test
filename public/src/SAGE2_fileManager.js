@@ -398,7 +398,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 			callback: SAGE2_speech.toggleVoiceRecognition
 		}
 	};
-	SAGE2_speech.uiMenuEntryEnable = servicesActions.voiceserviceEnable_menu;
+
+	SAGE2_speech.uiMenuEntryEnable  = servicesActions.voiceserviceEnable_menu;
 	SAGE2_speech.uiMenuEntryDisable = servicesActions.voiceserviceDisable_menu;
 
 	// Help
@@ -471,6 +472,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 		},
 		{id: "view_menu", value: "View", config: {width: 170, zIndex: 9000},
 			submenu: buildSubmenu(viewActions)
+		},
+		{id: "remote_menu", value: "Sites", config: {width: 170, zIndex: 9000},
+			submenu: []
 		},
 		{id: "services_menu", value: "Services", config: {width: 170, zIndex: 9000},
 			submenu: buildSubmenu(servicesActions)
@@ -1977,8 +1981,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 		var _this = this;
 		// Add the media folders to the tree
 		var f, folder;
-		this.json_cfg  = data;
-		this.http_port = this.json_cfg.port === 80 ? "" : ":" + this.json_cfg.port;
+		this.json_cfg   = data;
+		this.http_port  = this.json_cfg.port === 80 ? "" : ":" + this.json_cfg.port;
+		this.https_port = this.json_cfg.secure_port === 443 ? "" : ":" + this.json_cfg.secure_port;
 		this.mediaFolders = data.folders;
 		for (f in data.folders) {
 			folder = data.folders[f];
@@ -2056,14 +2061,16 @@ function FileManager(wsio, mydiv, uniqueID) {
 			hostLabel = this.json_cfg.name;
 			this.showHostname = true;
 		} else {
-			hostLabel = this.json_cfg.host;
+			// Setting the UI URL
+			hostLabel = "https://" + window.location.hostname + _this.https_port +  "/";
 			this.showHostname = false;
 		}
 		$$('host_label').setValue(hostLabel);
 		// Click on the label to flip wallname and hostname display
 		$$('host_label').attachEvent("onItemClick", function(id, evt) {
 			if (_this.showHostname) {
-				hostLabel = _this.json_cfg.host;
+				// Setting the UI URL
+				hostLabel = "https://" + window.location.hostname + _this.https_port +  "/";
 				$$('host_label').setValue(hostLabel);
 				_this.showHostname = false;
 			} else {
@@ -2072,5 +2079,34 @@ function FileManager(wsio, mydiv, uniqueID) {
 				_this.showHostname = true;
 			}
 		});
+
+		// Add the remote sites link into the top menubar
+		this.json_cfg.remote_sites.forEach(function(site, i, arr) {
+			// if we have a valid definition of a remote site (host, port and name)
+			if (site.host && site.port && site.name) {
+				// Build the UI URL
+				var protocol  = (site.secure === true) ? "https" : "http";
+				var remoteURL = protocol + "://" + site.host + ":" + site.port;
+				// pass the password or hash to the URL
+				if (site.password) {
+					remoteURL += '/session.html?page=index.html?session=' + site.password;
+				} else if (site.hash) {
+					remoteURL += '/session.html?page=index.html?hash=' + site.hash;
+				} else {
+					remoteURL += '/index.html';
+				}
+				// Add the menu entry with a link to the remote UI
+				$$('topmenu').getSubMenu('remote_menu').add({
+					id: "remotesite_" + i,
+					tooltip: remoteURL,
+					config: {autowidth: true, zIndex: 9000},
+					value: site.name,
+					// when clicked, open the remote UI in a new tab
+					href: remoteURL,
+					target: "_blank"
+				});
+			}
+		});
+
 	};
 }

@@ -219,7 +219,7 @@ function setupListeners() {
 		createjs.Sound.registerSounds(soundAssets, audioPath);
 
 		// Main audio context (for low-level operations)
-		audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+		audioCtx = new(window.AudioContext || window.webkitAudioContext)();
 		audioCtx.listener.setPosition(0, 0, 0);
 		totalWidth  = json_cfg.totalWidth;
 	});
