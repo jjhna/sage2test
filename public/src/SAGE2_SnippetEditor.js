@@ -240,7 +240,8 @@ let SAGE2_SnippetEditor = (function () {
 				let newOption = document.createElement("option");
 
 				newOption.value = script.id;
-				newOption.innerHTML = `${script.type} - ${script.id.replace("codeSnippet", "cS")}`;
+				// newOption.innerHTML = `${script.type} - ${script.id.replace("codeSnippet", "cS")}`;
+				newOption.innerHTML = `${script.id.replace("codeSnippet", "cS")} - ${script.desc}`;
 
 				if (script.id === self.loadedSnippet) {
 					newOption.classList.add("loaded");
