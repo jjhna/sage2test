@@ -1,120 +1,116 @@
 {
-	"name": "SAGE2",
-	"version": "3.0.0",
-	"date": "2015-11-02",
-	"private": true,
-	"description": "A cluster-based html viewer used for displaying elements across multiple browser windows",
-	"keywords": [
-		"SAGE",
-		"browser",
-		"collaboration"
-	],
-	"author": "UIC EVL <evl.avatar@gmail.com>",
-	"contributors": [
-		{
-			"name": "Thomas Marrinan",
-			"email": "thomas.j.marrinan@gmail.com"
-		},
-		{
-			"name": "Jillian Aurisano",
-			"email": "jillian.aurisano@gmail.com"
-		},
-		{
-			"name": "Arthur Nishimoto",
-			"email": "arthur.nishimoto@gmail.com"
-		},
-		{
-			"name": "Victor Mateevitsi",
-			"email": "mvictoras@gmail.com"
-		},
-		{
-			"name": "Krishna Bharadwaj",
-			"email": "krishnaknbharadwaj@gmail.com"
-		},
-		{
-			"name": "Dylan Kobayashi",
-			"email": "dylank@hawaii.edu"
-		},
-		{
-			"name": "Luc Renambot",
-			"email": "renambot@gmail.com"
-		}
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://bitbucket.org/sage2/sage2/"
-	},
-	"dependencies": {
-		"chalk": "latest",
-		"cheerio": "latest",
-		"color": "latest",
-		"commander": "latest",
-		"debug": "latest",
-		"decompress-zip": "latest",
-		"electron": "latest",
-		"electron-squirrel-startup": "latest",
-		"fluent-ffmpeg": "latest",
-		"formidable": "latest",
-		"fsmonitor": "latest",
-		"gm": "latest",
-		"imageinfo": "latest",
-		"json5": "latest",
-		"mime": "latest",
-		"mv": "latest",
-		"node-json-db": "latest",
-		"node-pre-gyp": "latest",
-		"normalizeurl": "latest",
-		"qr-image": "latest",
-		"rbush": ">=2",
-		"request": "latest",
-		"rimraf": "latest",
-		"sanitize-filename": "latest",
-		"sanitizer": "latest",
-		"semver": "latest",
-		"sprint": "latest",
-		"sw-precache": "latest",
-		"systeminformation": "latest",
-		"websocketio": "https://github.com/renambot-uic/websocketio.git",
-		"rimraf": "latest",
-		"node-pre-gyp": "latest",
-		"electron": "1.8.2-beta.3",
-		"electron-squirrel-startup": "latest",
-		"systeminformation": "latest",
-		"ws": "^3.3.1",
-		"ytdl-core": "latest"
-	},
-	"optionalDependencies": {
-		"node-demux": "https://github.com/renambot-uic/node-demux.git"
-	},
-	"devDependencies": {
-		"grunt": "latest",
-		"grunt-cli": "latest",
-		"grunt-eslint": "latest",
-		"grunt-contrib-yuidoc": "latest",
-		"grunt-prompt": "latest",
-		"grunt-mocha-cli": "latest",
-		"nodemon": "latest",
-		"kthxbai": "latest",
-		"mocha": "latest",
-		"mocha-jshint": "latest",
-		"istanbul": "latest",
-		"coveralls": "latest"
-	},
-	"engines": {
-		"node": ">=0.10.x"
-	},
-	"scripts": {
-		"start": "node server.js -l",
-		"sw": "node generate-service-worker.js",
-		"monitor": "nodemon -e json,js,html -I -L -i public/uploads -i public/service-worker.js server.js -l",
-		"lint": "grunt eslint",
-		"doc": "grunt yuidoc",
-		"newapp": "grunt newapp",
-		"test": "grunt all",
-		"in": "node ./install_dependencies.js",
-		"inprod": "node ./install_dependencies.js --prod",
-		"indev": "node ./install_dependencies.js --dev",
-		"electron": "electron electron.js -s http://localhost:9292 -d 0"
-	},
-	"license": "SEE LICENSE IN LICENSE.txt"
+  "name": "SAGE2",
+  "version": "3.0.0",
+  "date": "2015-11-02",
+  "private": true,
+  "description": "A cluster-based html viewer used for displaying elements across multiple browser windows",
+  "keywords": [
+    "SAGE",
+    "browser",
+    "collaboration"
+  ],
+  "author": "UIC EVL <evl.avatar@gmail.com>",
+  "contributors": [
+    {
+      "name": "Thomas Marrinan",
+      "email": "thomas.j.marrinan@gmail.com"
+    },
+    {
+      "name": "Jillian Aurisano",
+      "email": "jillian.aurisano@gmail.com"
+    },
+    {
+      "name": "Arthur Nishimoto",
+      "email": "arthur.nishimoto@gmail.com"
+    },
+    {
+      "name": "Victor Mateevitsi",
+      "email": "mvictoras@gmail.com"
+    },
+    {
+      "name": "Krishna Bharadwaj",
+      "email": "krishnaknbharadwaj@gmail.com"
+    },
+    {
+      "name": "Dylan Kobayashi",
+      "email": "dylank@hawaii.edu"
+    },
+    {
+      "name": "Luc Renambot",
+      "email": "renambot@gmail.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/sage2/sage2/"
+  },
+  "dependencies": {
+    "chalk": "latest",
+    "cheerio": "latest",
+    "color": "latest",
+    "commander": "latest",
+    "debug": "latest",
+    "decompress-zip": "latest",
+    "electron": "1.8.2-beta.3",
+    "electron-squirrel-startup": "latest",
+    "express": "^4.16.3",
+    "fluent-ffmpeg": "latest",
+    "formidable": "latest",
+    "fsmonitor": "latest",
+    "gm": "latest",
+    "imageinfo": "latest",
+    "json5": "latest",
+    "mime": "latest",
+    "mv": "latest",
+    "node-json-db": "latest",
+    "node-pre-gyp": "latest",
+    "normalizeurl": "latest",
+    "qr-image": "latest",
+    "rbush": ">=2",
+    "request": "latest",
+    "rimraf": "latest",
+    "sanitize-filename": "latest",
+    "sanitizer": "latest",
+    "semver": "latest",
+    "sprint": "latest",
+    "sw-precache": "latest",
+    "systeminformation": "latest",
+    "websocketio": "https://github.com/renambot-uic/websocketio.git",
+    "ws": "^3.3.1",
+    "ytdl-core": "latest"
+  },
+  "optionalDependencies": {
+    "node-demux": "https://github.com/renambot-uic/node-demux.git"
+  },
+  "devDependencies": {
+    "grunt": "latest",
+    "grunt-cli": "latest",
+    "grunt-eslint": "latest",
+    "grunt-contrib-yuidoc": "latest",
+    "grunt-prompt": "latest",
+    "grunt-mocha-cli": "latest",
+    "nodemon": "latest",
+    "kthxbai": "latest",
+    "mocha": "latest",
+    "mocha-jshint": "latest",
+    "istanbul": "latest",
+    "coveralls": "latest"
+  },
+  "engines": {
+    "node": ">=0.10.x"
+  },
+  "scripts": {
+    "start": "node server.js -l",
+    "sw": "node generate-service-worker.js",
+    "monitor": "nodemon -e json,js,html -I -L -i public/uploads -i public/service-worker.js server.js -l",
+    "lint": "grunt eslint",
+    "doc": "grunt yuidoc",
+    "newapp": "grunt newapp",
+    "test": "grunt all",
+    "in": "node ./install_dependencies.js",
+    "inprod": "node ./install_dependencies.js --prod",
+    "indev": "node ./install_dependencies.js --dev",
+    "electron": "electron electron.js -s http://localhost:9292 -d 0"
+  },
+  "license": "SEE LICENSE IN LICENSE.txt"
 }
