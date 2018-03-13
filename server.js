@@ -5260,7 +5260,7 @@ function sendConfig(req, res) {
 }
 
 function uploadForm(req, res) {
-	var form     = new formidable.IncomingForm();
+	var form = new formidable.IncomingForm();
 	// Drop position
 	var position = [0, 0];
 	// Open or not the file after upload
@@ -5274,13 +5274,14 @@ function uploadForm(req, res) {
 	form.maxFieldsSize = 4 * 1024 * 1024;
 	form.type          = 'multipart';
 	form.multiples     = true;
+	form.maxFileSize   = 20 * (1024 * 1024 * 1024); // 20GB
 
 	form.on('fileBegin', function(name, file) {
 		sageutils.log("Upload", file.name, file.type);
 	});
 
 	form.on('error', function(err) {
-		sageutils.log("Upload", 'Request aborted');
+		sageutils.log("Upload", 'Request aborted', err);
 		try {
 			// Removing the temporary file
 			fs.unlinkSync(this.openedFiles[0].path);
