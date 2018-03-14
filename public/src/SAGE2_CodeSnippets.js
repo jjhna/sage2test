@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* wsio */
+/* global wsio d3 */
 
 let SAGE2_CodeSnippets = (function() {
 	let self = {
@@ -206,10 +206,12 @@ let SAGE2_CodeSnippets = (function() {
 
 		let inputsRegex = new SnippetsInputRegExp(/SAGE2.SnippetInput\(({[\w,\W]*?})\)/, "gm");
 		let visElemRegex = new SnippetsVisElementRegExp(/SAGE2.SnippetVisElement\(({[\w,\W]*?})\)/, "gm");
+		let timeoutRegex = new SnippetsTimeoutRegExp(/SAGE2.SnippetTimeout\(({[\w,\W]*?})\)/, "gm");
 
 		// "compile" code and replace/extract special syntax values
 		let codeCompile_1 = code.replace(inputsRegex);
-		let codeComile_final = codeCompile_1.replace(visElemRegex);
+		let codeCompile_2 = codeCompile_1.replace(timeoutRegex);
+		let codeComile_final = codeCompile_2.replace(visElemRegex);
 
 		let startBlock = `(function() {
 			console.log('Sandbox script Loading');
@@ -368,6 +370,40 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	function createBlockPath (type, width, height, offset) {
+		let mult = [width, height];
+
+		let points = {
+			gen: [
+				[0, 0],
+				[0.925, 0],
+				[1, 0.5],
+				[0.925, 1],
+				[0, 1]
+			],
+			data: [
+				[0, 0],
+				[0.925, 0],
+				[1, 0.5],
+				[0.925, 1],
+				[0, 1],
+				[0.075, 0.5]
+			],
+			draw: [
+				[0, 0],
+				[1, 0],
+				[1, 1],
+				[0, 1],
+				[0.075, 0.5]
+			]
+		};
+
+		return "M " + points[type].map(point =>
+			point.map((coord, i) =>
+				(coord * mult[i]) + offset[i]
+			).join(" ")).join(" L ") + " Z";
+	}
+
 	function displayApplicationLoaded(id, app) {
 		// call required function, update reference
 		if (app.application === "Snippets_Vis") {
@@ -387,6 +423,7 @@ let SAGE2_CodeSnippets = (function() {
 
 		} else if (app.application === "Snippets_Data") {
 			let primedLink = self.datasets[id];
+			console.log(self.datasets, id);
 
 			if (primedLink.getParent()) {
 				primedLink.getParent().addChildLink(primedLink);
@@ -423,6 +460,50 @@ let SAGE2_CodeSnippets = (function() {
 		});
 
 		return ancestry;
+	}
+
+	function drawAppAncestry(data) {
+
+		let lightColor = { gen: "#b3e2cd", data: "#cbd5e8", draw: "#fdcdac" };
+
+		let darkColor = { gen: "#87d1b0", data: "#9db0d3", draw: "#fba76d" };
+
+		let {svg, width, height, ancestry} = data;
+
+		console.log("Drawing Ancestry", data);
+
+		let blockWidth = width / Math.max(ancestry.length, 3);
+
+		svg.selectAll(".snippetFuncBlock").remove();
+
+		svg.selectAll(".snippetFuncBlock")
+			.data(ancestry)
+			.enter().append("g")
+			.attr("class", "snippetFuncBlock")
+			.each(function (d, i) {
+				let group = d3.select(this);
+				let thisOffsetX = i === 0 ? 5 : (i * blockWidth) - (blockWidth * 0.075);
+
+				group.append("path")
+					.attr("class", "snippetPath")
+					.attr("d", createBlockPath(d.type, blockWidth - 12, height - 8, [thisOffsetX, 1]))
+					.style("stroke-linejoin", "round")
+					.style("fill", lightColor[d.type])
+					.style("stroke-width", 2)
+					.style("stroke", darkColor[d.type]);
+
+				group.append("text")
+					.attr("class", "snippetName")
+					.attr("x", thisOffsetX + blockWidth / 2)
+					.attr("y", 18)
+					.style("text-anchor", "middle")
+					.style("font-weight", "bold")
+					.style("font-size", "10px")
+					.style("font-family", "monospace")
+					.style("fill", "black")
+					.style("pointer-events", "none")
+					.text(`cS-${d.id.split("-")[1]}: ${d.desc}`);
+			});
 	}
 
 	function executeCodeSnippet(snippetID, parentID) {
@@ -696,10 +777,12 @@ let SAGE2_CodeSnippets = (function() {
 
 		createDataApplication,
 		createVisApplication,
+		createBlockPath,
 
 		displayApplicationLoaded,
 		outputAppClosed,
 		getAppAncestry,
+		drawAppAncestry,
 		executeCodeSnippet,
 
 		registerSnippetListApp,
@@ -718,8 +801,6 @@ class SnippetsInputRegExp extends RegExp {
 	[Symbol.replace](str, inputs) {
 		let output = ``;
 
-		// console.log("Input Code:\n\n" + str);
-
 		let result;
 		let lastIndex = 0;
 		while ((result = this.exec(str))) {
@@ -731,8 +812,6 @@ class SnippetsInputRegExp extends RegExp {
 
 		// append rest of code
 		output += str.substring(lastIndex);
-
-		// console.log("Output Code:\n\n", output);
 
 		return output;
 	}
@@ -752,6 +831,30 @@ class SnippetsVisElementRegExp extends RegExp {
 
 			// reconstruct code string with SAGE2.Input calls given an extra property of app reference
 			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, this)`;
+			lastIndex = result.index + result[0].length;
+		}
+
+		// append rest of code
+		output += str.substring(lastIndex);
+
+		return output;
+	}
+}
+
+// Regular Expression which will find SAGE2.SnippetTimeout({ ... })
+//	and add an extra link parameter to the calls
+class SnippetsTimeoutRegExp extends RegExp {
+	// change the replace function
+	[Symbol.replace](str, inputs) {
+		// code replaced with new string
+		let output = ``;
+
+		let result;
+		let lastIndex = 0;
+		while ((result = this.exec(str))) {
+
+			// reconstruct code string with SAGE2.Input calls given an extra property of app reference
+			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, link)`;
 			lastIndex = result.index + result[0].length;
 		}
 

@@ -78,40 +78,6 @@ var Snippets_List = SAGE2_App.extend({
 		SAGE2_CodeSnippets.registerSnippetListApp(data.id, this);
 	},
 
-	createBlockPath: function (type, width, offset) {
-		let mult = [width, 30];
-
-		let points = {
-			gen: [
-				[0, 0],
-				[0.925, 0],
-				[1, 0.5],
-				[0.925, 1],
-				[0, 1]
-			],
-			data: [
-				[0, 0],
-				[0.925, 0],
-				[1, 0.5],
-				[0.925, 1],
-				[0, 1],
-				[0.075, 0.5]
-			],
-			draw: [
-				[0, 0],
-				[1, 0],
-				[1, 1],
-				[0, 1],
-				[0.075, 0.5]
-			]
-		};
-
-		return "M " + points[type].map(point =>
-			point.map((coord, i) =>
-				(coord * mult[i]) + offset[i]
-			).join(" ")).join(" L ") + " Z";
-	},
-
 	updateFunctionBank: function (data, date) {
 		// console.log("Snippets_List> Update Functions", data);
 
@@ -167,7 +133,7 @@ var Snippets_List = SAGE2_App.extend({
 
 					group.append("path")
 						.attr("class", "snippetPath")
-						.attr("d", that.createBlockPath(type, colWidth - 12, [6, i * 38 + 8]))
+						.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 12, 30, [6, i * 38 + 8]))
 						.style("stroke-linejoin", "round")
 						.style("fill", d.locked ? "#525252" : lightColor[d.type])
 						.style("stroke-width", 3)
@@ -237,7 +203,7 @@ var Snippets_List = SAGE2_App.extend({
 
 
 						d3.select(this).selectAll(".snippetPath")
-							.attr("d", that.createBlockPath(type, colWidth - 10, [5, i * 38 + 8]))
+							.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 12, 30, [5, i * 38 + 8]))
 
 						let selectorWidth = (((colWidth - 10) * 0.8) - (func.selectors.length + 1) * 3) / func.selectors.length;
 

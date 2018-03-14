@@ -83,12 +83,30 @@ var SAGE2 = SAGE2 || {};
 			}
 		});
 
-
-
 		return {
 			elem: app.snippetsVisElement,
 			width: app.sage2_width,
 			height: app.sage2_height - 32
 		};
 	};
+
+	/*
+	 * SAGE2.SnippetTimeout API
+	 *
+	 * Specification includes time in ms
+	 *
+	 */
+	SAGE2.SnippetTimeout = function(specification, link) {
+		let { time } = specification;
+
+		// clear existing update timer if it exists
+		if (link.timeout) {
+			clearTimeout(link.timeout);
+		}
+
+		// create and save new timeout
+		link.timeout = setTimeout(link.update, time);
+	};
+
+	console.log(SAGE2);
 }());

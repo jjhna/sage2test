@@ -20,7 +20,7 @@ var Snippets_Data = SAGE2_App.extend({
 		this.element.style.whiteSpace = "pre";
 		// this.element.style.padding = '10px';
 
-		this.dataset = {};
+		this.dataset = [];
 
 		this.parentLink = null;
 		this.childLinks = [];
@@ -71,12 +71,14 @@ var Snippets_Data = SAGE2_App.extend({
 		this.element.appendChild(content);
 		
 		// add wrapper for function execution information
-		let ancestry = document.createElement("div");
-		ancestry.className = "snippetAncestry";
+		let ancestry = d3.select(this.element).append("svg")
+			.attr("class", "snippetAncestry")
+			.attr("height", 32)
+			.attr("width", data.width);
 
 		this.ancestry = ancestry;
-		this.element.appendChild(ancestry);
 
+		console.log(this.state);
 		// set up link to parent
 		SAGE2_CodeSnippets.displayApplicationLoaded(this.state.snippetsID, this);
 
@@ -166,24 +168,14 @@ var Snippets_Data = SAGE2_App.extend({
 
 	createAncestorList: function() {
 	// build sequential function call list and display
-		let ancestorList = SAGE2_CodeSnippets.getAppAncestry(this);
-
-		let lightColor = { gen: "#b3e2cd", data: "#cbd5e8", draw: "#fdcdac" };
-		let darkColor = { gen: "#87d1b0", data: "#9db0d3", draw: "#fba76d" };
-		
-		this.ancestry.innerHTML = "";
-
-		for (let ancestor of ancestorList) {
-			let block = document.createElement("div");
-			block.classList.add("snippetsExecutionOrderBlock");
-
-			block.style.border = "2px solid " + darkColor[ancestor.type];
-			block.style.background = lightColor[ancestor.type];
-			
-			block.innerHTML = `cS-${ancestor.id.split("-")[1]}: ${ancestor.desc}`;
-
-			this.ancestry.appendChild(block);
-		}
+		let ancestry = SAGE2_CodeSnippets.getAppAncestry(this);
+		// outsource ancestry drawing ot SAGE2_CodeSnippets
+		SAGE2_CodeSnippets.drawAppAncestry({
+			svg: this.ancestry,
+			width: this.sage2_width,
+			height: 32,
+			ancestry
+		});
 	},
 
 	updateAncestorTree: function() {
@@ -196,7 +188,10 @@ var Snippets_Data = SAGE2_App.extend({
 
 	resize: function(date) {
 		// Called when window is resized
-		
+
+		// update ancestor list size
+		this.ancestry.attr("width", this.sage2_width);
+		this.createAncestorList();
 
 		// this.refresh(date);
 	},
