@@ -1051,7 +1051,7 @@ var Webview = SAGE2_App.extend({
 				this.element.sendInputEvent({
 					type: "mouseWheel",
 					deltaX: 0, deltaY: -1 * data.wheelDelta,
-					x: 0, y: 0,
+					x: x, y: y,
 					modifiers: this.modifiers,
 					canScroll: true
 				});
