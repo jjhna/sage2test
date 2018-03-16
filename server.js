@@ -5301,6 +5301,9 @@ function uploadForm(req, res) {
 	// Limits the amount of memory all fields together (except files) can allocate in bytes.
 	//    set to 4MB.
 	form.maxFieldsSize = 4 * 1024 * 1024;
+	// Increase file limit to match client limit in SAGE2_interaction.js
+	// Default is 2MB https://github.com/felixge/node-formidable/commit/39f27f29b2824c21d0d9b8e85bcbb5fc0081beaf
+	form.maxFileSize = 1024 * 1024 * 1024;
 	form.type          = 'multipart';
 	form.multiples     = true;
 

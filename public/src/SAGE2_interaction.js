@@ -292,7 +292,14 @@ function SAGE2_interaction(wsio) {
 			var type = st.substring(0, st.indexOf("\n") - 2);
 
 			// Parse the reply into JSON
-			var msgFromServer = JSON.parse(event.target.response);
+			var msgFromServer;
+			try {
+				msgFromServer = JSON.parse(event.target.response);
+			} catch (e) {
+				// Show message from server in case the message can't be parsed.
+				showSAGE2Message("File: " + event.target.response);
+				throw e;
+			}
 
 			// Check the return values for success/error
 			Object.keys(msgFromServer.files).map(function(k) {
