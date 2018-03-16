@@ -15,7 +15,7 @@ var Snippets_Data = SAGE2_App.extend({
 		this.SAGE2Init("div", data);
 		// Set the DOM id
 		this.element.id = "div_" + data.id;
-		this.element.style.backgroundColor = 'white';
+		this.element.style.backgroundColor = 'black';
 		this.element.style.fontFamily = 'monospace';
 		this.element.style.whiteSpace = "pre";
 		// this.element.style.padding = '10px';
@@ -24,6 +24,8 @@ var Snippets_Data = SAGE2_App.extend({
 
 		this.parentLink = null;
 		this.childLinks = [];
+
+		this.inputsOpen = false;
 
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
@@ -62,21 +64,39 @@ var Snippets_Data = SAGE2_App.extend({
 
 		// add content wrapper to app
 		let content = document.createElement("div");
-		content.style.width = "100%";
+		content.style.width = this.sage2_width + "px";
 		content.style.height = "100%";
-		content.style.padding = "40px 10px";
+		content.style.padding = (ui.titleBarHeight * 2 + 8) + "px 10px";
 		content.style.boxSizing = "border-box";
+		content.style.background = "white";
 
 		this.content = content;
 		this.element.appendChild(content);
+
+		let inputs = document.createElement("div");
+		inputs.className = "snippetsInputWrapper";
+		inputs.style.position = "absolute";
+		inputs.style.left = this.sage2_width + "px";
+		inputs.style.top = "0";
+		inputs.style.width = "300px";
+		inputs.style.height = "100%";
+		inputs.style.padding = ui.titleBarHeight * 2 + 8 + "px 10px";
+		inputs.style.boxSizing = "border-box";
+		inputs.style.background = "lightgray";
+
+		this.inputs = inputs;
+		this.element.appendChild(inputs);
 		
 		// add wrapper for function execution information
 		let ancestry = d3.select(this.element).append("svg")
 			.attr("class", "snippetAncestry")
-			.attr("height", 32)
+			.attr("height", ui.titleBarHeight * 2)
 			.attr("width", data.width);
 
 		this.ancestry = ancestry;
+
+		// use mouse events normally
+		this.passSAGE2PointerAsMouseEvents = true;
 
 		console.log(this.state);
 		// set up link to parent
@@ -173,8 +193,9 @@ var Snippets_Data = SAGE2_App.extend({
 		SAGE2_CodeSnippets.drawAppAncestry({
 			svg: this.ancestry,
 			width: this.sage2_width,
-			height: 32,
-			ancestry
+			height: ui.titleBarHeight * 2,
+			ancestry,
+			app: this
 		});
 	},
 
@@ -188,6 +209,12 @@ var Snippets_Data = SAGE2_App.extend({
 
 	resize: function(date) {
 		// Called when window is resized
+
+		// set content size to leave space for the inputs
+		let contentWidth = this.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
+		this.content.style.width = contentWidth + "px";
+
+		this.inputs.style.left = contentWidth + "px";
 
 		// update ancestor list size
 		this.ancestry.attr("width", this.sage2_width);

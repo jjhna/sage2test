@@ -413,10 +413,10 @@ let SAGE2_CodeSnippets = (function() {
 				primedLink.getParent().addChildLink(primedLink);
 			}
 
+			app.setParentLink(primedLink);
+
 			primedLink.setChild(app);
 			primedLink.update();
-
-			app.setParentLink(primedLink);
 
 			// fix reference
 			self.drawings[id] = app;
@@ -429,10 +429,10 @@ let SAGE2_CodeSnippets = (function() {
 				primedLink.getParent().addChildLink(primedLink);
 			}
 
+			app.setParentLink(primedLink);
+
 			primedLink.setChild(app);
 			primedLink.update();
-
-			app.setParentLink(primedLink);
 
 			// fix reference
 			self.datasets[id] = app;
@@ -464,17 +464,43 @@ let SAGE2_CodeSnippets = (function() {
 
 	function drawAppAncestry(data) {
 
+		// snippet color palette
 		let lightColor = { gen: "#b3e2cd", data: "#cbd5e8", draw: "#fdcdac" };
-
 		let darkColor = { gen: "#87d1b0", data: "#9db0d3", draw: "#fba76d" };
 
-		let {svg, width, height, ancestry} = data;
+		let {svg, width, height, ancestry, app} = data;
+		// calculate display width per snippet block
+		let blockWidth = (width - height) / Math.max(ancestry.length, 3);
 
-		console.log("Drawing Ancestry", data);
+		svg.selectAll("*").remove();
 
-		let blockWidth = width / Math.max(ancestry.length, 3);
+		if (Object.keys(app.parentLink.inputs).length) {
+			svg.append("rect")
+				.attr("x", width - height)
+				.attr("y", 0)
+				.attr("width", height - 8)
+				.attr("height", height - 8)
+				.style("stroke", "black")
+				.style("fill", app.inputsOpen ? "gold" : "white");
 
-		svg.selectAll(".snippetFuncBlock").remove();
+			// fix the use of image by href later (flashes on redraw)
+			svg.append("image")
+				.attr("href", "../images/radialMenu/three115.svg")
+				.attr("x", width - height + 4)
+				.attr("y", 4)
+				.attr("width", height - 16)
+				.attr("height", height - 16)
+				.on("click", function() {
+					console.log("Input Settings Click");
+					if (!app.inputsOpen) {
+						app.sendResize(app.sage2_width + 300, app.sage2_height);
+						app.inputsOpen = true;
+					} else {
+						app.sendResize(app.sage2_width - 300, app.sage2_height);
+						app.inputsOpen = false;
+					}
+				});
+		}
 
 		svg.selectAll(".snippetFuncBlock")
 			.data(ancestry)
@@ -482,11 +508,11 @@ let SAGE2_CodeSnippets = (function() {
 			.attr("class", "snippetFuncBlock")
 			.each(function (d, i) {
 				let group = d3.select(this);
-				let thisOffsetX = i === 0 ? 5 : (i * blockWidth) - (blockWidth * 0.075);
+				let thisOffsetX = i === 0 ? 6 : (i * (0.925 * blockWidth - 6)) + 6;
 
 				group.append("path")
 					.attr("class", "snippetPath")
-					.attr("d", createBlockPath(d.type, blockWidth - 12, height - 8, [thisOffsetX, 1]))
+					.attr("d", createBlockPath(d.type, blockWidth - 12, height - 16, [thisOffsetX, 4]))
 					.style("stroke-linejoin", "round")
 					.style("fill", lightColor[d.type])
 					.style("stroke-width", 2)
@@ -495,7 +521,7 @@ let SAGE2_CodeSnippets = (function() {
 				group.append("text")
 					.attr("class", "snippetName")
 					.attr("x", thisOffsetX + blockWidth / 2)
-					.attr("y", 18)
+					.attr("y", height / 2)
 					.style("text-anchor", "middle")
 					.style("font-weight", "bold")
 					.style("font-size", "10px")
@@ -504,6 +530,10 @@ let SAGE2_CodeSnippets = (function() {
 					.style("pointer-events", "none")
 					.text(`cS-${d.id.split("-")[1]}: ${d.desc}`);
 			});
+	}
+
+	function addAppInput(inputBank, inputs) {
+		console.log("addInputs", inputBank, inputs);
 	}
 
 	function executeCodeSnippet(snippetID, parentID) {
@@ -623,6 +653,11 @@ let SAGE2_CodeSnippets = (function() {
 				// remove ID from function's links
 				let funcLinkIndex = func.links.indexOf(linkID);
 				func.links.splice(funcLinkIndex, 1);
+
+				// clear timeout if the app has one
+				if (self.links[linkID].timeout) {
+					clearTimeout(self.links[linkID].timeout);
+				}
 
 				delete self.links[linkID];
 			}
@@ -784,6 +819,8 @@ let SAGE2_CodeSnippets = (function() {
 		getAppAncestry,
 		drawAppAncestry,
 		executeCodeSnippet,
+
+		addAppInput,
 
 		registerSnippetListApp,
 		unregisterSnippetListApp,

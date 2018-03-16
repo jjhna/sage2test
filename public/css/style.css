@@ -338,7 +338,7 @@ body {
 
 .snippetAncestry {
 	position: absolute;
-	background: rgba(0, 0, 0, 0.15);
+	background: rgb(217,217,217);
 	border-bottom: 2px solid lightgray;
 	width: 100%;
 	left: 0;
@@ -346,8 +346,8 @@ body {
 	padding: 3px;
 	box-sizing: border-box;
 	overflow: hidden;
-	height: 32px;
 	text-rendering: optimizeLegibility;
+	box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
 }
 
 .snippetsExecutionOrderBlock {
@@ -380,4 +380,65 @@ body {
 	border-left-color: inherit;
 	border-width: 13px;
 	margin-top: -13px;
+}
+
+/*
+ * Styling for the Code Snippets elements
+ */
+
+.snippetsInputDiv {
+	padding: 5px;
+}
+
+.snippetsInputLabel {
+	min-width: 75px;
+	display: inline-block;
+	font-family: monospace;
+}
+
+.snippetsInputDiv .checkboxInput {
+	border: 2px solid black;
+	background: gray;
+	display: inline-block;
+	position: relative;
+	margin-left: 10px;
+}
+
+/* Create the checkmark/indicator (hidden when not checked) */
+.snippetsInputDiv .checkboxInput:after {
+  content: "";
+  position: absolute;
+}
+
+/* Show the checkmark when checked */
+.snippetsInputDiv .checkboxInput.checked:after {
+  border: solid white;
+  border-width: 0 3px 3px 0;
+}
+
+/* Style the checkmark/indicator */
+.snippetsInputDiv .checkboxInput:after {
+  left: 9px;
+  top: 5px;
+  width: 5px;
+  height: 10px;
+  border: solid #444;
+  border-width: 0 3px 3px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.snippetsInputDiv .checkboxInput.checked {
+	border: 2px solid black;
+	background: green;
+}
+
+
+.snippetsInputDiv .radioInput {
+	
+}
+
+.snippetsInputDiv .rangeInput {
+
 }

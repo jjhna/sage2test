@@ -28,6 +28,8 @@ var SAGE2 = SAGE2 || {};
 		if (!link.inputs[specification.name]) {
 			// create new input element if this doesn't exist
 			let newInput = CodeSnippetInput.create(specification);
+			newInput.onUpdate = link.update;
+
 			link.inputs[specification.name] = newInput;
 		} else {
 			// otherwise, update existing element if it does exist
@@ -38,9 +40,26 @@ var SAGE2 = SAGE2 || {};
 			}
 
 			link.inputs[specification.name].spec = specification;
+
+			// remove existing input element on app
+			d3.select(link.getChild().inputs).select("#" + specification.name).remove();
 		}
 
-		console.log(link.inputs);
+		// create input element on app
+		let inputDiv = d3.select(link.getChild().inputs).append("div")
+			.attr("id", specification.name)
+			.attr("class", "snippetsInputDiv");
+
+		inputDiv.append("div")
+			.attr("class", "snippetsInputLabel")
+			.style("font-size", ui.titleBarHeight * 0.5 + "px")
+			.text(specification.name);
+
+		inputDiv
+			.each(function() {
+				// create the input element based on the Element's specification
+				link.inputs[specification.name].createInputElement(d3.select(this));
+			});
 
 		return link.inputs[specification.name].state;
 	};
@@ -61,12 +80,15 @@ var SAGE2 = SAGE2 || {};
 			delete app.snippetsVisElement;
 		}
 
+		// set size to leave space for the inputs
+		let elementWidth = app.inputsOpen ? app.sage2_width - 300 : app.sage2_width;
+
 		// if the app doesn't have a vis element, create one
 		if (!app.snippetsVisElement) {
-			app.snippetsVisElement = d3.select(app.element)
+			app.snippetsVisElement = d3.select(app.content)
 				.append(type)
 				.style("position", "absolute")
-				.style("top", "32px")
+				// .style("top", ui.titleBarHeight * 2 + "px")
 				.style("background", "white")
 				.style("box-sizing", "border-box").node();
 		}
@@ -74,19 +96,19 @@ var SAGE2 = SAGE2 || {};
 		d3.select(app.snippetsVisElement).each(function() {
 			if (type === "svg") {
 				d3.select(this)
-					.attr("width", app.sage2_width)
-					.attr("height", app.sage2_height - 32);
+					.attr("width", elementWidth)
+					.attr("height", app.sage2_height - (ui.titleBarHeight * 2));
 			} else {
 				d3.select(this)
-					.style("width", (app.sage2_width) + "px")
-					.style("height", (app.sage2_height - 32) + "px");
+					.style("width", (elementWidth) + "px")
+					.style("height", (app.sage2_height - (ui.titleBarHeight * 2)) + "px");
 			}
 		});
 
 		return {
 			elem: app.snippetsVisElement,
-			width: app.sage2_width,
-			height: app.sage2_height - 32
+			width: elementWidth,
+			height: app.sage2_height - ui.titleBarHeight * 2
 		};
 	};
 

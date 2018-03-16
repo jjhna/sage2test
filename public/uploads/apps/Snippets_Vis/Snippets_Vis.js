@@ -18,21 +18,39 @@ var Snippets_Vis = SAGE2_App.extend({
 		// Set the background to black
 		this.element.style.backgroundColor = 'white';
 
-		// this.svg = d3.select(this.element)
-		// 	.append("svg")
-		// 	.attr("width", data.width)
-		// 	.attr("height", data.height - 32)
-		// 	.style("margin-top", "32px")
-		// 	.style("background", "white")
-		// 	.style("box-sizing", "border-box");
-
 		this.parentLink = null;
 		this.childLinks = [];
+
+		this.inputsOpen = false;
 
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
 		// this.moveEvents   = "continuous";
 		// this.resize = "fixed";
+
+		this.content = document.createElement("div");
+		this.content.style.width = "100%";
+		this.content.style.height = this.sage2_height - ui.titleBarHeight * 2 + "px";
+		this.content.style.position = "absolute";
+		this.content.style.boxSizing = "border-box";
+		this.content.style.left = "0";
+		this.content.style.top = ui.titleBarHeight * 2 + "px";
+		
+		this.element.appendChild(this.content);
+
+		let inputs = document.createElement("div");
+		inputs.className = "snippetsInputWrapper";
+		inputs.style.position = "absolute";
+		inputs.style.left = this.sage2_width + "px";
+		inputs.style.top = "0";
+		inputs.style.width = "300px";
+		inputs.style.height = "100%";
+		inputs.style.padding = ui.titleBarHeight * 2 + 8 + "px 10px";
+		inputs.style.boxSizing = "border-box";
+		inputs.style.background = "lightgray";
+
+		this.inputs = inputs;
+		this.element.appendChild(inputs);
 
 		// add error popup to app
 		let errorBox = document.createElement("div");
@@ -59,17 +77,18 @@ var Snippets_Vis = SAGE2_App.extend({
 		this.errorBox = errorBox;
 		this.element.appendChild(errorBox);
 
+		// use mouse events normally
+		this.passSAGE2PointerAsMouseEvents = true;
+
 		// SAGE2 Application Settings
 		// Not adding controls but making the default buttons available
 		this.controls.finishedAddingControls();
-		this.enableControls = true;
-
-		console.log(data);
+		this.enableControls = true
 
 		// add wrapper for function execution information
 		let ancestry = d3.select(this.element).append("svg")
 			.attr("class", "snippetAncestry")
-			.attr("height", 32)
+			.attr("height", ui.titleBarHeight * 2)
 			.attr("width", data.width);
 
 		this.ancestry = ancestry;
@@ -107,8 +126,8 @@ var Snippets_Vis = SAGE2_App.extend({
 
 		// refresh ancestor list (in case of name change)
 		this.createAncestorList();
-
-		return this.element;
+		
+		return this.snippetsVisElement || this.element;
 	},
 
 	displayError: function(err) {
@@ -134,8 +153,9 @@ var Snippets_Vis = SAGE2_App.extend({
 		SAGE2_CodeSnippets.drawAppAncestry({
 			svg: this.ancestry,
 			width: this.sage2_width,
-			height: 32,
-			ancestry
+			height: ui.titleBarHeight * 2,
+			ancestry,
+			app: this
 		});
 	},
 

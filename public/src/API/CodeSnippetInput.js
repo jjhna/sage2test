@@ -1,4 +1,7 @@
 "use strict";
+
+/* global d3 */
+
 let CodeSnippetInput = (function () {
 
 	/*
@@ -10,6 +13,7 @@ let CodeSnippetInput = (function () {
 			this._state = new SnippetInputState(this.defaultValue);
 
 			this._inputElement = null;
+			this._onUpdate = () => {};
 
 			console.log("Creating:", this.constructor.name);
 		}
@@ -26,6 +30,10 @@ let CodeSnippetInput = (function () {
 			this.updateStateFromSpec(newSpec);
 
 			this._spec = newSpec;
+		}
+
+		set onUpdate(callback) {
+			this._onUpdate = callback;
 		}
 
 		/*
@@ -50,13 +58,16 @@ let CodeSnippetInput = (function () {
 	class SnippetInputState {
 		constructor(defaultVal) {
 			this._value = defaultVal;
+			this._onUpdate = null;
 		}
 
 		set value(newState) {
 			// check if the state has changed
-			if (this.newState !== this._value) {
+			if (newState !== this._value) {
 				// perform updates on state change
-
+				if (this._onUpdate) {
+					this._onUpdate();
+				}
 			}
 			this._value = newState;
 		}
@@ -100,6 +111,13 @@ let CodeSnippetInput = (function () {
 
 		createInputElement(parentNode) {
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
+			parentNode
+				.append("input")
+				.attr("type", "range")
+				.attr("min", this._spec.range[0])
+				.attr("max", this._spec.range[1])
+				.attr("step", this._spec.step)
+				.node().value = this._state.value;
 		}
 	}
 
@@ -123,7 +141,22 @@ let CodeSnippetInput = (function () {
 		}
 
 		createInputElement(parentNode) {
+			let _this = this;
+
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
+			parentNode.append("div")
+				.attr("class", "checkboxInput")
+				.style("height", ui.titleBarHeight + "px")
+				.style("width", ui.titleBarHeight + "px")
+				.classed("checked", this._state.value ? "true" : null)
+				.on("click", function() {
+					let checked = !_this._state.value;
+
+					d3.select(this).classed("checked", checked);
+					_this._state.value = checked;
+
+					_this._onUpdate();
+				});
 		}
 	}
 
@@ -176,7 +209,17 @@ let CodeSnippetInput = (function () {
 		}
 
 		createInputElement(parentNode) {
+			let _this = this;
+
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
+			parentNode.append("input")
+				.attr("type", "text")
+				.on("input", function() {
+					_this._state.value = d3.select(this).node().value;
+					console.log("Text Input Changed");
+					_this._onUpdate();
+				})
+				.node().value = this._state.value;
 		}
 	}
 
