@@ -15,7 +15,6 @@ var SAGE2 = SAGE2 || {};
 	 *
 	 */
 	SAGE2.SnippetInput = function(specification, link) {
-		console.log("SnippetInput link:", link);
 
 		// throw error if name or type is missing
 		if (!specification.name) {
@@ -72,8 +71,6 @@ var SAGE2 = SAGE2 || {};
 	 */
 	SAGE2.SnippetVisElement = function(specification, app) {
 		let {type} = specification;
-
-		console.log("SnippetVisElement", type, app);
 
 		if (app.snippetVisElement && app.snippetsVisElement.tagName !== type) {
 			app.snippetsVisElement.remove();

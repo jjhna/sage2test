@@ -149,7 +149,7 @@ let CodeSnippetInput = (function () {
 				.style("height", ui.titleBarHeight + "px")
 				.style("width", ui.titleBarHeight + "px")
 				.classed("checked", this._state.value ? "true" : null)
-				.on("click", function() {
+				.on("click", function () {
 					let checked = !_this._state.value;
 
 					d3.select(this).classed("checked", checked);
@@ -185,7 +185,35 @@ let CodeSnippetInput = (function () {
 		}
 
 		createInputElement(parentNode) {
+			let _this = this;
+
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
+			parentNode.selectAll(".radioOption")
+				.data(this._spec.options)
+				.enter().append("div")
+				.append("div")
+				.each(function (d) {
+
+					d3.select(this).append("div")
+						.attr("class", "radioInput")
+						.style("height", ui.titleBarHeight + "px")
+						.style("width", ui.titleBarHeight + "px")
+						.classed("selected", _this._state.value === d ? "true" : null)
+						.on("click", function () {
+							parentNode.select(".selected").classed("selected", false);
+
+							d3.select(this).classed("selected", true);
+
+							_this._state.value = d;
+							_this._onUpdate();
+						});
+
+					d3.select(this)
+						.append("span")
+						.style("display", "inline-block")
+						.style("transform", "translateY(-25%)")
+						.text(d);
+				});
 		}
 	}
 
@@ -214,7 +242,7 @@ let CodeSnippetInput = (function () {
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
 			parentNode.append("input")
 				.attr("type", "text")
-				.on("input", function() {
+				.on("input", function () {
 					_this._state.value = d3.select(this).node().value;
 					console.log("Text Input Changed");
 					_this._onUpdate();
@@ -233,7 +261,7 @@ let CodeSnippetInput = (function () {
 			radio: SnippetRadio,
 			text: SnippetText
 		},
-		create: function(specification) {
+		create: function (specification) {
 			// console.log(specification);
 			return new this._typeMap[specification.type](specification);
 		}

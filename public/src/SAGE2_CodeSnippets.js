@@ -524,7 +524,7 @@ let SAGE2_CodeSnippets = (function() {
 					.attr("y", height / 2)
 					.style("text-anchor", "middle")
 					.style("font-weight", "bold")
-					.style("font-size", "10px")
+					.style("font-size", ui.titleBarHeight / 2 + "px")
 					.style("font-family", "monospace")
 					.style("fill", "black")
 					.style("pointer-events", "none")

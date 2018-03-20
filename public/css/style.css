@@ -383,7 +383,7 @@ body {
 }
 
 /*
- * Styling for the Code Snippets elements
+ * Styling for the Code Snippets Input elements
  */
 
 .snippetsInputDiv {
@@ -394,6 +394,8 @@ body {
 	min-width: 75px;
 	display: inline-block;
 	font-family: monospace;
+
+	font-weight: bold;
 }
 
 .snippetsInputDiv .checkboxInput {
@@ -402,18 +404,21 @@ body {
 	display: inline-block;
 	position: relative;
 	margin-left: 10px;
+	border-radius: 3px;
 }
 
 /* Create the checkmark/indicator (hidden when not checked) */
 .snippetsInputDiv .checkboxInput:after {
   content: "";
-  position: absolute;
+	position: absolute;
+	visibility: hidden;
 }
 
 /* Show the checkmark when checked */
 .snippetsInputDiv .checkboxInput.checked:after {
   border: solid white;
-  border-width: 0 3px 3px 0;
+	border-width: 0 3px 3px 0;
+	visibility: visible;
 }
 
 /* Style the checkmark/indicator */
@@ -422,8 +427,6 @@ body {
   top: 5px;
   width: 5px;
   height: 10px;
-  border: solid #444;
-  border-width: 0 3px 3px 0;
   -webkit-transform: rotate(45deg);
   -ms-transform: rotate(45deg);
   transform: rotate(45deg);
@@ -431,12 +434,47 @@ body {
 
 .snippetsInputDiv .checkboxInput.checked {
 	border: 2px solid black;
-	background: green;
+	background: #66a61e;
 }
 
-
+/* Snippets Radio Button */
+/* ===================== */
 .snippetsInputDiv .radioInput {
-	
+	border: 2px solid black;
+	background: gray;
+	display: inline-block;
+	position: relative;
+	margin: 0 10px;
+	border-radius: 50%;
+}
+
+.snippetsInputDiv .radioInput:hover {
+	background: orange;
+}
+
+/* Create the dot/indicator (hidden when not checked) */
+.snippetsInputDiv .radioInput:after {
+  content: "";
+	position: absolute;
+	visibility: hidden;
+  top: 9px;
+  left: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+}
+
+/* Show the dot when checked */
+.snippetsInputDiv .radioInput.selected:after {
+  /* border: solid white;
+	border-width: 0 3px 3px 0; */
+	visibility: visible;
+}
+
+.snippetsInputDiv .radioInput.selected {
+	border: 2px solid black;
+	background: #1b9e77;
 }
 
 .snippetsInputDiv .rangeInput {

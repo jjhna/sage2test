@@ -169,6 +169,13 @@ var Snippets_Vis = SAGE2_App.extend({
 
 	resize: function(date) {
 		// Called when window is resized
+		let contentWidth = this.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
+    this.content.style.width = contentWidth + "px";
+
+    this.inputs.style.left = contentWidth + "px";
+
+    // update ancestor list size
+    this.ancestry.attr("width", this.sage2_width);
 
 		if (this.parentLink) {
 			this.parentLink.update(); // redraw

@@ -131,7 +131,6 @@ var Snippets_Data = SAGE2_App.extend({
 
 	updateDataset: function(data, date) {
 		// update dataset
-		console.log("Updated Dataset:", data);
 		this.dataset = data;
 
 		this.errorBox.style.display = "none";
@@ -156,7 +155,6 @@ var Snippets_Data = SAGE2_App.extend({
 	updateChildren: function(date) {
 		// update all children
 		for (let childLink of this.childLinks) {
-			console.log(childLink);
 			childLink.update();
 		}
 	},
