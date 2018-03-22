@@ -74,6 +74,7 @@ function SAGE2_interaction(wsio) {
 			}
 			userSettings.SAGE2_ptrName = cookieName;
 		}
+
 		// Check if a domain cookie exists for the color
 		var cookieColor = getCookie('SAGE2_ptrColor');
 		if (cookieColor) {
@@ -92,6 +93,7 @@ function SAGE2_interaction(wsio) {
 			addCookie('SAGE2_ptrColor', userSettings.SAGE2_ptrColor);
 		}
 
+		// get user id if logged in
 		userSettings.id = window.__uid;
 	};
 
@@ -112,7 +114,6 @@ function SAGE2_interaction(wsio) {
 				break;
 		}
 	}
-
 
 	/**
 	* Handles server notification that action was canceled due to
@@ -140,8 +141,10 @@ function SAGE2_interaction(wsio) {
 	}
 
 	/**
+	* Return a random hex color
+	*
 	* @method randomHexColor
-	* @return {String} color as a hex string
+	* @return {String} hex value
 	*/
 	function randomHexColor() {
 		let hex = (Math.floor(Math.random() * 0xffffff)).toString(16);
@@ -161,6 +164,8 @@ function SAGE2_interaction(wsio) {
 		this.uniqueID = id;
 
 		if (!viewOnlyMode) {
+			// show dialog if not logged in
+			// and not anon
 			if (!userSettings.id) {
 				this.settingsDialog('init');
 			}
@@ -696,6 +701,24 @@ function SAGE2_interaction(wsio) {
 			}, userSettings));
 
 			this.broadcasting = true;
+
+			// Using requestAnimationFrame
+			// var _this = this;
+			// var lastCapture = performance.now();
+			// function step(timestamp) {
+			// 	console.log('    update', timestamp - lastCapture);
+			// 	var interval = timestamp - lastCapture;
+			// 	// if (_this.broadcasting && interval >= 16) {
+			// 		lastCapture = timestamp;
+			// 		if (_this.gotRequest) {
+			// 			console.log('  Capture', timestamp);
+			// 			_this.pix = _this.captureMediaFrame();
+			// 			_this.sendMediaStreamFrame();
+			// 		}
+			// 		_this.req = requestAnimationFrame(step);
+			// 	// }
+			// }
+			// this.req = requestAnimationFrame(step);
 
 			// Request an idle callback for screencapture
 			this.req = requestIdleCallback(this.step);

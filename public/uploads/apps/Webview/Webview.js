@@ -25,6 +25,8 @@ var Webview = SAGE2_App.extend({
 			// Add it to the layer
 			this.layer.appendChild(this.pre);
 			this.console = false;
+			// Add certificate error handler, it needs electron reference
+			this.handleCertificateError();
 		} else {
 			// Create div into the DOM
 			this.SAGE2Init("div", data);
@@ -78,6 +80,9 @@ var Webview = SAGE2_App.extend({
 		var view_url = data.params || this.state.file || this.state.url;
 		var video_id, ampersandPosition;
 
+		// Is the page hosted by SAGE server
+		this.connectingToSageHostedFile = this.isHostedBySelf(view_url);
+
 		// A youtube URL with a 'watch' video
 		if (view_url.startsWith('https://www.youtube.com')) {
 			if (view_url.indexOf('embed') === -1 ||
@@ -122,12 +127,28 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://player.twitch.tv/?!autoplay&video=v' + twitch_id;
 			}
 			this.contentType = "twitch";
-		} else if (view_url.includes("http://" + this.config.host) && view_url.includes("/user/apps")) {
+		} else if (view_url.includes(this.config.host) && view_url.includes("/user/apps")) {
 			// Locally hosted WebViews are assumed to be Unity applications
 			// Move to more dedicated url later? //users/apps/unity ?
 			this.contentType = "unity";
 		} else if (view_url.indexOf('docs.google.com/presentation') >= 0) {
 			this.contentType = "google_slides";
+		} else if (view_url.indexOf('appear.in') >= 0) {
+			if (!view_url.endsWith('?widescreen')) {
+				// to enable non-cropped mode, in widescreen
+				view_url += '?widescreen';
+			}
+			this.contentType = "appearin";
+		} else if (view_url.endsWith('.pptx')) {
+			// try to handle Office file. Starting with PPTX
+			let localurl = view_url;
+			view_url = "https://view.officeapps.live.com/op/embed.aspx?src=";
+			// alternativ using Google docs
+			// https://docs.google.com/viewer?url= URL &embedded=true&chrome=false
+			let host = this.config.host + ':' + this.config.port + '/';
+			view_url += encodeURIComponent('http://' + host + localurl);
+			view_url += "&wdAr=1.7777777777777777";
+			this.contentType = "msoffice";
 		}
 
 		// Store the zoom level, when in desktop emulation
@@ -157,7 +178,8 @@ var Webview = SAGE2_App.extend({
 		});
 
 		// done loading
-		this.element.addEventListener("did-finish-load", function() {
+		// this.element.addEventListener("did-finish-load", function() {
+		this.element.addEventListener("did-stop-loading", function() {
 			// code injection to support key translation
 			_this.codeInject();
 			// update the context menu with the current URL
@@ -266,8 +288,89 @@ var Webview = SAGE2_App.extend({
 			}
 		});
 
+		// Adds the session cookie to the Webview's cookies
+		if (this.connectingToSageHostedFile && getCookie("session")) {
+			var webview = this.element;
+
+			// Wait until the dom is ready before add the cookie
+			webview.addEventListener("dom-ready", function() {
+				// webview.openDevTools(); // Debugging
+
+				// Parse out the original URL from the session URL
+				var webviewContents = webview.getWebContents();
+				var urlWithSession = webviewContents.getURL();
+
+				// Check if URL has session.html before parsing and reloading page without it
+				if (urlWithSession.indexOf("session.html") > 0) {
+					var urlRoot = urlWithSession.substring(0, urlWithSession.indexOf("session.html") - 1);
+					var url = urlRoot + urlWithSession.substring(urlWithSession.indexOf("page") + 5, urlWithSession.length);
+
+					// Add the session to the Webview's cookies
+					webviewContents.session.cookies.set(
+						{
+							url: urlRoot,
+							name: "session",
+							value: getCookie("session")
+						},
+						function() {
+						}
+					);
+
+					// Reloads the Webview without the session URL
+					_this.changeURL(url, false);
+				}
+			});
+		}
+
 		// Set the URL and starts loading
-		this.element.src = view_url;
+		this.changeURL(view_url, false);
+	},
+
+	/**
+	 * Handles certificate errors from loading webpages.
+	 *
+	 * @method     handleCertificateError
+	 */
+	handleCertificateError: function() {
+		if (this.addedHandlerForCertificteError) {
+			return;
+		}
+		var content = this.element.getWebContents();
+		var _this = this;
+		if (!content) {
+			window.requestAnimationFrame(function() {
+				_this.handleCertificateError();
+			});
+		} else {
+
+			// content.on('certificate-error', function(event) {
+			// 	console.log('Webview>	certificate error:', event);
+			// 	_this.pre.innerHTML += 'Webview>	certificate error:' + event + '\n';
+			// 	_this.element.executeJavaScript(
+			// 		"document.body.innerHTML = '<h1>This webpage has invalid certificates and cannot be loaded</h1>'");
+			// });
+
+			content.on('certificate-error', function(event, url, error, certificate, callback) {
+				// This doesnt seem like a security risk yet
+				if (error === "net::ERR_CERTIFICATE_TRANSPARENCY_REQUIRED") {
+					console.log('Webview>certificate error1:', url, error, certificate);
+					// we ignore the certificate error
+					event.preventDefault();
+					callback(true);
+				} else {
+					// More troubling error
+					console.log('Webview>certificate error2:', url, error, certificate);
+					// Add the message to the console layer
+					_this.pre.innerHTML += 'Webview>certificate error:' + event + '\n';
+					_this.element.executeJavaScript(
+						"document.body.innerHTML = '<h1>This webpage has invalid certificates and cannot be loaded</h1>'");
+					// Denied
+					callback(false);
+				}
+			});
+
+			this.addedHandlerForCertificteError = true;
+		}
 	},
 
 	/**
@@ -353,7 +456,7 @@ var Webview = SAGE2_App.extend({
 
 	changeURL: function(newlocation, remoteSync) {
 		// trigger the change
-		this.element.src = newlocation;
+		this.element.src = newlocation; //this.addSessionAsUrlParamIfConnectingToSelf(newlocation);
 		// save the url
 		this.state.url   = newlocation;
 		this.SAGE2Sync(remoteSync);
@@ -380,6 +483,63 @@ var Webview = SAGE2_App.extend({
 				});
 			}
 		}
+	},
+
+	isHostedBySelf: function(newlocation) {
+		// Combine the hostnames/IPs listed in the configuration file
+		var allHostNames = [].concat(
+			ui.json_cfg.alternate_hosts,
+			ui.json_cfg.host);
+
+		// Check if newlocation has any of the hostnames
+		for (let i = 0; i < allHostNames.length; i++) {
+			if (allHostNames[i].trim().length > 1) {
+				if (newlocation.includes(allHostNames[i])) {
+					return true;
+				}
+			}
+		}
+		return false;
+	},
+
+	addSessionAsUrlParamIfConnectingToSelf: function(newlocation) {
+		// Added catch to prevent crash when addressing local files
+		var modUrl;
+		try {
+			modUrl = new URL(newlocation);
+		} catch (e) {
+			return newlocation;
+		}
+		// If there is a session
+		if (this.sessionHash === undefined) {
+			this.sessionHash = getCookie("session");
+		}
+		if (this.sessionHash) {
+			// Combine the hostnames/IPs listed in the configuration file
+			var allHostNames = [].concat(
+				ui.json_cfg.alternate_hosts,
+				ui.json_cfg.host);
+
+			// Check if newlocation has any of the hostnames
+			for (let i = 0; i < allHostNames.length; i++) {
+				if (allHostNames[i].trim().length > 1) {
+					if (newlocation.includes(allHostNames[i])) {
+						this.connectingToSageHostedFile = true;
+						break;
+					}
+				}
+			}
+			// If newlocation contains a hostname, append hash as url param
+			if (this.connectingToSageHostedFile) {
+				if (modUrl.search.length > 0) {
+					// if there are already url parameters
+					modUrl.search += "&hash=" + this.sessionHash;
+				} else {
+					modUrl.search += "hash=" + this.sessionHash;
+				}
+			}
+		}
+		return modUrl.href;
 	},
 
 	resize: function(date) {
@@ -891,7 +1051,7 @@ var Webview = SAGE2_App.extend({
 				this.element.sendInputEvent({
 					type: "mouseWheel",
 					deltaX: 0, deltaY: -1 * data.wheelDelta,
-					x: 0, y: 0,
+					x: x, y: y,
 					modifiers: this.modifiers,
 					canScroll: true
 				});
@@ -934,7 +1094,7 @@ var Webview = SAGE2_App.extend({
 				if (this.contentType === "unity") {
 					// Bit of a hack to allow Unity InputManager controls to work
 					// Only upper case characters trigger InputManager -- Arthur
-					data.character = data.character.toUpperCase();
+					// data.character = data.character.toUpperCase();
 				}
 
 				// send the character event

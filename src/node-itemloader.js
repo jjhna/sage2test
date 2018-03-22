@@ -568,6 +568,10 @@ AppLoader.prototype.loadAppFromFileFromRegistry = function(file, mime_type, aUrl
 	// Find the app!!
 	var appName = registry.getDefaultApp(file);
 	var localPath = getSAGE2Path(appName);
+	// not pretty, should be better (luc)
+	if (appName === 'Webview') {
+		localPath = getSAGE2Path('/uploads/apps/Webview');
+	}
 	var instructionsFile = path.join(localPath, "instructions.json");
 
 	var _this = this;
@@ -1138,6 +1142,11 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 			if (appData.compressed === true) {
 				var name = path.basename(appData.name, path.extname(appData.name));
 				var dir  = registry.getDirectory(appData.type);
+				// Temporary fix of directory association for zipped applications
+				// Currently there is no directory associated. Removed due to web app zips?
+				if (appData.type === "application/zip" && (!dir || dir.length === 0)) {
+					dir = "apps";
+				}
 				var futurePath = this.publicDir + dir + "/" + name;
 				var localPath  = getSAGE2Path(futurePath);
 				var aUrl = getSAGE2URL(localPath);
@@ -1243,6 +1252,11 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 
 AppLoader.prototype.readInstructionsFile = function(json_str, file, mime_type, external_url) {
 	var instructions = JSON.parse(json_str);
+
+	// Make sure the width and height are numbers
+	instructions.width  = parseInt(instructions.width,  10) || 720;
+	instructions.height = parseInt(instructions.height, 10) || 405;
+
 	var appName = instructions.main_script.substring(0, instructions.main_script.lastIndexOf('.'));
 	var aspectRatio = instructions.width / instructions.height;
 

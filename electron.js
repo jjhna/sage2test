@@ -385,39 +385,31 @@ function createWindow() {
 
 	ipcMain.on('getPerformanceData', function() {
 		var perfData = {};
+		var mem = process.getSystemMemoryInfo();
+		perfData.mem = {
+			total: mem.total,
+			free: mem.free
+		};
 		var displayLoad = {
 			cpuPercent: 0,
 			memPercent: 0,
-			memVirtual: 0,
 			memResidentSet: 0
 		};
+		var procMem = process.getProcessMemoryInfo();
+		var procCPU = process.getCPUUsage();
+		displayLoad.memResidentSet = procMem.workingSetSize;
+		displayLoad.memPercent = procMem.workingSetSize / perfData.mem.total * 100;
+		displayLoad.cpuPercent = procCPU.percentCPUUsage;
+		//console.log(process.pid, mainWindow.webContents.pid);
 		// CPU Load
-		var load = si.currentLoad();
-		var mem = load.then(function(data) {
-			perfData.cpuLoad = data;
-			return si.mem();
+		si.currentLoad(function(data) {
+			perfData.cpuLoad = {
+				raw_currentload: data.raw_currentload,
+				raw_currentload_idle: data.raw_currentload_idle
+			};
+			perfData.processLoad = displayLoad;
+			mainWindow.webContents.send('performanceData', perfData);
 		});
-		mem.then(data => {
-			perfData.mem = data;
-			return si.processes();
-		})
-			.then(data => {
-				var displayProcess = data.list.filter(function(d) {
-					return parseInt(d.pid) === parseInt(process.pid)
-						|| parseInt(d.pid) === mainWindow.webContents.getOSProcessId();
-				});
-
-				displayProcess.forEach(el => {
-					displayLoad.cpuPercent += el.pcpu;
-					displayLoad.memPercent += el.pmem;
-					displayLoad.memVirtual += el.mem_vsz;
-					displayLoad.memResidentSet += el.mem_rss;
-				});
-
-				perfData.processLoad = displayLoad;
-				mainWindow.webContents.send('performanceData', perfData);
-			})
-			.catch(error => console.error(error));
 	});
 }
 

@@ -211,6 +211,7 @@ var generateImageThumbnails = function(infile, outfile, sizes, index, callback) 
 	imageMagick(infile + "[0]").bitdepth(8).flatten().command("convert").in("-resize", sizes[index] + "x" + sizes[index])
 		.in("-gravity", "center").in("-background", "rgb(71,71,71)")
 		.in("-extent", sizes[index] + "x" + sizes[index])
+		.in("-auto-orient")
 		.out("-quality", "70").write(outfile + '_' + sizes[index] + '.jpg', function(err) {
 			if (err) {
 				sageutils.log("Assets", "cannot generate " + sizes[index] +

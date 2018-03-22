@@ -1,5 +1,7 @@
 version: 3.0.{build}
 
+image: Visual Studio 2017
+
 branches:
   only:
   - master
@@ -14,13 +16,13 @@ init:
   - set PATH=C:\Program Files\Git\mingw64\bin;%PATH%
 
 install:
-  - ps: Get-NodeJsLatestBuild 8.7
-  - ps: Install-Product node 8.7.0 x64
+  - ps: Get-NodeJsLatestBuild 9.4
+  - ps: Install-Product node 9.4.0 x64
   - dir C:\avvm\node
   - node -v
   - cd %APPVEYOR_BUILD_FOLDER%
   - cd client
-  - npm install --msvs_version=2013
+  - npm install --msvs_version=2017
   # - copy /Y ..\electron.js  electron.js
   - dir
   - mkdir public
