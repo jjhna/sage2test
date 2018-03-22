@@ -110,6 +110,9 @@ if (window.applicationCache) {
  *
  */
 window.addEventListener('beforeunload', function(event) {
+	if (interactor) {
+		interactor.disconnect();
+	}
 	if (interactor && interactor.broadcasting) {
 		// In fact, the message is unused for most browser as security measure
 		var confirmationMessage = "SAGE2 Desktop sharing in progress";
@@ -307,7 +310,7 @@ function SAGE2_init() {
 
 	// Create a connection to the SAGE2 server
 	wsio = new WebsocketIO();
-	wsio.open(function() {
+	wsio.open(function(socket) {
 		console.log("Websocket opened");
 
 		// Show and hide elements once connect to server

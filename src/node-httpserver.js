@@ -37,17 +37,22 @@ var debug = require('debug')('sage2http');
 var sageutils  = require('../src/node-utils');    // provides utility functions
 var generateSW = require('../generate-service-worker.js');
 
-// node modules
+// express modules
 var express = require('express');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
+var bodyParser = require('body-parser');
 
+// passport modules
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+var GitHubStrategy = require('passport-github').Strategy;
+var FacebookStrategy = require('passport-facebook').Strategy;
 
 var app = null;
 var publicDirectory;
+var User;
 
 /**
  * SAGE HTTP request handlers for GET and POST
@@ -56,7 +61,8 @@ var publicDirectory;
  * @constructor
  * @param publicDirectory {String} folder to expose to the server
  */
-function HttpServer(publicDir) {
+function HttpServer(publicDir, userlist) {
+	User = userlist;
 	publicDirectory = publicDir;
 
 	app = express();
@@ -66,19 +72,30 @@ function HttpServer(publicDir) {
 	// Generate the service worker for caching
 	generateSW();
 
+	// configure strategies for passport
+	let config = {};
+	configureStrategies(config);
+
+	// Add body parser middleware
+	app.use(bodyParser.urlencoded({
+		extended: true
+	}));
+	app.use(bodyParser.json());
+
 	// Add cookie parser middleware
 	app.use(cookieParser());
 
 	// Add session middleware
 	app.use(session({
 		secret: 'keyboard cat',
-		resave: false,
+		resave: true,
 		saveUninitialized: true,
-		cookie: { secure: true }
+		cookie: {
+			maxAge: 20 * 24 * 3600 * 1000 // 20 days
+		}
 	}));
 
-	// configure strategies for passport
-	configureStrategies();
+	// Initialize Passport middleware
 	app.use(passport.initialize());
 	app.use(passport.session());
 
@@ -86,8 +103,9 @@ function HttpServer(publicDir) {
 	// Routes
 	// //////////////////////
 
-	// redirect root path to index.html
-	app.get('/', (req, res) => res.redirect('/index.html'));
+	// set view engine
+	app.set('view engine', 'ejs');
+	app.set('views', path.join(__dirname, '../public'));
 
 	// static assets directories
 	app.use(ensureAuthenticated, express.static(publicDirectory));
@@ -96,27 +114,82 @@ function HttpServer(publicDir) {
 		app.use(folder.url, ensureAuthenticated, express.static(folder.path));
 	}
 
-	// TODO: handle login
+	// redirect root path to index.html
+	app.get('/', (req, res) => res.render('index.ejs', {
+		user: req.user,
+		auth: Object.keys(config).join(',')
+	}));
+
+	// admin login
+	app.get('/admin/user', (req, res) => {
+		if (req.cookies.admin !== 'test') {
+			res.sendFile(path.join(__dirname, '../public', 'admin/login.html'));
+		} else {
+			res.sendFile(path.join(__dirname, '../public', 'admin/SAGE2_user.html'));
+		}
+	});
+	app.post('/admin/login', (req, res) => {
+		res.cookie('admin', req.body.password);
+		res.redirect('/admin/user');
+	});
+
 	// log in with local strategy
-	app.post('/login',
-		passport.authenticate('local', { successRedirect: '/' })
-	);
+	app.post('/login', passport.authenticate('local'),
+		(req, res) => {
+			if (req.user) {
+				res.redirect('/');
+			} else {
+				res.send(req.user);
+			}
+		});
+	app.get('/logout', (req, res) => {
+		req.logOut();
+		res.redirect("/");
+	});
 
 	// log in with google strategy
-	app.get('/auth/google',
-		passport.authenticate('google', { scope: [
-			'https://www.googleapis.com/auth/plus.login',
-			'email'
-		] })
-	);
+	if (config.google) {
+		app.get('/auth/google',
+			passport.authenticate('google', {
+				scope: [
+					'https://www.googleapis.com/auth/plus.login',
+					'email'
+				]
+			})
+		);
 
-	// redirection
-	app.get('/auth/google/return',
-		passport.authenticate('google', { failureRedirect: '/' }),
-		function(req, res) {
-			res.redirect('/');
-		}
-	);
+		// redirection of third-party login
+		app.get(config.google.url,
+			passport.authenticate('google', { failureRedirect: '/' }),
+			function(req, res) {
+				res.redirect('/');
+			}
+		);
+	}
+
+	if (config.github) {
+		app.get('/auth/github',
+			passport.authenticate('github'));
+
+		app.get(config.github.url,
+			passport.authenticate('github', { failureRedirect: '/login' }),
+			function(req, res) {
+				// Successful authentication, redirect home.
+				res.redirect('/');
+			});
+	}
+
+	if (config.facebook) {
+		app.get('/auth/facebook',
+			passport.authenticate('facebook'));
+
+		app.get(config.facebook.url,
+			passport.authenticate('facebook', { failureRedirect: '/login' }),
+			function(req, res) {
+				// Successful authentication, redirect home.
+				res.redirect('/');
+			});
+	}
 
 	// handle other paths
 	this.routes = {};
@@ -124,40 +197,112 @@ function HttpServer(publicDir) {
 	app.put('*', handlePut.bind(this));
 }
 
-function configureStrategies() {
+function configureStrategies(config) {
 	// set up local strategy
 	passport.use(new LocalStrategy(function(username, password, done) {
 		// get user with username/password
-		// console.log('local',username, password);
-		done(null, "username here");
+		User.findOrCreate({
+			strategy: 'local',
+			username: username,
+			password: password
+		}, function(err, user) {
+			return done(err, user);
+		});
 	}));
+
+	// check local config file for keys
+	const configFile = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "ids.json");
+	let configJson;
+	if (sageutils.fileExists(configFile)) {
+		// if the file exists, load it
+		const text = fs.readFileSync(configFile, 'utf8');
+		configJson = JSON.parse(text);
+
+		const servicesArray = ['google', 'facebook', 'github'];
+
+		servicesArray.forEach(service => {
+			if (configJson[service] &&
+				configJson[service].clientID &&
+				configJson[service].clientSecret) {
+
+				// get callbackURL if exists
+				let callbackURL = configJson[service].callbackURL ||
+					'/auth/' + service + '/return';
+
+				// store in config array
+				config[service] = {
+					url: callbackURL
+				};
+			}
+		});
+	}
 
 	// set up google strategy
 	// for testing, use localhost on port 9090...
-	let configGoogle = true;
-	if (configGoogle) {
-		passport.use(new GoogleStrategy(
-			{
-				clientID: "307203767774-cda41sqvjrrrrglufo8ret6iv3n4m9f7.apps.googleusercontent.com",
-				clientSecret: "peFp3B3KF_YCywXZfR_Us_Bw",
-				callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + "/auth/google/return"
-			},
-			function (accessToken, refreshToken, profile, done) {
-				// console.log('profile', profile);
-				done(null, profile);
-			}
-		));
+	if (config.google) {
+		passport.use(new GoogleStrategy({
+			clientID: configJson.google.clientID,
+			clientSecret: configJson.google.clientSecret,
+			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + config.google.url
+		},
+		function (accessToken, refreshToken, profile, done) {
+			User.findOrCreate({
+				strategy: 'google',
+				id: profile.id
+			}, function(err, user) {
+				return done(err, user);
+			});
+		}));
 	}
+
+	if (config.github) {
+		passport.use(new GitHubStrategy({
+			clientID: configJson.github.clientID,
+			clientSecret: configJson.github.clientSecret,
+			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + config.github.url
+		},
+		function(accessToken, refreshToken, profile, done) {
+			User.findOrCreate({
+				strategy: 'github',
+				id: profile.id
+			}, function(err, user) {
+				return done(err, user);
+			});
+		}));
+	}
+
+	if (config.facebook) {
+		passport.use(new FacebookStrategy({
+			clientID: configJson.facebook.clientID,
+			clientSecret: configJson.facebook.clientSecret,
+			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + config.facebook.url
+		},
+		function(accessToken, refreshToken, profile, done) {
+			User.findOrCreate({
+				strategy: 'facebook',
+				id: profile.id
+			}, function(err, user) {
+				return done(err, user);
+			});
+		}));
+	}
+
 
 	// serialize/deserialize users for persistent authentication
 	passport.serializeUser(function(user, done) {
-		// TODO: handle this properly: serialize id
-		done(null, user);
+		// console.log('serializing user', user);
+		done(null, user.id);
 	});
 
 	passport.deserializeUser(function(id, done) {
-		// TODO: handle properly: get user by id and return done(null, user)
-		done(null, id);
+		User.findById(id, function(err, user) {
+			// console.log('deserializing user id...', id);
+			if (user) {
+				done(null, user);
+			} else {
+				done(null, false);
+			}
+		});
 	});
 }
 
@@ -173,14 +318,11 @@ function ensureAuthenticated(req, res, next) {
 	// //////////////////////
 	// Are we trying to session management
 	// //////////////////////
+	let pathname = url.parse(req.url).pathname;
 	if (global.__SESSION_ID) {
-		let pathname = url.parse(req.url).pathname;
-
 		// if the request is for an HTML page (no security check otherwise)
 		//    and it is not session.html
-		if (pathname.endsWith('/') ||
-			(path.extname(pathname) === ".html" &&
-			!req.url.startsWith("/session.html"))) {
+		if (!req.url.startsWith("/session.html")) {
 
 			// FIXME: working on Chrome but not on Firefox
 			if (req.cookies.session !== global.__SESSION_ID) {
@@ -190,6 +332,12 @@ function ensureAuthenticated(req, res, next) {
 			}
 		}
 	}
+
+	// redirect to get authentication
+	if (pathname === '/admin/SAGE2_user.html') {
+		res.redirect('/admin/user');
+	}
+
 	next();
 }
 

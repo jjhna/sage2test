@@ -16,7 +16,7 @@
 // require variables to be declared
 "use strict";
 
-const pathModule  = require('path');
+const path        = require('path');
 const fs          = require('fs');
 const JsonDB      = require('node-json-db');
 const sageutils   = require('../src/node-utils');
@@ -293,6 +293,29 @@ class UserList {
 	}
 
 	/**
+	* Add the ID of a model to this user
+	*
+	* @method addModel
+	* @param userId {String}
+	* @param modelId {String}
+	* @param roles (optional) initialize with an {Array} of {String}s
+	*/
+	addModel(userId, modelId, roles) {
+
+	}
+
+	/**
+	* Get rid of any stray user roles, assign default user role
+	*
+	* @method cleanUserModel
+	* @param userId {String}
+	* @param modelId {String}
+	*/
+	cleanUserModel(userId, modelId) {
+
+	}
+
+	/**
 	* Check if user has permission to do an action
 	*
 	* @method isAllowed
@@ -342,12 +365,12 @@ class UserList {
 	 * Retrieve data from json database or log an error if it fails
 	 *
 	 * @method getData
-	 * @param path {String}
+	 * @param dbPath {String}
 	 * @return {Object} object with the success flag and the retrieved data
 	 */
-	getData(path) {
+	getData(dbPath) {
 		try {
-			let data = this.db.getData(path);
+			let data = this.db.getData(dbPath);
 			return {
 				success: true,
 				data: data
@@ -365,17 +388,17 @@ class UserList {
 	 * Push data to json database or log an error if it fails
 	 *
 	 * @method push
-	 * @param path {String}
+	 * @param dbPath {String}
 	 * @param data {Object} new data to be pushed
 	 * @param checkIfPathExists {Boolean} check if path exists before pushing * the data; default is false
 	 * @return {Boolean} true if push succeeds
 	 */
-	push(path, data, overwrite = true, checkIfPathExists = false) {
+	push(dbPath, data, overwrite = true, checkIfPathExists = false) {
 		try {
 			if (checkIfPathExists) {
-				this.db.getData(path);
+				this.db.getData(dbPath);
 			}
-			this.db.push(path, data, overwrite);
+			this.db.push(dbPath, data, overwrite);
 			return true;
 		} catch (error) {
 			// sageutils.log("Userlist", "Error", error.message);
@@ -388,12 +411,12 @@ class UserList {
 	 * Remove data at a path or log an error if it fails
 	 *
 	 * @method delete
-	 * @param path {String}
+	 * @param dbPath {String}
 	 * @return {Boolean} true if delete succeeds
 	 */
-	delete(path) {
+	delete(dbPath) {
 		try {
-			this.db.delete(path);
+			this.db.delete(dbPath);
 			return true;
 		} catch (error) {
 			sageutils.log("Userlist", "Error", error.message);
@@ -460,7 +483,6 @@ class UserList {
 						user: req.data[uid],
 						error: null
 					};
-					// return uid;
 				}
 			}
 		}
@@ -476,11 +498,12 @@ class UserList {
 	 *
 	 * @method getUserById
 	 * @param uid {String}
+	 * @param subpath {String}
 	 * @return {Object} object with the user token, user object, and an error
 	 * message if the user could not be added
 	 */
-	getUserById(uid) {
-		let req = this.getData(this.userPath(uid));
+	getUserById(uid, subpath) {
+		let req = this.getData(this.userPath(uid, subpath));
 		if (req.success) {
 			return {
 				uid: uid,
@@ -550,12 +573,68 @@ class UserList {
 		return null;
 	}
 
-	userPath(uid) {
-		return '/user/' + uid;
+	//*********** Passport wrapper functions ***********
+	/**
+	 * User authorization
+	 * Called by node-httpserver via Passport strategies
+	 *
+	 * @method findOrCreate
+	 * @param login {Object} authorization information
+	 * @param callback {Function} callback to Passport
+	 */
+	findOrCreate(login, callback) {
+		// search for existing user in database
+		let query = {};
+		if (login.strategy === 'local') {
+			query = this.getUser(login.username, login.password);
+			if (query.user) {
+				query.user.id = this.userPath(query.uid);
+			}
+		} else {
+			query = this.getUserById(login.id, login.strategy);
+		}
+		// user found
+		if (query.user) {
+			callback(null, query.user);
+		} else {
+			// user not found
+			if (login.strategy === 'local') {
+				callback(query.error);
+			} else {
+				// create user for non-local auth strategies
+				let user = {
+					id: this.userPath(login.id, login.strategy)
+				};
+				this.push(user.id, user);
+				callback(null, user);
+			}
+		}
+	}
+
+	/**
+	 * for deserialization
+	 *
+	 * @method findById
+	 * @param login {Object} authorization information
+	 * @param callback {Function} callback to Passport
+	 */
+	findById(id, callback) {
+		let req = this.getData(id);
+		if (req.success) {
+			callback(null, req.data);
+		} else {
+			callback("Could not find user");
+		}
+	}
+
+	//*********** Getters functions ***********
+
+	userPath(uid, subpath = 'user') {
+		return `/${subpath}/${uid}`;
 	}
 
 	get filePath() {
-		return pathModule.join(pathname, filename);
+		return path.join(pathname, filename);
 	}
 }
 
