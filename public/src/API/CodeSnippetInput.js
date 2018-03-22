@@ -144,18 +144,24 @@ let CodeSnippetInput = (function () {
 			let _this = this;
 
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
-			parentNode.append("div")
+			parentNode
+				.append("div")
 				.attr("class", "checkboxInput")
 				.style("height", ui.titleBarHeight + "px")
 				.style("width", ui.titleBarHeight + "px")
 				.classed("checked", this._state.value ? "true" : null)
-				.on("click", function () {
+				.on("click", function() {
 					let checked = !_this._state.value;
 
 					d3.select(this).classed("checked", checked);
 					_this._state.value = checked;
-
 					_this._onUpdate();
+				})
+				.on("mouseover", function(d) {
+					d3.select(this).classed("hovered", true);
+				})
+				.on("mouseleave", function(d) {
+					d3.select(this).classed("hovered", false);
 				});
 		}
 	}
@@ -187,11 +193,13 @@ let CodeSnippetInput = (function () {
 		createInputElement(parentNode) {
 			let _this = this;
 
+			// newline for radio button group
+			parentNode.append("br");
+
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
 			parentNode.selectAll(".radioOption")
 				.data(this._spec.options)
 				.enter().append("div")
-				.append("div")
 				.each(function (d) {
 
 					d3.select(this).append("div")
@@ -206,6 +214,12 @@ let CodeSnippetInput = (function () {
 
 							_this._state.value = d;
 							_this._onUpdate();
+						})
+						.on("mouseover", function(d) {
+							d3.select(this).classed("hovered", true);
+						})
+						.on("mouseleave", function(d) {
+							d3.select(this).classed("hovered", false);
 						});
 
 					d3.select(this)
@@ -240,14 +254,28 @@ let CodeSnippetInput = (function () {
 			let _this = this;
 
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
-			parentNode.append("input")
+
+			let input = parentNode.append("input")
+				.attr("class", "textInput")
 				.attr("type", "text")
-				.on("input", function () {
-					_this._state.value = d3.select(this).node().value;
-					console.log("Text Input Changed");
+				.style("height", ui.titleBarHeight);
+
+			input.node().value = this._state.value;
+
+			parentNode.append("div")
+				.attr("class", "textInputGo")
+				// .text("Go")
+				.on("click", function () {
+					_this._state.value = input.node().value;
+					console.log("Text Input Submit");
 					_this._onUpdate();
 				})
-				.node().value = this._state.value;
+				.on("mouseover", function(d) {
+					d3.select(this).classed("hovered", true);
+				})
+				.on("mouseleave", function(d) {
+					d3.select(this).classed("hovered", false);
+				});
 		}
 	}
 

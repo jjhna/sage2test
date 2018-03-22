@@ -545,8 +545,10 @@ let SAGE2_CodeSnippets = (function() {
 			return self.links[link].getSnippetID() === snippetID && self.links[link].getParent() === parent;
 		});
 
-		if (linkIndex === -1) {
+		if (linkIndex === -1 || Object.keys(Object.values(self.links)[linkIndex].inputs).length > 0) {
+
 			// then this is a new link that must be created
+			// OR if the snippet specifies input elements, since these can be inconsistent across calls
 			let newLink = new Link(parent, null, snippetID);
 
 			let linkID = "link-" + self.linkCount++;
@@ -562,7 +564,6 @@ let SAGE2_CodeSnippets = (function() {
 
 				createVisApplication(snippetsID);
 			} else {
-
 				let snippetsID = "data-" + self.dataCount++;
 
 				// get link ready for application finish
@@ -570,7 +571,6 @@ let SAGE2_CodeSnippets = (function() {
 
 				createDataApplication(snippetsID);
 			}
-
 		} else {
 			self.links[Object.keys(self.links)[linkIndex]].update();
 		}

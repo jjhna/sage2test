@@ -52,6 +52,7 @@ var SAGE2 = SAGE2 || {};
 		inputDiv.append("div")
 			.attr("class", "snippetsInputLabel")
 			.style("font-size", ui.titleBarHeight * 0.5 + "px")
+			.style("margin-top", ui.titleBarHeight * 0.25 + "px")
 			.text(specification.name);
 
 		inputDiv

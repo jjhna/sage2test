@@ -392,10 +392,10 @@ body {
 
 .snippetsInputLabel {
 	min-width: 75px;
-	display: inline-block;
 	font-family: monospace;
 
 	font-weight: bold;
+	float: left;
 }
 
 .snippetsInputDiv .checkboxInput {
@@ -405,6 +405,11 @@ body {
 	position: relative;
 	margin-left: 10px;
 	border-radius: 3px;
+}
+
+
+.snippetsInputDiv .checkboxInput.hovered {
+	background: #a6d854;
 }
 
 /* Create the checkmark/indicator (hidden when not checked) */
@@ -448,8 +453,8 @@ body {
 	border-radius: 50%;
 }
 
-.snippetsInputDiv .radioInput:hover {
-	background: orange;
+.snippetsInputDiv .radioInput.hovered {
+	background: #66c2a5;
 }
 
 /* Create the dot/indicator (hidden when not checked) */
@@ -475,6 +480,48 @@ body {
 .snippetsInputDiv .radioInput.selected {
 	border: 2px solid black;
 	background: #1b9e77;
+}
+
+.snippetsInputDiv .textInput {
+	width: 125px;
+	margin-right: 10px;
+	float: left;
+}
+
+.snippetsInputDiv .textInputGo {
+	position: relative;
+	width: 25px;
+	height: 25px;
+
+	border-radius: 5px;
+
+	border: 1.25px solid rgba(0, 0, 0, 0.5);
+	background: #e6f5c9;
+
+	display: inline-block;
+
+	font-family: Arimo, Helvetica, sans-serif;
+}
+
+.snippetsInputDiv .textInputGo.hovered {
+	background: #ccebc5;
+}
+
+.snippetsInputDiv .textInputGo:after {
+  content: "";
+	position: absolute;
+	
+  border: solid black;
+	border-width: 0 3px 3px 0;
+	visibility: visible;
+
+  left: 9px;
+  top: 5px;
+  width: 5px;
+  height: 10px;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
 }
 
 .snippetsInputDiv .rangeInput {
