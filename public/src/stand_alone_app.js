@@ -47,12 +47,24 @@ function StandAloneApp(id, wsio) {
 	this.application = null;
 	this.dependencies = {};
 	this.controlObjects = {};
+	// Event filtering for mouseMove
+	this.now = Date.now();
+	// accumultor for delta motion of the mouse
+	this.deltaX = 0;
+	this.deltaY = 0;
+	this.pointerX = 0;
+	this.pointerY = 0;
+	// Send frequency (frames per second)
+	this.sendFrequency = 30;
+	// Timeout for when scrolling ends
+	this.scrollTimeId = null;
+
 	this.user = {
 		label: localStorage.SAGE2_ptrName,
 		color: localStorage.SAGE2_ptrColor,
 		sourceType: "Pointer"
 	};
-	this.appPositionOnDisplay = {left: 0, top: 0, width: 0, height: 0};
+	this.appPositionOnDisplay = {left: 0, top: 0, width: 0, height: 0, actualTop: 0};
 	this.localPointerID = null;
 
 	this.setup = function(ui) {
@@ -82,6 +94,20 @@ function StandAloneApp(id, wsio) {
 	};
 
 	this.resize = function() {
+		if (this.appParentDiv === null || this.sageItem === null) {
+			this.appParentDiv = document.getElementById(this.id);
+			if (!this.appParentDiv) {
+				setTimeout(this.resize.bind(this), 1000);
+				return;
+			}
+			var child = this.appParentDiv.getElementsByClassName("sageItem");
+			// If application not ready, return
+			if (child.length < 1) {
+				setTimeout(this.resize.bind(this), 1000);
+				return;
+			}
+			this.sageItem = child[0];
+		}
 		this.browserWidth = document.documentElement.clientWidth;
 		this.browserHeight = document.documentElement.clientHeight;
 
@@ -110,65 +136,48 @@ function StandAloneApp(id, wsio) {
 		this.ui.resizePointers(newratio);
 
 
-		if (this.appParentDiv === null || this.sageItem === null) {
-			this.appParentDiv = document.getElementById(this.id);
-			if (!this.appParentDiv) {
-				setTimeout(this.resize.bind(this), 1000);
-				return;
-			}
-			var child = this.appParentDiv.getElementsByClassName("sageItem");
-			// If application not ready, return
-			if (child.length < 1) {
-				setTimeout(this.resize.bind(this), 1000);
-				return;
-			}
-			this.sageItem = child[0];
-		}
+		
 		this.computeWindowFit();
-		var translate = "translate(" + Math.round(this.appLeft) + "px," + Math.round(this.appTop) + "px)";
-		var sx = this.appWidth / this.appPositionOnDisplay.width;
-		var sy = this.appHeight / this.appPositionOnDisplay.height;
-		var scale = "scale(" + sx + "," + sy + ") ";
+		var translate = "translate(" + Math.round(this.appLeft) + "px, " + Math.round(this.appTop) + "px)";
+		console.log(this.appScale, this.mainWidth, this.appWidth);
+		var scale = "scale(" + this.appScale + ") ";
 		this.appParentDiv.style.webkitTransform = translate;
 		this.appParentDiv.style.mozTransform    = translate;
 		this.appParentDiv.style.transform       = translate;
 		if (this.sageItem.tagName.toLowerCase() === "div" ||
 			this.sageItem.tagName.toLowerCase() === "iframe" ||
 			this.sageItem.tagName.toLowerCase() === "webview") {
-			this.sageItem.style.width  = Math.round(this.appPositionOnDisplay.width) + "px";
-			this.sageItem.style.height = Math.round(this.appPositionOnDisplay.height) + "px";
+			this.sageItem.style.width  = Math.round(this.appWidth) + "px";
+			this.sageItem.style.height = Math.round(this.appHeight) + "px";
 		} else {
 			// if it's a canvas or else, just use width and height
-			this.sageItem.width  = Math.round(this.appPositionOnDisplay.width);
-			this.sageItem.height = Math.round(this.appPositionOnDisplay.height);
-			this.sageItem.left = Math.round(this.appLeft) + "px";
-			this.sageItem.top = Math.round(this.appTop) + "px";
+			this.sageItem.width  = Math.round(this.appWidth);
+			this.sageItem.height = Math.round(this.appHeight);
 		}
-		this.sageItem.style.webkitTransform = scale;
-		this.sageItem.style.mozTransform    = scale;
-		this.sageItem.style.transform       = scale;
-		this.appParentDiv.style.width 		= Math.round(this.appPositionOnDisplay.width) + "px";
-		this.appParentDiv.style.height = Math.round(this.appPositionOnDisplay.height) + "px";
+		var displayMin  = Math.min(this.appPositionOnDisplay.width, this.appPositionOnDisplay.height);
+		var browserMin = Math.min(this.appWidth, this.appHeight);
+		this.sensitivity = displayMin / browserMin;
+
 	};
 
 	this.computeWindowFit = function(data) {
 		//Find the app window dimensions that fit into the current browser size
 		var mainAspect = this.mainWidth / this.mainHeight;
 		var appAspect, w, h;
-		if (data) {
-			w = data.width;
-			h = data.height;
-		} else {
-			w = this.appWidth;
-			h = this.appHeight;
-		}
+		w = this.appPositionOnDisplay.width;
+		h = this.appPositionOnDisplay.height;
 		appAspect = w / h;
 		if (mainAspect > appAspect) {
-			this.appWidth = Math.round(w * this.mainHeight / h);
+			this.appScale = this.mainHeight / h;
+			this.appWidth = Math.round(w * this.appScale);
 			this.appHeight = Math.round(this.mainHeight);
+			console.log(">>>>>>>>>>>");
 		} else {
+			console.log("<<<<<<<<<<<");
+			this.appScale = this.mainWidth / w;
 			this.appWidth = Math.round(this.mainWidth);
-			this.appHeight = Math.round(h * this.mainWidth / w);
+			this.appHeight = Math.round(h * this.appScale);
+
 		}
 
 		this.appLeft = Math.round((this.mainWidth - this.appWidth) / 2);
@@ -178,7 +187,7 @@ function StandAloneApp(id, wsio) {
 	this.createAppWindow = function(data) {
 		var _this = this;
 		this.saveAppPositionAndSize(data);
-		this.computeWindowFit(data);
+		this.computeWindowFit();
 		var date = new Date(data.date);
 
 		var windowItem = document.createElement("div");
@@ -250,11 +259,6 @@ function StandAloneApp(id, wsio) {
 					newapp.init(init);
 					newapp.refresh(date);
 
-					// Sending the context menu info to the server
-					if (isMaster) {
-						newapp.getFullContextMenuAndUpdate();
-					}
-
 					_this.application = newapp;
 					_this.controlObjects[data.id] = newapp;
 
@@ -272,11 +276,6 @@ function StandAloneApp(id, wsio) {
 				var app = new window[data.application]();
 				app.init(init);
 				app.refresh(date);
-
-				// Sending the context menu info to the server
-				if (isMaster) {
-					app.getFullContextMenuAndUpdate();
-				}
 
 				_this.application = app;
 				_this.controlObjects[data.id] = app;
@@ -384,26 +383,24 @@ function StandAloneApp(id, wsio) {
 			left: data.left || data.elemLeft,
 			top: data.top || data.elemTop,
 			width: data.width || data.elemWidth,
-			height: data.height || data.elemHeight
+			height: data.height || data.elemHeight,
+			actualTop: (data.top || data.elemTop) + this.titleBarHeight
 		};
 	};
 	this.updateSagePointerPosition = function(pointer_data) {
 		var inside = false;
 		if (pointer_data.left > this.appPositionOnDisplay.left &&
 			pointer_data.left < (this.appPositionOnDisplay.left + this.appPositionOnDisplay.width) &&
-			pointer_data.top > this.appPositionOnDisplay.top &&
-			pointer_data.top < (this.appPositionOnDisplay.top + this.appPositionOnDisplay.height)) {
+			pointer_data.top > this.appPositionOnDisplay.actualTop &&
+			pointer_data.top < (this.appPositionOnDisplay.actualTop + this.appPositionOnDisplay.height)) {
 			pointer_data.left = this.appLeft + this.appWidth *
 				(pointer_data.left - this.appPositionOnDisplay.left) / this.appPositionOnDisplay.width;
-			pointer_data.top = this.appTop - this.titleBarHeight + this.appHeight *
-				(pointer_data.top - this.appPositionOnDisplay.top) / this.appPositionOnDisplay.height;
+			pointer_data.top = this.appTop + this.appHeight *
+				(pointer_data.top - this.appPositionOnDisplay.actualTop) / this.appPositionOnDisplay.height;
 
 			inside = true;
 		}
 		if (inside === true && this.ui.isPointerShown(pointer_data.id) === false) {
-			pointer_data.label = localStorage.SAGE2_ptrName;
-			pointer_data.color = localStorage.SAGE2_ptrColor;
-			pointer_data.sourceType = "Pointer";
 			pointer_data.mode = 1;
 			this.ui.changeSagePointerMode(pointer_data);
 			this.ui.showSagePointer(pointer_data);
@@ -421,26 +418,44 @@ function StandAloneApp(id, wsio) {
 
 	this.pointerMove = function(event) {
 		var inside = false;
-		var pointer_data = {
-			id: this.user.id + "_pointer"
-		};
+		// var pointer_data = {
+		// 	id: this.user.id + "_pointer"
+		// };
 		if (event.x > this.appLeft && event.x < (this.appLeft + this.appWidth) &&
 			event.y > this.appTop && event.y < (this.appTop + this.appHeight)) {
 			inside = true;
-			pointer_data.left = event.x;
-			pointer_data.top = event.y;
+			// pointer_data.left = event.x;
+			// pointer_data.top = event.y;
 		}
-		if (inside === true && this.ui.isPointerShown(pointer_data.id) === false) {
-			pointer_data.label = this.user.label;
-			pointer_data.color = this.user.color;
-			this.ui.showSagePointer(pointer_data);
-			return "show";
-		} else if (inside === false && this.ui.isPointerShown(pointer_data.id) === true) {
-			this.ui.hideSagePointer(pointer_data);
-			return "hide";
+		if (inside) {
+			this.pointerMoveMethod(event);
 		}
-		this.ui.updateSagePointerPosition(pointer_data);
 		return "move";
+	};
+	this.pointerMoveMethod = function(event) {
+		
+		// Event filtering
+		var now  = Date.now();
+		// time difference since last event
+		var diff = now - this.now;
+
+		if (diff >= (1000 / this.sendFrequency)) {
+			var x = event.clientX;
+			var y = event.clientY;
+			var px = (x - this.appLeft) / this.appWidth * this.appPositionOnDisplay.width;
+			var py = (y - this.appTop) / this.appHeight * this.appPositionOnDisplay.height;
+			// Send the event
+			this.wsio.emit('pointerMove', {
+				pointerX: this.appPositionOnDisplay.left + px,
+				pointerY: this.appPositionOnDisplay.top + py
+			});
+			console.log(this.appPositionOnDisplay.left + px, this.appPositionOnDisplay.top + py);
+			// Reset the time and count
+			this.now = now;
+		}
+		if (event.preventDefault) {
+			event.preventDefault();
+		}
 	};
 
 	this.startLocalSAGE2Pointer = function() {

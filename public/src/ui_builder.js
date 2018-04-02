@@ -1017,7 +1017,6 @@ function UIBuilder(json_cfg, clientID) {
 
 		// keep track of the pointers
 		this.pointerItems[pointerElem.id] = ptr;
-		console.log(ptr);
 	};
 
 	/**
@@ -1049,7 +1048,6 @@ function UIBuilder(json_cfg, clientID) {
 		this.pointerItems[pointerElem.id].updateBox(this.scale);
 
 		this.pointerItems[pointerElem.id].isShown = true;
-		console.log(pointerElem.id, this.pointerItems[pointerElem.id]);
 	};
 
 	/**

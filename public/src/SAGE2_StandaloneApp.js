@@ -70,7 +70,7 @@ var touchStartX;
 var touchStartY;
 var hasMouse;
 
-var standAloneApp;
+var standAloneApp = null;
 var appId = null;
 var wsioID = null;
 // Explicitely close web socket when web browser is closed
@@ -80,6 +80,17 @@ window.onbeforeunload = function() {
 	}
 };
 
+window.onfocus = function() {
+	if (wsio !== undefined && standAloneApp !== null) {
+		wsio.emit('startSagePointer', standAloneApp.user);
+	}
+}
+
+window.onblur = function() {
+	if (wsio !== undefined && standAloneApp !== null) {
+		wsio.emit('stopSagePointer', standAloneApp.user);
+	}
+}
 /**
  * When the page loads, SAGE2 starts
  *
@@ -272,8 +283,8 @@ function mouseCheck(event) {
 	hasMouse = true;
 	console.log("Detected as desktop device");
 
-	/*document.removeEventListener('mousemove', mouseCheck, false);
-	document.addEventListener('mousedown',  pointerPress,    false);
+	document.removeEventListener('mousemove', mouseCheck, false);
+	/*document.addEventListener('mousedown',  pointerPress,    false);
 	document.addEventListener('click',      pointerClick,    false);
 	document.addEventListener('mouseup',    pointerRelease,  false);*/
 	if (standAloneApp) {
@@ -305,6 +316,7 @@ function setupListeners() {
 		pointerX    = 0;
 		pointerY    = 0;
 		wsioID = data.UID;
+
 	});
 
 
@@ -357,13 +369,13 @@ function setupListeners() {
 
 	wsio.on('setItemPosition', function(position_data) {
 		if (standAloneApp && position_data.elemId === standAloneApp.id) {
-			standAloneApp.updateAppPositionAndSize(position_data);
+			standAloneApp.saveAppPositionAndSize(position_data);
 		}
 	});
 
 	wsio.on('setItemPositionAndSize', function(position_data) {
 		if (standAloneApp && position_data.elemId === standAloneApp.id) {
-			standAloneApp.updateAppPositionAndSize(position_data);
+			standAloneApp.saveAppPositionAndSize(position_data);
 		}
 	});
 
@@ -375,6 +387,12 @@ function setupListeners() {
 			setTimeout(function() {
 				ui.createSagePointer(pointer_data);
 			}, 1000);
+		}
+	});
+
+	wsio.on('showSagePointer', function(pointer_data) {
+		if (pointer_data.id.indexOf(wsioID) > -1) {
+			ui.showSagePointer(pointer_data);
 		}
 	});
 
