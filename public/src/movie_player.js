@@ -118,8 +118,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.state.looped === false) {
 			this.stopVideo();
 		} else if (this.shouldSendCommands) {
-			wsio.emit("csdMessage", {
-				type: "setValue",
+			wsio.emit("serverDataSetValue", {
 				nameOfValue: "videoSyncCommandVariable",
 				value: {
 					command: "seek",
@@ -188,8 +187,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 				// if this is a sender, also send the command to the server holding variable
 				if (this.shouldSendCommands) {
-					wsio.emit("csdMessage", {
-						type: "setValue",
+					wsio.emit("serverDataSetValue", {
 						nameOfValue: "videoSyncCommandVariable",
 						value: {
 							command: "play",
@@ -208,8 +206,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 				// if this is a sender, also send the command to the server holding variable
 				if (this.shouldSendCommands) {
-					wsio.emit("csdMessage", {
-						type: "setValue",
+					wsio.emit("serverDataSetValue", {
 						nameOfValue: "videoSyncCommandVariable",
 						value: {
 							command: "pause",
@@ -277,8 +274,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 			// if this is a sender, also send the command to the server holding variable
 			if (this.shouldSendCommands) {
-				wsio.emit("csdMessage", {
-					type: "setValue",
+				wsio.emit("serverDataSetValue", {
 					nameOfValue: "videoSyncCommandVariable",
 					value: {
 						command: "stop",
@@ -317,14 +313,14 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.state.paused) {
 			entry = {};
 			entry.description = "Play";
-			entry.accelerator = "p";
+			entry.accelerator = "P";
 			entry.callback = "contextTogglePlayPause";
 			entry.parameters = {};
 			entries.push(entry);
 		} else {
 			entry = {};
 			entry.description = "Pause";
-			entry.accelerator = "p";
+			entry.accelerator = "P";
 			entry.callback = "contextTogglePlayPause";
 			entry.parameters = {};
 			entries.push(entry);
@@ -332,7 +328,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 		entry = {};
 		entry.description = "Stop";
-		entry.accelerator = "s";
+		entry.accelerator = "S";
 		entry.callback = "stopVideo";
 		entry.parameters = {};
 		entries.push(entry);
@@ -345,13 +341,13 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			entry = {};
 			entry.description = "Unmute";
 			entry.callback = "contextToggleMute";
-			entry.accelerator = "m";
+			entry.accelerator = "M";
 			entry.parameters = {};
 			entries.push(entry);
 		} else {
 			entry = {};
 			entry.description = "Mute";
-			entry.accelerator = "m";
+			entry.accelerator = "M";
 			entry.callback = "contextToggleMute";
 			entry.parameters = {};
 			entries.push(entry);
@@ -361,14 +357,14 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.state.looped) {
 			entry = {};
 			entry.description = "Stop looping";
-			entry.accelerator = "l";
+			entry.accelerator = "L";
 			entry.callback = "toggleLoop";
 			entry.parameters = {};
 			entries.push(entry);
 		} else {
 			entry = {};
 			entry.description = "Loop video";
-			entry.accelerator = "l";
+			entry.accelerator = "L";
 			entry.callback = "toggleLoop";
 			entry.parameters = {};
 			entries.push(entry);
@@ -456,8 +452,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.shouldSendCommands = true;
 			this.shouldReceiveCommands = false;
 			// no purpose behind this other than to ensure variable exists after a sender is specified.
-			wsio.emit("csdMessage", {
-				type: "setValue",
+			wsio.emit("serverDataSetValue", {
 				nameOfValue: "videoSyncCommandVariable",
 				value: {
 					command: "newSender",
@@ -471,8 +466,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.shouldSendCommands = false;
 			this.shouldReceiveCommands = true;
 
-			wsio.emit("csdMessage", {
-				type: "subscribeToValue",
+			wsio.emit("serverDataSubscribeToValue", {
 				nameOfValue: "videoSyncCommandVariable",
 				app: this.id,
 				func: "videoSyncCommandHandler",
@@ -530,8 +524,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 				play: false
 			});
 
-			wsio.emit("csdMessage", {
-				type: "setValue",
+			wsio.emit("serverDataSetValue", {
 				nameOfValue: "videoSyncCommandVariable",
 				value: {
 					command: "seek",
@@ -660,8 +653,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 									play: !this.state.paused
 								});
 								if (this.shouldSendCommands) {
-									wsio.emit("csdMessage", {
-										type: "setValue",
+									wsio.emit("serverDataSetValue", {
 										nameOfValue: "videoSyncCommandVariable",
 										value: {
 											command: "seek",
