@@ -266,6 +266,12 @@ PerformanceManager.prototype.updateClient = function(wsio) {
 PerformanceManager.prototype.setSamplingInterval = function(interval) {
 	// Set sampling interval in seconds to 1, 2, or 5
 	switch (interval) {
+		case 'never':
+			// clear the previous callback
+			// Return to stop data monitoring
+			clearInterval(this.loopHandle);
+			sageutils.log('Perf', 'Performance monitoring has been stopped!');
+			return;
 		case 'often':
 			this.samplingInterval = 1;
 			break;

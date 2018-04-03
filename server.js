@@ -5898,7 +5898,7 @@ function processInputCommand(line) {
 			if (command.length > 1) {
 				performanceManager.setSamplingInterval(command[1]);
 			} else {
-				sageutils.log("Command", "should be: perfsampling [slow|normal|often]");
+				sageutils.log("Command", "should be: perfsampling [slow|normal|often|never]");
 			}
 			break;
 		case 'performance':
