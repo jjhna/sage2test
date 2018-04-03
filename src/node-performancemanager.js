@@ -131,7 +131,18 @@ PerformanceManager.prototype.initializeConfiguration = function(cfg) {
 	this.config = cfg;
 };
 
-
+function appendToFile(path, data, newFile) {
+	if (newFile === false) {
+		const stats = fs.statSync(path);
+		var truncateSize = stats.size - 1;
+		fs.truncateSync(path, truncateSize);
+	}
+	fs.appendFile(path, data, (err) => {
+		if (err) {
+			sageutils.log('Perf', err);
+		}
+	});
+}
 
 PerformanceManager.prototype.writeToFile = function() {
 	var saveEndIdx = this.performanceMetrics.history.cpuLoad.length - 1;
@@ -147,22 +158,21 @@ PerformanceManager.prototype.writeToFile = function() {
 			network: this.performanceMetrics.history.network.slice(saveStartIdx, saveEndIdx)
 		}
 	};
-	if (this.newDataFile === true) {
-		saveData.server.hardware = this.performanceMetrics.staticInformation;
-		this.newDataFile = false;
-	}
-
 	var filePath = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "performance");
 	if (!fs.existsSync(filePath)) {
 		fs.mkdirSync(filePath);
 	}
 	filePath = path.join(filePath, this.saveDataFileName);
+	var writeData = "";
+	if (this.newDataFile === true) {
+		saveData.server.hardware = this.performanceMetrics.staticInformation;
+		writeData = "[" + JSON.stringify(saveData) + "]";
+	} else {
+		writeData = ",\n" + JSON.stringify(saveData) + "]";
+	}
 
-	fs.appendFile(filePath, JSON.stringify(saveData) + "\n", (err) => {
-		if (err) {
-			sageutils.log('Perf', err);
-		}
-	});
+	appendToFile(filePath, writeData, this.newDataFile);
+	this.newDataFile = false;
 };
 
 PerformanceManager.prototype.toggleDataSaveToFile = function() {
@@ -179,21 +189,20 @@ PerformanceManager.prototype.toggleDataSaveToFile = function() {
 		setTimeout(function() {
 			this.changeFileName();
 			//New file to save data to every hour
-			this.newFileNameLoopHandle = setInterval(this.changeFileName.bind(this), 60 * 60 * 1000);	
+			this.newFileNameLoopHandle = setInterval(this.changeFileName.bind(this), 60 * 60 * 1000);
 		}.bind(this), getTimeTillNextHour());
-		
 	}
 };
 
 PerformanceManager.prototype.changeFileName = function() {
 	var date = new Date();
 	this.saveDataFileName = (date.getMonth() + 1) + "_" + date.getDate() + "_"
-	+ date.getFullYear() + "_" + date.getHours() + ".txt";
+	+ date.getFullYear() + "_" + date.getHours() + ".json";
 	this.newDataFile = true;
-}
+};
 
 function getTimeTillNextHour() {
-    return 3600000 - new Date().getTime() % 3600000;
+	return 3600000 - new Date().getTime() % 3600000;
 }
 
 /**

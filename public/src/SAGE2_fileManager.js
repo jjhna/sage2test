@@ -522,6 +522,12 @@ function FileManager(wsio, mydiv, uniqueID) {
 				window.open("admin/performance.html", '_blank');
 			}
 		},
+		performanceHistory_menu: {value: "Performance History",
+			tooltip: "Opens a new page to view historic performance monitoring data",
+			callback: function (evt) {
+				window.open("admin/performanceHistory.html", '_blank');
+			}
+		},
 		separator2: { value: "separator" }
 	};
 
