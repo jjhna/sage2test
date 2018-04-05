@@ -120,7 +120,6 @@ var sharedApps         = {};
 var users              = null;
 var appLoader          = null;
 var mediaBlockSize     = 512;
-var pressingCTRL       = true;
 
 var fileBufferManager;
 var startTime;
@@ -7043,17 +7042,6 @@ function pointerMove(uniqueID, pointerX, pointerY, data) {
 		drawingManager.pointerEvent(
 			omicronManager.sageToOmicronEvent(uniqueID, pointerX, pointerY, data, 4, color),
 			uniqueID, pointerX, pointerY, 10, 10);
-	}
-
-	// Trick: press CTRL key while moving switches interaction mode
-	if (sagePointers[uniqueID] && remoteInteraction[uniqueID].CTRL && pressingCTRL) {
-		remoteInteraction[uniqueID].toggleModes();
-		broadcast('changeSagePointerMode', {id: sagePointers[uniqueID].id, mode: remoteInteraction[uniqueID].interactionMode});
-		pressingCTRL = false;
-	} else if (sagePointers[uniqueID] && !remoteInteraction[uniqueID].CTRL && !pressingCTRL) {
-		remoteInteraction[uniqueID].toggleModes();
-		broadcast('changeSagePointerMode', {id: sagePointers[uniqueID].id, mode: remoteInteraction[uniqueID].interactionMode});
-		pressingCTRL = true;
 	}
 
 	sagePointers[uniqueID].updatePointerPosition(data, config.totalWidth, config.totalHeight);
