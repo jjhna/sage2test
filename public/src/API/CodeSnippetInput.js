@@ -110,14 +110,113 @@ let CodeSnippetInput = (function () {
 		}
 
 		createInputElement(parentNode) {
+			let _this = this;
+
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
-			parentNode
-				.append("input")
-				.attr("type", "range")
-				.attr("min", this._spec.range[0])
-				.attr("max", this._spec.range[1])
-				.attr("step", this._spec.step)
-				.node().value = this._state.value;
+
+			let label = parentNode.append("span")
+				.text(": " + this._state.value);
+
+			parentNode.append("div")
+				.style("float", "left")
+				.each(function () {
+					let div = d3.select(this);
+
+					div.append("span")
+						.text(_this._spec.range[0]);
+
+					// create custom "input" element
+					div.append("div")
+						.attr("class", "rangeInput")
+						.style("height", ui.titleBarHeight + "px")
+						.each(function() {
+							// create input element from slider track div
+							let track = d3.select(this);
+							let dragging = false;
+
+							let sliderOffset = 175 * (_this._state.value - _this._spec.range[0]) /
+								(_this._spec.range[1] - _this._spec.range[0]);
+
+							let handle = track.append("div") // slider handle
+								.attr("class", "rangeInputHandle")
+								.style("height", ui.titleBarHeight + "px")
+								.style("left", (sliderOffset) + "px"); // center the slider element on the value
+
+							let overlay = track.append("div")
+								.attr("class", "rangeInputOverlay")
+								.style("width", "100%")
+								.style("height", "100%");
+
+							// start dragging
+							overlay.on("mousedown", function() {
+								console.log("drag started");
+								dragging = true;
+							});
+
+							// stop dragging
+							overlay.on("mouseup", function() {
+								if (dragging) {
+									dragging = false;
+									console.log("drag ended");
+									handle.style("left", d3.event.offsetX - 5 + "px");
+
+									let offset = (d3.event.offsetX / 175) *
+										(_this._spec.range[1] - _this._spec.range[0]);
+
+									let value = Math.round((offset + _this._spec.range[0]) / _this._spec.step) * _this._spec.step;
+
+									_this._state.value = value;
+									_this._onUpdate();
+								}
+							});
+
+							// stop dragging
+							overlay.on("mouseleave", function() {
+								if (dragging) {
+									dragging = false;
+									console.log("drag ended");
+									handle.style("left", d3.event.offsetX - 5 + "px");
+
+									let offset = (d3.event.offsetX / 175) *
+										(_this._spec.range[1] - _this._spec.range[0]);
+
+									let value = Math.round((offset + _this._spec.range[0]) / _this._spec.step) * _this._spec.step;
+
+									_this._state.value = value;
+									_this._onUpdate();
+								}
+							});
+
+							// drag handle
+							overlay.on("mousemove", function() {
+								if (dragging) {
+									// move handle and update value
+
+									let offset = (d3.event.offsetX / 175) *
+										(_this._spec.range[1] - _this._spec.range[0]);
+
+									let value = Math.round((offset + _this._spec.range[0]) / _this._spec.step) * _this._spec.step;
+
+									// clamp value in range
+									if (value < _this._spec.range[0]) {
+										value = _this._spec.range[0];
+									} else if (value > _this._spec.range[1]) {
+										value = _this._spec.range[1];
+									}
+
+									let left = 175 * (value - _this._spec.range[0]) /
+									(_this._spec.range[1] - _this._spec.range[0]);
+
+									handle.style("left", left - 5 + "px");
+
+									label.text(": " + value);
+								}
+							});
+						});
+
+					div.append("span")
+						.text(_this._spec.range[1]);
+				});
 		}
 	}
 
@@ -150,17 +249,17 @@ let CodeSnippetInput = (function () {
 				.style("height", ui.titleBarHeight + "px")
 				.style("width", ui.titleBarHeight + "px")
 				.classed("checked", this._state.value ? "true" : null)
-				.on("click", function() {
+				.on("click", function () {
 					let checked = !_this._state.value;
 
 					d3.select(this).classed("checked", checked);
 					_this._state.value = checked;
 					_this._onUpdate();
 				})
-				.on("mouseover", function(d) {
+				.on("mouseover", function (d) {
 					d3.select(this).classed("hovered", true);
 				})
-				.on("mouseleave", function(d) {
+				.on("mouseleave", function (d) {
 					d3.select(this).classed("hovered", false);
 				});
 		}
@@ -215,10 +314,10 @@ let CodeSnippetInput = (function () {
 							_this._state.value = d;
 							_this._onUpdate();
 						})
-						.on("mouseover", function(d) {
+						.on("mouseover", function (d) {
 							d3.select(this).classed("hovered", true);
 						})
-						.on("mouseleave", function(d) {
+						.on("mouseleave", function (d) {
 							d3.select(this).classed("hovered", false);
 						});
 
@@ -270,10 +369,10 @@ let CodeSnippetInput = (function () {
 					console.log("Text Input Submit");
 					_this._onUpdate();
 				})
-				.on("mouseover", function(d) {
+				.on("mouseover", function (d) {
 					d3.select(this).classed("hovered", true);
 				})
-				.on("mouseleave", function(d) {
+				.on("mouseleave", function (d) {
 					d3.select(this).classed("hovered", false);
 				});
 		}
