@@ -120,7 +120,6 @@ var sharedApps         = {};
 var users              = null;
 var appLoader          = null;
 var mediaBlockSize     = 512;
-var pressingCTRL       = true;
 
 var fileBufferManager;
 var startTime;
@@ -5747,6 +5746,7 @@ function processInputCommand(line) {
 			sageutils.log('Console', 'update\t\trun a git update');
 			sageutils.log('Console', 'performance\tshow performance information');
 			sageutils.log('Console', 'perfsampling\tset performance metric sampling rate');
+			sageutils.log('Console', 'saveperfdata\tsave performance data to file');
 			sageutils.log('Console', 'hardware\tget an summary of the hardware running the server');
 			sageutils.log('Console', 'update\t\trun a git update');
 			sageutils.log('Console', 'version\tprint SAGE2 version');
@@ -5926,7 +5926,7 @@ function processInputCommand(line) {
 			if (command.length > 1) {
 				performanceManager.setSamplingInterval(command[1]);
 			} else {
-				sageutils.log("Command", "should be: perfsampling [slow|normal|often]");
+				sageutils.log("Command", "should be: perfsampling [slow|normal|often|never]");
 			}
 			break;
 		case 'performance':
@@ -5934,6 +5934,9 @@ function processInputCommand(line) {
 			break;
 		case 'hardware':
 			performanceManager.printServerHardware();
+			break;
+		case 'saveperfdata':
+			performanceManager.toggleDataSaveToFile();
 			break;
 		case 'exit':
 		case 'quit':
@@ -7068,17 +7071,6 @@ function pointerMove(uniqueID, pointerX, pointerY, data) {
 		drawingManager.pointerEvent(
 			omicronManager.sageToOmicronEvent(uniqueID, pointerX, pointerY, data, 4, color),
 			uniqueID, pointerX, pointerY, 10, 10);
-	}
-
-	// Trick: press CTRL key while moving switches interaction mode
-	if (sagePointers[uniqueID] && remoteInteraction[uniqueID].CTRL && pressingCTRL) {
-		remoteInteraction[uniqueID].toggleModes();
-		broadcast('changeSagePointerMode', {id: sagePointers[uniqueID].id, mode: remoteInteraction[uniqueID].interactionMode});
-		pressingCTRL = false;
-	} else if (sagePointers[uniqueID] && !remoteInteraction[uniqueID].CTRL && !pressingCTRL) {
-		remoteInteraction[uniqueID].toggleModes();
-		broadcast('changeSagePointerMode', {id: sagePointers[uniqueID].id, mode: remoteInteraction[uniqueID].interactionMode});
-		pressingCTRL = true;
 	}
 
 	sagePointers[uniqueID].updatePointerPosition(data, config.totalWidth, config.totalHeight);
