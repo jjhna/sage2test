@@ -11,10 +11,10 @@
 "use strict";
 
 /**
- * SAGE2 Performance monitoring display
+ * SAGE2 d3 based slider
  *
  * @module client
- * @submodule Slider
+ * @submodule SAGE2_d3_Slider
  */
 
 /*global d3: true */
@@ -24,11 +24,7 @@
  * Global variables
  */
 
-//One object that holds all performance related information
-
-
-
-function Slider(svg, box, margin) {
+function SAGE2_d3_TimelineSlider(svg, box, margin) {
 	this.svg = svg;
 	this.box = box || {
 		left: 0,
@@ -106,34 +102,36 @@ function Slider(svg, box, margin) {
 			.attr("ry", 6);
 	};
 
-	this.setRange = function(min, max) {
-		this.scale.domain([min, max]);
-		var extent = (max - min) / 60000; // ms to minutes
+	this.setRange = function(minEntry, maxEntry, stepSize) {
+		this.scale.domain([minEntry, maxEntry]);
+		var extent = (maxEntry - minEntry);
+		stepSize = stepSize || (extent / 5);
+		var handleRange = 5 * stepSize;
 		var handleRatio;
-		if (extent < 5) {
+		if (extent <= handleRange) {
 			handleRatio = 1;
 		} else {
-			handleRatio = 5 / extent;
+			handleRatio = handleRange / extent;
 		}
 
 		this.handleWidth = Math.round(handleRatio * (this.scale.range()[1] - this.scale.range()[0]));
-		console.log(this.handleWidth, handleRatio);
+
 		// Possible values of handle's start
 		this.startScale.range([0, this.scale.range()[1] - this.handleWidth]);
 
-		this.startScale.domain([min, this.scale.invert(this.startScale.range()[1])]);
-		console.log(this.scale.domain(), this.scale.range());
+		this.startScale.domain([minEntry, this.scale.invert(this.startScale.range()[1])]);
+		//console.log(this.scale.domain(), this.scale.range());
 		this.makeSlider();
 	};
 
 	this.getValues = function() {
 		return {
-			l: this.scale.invert(+this.sliderHandle.attr("x")),
-			h: this.scale.invert(+this.sliderHandle.attr("x") + this.handleWidth)
+			minValueSelected: this.scale.invert(+this.sliderHandle.attr("x")),
+			maxValueSelected: this.scale.invert(+this.sliderHandle.attr("x") + this.handleWidth)
 		};
 	};
-	this.onValueChange = function(l, h) {
-		console.log(l, h);
+	this.onValueChange = function(minValueSelected, maxValueSelected) {
+		console.log(minValueSelected, maxValueSelected);
 	};
 }
 
