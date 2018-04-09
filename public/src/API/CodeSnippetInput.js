@@ -114,11 +114,15 @@ let CodeSnippetInput = (function () {
 
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
 
-			let label = parentNode.append("span")
-				.text(": " + this._state.value);
+			let label = parentNode.append("div")
+				.style("text-align", "center")
+				.append("span")
+				.style("font-weight", "bold")
+				.style("margin-bottom", "4px")
+				.text(this._state.value);
 
 			parentNode.append("div")
-				.style("float", "left")
+				// .style("float", "left")
 				.each(function () {
 					let div = d3.select(this);
 
@@ -209,7 +213,7 @@ let CodeSnippetInput = (function () {
 
 									handle.style("left", left - 5 + "px");
 
-									label.text(": " + value);
+									label.text(value);
 								}
 							});
 						});
@@ -291,9 +295,6 @@ let CodeSnippetInput = (function () {
 
 		createInputElement(parentNode) {
 			let _this = this;
-
-			// newline for radio button group
-			parentNode.append("br");
 
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
 			parentNode.selectAll(".radioOption")

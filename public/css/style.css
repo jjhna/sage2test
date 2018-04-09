@@ -392,10 +392,10 @@ body {
 
 .snippetsInputLabel {
 	min-width: 75px;
+	margin: 6px 0;
 	font-family: monospace;
 
 	font-weight: bold;
-	float: left;
 }
 
 .snippetsInputDiv .checkboxInput {
@@ -483,7 +483,10 @@ body {
 }
 
 .snippetsInputDiv .textInput {
-	width: 125px;
+	width: 200px;
+	height: 24px;
+	font-size: 16px;
+	
 	margin-right: 10px;
 	float: left;
 }

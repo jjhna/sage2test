@@ -37,6 +37,21 @@ let SAGE2_CodeSnippets = (function() {
 	function init() {
 		console.log("SAGE2_CodeSnippets initialized");
 
+		// // preload settings icon SVG to prevent flicker
+		let xhr = new XMLHttpRequest();
+		xhr.open("GET", "../images/radialMenu/three115.svg", false);
+		// Following line is just to be on the safe side;
+		// not needed if your server delivers SVG with correct MIME type
+		xhr.overrideMimeType("image/svg+xml");
+		xhr.send("");
+
+		self.inputsIcon = document.createElement("div")
+			.appendChild(xhr.responseXML.documentElement);
+
+		// save base64 encoding for easy embedding
+		let imgSerial = new XMLSerializer().serializeToString(self.inputsIcon);
+		self.inputsIconB64 = btoa(imgSerial);
+
 		// open app for snippets?
 	}
 
@@ -463,7 +478,6 @@ let SAGE2_CodeSnippets = (function() {
 	}
 
 	function drawAppAncestry(data) {
-
 		// snippet color palette
 		let lightColor = { gen: "#b3e2cd", data: "#cbd5e8", draw: "#fdcdac" };
 		let darkColor = { gen: "#87d1b0", data: "#9db0d3", draw: "#fba76d" };
@@ -472,10 +486,12 @@ let SAGE2_CodeSnippets = (function() {
 		// calculate display width per snippet block
 		let blockWidth = (width - height) / Math.max(ancestry.length, 3);
 
-		svg.selectAll("*").remove();
+		// create input settings button/image if it doesn't exist
+		if (Object.keys(app.parentLink.inputs).length && !svg.selectAll(".inputSettingsButton").size()) {
+			// console.log(svg.selectAll(".inputSettingsButton"), svg.selectAll(".inputSettingsButton").size());
 
-		if (Object.keys(app.parentLink.inputs).length) {
 			svg.append("rect")
+				.attr("class", "inputSettingsButton")
 				.attr("x", width - height)
 				.attr("y", 0)
 				.attr("width", height - 8)
@@ -485,9 +501,9 @@ let SAGE2_CodeSnippets = (function() {
 
 			// fix the use of image by href later (flashes on redraw)
 			svg.append("image")
-				.attr("href", "../images/radialMenu/three115.svg")
-				.attr("x", width - height + 4)
-				.attr("y", 4)
+				.attr("class", "inputSettingsImage")
+				.attr("href", "data:image/svg+xml;base64," + self.inputsIconB64)
+				// .attr("href", "../images/radialMenu/three115.svg")
 				.attr("width", height - 16)
 				.attr("height", height - 16)
 				.on("click", function() {
@@ -501,6 +517,20 @@ let SAGE2_CodeSnippets = (function() {
 					}
 				});
 		}
+
+		svg.select(".inputSettingsButton")
+			.attr("x", width - height)
+			.attr("y", 0)
+			.style("fill", app.inputsOpen ? "gold" : "white");
+
+		svg.select(".inputSettingsImage")
+			.attr("x", width - height + 4)
+			.attr("y", 4);
+
+
+
+		//show snippet ancestry
+		svg.selectAll(".snippetFuncBlock").remove();
 
 		svg.selectAll(".snippetFuncBlock")
 			.data(ancestry)
@@ -855,7 +885,7 @@ class SnippetsInputRegExp extends RegExp {
 }
 
 // Regular Expression which will find SAGE2.SnippetVisElement({ ... })
-//	and add an extra link parameter to the calls
+//	and add an extra app ('this') parameter to the calls
 class SnippetsVisElementRegExp extends RegExp {
 	// change the replace function
 	[Symbol.replace](str, inputs) {
