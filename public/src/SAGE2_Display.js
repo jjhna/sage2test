@@ -1058,7 +1058,7 @@ function setupListeners() {
 		// console.log(applications)
 		var app  = applications[data.id];
 		if (app !== undefined && app !== null) {
-			var date = new Date(data.date);
+		 	var date = new Date(data.date);
 			data.date = date;
 			data.whichType = "childMonitoring";
 			app.SAGE2MonitoringEvent(data);
