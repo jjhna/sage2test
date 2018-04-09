@@ -28,7 +28,7 @@
  * @type {Object}
  */
 var __SAGE2__ = {};
-__SAGE2__.version = "2.0.0";
+__SAGE2__.version = "3.0.0";
 
 
 /**
@@ -341,10 +341,12 @@ function broadcast(dataObject) {
 	wsio.emit('broadcast', dataObject);
 }
 
+/**
+
 //  PARENT CHILD LINKED APPS STUFF
 
 /**
- * Ask the server to launch a specified child app 
+ * Ask the server to launch a specified child app
  * See 'exampleParent' for usage.
  *
  * @method launchLinkedChildApp
@@ -358,7 +360,7 @@ function launchLinkedChildApp(dataObject){
 
 
 /**
- * Ask the server to close a specified child app 
+ * Ask the server to close a specified child app
  * See 'exampleParent' for usage.
  *
  * @method launchLinkedChildApp
@@ -369,7 +371,7 @@ function closeLinkedChildApp(dataObject){
 }
 
 /**
- * Ask the server to move a specified child app 
+ * Ask the server to move a specified child app
  * See 'exampleParent' for usage.
  *
  * @method launchLinkedChildApp
@@ -380,7 +382,7 @@ function moveLinkedChildApp(dataObject){
 }
 
 /**
- * Ask the server to move a specified child app 
+ * Ask the server to move a specified child app
  * See 'exampleParent' for usage.
  *
  * @method launchLinkedChildApp
@@ -392,7 +394,7 @@ function resizeLinkedChildApp(dataObject){
 
 
 /**
- * Ask the server to send a message to a specified child app 
+ * Ask the server to send a message to a specified child app
  * See 'exampleParent' for usage.
  *
  * @method sendMessageToChild
@@ -411,7 +413,7 @@ function sendMessageToChild(id, childId, params){
 }
 
 /**
- * Ask the server to send a message to a specified child app 
+ * Ask the server to send a message to a specified child app
  * See 'exampleParent' for usage.
  *
  * @method sendMessageToChild
@@ -429,12 +431,12 @@ function sendMessageToParent(id, params){
 }
 
 
-// END PARENT CHILD LINKED APPS 
+// END PARENT CHILD LINKED APPS
 
 //this isn't really working right now...
 function getDisplaySize() {
 	//don't know how to yet- so for now I am just returning cybercommons
-	return {width: 8160, height: 2210}; 
+	return {width: 8160, height: 2210};
 }
 
 /**
@@ -991,6 +993,21 @@ function addCookie(sKey, sValue) {
 		"; expires=Fri, 31 Dec 9999 23:59:59 GMT" +
 		"; domain=" + domain +
 		"; path=/";
+	return true;
+}
+
+/**
+ * Delete a cookie for a given key
+ *
+ * @method deleteCookie
+ * @param sKey {String} key
+ * @return {Boolean} true/false
+ */
+function deleteCookie(sKey) {
+	if (!sKey) {
+		return false;
+	}
+	document.cookie = encodeURIComponent(sKey) + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 	return true;
 }
 

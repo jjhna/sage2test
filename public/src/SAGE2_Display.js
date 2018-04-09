@@ -18,6 +18,8 @@
 /* global hideWidgetToAppConnectors */
 /* global createWidgetToAppConnector, getTextFromTextInputWidget */
 /* global SAGE2_Partition, require */
+/* global SAGE2RemoteSitePointer */
+/* global process */
 
 /* global require */
 
@@ -171,6 +173,27 @@ function setupFocusHandlers() {
 			setTimeout(function() {
 				deleteElement('problemDialog');
 			}, 2500);
+		});
+
+		// Receive hardware info from the main process (electron node)
+		require('electron').ipcRenderer.on('hardwareData', function(event, message) {
+			if (wsio !== undefined) {
+				// and send it to the server
+				wsio.emit('displayHardware', message);
+			}
+		});
+		// Receive performance info from the main process (electron node)
+		require('electron').ipcRenderer.on('performanceData', function(event, message) {
+			if (wsio !== undefined) {
+				// Add renderer process load info
+				var procMem = process.getProcessMemoryInfo();
+				var procCPU = process.getCPUUsage();
+				message.processLoad.memResidentSet += procMem.workingSetSize;
+				message.processLoad.memPercent += (procMem.workingSetSize / message.mem.total) * 100;
+				message.processLoad.cpuPercent += procCPU.percentCPUUsage;
+				// and send it to the server
+				wsio.emit('performanceData', message);
+			}
 		});
 	}
 }
@@ -432,6 +455,7 @@ function setupListeners() {
 	});
 
 	wsio.on('hideSagePointer', function(pointer_data) {
+		SAGE2RemoteSitePointer.notifyAppsPointerIsHidden(pointer_data);
 		ui.hideSagePointer(pointer_data);
 		var uniqueID = pointer_data.id.slice(0, pointer_data.id.lastIndexOf("_"));
 		var re = /\.|:/g;
@@ -623,6 +647,18 @@ function setupListeners() {
 			}
 		}
 	});
+	wsio.on('updatePartitionColor', function(data) {
+		if (data && partitions.hasOwnProperty(data.id)) {
+			partitions[data.id].updateColor(data.color);
+		}
+	});
+	wsio.on('updatePartitionSnapping', function(data) {
+		if (data && partitions.hasOwnProperty(data.id)) {
+			partitions[data.id].setSnappedBorders(data.snapping);
+			partitions[data.id].setAnchoredBorders(data.anchor);
+			partitions[data.id].updateBorders();
+		}
+	});
 
 	wsio.on('createAppWindowInDataSharingPortal', function(data) {
 		var portal = dataSharingPortals[data.portal];
@@ -635,7 +671,9 @@ function setupListeners() {
 
 		// Tell the application it is over
 		var app = applications[elem_data.elemId];
-		app.terminate();
+		if (app) {
+			app.terminate();
+		}
 
 		// Remove the app from the list
 		delete applications[elem_data.elemId];
@@ -953,6 +991,7 @@ function setupListeners() {
 				app.move(date);
 			}
 		}
+		SAGE2RemoteSitePointer.checkIfAppNeedsUpdate(app);
 	});
 
 	wsio.on('startResize', function(data) {
@@ -976,6 +1015,7 @@ function setupListeners() {
 				app.resize(date);
 			}
 		}
+		SAGE2RemoteSitePointer.checkIfAppNeedsUpdate(app);
 	});
 
 	wsio.on('animateCanvas', function(data) {
@@ -989,92 +1029,95 @@ function setupListeners() {
 
 	wsio.on('eventInItem', function(event_data) {
 		var app = applications[event_data.id];
+
+		// console.log(event_data, app, applications);
+
 		if (app) {
 			var date = new Date(event_data.date);
 			app.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, date);
 		}
 	});
 
-	// Parent child communication and linking functions
-	wsio.on('messageEvent', function(event_data) {
-		var date = new Date(event_data.date);
-		var app  = applications[event_data.id];
-		event_data.date = date;
-		app.SAGE2MessageEvent(event_data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
-	});
+		// Parent child communication and linking functions
+		wsio.on('messageEvent', function(event_data) {
+			var date = new Date(event_data.date);
+			var app  = applications[event_data.id];
+			event_data.date = date;
+			app.SAGE2MessageEvent(event_data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
+		});
 
-	//this is how I send articulate text input events to sage2
-	wsio.on('textInputEvent', function(event_data) {
-		var date = new Date(event_data.date);
-		var app  = applications[event_data.id];
-		event_data.date = date;
-		app.SAGE2TextInputEvent(event_data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
-	});
+		//this is how I send articulate text input events to sage2
+		wsio.on('textInputEvent', function(event_data) {
+			var date = new Date(event_data.date);
+			var app  = applications[event_data.id];
+			event_data.date = date;
+			app.SAGE2TextInputEvent(event_data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
+		});
 
-	wsio.on('articulateDebugInfo', function(event_data) {
-		//var date = new Date(event_data.date);
-		var app  = applications[event_data.id];
-		//event_data.date = date;
-		app.SAGE2articulateDebugInfo(event_data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
-	});
+		wsio.on('articulateDebugInfo', function(event_data) {
+			//var date = new Date(event_data.date);
+			var app  = applications[event_data.id];
+			//event_data.date = date;
+			app.SAGE2articulateDebugInfo(event_data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
+		});
 
-	wsio.on('pointedToApp', function(event_data) {
-		var date = new Date(event_data.date);
-		var app  = applications[event_data.id];
-		event_data.date = date;
-		app.SAGE2PointedToApp(event_data);
-	});
+		wsio.on('pointedToApp', function(event_data) {
+			var date = new Date(event_data.date);
+			var app  = applications[event_data.id];
+			event_data.date = date;
+			app.SAGE2PointedToApp(event_data);
+		});
 
-	wsio.on('leftHandPointingToApp', function(event_data) {
-		var date = new Date(event_data.date);
-		var app  = applications[event_data.id];
-		event_data.date = date;
-		app.SAGE2LeftHandPointingToApp(event_data);
-	});
+		wsio.on('leftHandPointingToApp', function(event_data) {
+			var date = new Date(event_data.date);
+			var app  = applications[event_data.id];
+			event_data.date = date;
+			app.SAGE2LeftHandPointingToApp(event_data);
+		});
 
-	wsio.on('startGestureRecognition', function(event_data) {
-		var date = new Date(event_data.date);
-		var app  = applications[event_data.id];
-		event_data.date = date;
-		app.SAGE2StartGestureRecognition(event_data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
-	});
+		wsio.on('startGestureRecognition', function(event_data) {
+			var date = new Date(event_data.date);
+			var app  = applications[event_data.id];
+			event_data.date = date;
+			app.SAGE2StartGestureRecognition(event_data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
+		});
 
-	//not sure if I am using this...
-	wsio.on('launchChildAppResponse',  function(data) {
-		// var date = new Date(event_data.date);
-		var app  = applications[data.id];
-		app.SAGE2ChildAppLaunchResponse(data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
-	});
+		//not sure if I am using this...
+		wsio.on('launchChildAppResponse',  function(data) {
+			// var date = new Date(event_data.date);
+			var app  = applications[data.id];
+			app.SAGE2ChildAppLaunchResponse(data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
+		});
 
-	//not using right now...
-	wsio.on('setParent',  function(data) {
-		// var date = new Date(event_data.date);
-		var app  = applications[data.id];
-		app.SAGE2SetParent(data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
-	});
+		//not using right now...
+		wsio.on('setParent',  function(data) {
+			// var date = new Date(event_data.date);
+			var app  = applications[data.id];
+			app.SAGE2SetParent(data); //event_data.type, event_data.position, event_data.user, event_data.data, date);
+		});
 
-	wsio.on('childMonitoringEvent', function(data) {
-		// console.log("child monitoring on ")
-		// console.log(applications)
-		var app  = applications[data.id];
-		if (app !== undefined && app !== null) {
-		 	var date = new Date(data.date);
+		wsio.on('childMonitoringEvent', function(data) {
+			// console.log("child monitoring on ")
+			// console.log(applications)
+			var app  = applications[data.id];
+			if (app !== undefined && app !== null) {
+				var date = new Date(data.date);
+				data.date = date;
+				data.whichType = "childMonitoring";
+				app.SAGE2MonitoringEvent(data);
+			}
+			else {
+				console.log("error unable to send child monitoring event for " + data.id);
+			}
+		});
+
+		wsio.on('parentMonitoringEvent', function(data) {
+			var app  = applications[data.id];
+			var date = new Date(data.date);
 			data.date = date;
-			data.whichType = "childMonitoring";
+			data.whichType = "parentMonitoring";
 			app.SAGE2MonitoringEvent(data);
-		}
-		else {
-			console.log("error unable to send child monitoring event for " + data.id);
-		}
-	});
-
-	wsio.on('parentMonitoringEvent', function(data) {
-		var app  = applications[data.id];
-		var date = new Date(data.date);
-		data.date = date;
-		data.whichType = "parentMonitoring";
-		app.SAGE2MonitoringEvent(data);
-	});
+		});
 
 
 
@@ -1478,6 +1521,24 @@ function setupListeners() {
 		windowIconPinned.style.display = "none";
 		windowIconPinout.style.display = "none";
 	});
+
+	wsio.on('getPerformanceData', function(data) {
+		if (__SAGE2__.browser.isElectron) {
+			require('electron').ipcRenderer.send('getPerformanceData');
+		}
+	});
+
+	wsio.on('performanceData', function(data) {
+		var perfAppList = data.appList;
+		var app;
+		if (perfAppList === undefined || perfAppList === null) {
+			return;
+		}
+		for (var i = 0; i < perfAppList.length; i++) {
+			app = applications[perfAppList[i]];
+			app.SAGE2Event('performanceData', null, null, data, data.date);
+		}
+	});
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {
@@ -1650,9 +1711,9 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 			parentApp: data.parentApp,
 			childList: data.childList
 		};
-		// extra data that may be passed from csd app launch.
-		if (data.csdInitValues) {
-			init.csdInitValues = data.csdInitValues;
+		// extra data that may be passed from launchAppWithValues
+		if (data.customLaunchParams) {
+			init.customLaunchParams = data.customLaunchParams;
 		}
 
 		// load new app
@@ -1666,13 +1727,9 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 				newapp.init(init);
 				newapp.refresh(date);
 
-
-
-
 				// Sending the context menu info to the server
 				if (isMaster) {
 					newapp.getFullContextMenuAndUpdate();
-					wsio.emit('appCreated', {id: data.id});
 				}
 
 				applications[data.id]   = newapp;
@@ -1693,12 +1750,9 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 			app.init(init);
 			app.refresh(date);
 
-
-
 			// Sending the context menu info to the server
 			if (isMaster) {
 				app.getFullContextMenuAndUpdate();
-				wsio.emit('appCreated', {id: data.id});
 			}
 
 			applications[data.id] = app;
@@ -1800,9 +1854,6 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	}
 
 	itemCount += 2;
-
-
-	console.log("done")
 }
 
 function moveItemWithAnimation(updatedApp) {

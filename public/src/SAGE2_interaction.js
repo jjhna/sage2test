@@ -12,7 +12,7 @@
 /* global cancelIdleCallback, requestIdleCallback */
 /* global showSAGE2PointerOverlayNoMouse, hideSAGE2PointerOverlayNoMouse */
 /* global pointerClick, sagePointerDisabled, sagePointerEnabled */
-/* global viewOnlyMode */
+/* global viewOnlyMode, deleteCookie */
 
 "use strict";
 
@@ -22,6 +22,7 @@
  * @module client
  * @submodule SAGE2_interaction
  */
+
 
 /**
  * Deals with pointer, file upload, desktop sharing, ...
@@ -59,55 +60,123 @@ function SAGE2_interaction(wsio) {
 	// Timeout for when scrolling ends
 	this.scrollTimeId = null;
 
-	// Check if a domain cookie exists for the name
-	var cookieName = getCookie('SAGE2_ptrName');
-	if (cookieName) {
-		localStorage.SAGE2_ptrName = cookieName;
-	}
-	// Check if a domain cookie exists for the color
-	var cookieColor = getCookie('SAGE2_ptrColor');
-	if (cookieColor) {
-		localStorage.SAGE2_ptrColor = cookieColor;
-	}
+	let userSettings = {};
+	let loggedIn = false;
+	let uid = null;
 
-	if (!cookieName && !localStorage.SAGE2_ptrColor) {
-		if (!viewOnlyMode) {
-			// only show dialog in full UI mode
-			showDialog('settingsDialog2');
+	/**
+	* Handles server notification that action was permitted
+	*
+	* @method allowAction
+	*/
+	function allowAction(action) {
+		switch (action) {
+			case 'stream':
+				this.startScreenShare();
+				break;
 		}
 	}
 
-	// Post message to the Chrome extension to register the UI
-	if (__SAGE2__.browser.isChrome === true) {
-		window.postMessage('SAGE2_registerUI', '*');
-	}
 
-	// Deals with the name and color of the pointer
-	if (localStorage.SAGE2_ptrName  === undefined ||
-		localStorage.SAGE2_ptrName  === null ||
-		localStorage.SAGE2_ptrName  === "Default") {
-		if (hasMouse) {
-			localStorage.SAGE2_ptrName  = "SAGE2_user";
-		} else {
-			localStorage.SAGE2_ptrName  = "SAGE2_mobile";
+	/**
+	* Handles server notification that action was canceled due to
+	* permissions
+	*
+	* @method cancelAction
+	*/
+	function cancelAction(action) {
+		let actionFound;
+		switch (action) {
+			case 'pointer':
+				this.stopSAGE2Pointer();
+				actionFound = true;
+				break;
+			case 'stream':
+			case 'application':
+			case 'file':
+				actionFound = true;
+				break;
+		}
 
+		if (actionFound) {
+			webix.alert("You don't have permission to do that.");
 		}
 	}
-	if (localStorage.SAGE2_ptrColor === undefined ||
-		localStorage.SAGE2_ptrColor === null) {
-		localStorage.SAGE2_ptrColor = "#B4B4B4";
+
+	/**
+	* @method randomHexColor
+	* @return {String} color as a hex string
+	*/
+	function randomHexColor() {
+		let hex = (Math.floor(Math.random() * 0xffffff)).toString(16);
+		if (hex.length < 6) {
+			hex = Array(6 - hex.length + 1).join('0') + hex;
+		}
+		return '#' + hex;
 	}
 
-	addCookie('SAGE2_ptrName',  localStorage.SAGE2_ptrName);
-	addCookie('SAGE2_ptrColor', localStorage.SAGE2_ptrColor);
+	/**
+	* Callback any time a login event is attempted
+	*
+	* @method handleLoginStateChange
+	* @param response {Object} data returned by the server
+	*/
+	function handleLoginStateChange(response) {
+		// if user tried to log in: check if successful
+		if (response.login) {
+			let user = response.user;
+			if (response.success) {
+				uid = response.uid;
+				loggedIn = true;
 
-	document.getElementById('sage2PointerLabel').value = localStorage.SAGE2_ptrName;
-	document.getElementById('sage2PointerColor').value = localStorage.SAGE2_ptrColor;
+				if ($$("login_form_container")) {
+					$$("login_form_container").hide();
+					$$("settings_dialog").show();
+				}
 
-	this.wsio.emit('registerInteractionClient', {
-		name: document.getElementById('sage2PointerLabel').value,
-		color: document.getElementById('sage2PointerColor').value
-	});
+				// store auth credentials in cookies
+				userSettings.SAGE2_userName = user.name;
+				userSettings.SAGE2_userEmail = user.email;
+				addCookie('SAGE2_userName', user.name);
+				addCookie('SAGE2_userEmail', user.email);
+			}
+
+			if (user.SAGE2_ptrName !== userSettings.SAGE2_ptrName) {
+				this.changeSage2PointerLabel(user.SAGE2_ptrName);
+			}
+			if (user.SAGE2_ptrColor !== userSettings.SAGE2_ptrColor) {
+				this.changeSage2PointerColor(user.SAGE2_ptrColor);
+			}
+		}
+
+		// if user tried to logout
+		if (response.login === false) {
+			uid = null;
+			loggedIn = false;
+
+			// clear credentials
+			delete userSettings.SAGE2_userName;
+			delete userSettings.SAGE2_userEmail;
+			deleteCookie('SAGE2_userName');
+			deleteCookie('SAGE2_userEmail');
+			this.changeSage2PointerLabel(response.name);
+		}
+
+		// if an error message is shown
+		if (response.errorMessage && $$("login_error")) {
+			$$("login_error").setValue(response.errorMessage);
+			$$("login_error").show();
+		}
+
+		// on initialization
+		if (response.init) {
+			if (!loggedIn && userSettings.SAGE2_ptrName && userSettings.SAGE2_ptrName.startsWith('Anon ')) {
+				this.settingsDialog('init');
+			}
+		}
+
+		this.updateLoginButton();
+	}
 
 	/**
 	* Set a unique ID
@@ -117,6 +186,20 @@ function SAGE2_interaction(wsio) {
 	*/
 	this.setInteractionId = function(id) {
 		this.uniqueID = id;
+
+		if (!viewOnlyMode) {
+			// Check if user email / name exists
+			var cookieUserName = getCookie('SAGE2_userName')  || '';
+			var cookieEmail    = getCookie('SAGE2_userEmail') || '';
+
+			wsio.emit('loginUser', {
+				name: cookieUserName,
+				email: cookieEmail,
+				SAGE2_ptrName: userSettings.SAGE2_ptrName,
+				SAGE2_ptrColor: userSettings.SAGE2_ptrColor,
+				init: true
+			});
+		}
 	};
 
 	/**
@@ -209,7 +292,14 @@ function SAGE2_interaction(wsio) {
 			var type = st.substring(0, st.indexOf("\n") - 2);
 
 			// Parse the reply into JSON
-			var msgFromServer = JSON.parse(event.target.response);
+			var msgFromServer;
+			try {
+				msgFromServer = JSON.parse(event.target.response);
+			} catch (e) {
+				// Show message from server in case the message can't be parsed.
+				showSAGE2Message("File: " + event.target.response);
+				throw e;
+			}
 
 			// Check the return values for success/error
 			Object.keys(msgFromServer.files).map(function(k) {
@@ -243,8 +333,8 @@ function SAGE2_interaction(wsio) {
 				formdata.append("dropY", dropY);
 				formdata.append("open",  true);
 
-				formdata.append("SAGE2_ptrName",  localStorage.SAGE2_ptrName);
-				formdata.append("SAGE2_ptrColor", localStorage.SAGE2_ptrColor);
+				formdata.append("SAGE2_ptrName",  userSettings.SAGE2_ptrName);
+				formdata.append("SAGE2_ptrColor", userSettings.SAGE2_ptrColor);
 
 				var xhr = new XMLHttpRequest();
 				// add the request into the array
@@ -307,7 +397,14 @@ function SAGE2_interaction(wsio) {
 		console.log("URL: " + url + ", type: " + mimeType);
 
 		if (mimeType !== "") {
-			this.wsio.emit('addNewWebElement', {type: mimeType, url: url, position: [dropX, dropY]});
+			this.wsio.emit('addNewWebElement', {
+				type: mimeType,
+				url: url,
+				position: [dropX, dropY],
+				id: this.uniqueID,
+				SAGE2_ptrName:  localStorage.SAGE2_ptrName,
+				SAGE2_ptrColor: localStorage.SAGE2_ptrColor
+			});
 		}
 	};
 
@@ -335,8 +432,7 @@ function SAGE2_interaction(wsio) {
 			}
 		} else {
 			console.log("No mouse detected - entering touch interface for SAGE2 Pointer");
-
-			this.wsio.emit('startSagePointer', {label: localStorage.SAGE2_ptrName, color: localStorage.SAGE2_ptrColor});
+			this.wsio.emit('startSagePointer', this.user);
 
 			showSAGE2PointerOverlayNoMouse();
 		}
@@ -355,7 +451,7 @@ function SAGE2_interaction(wsio) {
 				console.log("No PointerLock support");
 			}
 		} else {
-			this.wsio.emit('stopSagePointer');
+			this.wsio.emit('stopSagePointer', this.user);
 			hideSAGE2PointerOverlayNoMouse();
 		}
 	};
@@ -383,7 +479,7 @@ function SAGE2_interaction(wsio) {
 
 		// disable SAGE2 Pointer
 		if (pointerLockElement === undefined || pointerLockElement === null) {
-			this.wsio.emit('stopSagePointer');
+			this.wsio.emit('stopSagePointer', this.user);
 
 			document.removeEventListener('mousedown',  this.pointerPress,     false);
 			document.removeEventListener('mousemove',  this.pointerMove,      false);
@@ -399,7 +495,7 @@ function SAGE2_interaction(wsio) {
 			sagePointerDisabled();
 		} else {
 			// enable SAGE2 Pointer
-			this.wsio.emit('startSagePointer', {label: localStorage.SAGE2_ptrName, color: localStorage.SAGE2_ptrColor});
+			this.wsio.emit('startSagePointer', this.user);
 
 			document.addEventListener('mousedown',  this.pointerPress,     false);
 			document.addEventListener('mousemove',  this.pointerMove,      false);
@@ -413,6 +509,12 @@ function SAGE2_interaction(wsio) {
 			document.removeEventListener('click', pointerClick, false);
 
 			sagePointerEnabled();
+		}
+	};
+
+	this.requestToStartScreenShare = function() {
+		if (!this.broadcasting) {
+			wsio.emit('requestToStartMediaStream');
 		}
 	};
 
@@ -557,7 +659,17 @@ function SAGE2_interaction(wsio) {
 		this.broadcasting = false;
 		// cancelAnimationFrame(this.req);
 		cancelIdleCallback(this.req);
-		this.wsio.emit('stopMediaStream', {id: this.uniqueID + "|0"});
+		this.wsio.emit('stopMediaStream', Object.assign({id: this.uniqueID + "|0"}, userSettings));
+	};
+
+	/**
+	* Screen sharing has to stop
+	*
+	* @method streamEnd
+	*/
+	this.streamEnd = function() {
+		this.broadcasting = false;
+		cancelIdleCallback(this.req);
 	};
 
 	/**
@@ -587,7 +699,6 @@ function SAGE2_interaction(wsio) {
 	this.streamCanPlayMethod = function(event) {
 		// Making sure it's not already sending
 		if (!this.broadcasting) {
-			var screenShareResolution = document.getElementById('screenShareResolution');
 			var mediaVideo  = document.getElementById('mediaVideo');
 			var mediaCanvas = document.getElementById('mediaCanvas');
 
@@ -603,25 +714,21 @@ function SAGE2_interaction(wsio) {
 				mediaVideo.videoWidth
 			];
 
-			for (var i = 0; i < 4; i++) {
-				var height = parseInt(widths[i] * mediaVideo.videoHeight / mediaVideo.videoWidth, 10);
-				screenShareResolution.options[i].value = widths[i] + "x" + height;
-			}
+			var height = widths[this.mediaResolution] * mediaVideo.videoHeight / mediaVideo.videoWidth;
 
-			var res = screenShareResolution.options[this.mediaResolution].value.split("x");
-			mediaCanvas.width  = parseInt(res[0], 10);
-			mediaCanvas.height = parseInt(res[1], 10);
+			mediaCanvas.width  = widths[this.mediaResolution];
+			mediaCanvas.height = height;
 
 			var frame = this.captureMediaFrame();
 			this.pix  = frame;
 			var raw   = atob(frame.split(",")[1]); // base64 to string
-			this.wsio.emit('startNewMediaStream', {
+			this.wsio.emit('startNewMediaStream', Object.assign({
 				id: this.uniqueID + "|0",
-				title: localStorage.SAGE2_ptrName + ": Shared Screen",
-				color: localStorage.SAGE2_ptrColor,
+				title: userSettings.SAGE2_ptrName + ": Shared Screen",
+				color: userSettings.SAGE2_ptrColor,
 				src: raw, type: "image/jpeg", encoding: "binary",
 				width: mediaVideo.videoWidth, height: mediaVideo.videoHeight
-			});
+			}, userSettings));
 
 			this.broadcasting = true;
 
@@ -894,16 +1001,26 @@ function SAGE2_interaction(wsio) {
 	* Handler for pointer lable text
 	*
 	* @method changeSage2PointerLabelMethod
-	* @param event {Object} key event
+	* @param value {String} new name
 	*/
-	this.changeSage2PointerLabelMethod = function(event) {
-		localStorage.SAGE2_ptrName = event.target.value;
+	this.changeSage2PointerLabelMethod = function(value) {
+		if (value) {
+			userSettings.SAGE2_ptrName = value;
+		} else if (hasMouse) {
+			userSettings.SAGE2_ptrName  = "SAGE2_user";
+		} else {
+			userSettings.SAGE2_ptrName  = "SAGE2_mobile";
+		}
 
-		addCookie('SAGE2_ptrName', localStorage.SAGE2_ptrName);
-
-		// if it's an first time run, update the UI too
-		if (event.target.id === "sage2PointerLabelInit") {
-			document.getElementById('sage2PointerLabel').value = event.target.value;
+		addCookie('SAGE2_ptrName', userSettings.SAGE2_ptrName);
+		if ($$("settings_dialog")) {
+			// this should be the same as in settingsdialog
+			webix.ui({
+				view: "text",
+				id: "user_name",
+				label: "Name",
+				value: userSettings.SAGE2_ptrName
+			}, $$("user_name"));
 		}
 	};
 
@@ -911,16 +1028,37 @@ function SAGE2_interaction(wsio) {
 	* Handler for the pointer color selection
 	*
 	* @method changeSage2PointerColorMethod
-	* @param event {Object} key event
+	* @param value {String} new name
 	*/
-	this.changeSage2PointerColorMethod = function(event) {
-		localStorage.SAGE2_ptrColor = event.target.value;
+	this.changeSage2PointerColorMethod = function(value) {
+		userSettings.SAGE2_ptrColor = value || randomHexColor();
 
-		addCookie('SAGE2_ptrColor', localStorage.SAGE2_ptrColor);
+		addCookie('SAGE2_ptrColor', userSettings.SAGE2_ptrColor);
+		if ($$("settings_dialog")) {
+			// this should be the same as in settingsdialog
+			// webix.ui({
+			// 	view: "colorpicker", id: "user_color", label: "Color", value: _userSettings.SAGE2_ptrColor
+			// }, $$("user_color"));
 
-		// if it's an first time run, update the UI too
-		if (event.target.id === "sage2PointerColorInit") {
-			document.getElementById('sage2PointerColor').value = event.target.value;
+			// not sure what that code does
+			webix.ui({
+				cols: [
+					{
+						view: "label",
+						align: "left",
+						label: "Color"
+					},
+					{
+						view: "colorboard",
+						id: "user_color",
+						label: "Color",
+						value: userSettings.SAGE2_ptrColor,
+						width: 290, height: 100,
+						cols: 12, rows: 5,
+						minLightness: 0.3, maxLightness: 0.9
+					}
+				]
+			}, $$("user_color"));
 		}
 	};
 
@@ -928,16 +1066,17 @@ function SAGE2_interaction(wsio) {
 	* Handler for screen resolution selection
 	*
 	* @method changeScreenShareResolutionMethod
-	* @param event {Object} key event
+	* @param value {Number} a value corresponding to a resolution level
+	* @param resolution {String} resolution in the format "width x height"
 	*/
-	this.changeScreenShareResolutionMethod = function(event) {
-		if (event.target.options[event.target.selectedIndex].value) {
-			this.mediaResolution = event.target.selectedIndex;
-			var res = event.target.options[this.mediaResolution].value.split("x");
+	this.changeScreenShareResolutionMethod = function(value, resolution) {
+		this.mediaResolution = value;
+		var res = resolution.split("x");
+		if (res.length === 2) {
 			var mediaCanvas = document.getElementById('mediaCanvas');
 			mediaCanvas.width  = parseInt(res[0], 10);
 			mediaCanvas.height = parseInt(res[1], 10);
-			console.log("Media resolution: " + event.target.options[this.mediaResolution].value);
+			console.log("Media resolution: " + resolution);
 		}
 	};
 
@@ -945,11 +1084,408 @@ function SAGE2_interaction(wsio) {
 	* Handler for screen quality selection
 	*
 	* @method changeScreenShareQualityMethod
-	* @param event {Object} key event
+	* @param value {Number} a value corresponding to a quality level
 	*/
-	this.changeScreenShareQualityMethod = function(event) {
-		this.mediaQuality = parseInt(event.target.value, 10);
+	this.changeScreenShareQualityMethod = function(value) {
+		this.mediaQuality = parseInt(value, 10);
 	};
+
+	/**
+	* Webix modal for user login
+	*
+	* @method loginDialog
+	* @param callingView {Object} webix view that called this method
+	*/
+	this.loginDialog = function(callingView) {
+		if ($$("login_form_container")) {
+			$$("login_form_container").show();
+		} else {
+			webix.ui({
+				view: "window",
+				position: "center",
+				modal: true,
+				zIndex: 9999,
+				id: "login_form_container",
+				head: "Sign in",
+				body: {
+					view: "form",
+					id: "login_form",
+					width: 400,
+					borderless: false,
+					elements: [
+						{
+							view: "text", id: "login_name", label: "Name", name: "name"
+						},
+						{
+							view: "text", id: "login_email", label: "Email", name: "email"
+						},
+						{
+							view: "label", id: "login_error", label: "", align: "center"
+						},
+						{
+							margin: 5, cols: [
+								{
+									view: "button", id: "login_cancel", label: "Cancel", type: "prev",
+									click: function() {
+										this.getTopParentView().hide();
+										if (callingView && $$('settings_dialog')) {
+											$$('settings_dialog').show();
+										}
+									}
+								},
+								{
+									view: "button", id: "login_create", label: "Create new user",
+									click: function() {
+										let data = $$("login_form").getValues();
+										if ($$("settings_dialog")) {
+											data.SAGE2_ptrName = $$("user_name").getValue();
+											data.SAGE2_ptrColor = $$("user_color").getValue();
+										} else {
+											data.SAGE2_ptrName = userSettings.SAGE2_ptrName;
+											data.SAGE2_ptrColor = userSettings.SAGE2_ptrColor;
+										}
+										wsio.emit('createUser', data);
+									}
+								},
+								{
+									view: "button", id: "login_confirm", label: "Sign in", type: "form",
+									click: function() {
+										let data = $$("login_form").getValues();
+										wsio.emit('loginUser', data);
+									}
+								}
+							]
+						}
+					]
+				}
+			}).show();
+		}
+
+
+		if (callingView) {
+			callingView.hide();
+		}
+
+		// clear initial values
+		let name = $$("login_name");
+		let email = $$("login_email");
+		$$("login_form").setValues({
+			name: "",
+			email: ""
+		});
+		$$("login_cancel").enable();
+		$$("login_confirm").disable();
+		$$("login_create").disable();
+		$$("login_error").hide();
+
+		$$("login_name").focus();
+
+		// check input
+		function validate() {
+			if (name.getValue() && email.getValue()) {
+				$$("login_create").enable();
+				$$("login_confirm").enable();
+			} else {
+				$$("login_create").disable();
+				$$("login_confirm").disable();
+			}
+		}
+		if (!name.hasEvent('onTimedKeyPress')) {
+			$$("login_name").attachEvent("onTimedKeyPress", validate);
+		}
+		if (!email.hasEvent('onTimedKeyPress')) {
+			$$("login_email").attachEvent("onTimedKeyPress", validate);
+		}
+	};
+
+	this.updateLoginButton = function() {
+		if ($$('user_confirm')) {
+			let label = "Ok";
+			if (!loggedIn && !$$('user_cancel')) {
+				label = "Log in as guest";
+			}
+
+			webix.ui({
+				view: "button", id: "user_confirm", value: label, type: "form",
+				click: () => {
+					// When OK button pressed
+
+					var uname  = $$("user_name").getValue();
+					var ucolor = $$("user_color").getValue();
+
+					// Set the values into _userSettings of browser
+					this.changeSage2PointerLabel(uname);
+					this.changeSage2PointerColor(ucolor);
+
+					this.wsio.emit('editUser', {
+						uid: uid,
+						properties: {
+							SAGE2_ptrColor: ucolor,
+							SAGE2_ptrName: uname
+						}
+					});
+
+					// Close the UI
+					$$('settings_dialog').destructor();
+				}
+			}, $$('user_confirm'));
+		}
+
+		if ($$("user_login")) {
+			webix.ui({
+				view: "button", id: "user_login",
+				template: "<button style='border:none; color:#555; background:#ddd;'>#label#</button>",
+				label: loggedIn ? "Sign out" : "Sign up for more options",
+				click: () => {
+					if (loggedIn) {
+						wsio.emit('logoutUser', uid);
+					} else {
+						// redirect view to login modal
+						this.loginDialog($$("settings_dialog"));
+					}
+				}
+			}, $$("user_login"));
+		}
+	};
+
+	/**
+	* Webix modal for user settings
+	*
+	* @method settingsDialog
+	* @param type {String} (init | main) indicates how to populate the dialog
+	*/
+	this.settingsDialog = function(type) {
+		if (!type) {
+			return;
+		}
+
+		// get default or stored values
+		let username = userSettings.SAGE2_ptrName || (hasMouse ? "SAGE2_user" : "SAGE2_mobile");
+		let color = userSettings.SAGE2_ptrColor || randomHexColor();
+
+		let loginElement;
+		if (type === 'init') {
+			loginElement = {
+				view: "button", id: "user_confirm", value: "Log in as guest", type: "form"
+			};
+		} else {
+			loginElement = {
+				margin: 5, cols: [
+					{
+						view: "button", id: "user_cancel", value: "Cancel",
+						click: function() {
+							// close the dialog without saving changes
+							this.getTopParentView().destructor();
+						}
+					},
+					{
+						view: "button", id: "user_confirm", value: "Ok", type: "form"
+					}
+				]
+			};
+		}
+
+		let webixOptions = {
+			view: "window",
+			id: "settings_dialog",
+			position: "center",
+			modal: true,
+			zIndex: 9999,
+			body: {
+				view: "form",
+				width: 400,
+				borderless: false,
+				elements: [
+					{
+						// this should be the same as in changeSage2PointerLabelMethod
+						view: "text",
+						id: "user_name",
+						label: "Name",
+						value: username
+					},
+
+					// {
+					// 	// this should be the same as in changeSage2PointerColorMethod
+					// 	view: "colorpicker",
+					// 	id: "user_color",
+					// 	label: "Color",
+					// 	value: color
+					// },
+
+					// Alternate version with just a colorboard
+					{
+						cols: [
+							{
+								view: "label",
+								align: "left",
+								label: "Color"
+							},
+							{
+								view: "colorboard",
+								id: "user_color",
+								label: "Color",
+								value: color,
+								width: 295, height: 100,
+								cols: 12, rows: 5,
+								minLightness: 0.3, maxLightness: 0.9
+							}
+						]
+					},
+
+					loginElement
+					// {
+					// 	view: "button", id: "user_login"
+					// }
+				],
+				elementsConfig: {
+					// labelPosition: "top"
+				}
+			}
+		};
+
+		switch (type) {
+			case 'init':
+				webixOptions.head = "Enter your name or nickname and choose a pointer color";
+				break;
+			case 'main':
+				// also show screen resolution options when called via toolbar
+				webixOptions.head = "Settings";
+				var elements = webixOptions.body.elements;
+				var userElements = elements.splice(0, 2);
+
+				elements.unshift(
+					{
+						view: "label", label: "Enter your name or nickname and choose a pointer color", align: "center"
+					},
+					{
+						type: "space",
+						rows: userElements
+					},
+					{
+						view: "label", label: "Screen sharing settings", align: "center"
+					},
+					{
+						type: "space",
+						rows: [
+							{
+								view: "richselect",
+								label: "Resolution",
+								id: "screen_resolution",
+								value: (this.mediaResolution + 1) || 3,
+								options: [
+									{id: 1, value: "Low"},
+									{id: 2, value: "Medium"},
+									{id: 3, value: "High"},
+									{id: 4, value: "Full"}
+								]
+							},
+							{
+								view: "richselect",
+								label: "Quality",
+								id: "screen_quality",
+								value: this.mediaQuality || 9,
+								options: [
+									{id: 3, value: "Low"},
+									{id: 7, value: "Medium"},
+									{id: 9, value: "High"}
+								]
+							}
+						]
+					},
+					{
+						view: "label"
+					}
+				);
+				break;
+			default: break;
+		}
+
+		webix.ui.zIndexBase = 10000;	// to make the colorboard appear on top of the modal
+		webix.ui(webixOptions).show();
+
+		this.updateLoginButton();
+
+		// Attach event handlers
+
+		// change screen resolution
+		if (type === 'main') {
+			let res = $$("screen_resolution");
+			res.attachEvent("onChange", () => {
+				this.changeScreenShareResolution(res.getValue() - 1, res.getText());
+			});
+
+			// change screen quality
+			let quality = $$("screen_quality");
+			$$("screen_quality").attachEvent("onChange", () => {
+				this.changeScreenShareQuality(quality.getValue());
+			});
+		}
+
+		// Focus the text box
+		$$('user_name').focus();
+	};
+
+	/**
+	* Getter for user settings
+	*
+	* @property user
+	*/
+	Object.defineProperty(this, "user", {
+		get: function() {
+			return {
+				name: userSettings.SAGE2_userName,
+				label: userSettings.SAGE2_ptrName,
+				color: userSettings.SAGE2_ptrColor
+			};
+		}
+	});
+
+
+	/**
+	* Getter for user name
+	*
+	* @property username
+	*/
+	Object.defineProperty(this, "username", {
+		get: function() {
+			return userSettings.SAGE2_userName;
+		}
+	});
+
+	/**
+	* Getter for user email
+	*
+	* @property email
+	*/
+	Object.defineProperty(this, "email", {
+		get: function() {
+			return userSettings.SAGE2_userEmail;
+		}
+	});
+
+
+	/**
+	* Getter for pointer color
+	*
+	* @property pointerColor
+	*/
+	Object.defineProperty(this, "pointerColor", {
+		get: function() {
+			return userSettings.SAGE2_ptrColor;
+		}
+	});
+
+	/**
+	* Getter for pointer label
+	*
+	* @property pointerLabel
+	*/
+	Object.defineProperty(this, "pointerLabel", {
+		get: function() {
+			return userSettings.SAGE2_ptrName;
+		}
+	});
+
 
 	this.streamSuccess               = this.streamSuccessMethod.bind(this);
 	this.streamFail                  = this.streamFailMethod.bind(this);
@@ -973,17 +1509,46 @@ function SAGE2_interaction(wsio) {
 	this.changeScreenShareQuality    = this.changeScreenShareQualityMethod.bind(this);
 	this.step                        = this.stepMethod.bind(this);
 
+
+	/** init **/
+
+	// Check if a domain cookie exists for the name
+	var cookieName = getCookie('SAGE2_ptrName');
+	if (cookieName) {
+		if (cookieName.startsWith('Anon ')  ||
+			cookieName === 'SAGE2_user' ||
+			cookieName === 'SAGE2_mobile') {
+			deleteCookie('SAGE2_ptrName');
+			cookieName = null;
+		}
+		userSettings.SAGE2_ptrName = cookieName;
+	}
+	// Check if a domain cookie exists for the color
+	var cookieColor = getCookie('SAGE2_ptrColor');
+	if (cookieColor) {
+		userSettings.SAGE2_ptrColor = cookieColor;
+	}
+
+	// Post message to the Chrome extension to register the UI
+	if (__SAGE2__.browser.isChrome === true) {
+		window.postMessage('SAGE2_registerUI', '*');
+	}
+
+	// Deals with the name and color of the pointer
+	if (userSettings.SAGE2_ptrColor === undefined ||
+		userSettings.SAGE2_ptrColor === null) {
+		userSettings.SAGE2_ptrColor = randomHexColor();
+		addCookie('SAGE2_ptrColor', userSettings.SAGE2_ptrColor);
+	}
+
+	this.wsio.on('loginStateChanged', handleLoginStateChange.bind(this));
+	this.wsio.on('allowAction', allowAction.bind(this));
+	this.wsio.on('cancelAction', cancelAction.bind(this));
+
 	document.addEventListener('pointerlockerror',        this.pointerLockError,  false);
 	document.addEventListener('mozpointerlockerror',     this.pointerLockError,  false);
 	document.addEventListener('pointerlockchange',       this.pointerLockChange, false);
 	document.addEventListener('mozpointerlockchange',    this.pointerLockChange, false);
-
-	document.getElementById('sage2PointerLabel').addEventListener('input',      this.changeSage2PointerLabel,     false);
-	document.getElementById('sage2PointerColor').addEventListener('input',      this.changeSage2PointerColor,     false);
-	document.getElementById('sage2PointerLabelInit').addEventListener('input',  this.changeSage2PointerLabel,     false);
-	document.getElementById('sage2PointerColorInit').addEventListener('input',  this.changeSage2PointerColor,     false);
-	document.getElementById('screenShareResolution').addEventListener('change', this.changeScreenShareResolution, false);
-	document.getElementById('screenShareQuality').addEventListener('input',     this.changeScreenShareQuality,    false);
 	document.getElementById('mediaVideo').addEventListener('canplay',           this.streamCanPlay,               false);
 
 
