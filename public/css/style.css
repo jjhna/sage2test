@@ -388,12 +388,12 @@ body {
 
 .snippetsInputDiv {
 	padding: 5px;
+	font-family: monospace;
 }
 
 .snippetsInputLabel {
 	min-width: 75px;
 	margin: 6px 0;
-	font-family: monospace;
 
 	font-weight: bold;
 }
@@ -502,6 +502,7 @@ body {
 	background: #e6f5c9;
 
 	display: inline-block;
+	text-align: center;
 
 	font-family: Arimo, Helvetica, sans-serif;
 }
@@ -511,20 +512,25 @@ body {
 }
 
 .snippetsInputDiv .textInputGo:after {
-  content: "";
-	position: absolute;
+	content: "OK";
+	font-weight: bold;
+	font-size: 14px;
+
+  display: inline-block;
+  margin-top: 4px;
+	/* position: absolute; */
 	
-  border: solid black;
-	border-width: 0 3px 3px 0;
-	visibility: visible;
+  /* border: solid black; */
+	/* border-width: 0 3px 3px 0; */
+	/* visibility: visible;
 
   left: 9px;
-  top: 5px;
-  width: 5px;
-  height: 10px;
-  -webkit-transform: rotate(45deg);
-  -ms-transform: rotate(45deg);
-  transform: rotate(45deg);
+  top: 5px; */
+  /* width: 5px; */
+  /* height: 10px; */
+  /* -webkit-transform: rotate(45deg); */
+  /* -ms-transform: rotate(45deg); */
+  /* transform: rotate(45deg); */
 }
 
 .snippetsInputDiv .rangeInput {
@@ -537,7 +543,7 @@ body {
 	background: gray;
 	margin: 0 5px;
 	border-radius: 3px;
-	box-shadow: inset 0 0 10px 2px rgba(0,0,0,0.5)
+	/* box-shadow: inset 0 0 10px 2px rgba(0,0,0,0.5) */
 }
 
 .snippetsInputDiv .rangeInput .rangeInputHandle {
@@ -545,6 +551,9 @@ body {
 	width: 10px;
 	border-radius: 3px;
 	position: absolute;
+
+	border: 1px solid black;
+	margin-top: -0.5px;
 
 	box-shadow: inset 0 0 2px 1.25px rgba(0, 0, 0, 0.75);
 	pointer-events: none;

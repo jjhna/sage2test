@@ -50,6 +50,10 @@ let CodeSnippetInput = (function () {
 		createInputElement(parentNode) {
 			throw new Error(`createInputElement() method must be implemented in ${this.spec.type} SnippetInput`);
 		}
+
+		updateInputElement(parentNode) {
+			throw new Error(`updateInputElement() method must be implemented in ${this.spec.type} SnippetInput`);
+		}
 	}
 
 	/*
@@ -106,17 +110,38 @@ let CodeSnippetInput = (function () {
 			} else if (this._state.value > newSpec.range[1]) {
 				this._state.value = newSpec.range[1];
 			}
+
+			// update the input element for new spec
+			if (!this._inputElement.selectAll(".rangeInputOverlay").datum().dragging) {
+				let sliderOffset = 175 * (this._state.value - newSpec.range[0]) /
+					(newSpec.range[1] - newSpec.range[0]);
+
+				this._inputElement.selectAll(".rangeInputHandle")
+					.style("left", (sliderOffset) + "px"); // center the slider element on the value
+
+				this._inputElement.selectAll(".currValLabel")
+					.text(this._state.value);
+			}
+
+			this._inputElement.selectAll(".minVal")
+				.text(newSpec.range[0]);
+
+			this._inputElement.selectAll(".maxVal")
+				.text(newSpec.range[1]);
+
 			// TODO: round state value to step size (?)
 		}
 
 		createInputElement(parentNode) {
 			let _this = this;
+			this._inputElement = parentNode;
 
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
 
 			let label = parentNode.append("div")
 				.style("text-align", "center")
 				.append("span")
+				.attr("class", "currValLabel")
 				.style("font-weight", "bold")
 				.style("margin-bottom", "4px")
 				.text(this._state.value);
@@ -127,6 +152,7 @@ let CodeSnippetInput = (function () {
 					let div = d3.select(this);
 
 					div.append("span")
+						.attr("class", "minVal")
 						.text(_this._spec.range[0]);
 
 					// create custom "input" element
@@ -136,7 +162,6 @@ let CodeSnippetInput = (function () {
 						.each(function() {
 							// create input element from slider track div
 							let track = d3.select(this);
-							let dragging = false;
 
 							let sliderOffset = 175 * (_this._state.value - _this._spec.range[0]) /
 								(_this._spec.range[1] - _this._spec.range[0]);
@@ -147,21 +172,20 @@ let CodeSnippetInput = (function () {
 								.style("left", (sliderOffset) + "px"); // center the slider element on the value
 
 							let overlay = track.append("div")
+								.datum({dragging: false})
 								.attr("class", "rangeInputOverlay")
 								.style("width", "100%")
 								.style("height", "100%");
 
 							// start dragging
-							overlay.on("mousedown", function() {
-								console.log("drag started");
-								dragging = true;
+							overlay.on("mousedown", function(d) {
+								d.dragging = true;
 							});
 
 							// stop dragging
-							overlay.on("mouseup", function() {
-								if (dragging) {
-									dragging = false;
-									console.log("drag ended");
+							overlay.on("mouseup", function(d) {
+								if (d.dragging) {
+									d.dragging = false;
 									handle.style("left", d3.event.offsetX - 5 + "px");
 
 									let offset = (d3.event.offsetX / 175) *
@@ -175,10 +199,9 @@ let CodeSnippetInput = (function () {
 							});
 
 							// stop dragging
-							overlay.on("mouseleave", function() {
-								if (dragging) {
-									dragging = false;
-									console.log("drag ended");
+							overlay.on("mouseleave", function(d) {
+								if (d.dragging) {
+									d.dragging = false;
 									handle.style("left", d3.event.offsetX - 5 + "px");
 
 									let offset = (d3.event.offsetX / 175) *
@@ -192,8 +215,8 @@ let CodeSnippetInput = (function () {
 							});
 
 							// drag handle
-							overlay.on("mousemove", function() {
-								if (dragging) {
+							overlay.on("mousemove", function(d) {
+								if (d.dragging) {
 									// move handle and update value
 
 									let offset = (d3.event.offsetX / 175) *
@@ -219,8 +242,13 @@ let CodeSnippetInput = (function () {
 						});
 
 					div.append("span")
+						.attr("class", "maxVal")
 						.text(_this._spec.range[1]);
 				});
+		}
+
+		updateInputElement(parentNode) {
+
 		}
 	}
 
@@ -245,6 +273,7 @@ let CodeSnippetInput = (function () {
 
 		createInputElement(parentNode) {
 			let _this = this;
+			this._inputElement = parentNode;
 
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
 			parentNode
@@ -288,18 +317,71 @@ let CodeSnippetInput = (function () {
 		}
 
 		updateStateFromSpec(newSpec) {
+			// update selected option if the currently selected one does not exist in the new spec
 			if (!newSpec.options.includes(this._state.value)) {
 				this._state.value = newSpec.options[0];
 			}
+
+			let _this = this;
+			// update the input element for new spec
+			let bind = this._inputElement.selectAll(".radioOption").data(newSpec.options);
+
+			console.log("Update Radio");
+			bind.exit().remove();
+
+			this._inputElement.selectAll(".radioOption")
+				.each(function(d) {
+					// update existing radio input and label
+					d3.select(this).select(".radioInput")
+						.datum(d)
+						.classed("selected", _this._state.value === d ? "true" : null);
+
+					d3.select(this).select("span")
+						.text(d);
+				});
+
+			bind.enter().append("div")
+				.attr("class", "radioOption")
+				.each(function(d) {
+
+					// create new radio input and label
+					d3.select(this).append("div")
+						.attr("class", "radioInput")
+						.style("height", ui.titleBarHeight + "px")
+						.style("width", ui.titleBarHeight + "px")
+						.classed("selected", _this._state.value === d ? "true" : null)
+						.on("click", function (opt) {
+							_this._inputElement.select(".selected").classed("selected", false);
+
+							d3.select(this).classed("selected", true);
+
+							_this._state.value = opt;
+							_this._onUpdate();
+						})
+						.on("mouseover", function (d) {
+							d3.select(this).classed("hovered", true);
+						})
+						.on("mouseleave", function (d) {
+							d3.select(this).classed("hovered", false);
+						});
+
+					d3.select(this)
+						.append("span")
+						.style("display", "inline-block")
+						.style("transform", "translateY(-25%)")
+						.text(d);
+				});
 		}
 
 		createInputElement(parentNode) {
 			let _this = this;
+			this._inputElement = parentNode;
 
 			console.log(`Creating ${this.constructor.name}:`, parentNode);
 			parentNode.selectAll(".radioOption")
 				.data(this._spec.options)
 				.enter().append("div")
+				.attr("class", "radioOption")
 				.each(function (d) {
 
 					d3.select(this).append("div")
@@ -307,12 +389,12 @@ let CodeSnippetInput = (function () {
 						.style("height", ui.titleBarHeight + "px")
 						.style("width", ui.titleBarHeight + "px")
 						.classed("selected", _this._state.value === d ? "true" : null)
-						.on("click", function () {
+						.on("click", function (opt) {
 							parentNode.select(".selected").classed("selected", false);
 
 							d3.select(this).classed("selected", true);
 
-							_this._state.value = d;
+							_this._state.value = opt;
 							_this._onUpdate();
 						})
 						.on("mouseover", function (d) {

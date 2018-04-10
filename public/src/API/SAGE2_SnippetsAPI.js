@@ -30,6 +30,23 @@ var SAGE2 = SAGE2 || {};
 			newInput.onUpdate = link.update;
 
 			link.inputs[specification.name] = newInput;
+
+			// create input element on app
+			let inputDiv = d3.select(link.getChild().inputs).append("div")
+				.attr("id", specification.name)
+				.attr("class", "snippetsInputDiv");
+
+			inputDiv.append("div")
+				.attr("class", "snippetsInputLabel")
+				.style("font-size", ui.titleBarHeight * 0.5 + "px")
+				.style("margin-top", ui.titleBarHeight * 0.25 + "px")
+				.text(specification.name);
+
+			inputDiv
+				.each(function() {
+					// create the input element based on the Element's specification
+					link.inputs[specification.name].createInputElement(d3.select(this));
+				});
 		} else {
 			// otherwise, update existing element if it does exist
 
@@ -41,25 +58,8 @@ var SAGE2 = SAGE2 || {};
 			link.inputs[specification.name].spec = specification;
 
 			// remove existing input element on app
-			d3.select(link.getChild().inputs).select("#" + specification.name).remove();
+			// d3.select(link.getChild().inputs).select("#" + specification.name).remove();
 		}
-
-		// create input element on app
-		let inputDiv = d3.select(link.getChild().inputs).append("div")
-			.attr("id", specification.name)
-			.attr("class", "snippetsInputDiv");
-
-		inputDiv.append("div")
-			.attr("class", "snippetsInputLabel")
-			.style("font-size", ui.titleBarHeight * 0.5 + "px")
-			.style("margin-top", ui.titleBarHeight * 0.25 + "px")
-			.text(specification.name);
-
-		inputDiv
-			.each(function() {
-				// create the input element based on the Element's specification
-				link.inputs[specification.name].createInputElement(d3.select(this));
-			});
 
 		return link.inputs[specification.name].state;
 	};
