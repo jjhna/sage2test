@@ -287,3 +287,58 @@ a:hover {
 	font-size: 1.0rem;
 	fill: white;
 }
+
+/* admin login page */
+.formLogin {
+	-webkit-font-smoothing:antialiased;
+	-moz-osx-font-smoothing:grayscale;
+	color:white;
+	padding:10px 20px;
+	max-width:400px;
+	margin:auto;
+}
+
+.formLogin button {
+	cursor: pointer;
+	padding: 5px 10px;
+	margin: 10px auto;
+	text-align: center;
+	width:50%;
+	border-radius: 5px;
+	border: solid 2px #ADD8E6;
+	font-family: Arimo, Helvetica, sans-serif;
+	font-size: 0.9em;
+	font-weight:bolder;
+	color: #FFFFFF;
+	background-color: #333333;
+	vertical-align: baseline;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	user-select: none;
+
+}
+
+.formLogin button:hover {
+	background-color: #444444;
+	outline: none;
+}
+
+.formLogin .inputRow {
+	width:50%;
+	margin:5px auto;
+}
+
+.formLogin input {
+	width:100%;
+	color: #666666;
+	padding: 4px;
+	margin-left: -4px;
+}
+
+.formLogin .inputLabel {
+	margin-top:5px;
+	margin-bottom:2px;
+	text-align: left;
+	font-size:0.75em;
+	color:#ddd;
+}

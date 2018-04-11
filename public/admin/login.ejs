@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, minimum-scale=1.0, user-scalable=1" />
+
+<title>Log in to SAGE2 admin</title>
+
+<script type="text/license">
+	// SAGE2 is available for use under the SAGE2 Software License 
+	//      
+	// University of Illinois at Chicago's Electronic Visualization Laboratory (EVL)
+	// and University of Hawai'i at Manoa's Laboratory for Advanced Visualization and
+	// Applications (LAVA)
+	//      
+	// See full text, terms and conditions in the LICENSE.txt included file
+	//      
+	// Copyright (c) 2015
+</script>
+<link rel="stylesheet" type="text/css" href="/css/style_admin.css" media="screen">
+
+</head>
+
+<body>
+
+	<header>
+		<h1>SAGE2 Admin</h1>
+	</header>
+
+	<h2>You don't have permission to access the admin pages!</h2>
+	<h4><a href="/">&lt;-- Return to UI</a></h4>
+	<% if (user) { %>
+		<div class="formLogin">
+			<a href="/logout">
+				<button>
+					Log out and sign in as a different user
+				</button>
+			</a>
+		</div>
+	<% } else { %>
+	<!-- fix -->
+		<form action="/login" method="POST" class="formLogin">
+			<div class="inputRow">
+				<div class="inputLabel">Username</div>
+				<input name="username"></input>
+			</div>
+			<div class="inputRow">
+				<div class="inputLabel">Password</div>
+				<input name="password" type="password"></input>
+			</div>
+			<button>Log in</button>
+		</form>
+
+		<div class="formLogin">
+			———&ensp;OR&ensp;———
+			<br/>
+			<br/>
+			<% auth.forEach(function(strategy) { %>
+			<div>
+				<a href="/auth/<%= strategy %>">
+					<button>
+						Log in with <%= strategy[0].toUpperCase() + strategy.substring(1) %>
+					</button>
+				</a>
+			</div>
+			<% }) %>
+		</div>
+	<% } %>
+</body>
+</html>

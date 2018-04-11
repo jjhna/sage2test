@@ -30,8 +30,12 @@ var zlib = require('zlib');  // to enable HTTP compression
 //   to see request: env DEBUG=sage2http node server.js ....
 var debug = require('debug')('sage2http');
 
+// npm: defined in package.json
+var formidable = require('formidable');       // upload processor
+var sanitizer = require('sanitizer');         // input sanitizer
+
 // External package to clean up URL requests
-// var normalizeURL = require('normalizeurl');
+var normalizeURL = require('normalizeurl');
 
 // SAGE2 own modules
 var sageutils  = require('../src/node-utils');    // provides utility functions
@@ -42,6 +46,9 @@ var express = require('express');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+
+// set express headers
+var helmet = require('helmet');
 
 // passport modules
 var passport = require('passport');
@@ -60,144 +67,201 @@ var User;
  * @class HttpServer
  * @constructor
  * @param publicDirectory {String} folder to expose to the server
+ * @param userList {Object} user object
  */
-function HttpServer(publicDir, userlist) {
-	User = userlist;
-	publicDirectory = publicDir;
+class HttpServer {
+	constructor(publicDir, userList) {
+		User = userList;
+		publicDirectory = publicDir;
 
-	app = express();
+		this.app = app = express();
 
-	this.app = app;
+		// set default headers
+		app.use(helmet(secureHeaders()));
 
-	// Generate the service worker for caching
-	generateSW();
+		// Generate the service worker for caching
+		generateSW();
 
-	// configure strategies for passport
-	let config = {};
-	configureStrategies(config);
+		// Add body parser middleware
+		app.use(bodyParser.urlencoded({
+			extended: true
+		}));
+		app.use(bodyParser.json());
 
-	// Add body parser middleware
-	app.use(bodyParser.urlencoded({
-		extended: true
-	}));
-	app.use(bodyParser.json());
+		// Add cookie parser middleware
+		app.use(cookieParser());
 
-	// Add cookie parser middleware
-	app.use(cookieParser());
+		// Add session middleware
+		app.use(session({
+			secret: 'keyboard cat',
+			resave: true,
+			saveUninitialized: true,
+			cookie: {
+				httpOnly: true,
+				maxAge: 20 * 24 * 3600 * 1000 // 20 days
+			}
+		}));
 
-	// Add session middleware
-	app.use(session({
-		secret: 'keyboard cat',
-		resave: true,
-		saveUninitialized: true,
-		cookie: {
-			maxAge: 20 * 24 * 3600 * 1000 // 20 days
-		}
-	}));
+		// configure strategies for passport
+		this.strategies = configureStrategies(passport);
 
-	// Initialize Passport middleware
-	app.use(passport.initialize());
-	app.use(passport.session());
+		// Initialize Passport middleware
+		app.use(passport.initialize());
+		app.use(passport.session());
 
-	// //////////////////////
-	// Routes
-	// //////////////////////
+		// set view engine
+		app.set('view engine', 'ejs');
+		app.set('views', path.join(__dirname, '../public'));
 
-	// set view engine
-	app.set('view engine', 'ejs');
-	app.set('views', path.join(__dirname, '../public'));
-
-	// static assets directories
-	app.use(ensureAuthenticated, express.static(publicDirectory));
-	for (let f in global.mediaFolders) {
-		let folder = global.mediaFolders[f];
-		app.use(folder.url, ensureAuthenticated, express.static(folder.path));
+		// handle requests
+		this.setUpAuth();
+		this.setUpRestCalls();
+		this.setUpRoutes();
 	}
 
-	// redirect root path to index.html
-	app.get('/', (req, res) => res.render('index.ejs', {
-		user: req.user,
-		auth: Object.keys(config).join(',')
-	}));
-
-	// admin login
-	app.get('/admin/user', (req, res) => {
-		if (req.cookies.admin !== 'test') {
-			res.sendFile(path.join(__dirname, '../public', 'admin/login.html'));
-		} else {
-			res.sendFile(path.join(__dirname, '../public', 'admin/SAGE2_user.html'));
-		}
-	});
-	app.post('/admin/login', (req, res) => {
-		res.cookie('admin', req.body.password);
-		res.redirect('/admin/user');
-	});
-
-	// log in with local strategy
-	app.post('/login', passport.authenticate('local'),
-		(req, res) => {
-			if (req.user) {
-				res.redirect('/');
-			} else {
-				res.send(req.user);
-			}
+	setUpAuth() {
+		// admin login
+		app.get('/admin/login', (req, res) => {
+			userIsAdmin(req.user)
+				.then(() => {
+					res.redirect('/admin/');
+				})
+				.catch(() => {
+					res.render('admin/login.ejs', {
+						user: req.user,
+						auth: Object.keys(this.strategies)
+					});					
+				});
 		});
-	app.get('/logout', (req, res) => {
-		req.logOut();
-		res.redirect("/");
-	});
 
-	// log in with google strategy
-	if (config.google) {
-		app.get('/auth/google',
-			passport.authenticate('google', {
-				scope: [
-					'https://www.googleapis.com/auth/plus.login',
-					'email'
-				]
-			})
-		);
+		app.get('/admin/user', ensureAuthenticated, (req, res) => {
+			userIsAdmin(req.user)
+				.then(() => {
+					res.sendFile(path.join(__dirname, '../public', 'admin/SAGE2_user.html'));					
+				})
+				.catch(() => {
+					res.redirect('/admin/login?page=user');
+					return;					
+				})
+		});
 
-		// redirection of third-party login
-		app.get(config.google.url,
-			passport.authenticate('google', { failureRedirect: '/' }),
-			function(req, res) {
-				res.redirect('/');
+		// passport authorization
+		// log in with local strategy
+		app.post('/login', passport.authenticate('local'),
+			(req, res) => {
+				if (req.user) {
+					res.redirect('/');
+				} else {
+					res.send(req.user);
+				}
+			});
+		app.get('/logout', (req, res) => {
+			if (req.user) {
+				User.disconnectUser(req.user);
+				req.logOut();
 			}
-		);
+			res.redirect("/");
+		});
+
+		// log in with google strategy
+		if (this.strategies.google) {
+			app.get('/auth/google',
+				passport.authenticate('google', {
+					scope: [
+						'https://www.googleapis.com/auth/plus.login',
+						'email'
+					]
+				})
+			);
+
+			// redirection of third-party login
+			app.get(this.strategies.google.url,
+				passport.authenticate('google', { failureRedirect: '/' }),
+				function(req, res) {
+					res.redirect('/');
+				}
+			);
+		}
+
+		// log in with github strategy
+		if (this.strategies.github) {
+			app.get('/auth/github',
+				passport.authenticate('github'));
+
+			app.get(this.strategies.github.url,
+				passport.authenticate('github', { failureRedirect: '/' }),
+				function(req, res) {
+					// Successful authentication, redirect home
+					res.redirect('/');
+				});
+		}
+
+		// log in with facebook strategy
+		if (this.strategies.facebook) {
+			app.get('/auth/facebook',
+				passport.authenticate('facebook'));
+
+			app.get(this.strategies.facebook.url,
+				passport.authenticate('facebook', { failureRedirect: '/' }),
+				function(req, res) {
+					// Successful authentication, redirect home.
+					res.redirect('/');
+				});
+		}
 	}
 
-	if (config.github) {
-		app.get('/auth/github',
-			passport.authenticate('github'));
+	// WIP: "REST" calls?
+	setUpRestCalls() {
+		// send config object to client
+		app.get('/config',  (req, res) => {
+			// Set type
+			let header = {};
+			header["Content-Type"] = "application/json";
+			// Allow CORS on the /config route
+			if (req.headers.origin !== undefined) {
+				header['Access-Control-Allow-Origin' ] = req.headers.origin;
+				header['Access-Control-Allow-Methods'] = "GET";
+				header['Access-Control-Allow-Headers'] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept";
+				header['Access-Control-Allow-Credentials'] = true;
+			}
+			res.writeHead(200, header);
+			// Adding the calculated version into the data structure
+			// global.config.version = SAGE2_version;
+			res.write(JSON.stringify(global.config, null, 2));
+			res.end();
+		});
+	}
 
-		app.get(config.github.url,
-			passport.authenticate('github', { failureRedirect: '/login' }),
-			function(req, res) {
-				// Successful authentication, redirect home.
-				res.redirect('/');
+	setUpRoutes() {
+		// static assets directories
+		app.use(ensureAuthenticated, secureStatic, express.static(publicDirectory));
+
+		for (let f in global.mediaFolders) {
+			let folder = global.mediaFolders[f];
+			app.use(folder.url, ensureAuthenticated, secureStatic, express.static(folder.path));
+		}
+
+		// serve index at root path
+		app.get('/', ensureAuthenticated, setUserCookies, (req, res) => {
+			// set user cookies
+			res.render('index.ejs', {
+				user: req.user,
+				auth: Object.keys(this.strategies).join(',')
 			});
+		});
+
+		// receive newly uploaded files from SAGE Pointer / SAGE UI
+		app.post('/upload', uploadForm);
+
+		// handle other paths
+		app.get('*', ensureAuthenticated, handleGet);
+		app.put('*', handlePut);	// not sure if this does anything
 	}
-
-	if (config.facebook) {
-		app.get('/auth/facebook',
-			passport.authenticate('facebook'));
-
-		app.get(config.facebook.url,
-			passport.authenticate('facebook', { failureRedirect: '/login' }),
-			function(req, res) {
-				// Successful authentication, redirect home.
-				res.redirect('/');
-			});
-	}
-
-	// handle other paths
-	this.routes = {};
-	app.get('*', ensureAuthenticated, handleGet.bind(this));
-	app.put('*', handlePut.bind(this));
 }
 
-function configureStrategies(config) {
+function configureStrategies(passport) {
+	let strategies = {};
+
 	// set up local strategy
 	passport.use(new LocalStrategy(function(username, password, done) {
 		// get user with username/password
@@ -211,7 +275,7 @@ function configureStrategies(config) {
 	}));
 
 	// check local config file for keys
-	const configFile = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "ids.json");
+	const configFile = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "config", "ids.json");
 	let configJson;
 	if (sageutils.fileExists(configFile)) {
 		// if the file exists, load it
@@ -229,8 +293,8 @@ function configureStrategies(config) {
 				let callbackURL = configJson[service].callbackURL ||
 					'/auth/' + service + '/return';
 
-				// store in config array
-				config[service] = {
+				// store in strategies object
+				strategies[service] = {
 					url: callbackURL
 				};
 			}
@@ -239,54 +303,56 @@ function configureStrategies(config) {
 
 	// set up google strategy
 	// for testing, use localhost on port 9090...
-	if (config.google) {
+	if (strategies.google) {
 		passport.use(new GoogleStrategy({
 			clientID: configJson.google.clientID,
 			clientSecret: configJson.google.clientSecret,
-			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + config.google.url
+			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + strategies.google.url
 		},
 		function (accessToken, refreshToken, profile, done) {
 			User.findOrCreate({
 				strategy: 'google',
-				id: profile.id
+				id: profile.id,
+				name: profile.displayName
 			}, function(err, user) {
 				return done(err, user);
 			});
 		}));
 	}
 
-	if (config.github) {
+	if (strategies.github) {
 		passport.use(new GitHubStrategy({
 			clientID: configJson.github.clientID,
 			clientSecret: configJson.github.clientSecret,
-			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + config.github.url
+			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + strategies.github.url
 		},
 		function(accessToken, refreshToken, profile, done) {
 			User.findOrCreate({
 				strategy: 'github',
-				id: profile.id
+				id: profile.id,
+				name: profile.displayName || profile.username
 			}, function(err, user) {
 				return done(err, user);
 			});
 		}));
 	}
 
-	if (config.facebook) {
+	if (strategies.facebook) {
 		passport.use(new FacebookStrategy({
 			clientID: configJson.facebook.clientID,
 			clientSecret: configJson.facebook.clientSecret,
-			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + config.facebook.url
+			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + strategies.facebook.url
 		},
 		function(accessToken, refreshToken, profile, done) {
 			User.findOrCreate({
 				strategy: 'facebook',
-				id: profile.id
+				id: profile.id,
+				name: profile.displayName
 			}, function(err, user) {
 				return done(err, user);
 			});
 		}));
 	}
-
 
 	// serialize/deserialize users for persistent authentication
 	passport.serializeUser(function(user, done) {
@@ -297,13 +363,17 @@ function configureStrategies(config) {
 	passport.deserializeUser(function(id, done) {
 		User.findById(id, function(err, user) {
 			// console.log('deserializing user id...', id);
-			if (user) {
+			if (err) {
+				done(err);
+			} else if (user) {
 				done(null, user);
 			} else {
 				done(null, false);
 			}
 		});
 	});
+
+	return strategies;
 }
 
 /**
@@ -319,25 +389,103 @@ function ensureAuthenticated(req, res, next) {
 	// Are we trying to session management
 	// //////////////////////
 	let pathname = url.parse(req.url).pathname;
-	if (global.__SESSION_ID) {
-		// if the request is for an HTML page (no security check otherwise)
-		//    and it is not session.html
-		if (!req.url.startsWith("/session.html")) {
 
-			// FIXME: working on Chrome but not on Firefox
-			if (req.cookies.session !== global.__SESSION_ID) {
-				// If no match, go back to password page
-				res.redirect("/session.html?page=" + req.url.substring(1));
-				return;
-			}
+	if (global.__SESSION_ID && req.cookies.session !== global.__SESSION_ID) {
+		// if the request is for a page that is not session.html
+		if (!pathname.startsWith('/src/') && !pathname.startsWith('/css/') && !pathname.startsWith("/session.html")) {
+			// If no match, go back to password page
+			res.redirect("/session.html?page=" + req.url.substring(1));
+			return;
 		}
 	}
+	next();
+}
 
-	// redirect to get authentication
-	if (pathname === '/admin/SAGE2_user.html') {
-		res.redirect('/admin/user');
+function secureStatic(req, res, next) {
+	let pathname = url.parse(req.url).pathname;
+
+	// Decode the misc characters in the URL
+	pathname = decodeURIComponent(pathname);
+
+	// blacklist access to certain urls
+	if (pathname.startsWith('/config/') ||
+		pathname.startsWith('/passwd.json')) {
+		notFound(res);
+		return;
 	}
 
+	// handle headers
+	function handleHeaders() {
+		let header = req.headers;
+
+		// Track requests and responses
+		debug('request', (req.connection.encrypted ? 'https' : 'http') + '://' + req.headers.host + req.url);
+		debug('response', pathname);
+
+		if (path.extname(pathname) === ".html") {
+			if (pathname.endsWith("public/index.html")) {
+				// Allow embedding the UI page
+				delete header['X-Frame-Options'];
+			} else {
+				// Do not allow iframe
+				header['X-Frame-Options'] = 'DENY';
+			}
+		} else {
+			// not needed for images and such
+			delete header["X-XSS-Protection"];
+			delete header['X-Frame-Options'];
+		}
+
+		next();
+	}
+
+	// secure admin files
+	if (pathname.startsWith('/admin')) {
+		// redirect to get authentication
+		userIsAdmin(req.user)
+			.then(handleHeaders)
+			.catch(() => {
+				res.redirect('/admin/login?page=' + pathname.substring(7));
+				return;
+			})
+	} else {
+		handleHeaders();
+	}
+}
+
+function userIsAdmin(user, cb) {
+	return new Promise((resolve, reject) => {
+		if (!user) {
+			reject('No user');
+		}
+
+		User.findById(user.id, function(err, user) {
+			if (user) {
+				// TODO: if user has admin access...
+				resolve(true);
+			}
+			reject();
+		});
+
+	});
+}
+
+function setUserCookies(req, res, next) {
+	if (req.user) {
+		if (req.user.SAGE2_ptrName) {
+			res.cookie('SAGE2_ptrName', req.user.SAGE2_ptrName);
+		} else {
+			res.cookie('SAGE2_ptrName', User.requestGuestName());
+		}
+		if (req.user.SAGE2_ptrColor) {
+			res.cookie('SAGE2_ptrColor', req.user.SAGE2_ptrColor);
+		}
+	} else {
+		let cookieName = req.cookies.SAGE2_ptrName;
+		if (!cookieName || cookieName.startsWith('Anon ') || cookieName === 'SAGE2_user' || cookieName === 'SAGE2_mobile') {
+			res.cookie('SAGE2_ptrName', User.requestGuestName());
+		}
+	}	
 	next();
 }
 
@@ -349,12 +497,6 @@ function ensureAuthenticated(req, res, next) {
  * @param res {Object} the response object
  */
 function handleGet(req, res) {
-	// Check the routes handlers
-	if (typeof this.routes[req.url] === 'function') {
-		this.routes[req.url](req, res);
-		return;
-	}
-
 	let pathname = path.join(publicDirectory, req.url);
 
 	// Decode the misc characters in the URL
@@ -371,12 +513,12 @@ function handleGet(req, res) {
 	if (sageutils.fileExists(pathname)) {
 		var stats = fs.lstatSync(pathname);
 		if (stats.isDirectory()) {
-			res.redirect(res, path.join(req.url, "index.html"));
+			res.redirect(res, req.url + '/index.html');
 			return;
 		}
 
 		// Build a default header object
-		var header = this.buildHeader();
+		let header = req.headers;
 
 		if (path.extname(pathname) === ".html") {
 			if (pathname.endsWith("public/index.html")) {
@@ -557,7 +699,7 @@ function handlePut(req, res) {
 	}
 
 	var fileLength = 0;
-	var filename   = path.join(this.publicDirectory, "uploads", "tmp", putName);
+	var filename   = path.join(publicDirectory, "uploads", "tmp", putName);
 	var wstream    = fs.createWriteStream(filename);
 
 	wstream.on('finish', function() {
@@ -581,8 +723,7 @@ function handlePut(req, res) {
 		// Close the write stream
 		wstream.end();
 		// empty 200 OK response for now
-		var header = this.buildHeader();
-		header["Content-Type"] = "text/html";
+		header["Content-Type"] = "text/html; charset=utf-8";
 		res.writeHead(200, "OK", header);
 		res.end();
 	});
@@ -627,46 +768,45 @@ var hpkpPin2 = (function() {
 }());
 
 /**
- * Build an HTTP header object
- *
- * @method buildHeader
- * @return {Object} an object containig common HTTP header values
+ * Set some default headers via helmet for security
  */
-HttpServer.prototype.buildHeader = function() {
-	// Get the site configuration, from server.js
-	var cfg = global.config;
-	// Build the header object
-	var header = {};
+function secureHeaders() {
+	let helmetConfig = {};
+	let cfg = global.config;
 
-	// Default datatype of the response
-	header["Content-Type"] = "text/html; charset=utf-8";
+	// Set the X-Frame-Options header with helmet.frameguard
+	//    default: 'SAMEORIGIN'
 
-	// The X-Frame-Options header can be used to to indicate whether a browser is allowed
-	// to render a page within an <iframe> element or not. This is helpful to prevent clickjacking
-	// attacks by ensuring your content is not embedded within other sites.
-	// See more here: https://developer.mozilla.org/en-US/docs/HTTP/X-Frame-Options.
-	// "SAMEORIGIN" or "DENY" for instance
-	header["X-Frame-Options"] = "SAMEORIGIN";
+	// Set X-XSS-Protection header to filter simple XSS
+	//    default: '1; mode block' on most browsers; '0' for <IE8
 
-	// This header enables the Cross-site scripting (XSS) filter built into most recent web browsers.
-	// It's usually enabled by default anyway, so the role of this header is to re-enable the filter
-	// for this particular website if it was disabled by the user.
-	// This header is supported in IE 8+, and in Chrome.
-	header["X-XSS-Protection"] = "1; mode=block";
-
-	// The only defined value, "nosniff", prevents Internet Explorer and Google Chrome from MIME-sniffing
-	// a response away from the declared content-type. This also applies to Google Chrome, when downloading
-	// extensions. This reduces exposure to drive-by download attacks and sites serving user uploaded content
-	// that, by clever naming, could be treated by MSIE as executable or dynamic HTML files.
-	header["X-Content-Type-Options"] = "nosniff";
+	// Set X-Content-Type-Options header to prevent browsers from 
+	// sniffing the MIME type
+	//    default: 'nosniff'
 
 	// HTTP Strict Transport Security (HSTS) is an opt-in security enhancement
-	// Once a supported browser receives this header that browser will prevent any
-	// communications from being sent over HTTP to the specified domain
+	// Once a supported browser receives this header that browser will prevent 
+	// any communications from being sent over HTTP to the specified domain
 	// and will instead send all communications over HTTPS.
 	// Here using a long (1 year) max-age
 	if (cfg.security && sageutils.isTrue(cfg.security.enableHSTS)) {
-		header["Strict-Transport-Security"] = "max-age=31536000";
+		helmetConfig.hsts = {
+			maxAge: 31536000
+		};
+	}
+
+	// HTTP PUBLIC KEY PINNING (HPKP)
+	// Key pinning is a trust-on-first-use (TOFU) mechanism.
+	// The first time a browser connects to a host it lacks the the information necessary to perform
+	// "pin validation" so it will not be able to detect and thwart a MITM attack.
+	// This feature only allows detection of these kinds of attacks after the first connection.
+	if (cfg.security && sageutils.isTrue(cfg.security.enableHPKP)) {
+		helmetConfig.hpkp = {
+			// 30 days expirations
+			maxAge: 2592000,
+			sha256s: [hpkpPin1(), hpkpPin2()],
+			includeSubDomains: true
+		};
 	}
 
 	// Instead of blindly trusting everything that a server delivers, Content-Security-Policy defines
@@ -677,72 +817,122 @@ HttpServer.prototype.buildHeader = function() {
 	// default-src 'none' -> default policy that blocks absolutely everything
 	if (cfg.security && sageutils.isTrue(cfg.security.enableCSP)) {
 		// Pretty open
-		header["Content-Security-Policy"] = "default-src 'none';" +
-			" plugin-types image/svg+xml;" +
-			" object-src 'self';" +
-			" child-src 'self' blob:;" +
-			" connect-src *;" +
-			" font-src 'self' fonts.gstatic.com;" +
-			" form-action 'self';" +
-			" img-src * data: blob:;" +
-			" media-src 'self' blob:;" +
-			" style-src 'self' 'unsafe-inline' fonts.googleapis.com;" +
-			" script-src * 'unsafe-eval';";
-	}
-	// More secure
-	// header["Content-Security-Policy"] = "default-src 'none';" +
-	// 	" plugin-types image/svg+xml;" +
-	// 	" object-src 'self';" +
-	// 	" child-src 'self' blob:;" +
-	// 	" connect-src 'self' wss: ws: https://query.yahooapis.com https://data.cityofchicago.org https://lyra.evl.uic.edu:9000;" +
-	// 	" font-src 'self';" +
-	// 	" form-action 'self';" +
-	// 	// " img-src 'self' data: http://openweathermap.org a.tile.openstreetmap.org b.tile.openstreetmap.org " +
-	// 	// "c.tile.openstreetmap.org http://www.webglearth.com http://server.arcgisonline.com http://radar.weather.gov " +
-	// 	// "http://cdn.abclocal.go.com http://www.glerl.noaa.gov " +
-	// 	// "https://lyra.evl.uic.edu:9000 https://maps.gstatic.com https://maps.googleapis.com https://khms0.googleapis.com " +
-	// 	// "https://khms1.googleapis.com https://khms2.googleapis.com https://csi.gstatic.com;" +
-	// 	" img-src *;" +
-	// 	" media-src 'self';" +
-	// 	" style-src 'self' 'unsafe-inline';" +
-	// 	" script-src 'self' http://www.webglearth.com https://maps.googleapis.com 'unsafe-eval';";
-
-
-	// HTTP PUBLIC KEY PINNING (HPKP)
-	// Key pinning is a trust-on-first-use (TOFU) mechanism.
-	// The first time a browser connects to a host it lacks the the information necessary to perform
-	// "pin validation" so it will not be able to detect and thwart a MITM attack.
-	// This feature only allows detection of these kinds of attacks after the first connection.
-	if (cfg.security && sageutils.isTrue(cfg.security.enableHPKP)) {
-		// 30 days expirations
-		header["Public-Key-Pins"] = "pin-sha256=\"" + hpkpPin1() +
-			"\"; pin-sha256=\"" + hpkpPin2() +
-			"\"; max-age=2592000; includeSubDomains";
+		helmetConfig.csp = {
+			directives: {
+				defaultSrc: ["'none'"],
+				childSrc: ["'self'", 'blob:'],
+				connectSrc: ['*'],
+				fontSrc: ["'self'", 'fonts.gstatic.com'],
+				formAction: ["'self'"],
+				imgSrc: ['*', 'data:', 'blob:'],
+				mediaSrc: ["'self'", 'blob:'],
+				objectSrc: ["'self'"],
+				pluginTypes: ['image/svg+xml'],
+				styleSrc: ["'self'", 'unsafe-inline', 'fonts.googleapis.com'],
+				scriptSrc: ['*', 'unsafe-eval']
+			}
+		};
 	}
 
-	return header;
-};
+	return helmetConfig;
+}
 
-/**
- * Add a HTTP GET handler (i.e. route)
- *
- * @method get
- * @param name {String} matching URL name (i.e. /config)
- * @param callback {Function} processing function
- */
-HttpServer.prototype.get = function(name, callback) {
-	this.routes[name] = callback;
-};
+function uploadForm(req, res) {
+	var form = new formidable.IncomingForm();
+	// Drop position
+	var position = [0, 0];
+	// Open or not the file after upload
+	var openAfter = true;
+	// User information
+	var ptrName  = "";
+	var ptrColor = "";
 
-/**
- * Add a HTTP POST handler
- *
- * @method post
- * @param name {String} matching URL name (i.e. /config)
- * @param callback {Function} processing function
- */
-HttpServer.prototype.post = function(name, callback) {
-	app.post(name, callback);
-};
+	// Limits the amount of memory all fields together (except files) can allocate in bytes.
+	//    set to 4MB.
+	form.maxFieldsSize = 4 * 1024 * 1024;
+	// Increase file limit to match client limit in SAGE2_interaction.js
+	// Default is 2MB https://github.com/felixge/node-formidable/commit/39f27f29b2824c21d0d9b8e85bcbb5fc0081beaf
+	form.maxFileSize = 1024 * 1024 * 1024;
+	form.type          = 'multipart';
+	form.multiples     = true;
+	form.maxFileSize   = 20 * (1024 * 1024 * 1024); // 20GB
+
+	form.on('fileBegin', function(name, file) {
+		sageutils.log("Upload", file.name, file.type);
+	});
+
+	form.on('error', function(err) {
+		sageutils.log("Upload", 'Request aborted', err);
+		try {
+			// Removing the temporary file
+			fs.unlinkSync(this.openedFiles[0].path);
+		} catch (err) {
+			sageutils.log("Upload", '   error removing the temporary file');
+		}
+	});
+
+	form.on('field', function(field, value) {
+		// Keep user information
+		if (field === 'SAGE2_ptrName') {
+			ptrName = value;
+			sageutils.log("Upload", "by", ptrName);
+		}
+		if (field === 'SAGE2_ptrColor') {
+			ptrColor = value;
+			sageutils.log("Upload", "color", ptrColor);
+		}
+		// convert value [0 to 1] to wall coordinate from drop location
+		if (field === 'dropX') {
+			position[0] = parseInt(parseFloat(value) * config.totalWidth,  10);
+		}
+		if (field === 'dropY') {
+			position[1] = parseInt(parseFloat(value) * config.totalHeight, 10);
+		}
+		// initial application window position
+		if (field === 'width') {
+			position[2] = parseInt(parseFloat(value) * config.totalWidth,  10);
+		}
+		if (field === 'height') {
+			position[3] = parseInt(parseFloat(value) * config.totalHeight,  10);
+		}
+		// open or not the file after upload
+		if (field === 'open') {
+			openAfter = (value === "true");
+		}
+	});
+
+	form.parse(req, function(err, fields, files) {
+		let header = {};
+		if (err) {
+			header["Content-Type"] = "text/plain";
+			res.writeHead(500, header);
+			res.write(err + "\n\n");
+			res.end();
+			return;
+		}
+		// build the reply to the upload
+		header["Content-Type"] = "application/json";
+		res.writeHead(200, header);
+		// For webix uploader: status: server
+		fields.done = true;
+
+		// Get the file (only one even if multiple drops, it comes one by one)
+		var file = files[ Object.keys(files)[0] ];
+		var app = registry.getDefaultApp(file.name);
+		if (app === undefined || app === "") {
+			fields.good = false;
+		} else {
+			fields.good = true;
+		}
+		// Send the reply
+		res.end(JSON.stringify({status: 'server',
+			fields: fields, files: files}));
+	});
+
+	form.on('end', function() {
+		// saves files in appropriate directory and broadcasts the items to the displays
+		manageUploadedFiles(this.openedFiles, position, ptrName, ptrColor, openAfter);
+	});
+}
 
 module.exports = HttpServer;

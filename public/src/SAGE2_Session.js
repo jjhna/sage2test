@@ -73,7 +73,7 @@ function SAGE2_init() {
 
 	// If no page specified, go the UI
 	if (pageRedirect == null) {
-		pageRedirect = "index.html";
+		pageRedirect = "/";
 	}
 
 	// If everything good, redirect

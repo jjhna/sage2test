@@ -80,10 +80,10 @@
 	<%# get properties from server %>
 	Object.defineProperty(window, '__uid', {
 	 	value: "<%= (user) ? user.id : null %>"
-	})
+	});
 	Object.defineProperty(window, '__authStrategy', {
 		value: "<%= auth %>"
-	})
+	});
 </script>
 
 <!-- File manager UI -->

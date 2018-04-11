@@ -62,45 +62,28 @@ function SAGE2_interaction(wsio) {
 
 	let userSettings = {};
 
-	this.init = function() {
-		// Check if a domain cookie exists for the name
-		var cookieName = getCookie('SAGE2_ptrName');
-		if (cookieName) {
-			if (cookieName.startsWith('Anon ')  ||
-				cookieName === 'SAGE2_user' ||
-				cookieName === 'SAGE2_mobile') {
-				deleteCookie('SAGE2_ptrName');
-				cookieName = null;
-			}
-			userSettings.SAGE2_ptrName = cookieName;
-		}
 
-		// Check if a domain cookie exists for the color
-		var cookieColor = getCookie('SAGE2_ptrColor');
-		if (cookieColor) {
-			userSettings.SAGE2_ptrColor = cookieColor;
-		}
+	/* initialize */
+	// Check if a domain cookie exists for the name
+	userSettings.SAGE2_ptrName = getCookie('SAGE2_ptrName');
 
-		// Post message to the Chrome extension to register the UI
-		if (__SAGE2__.browser.isChrome === true) {
-			window.postMessage('SAGE2_registerUI', '*');
-		}
+	// Check if a domain cookie exists for the color
+	userSettings.SAGE2_ptrColor = getCookie('SAGE2_ptrColor');
 
-		// Deals with the name and color of the pointer
-		if (userSettings.SAGE2_ptrColor === undefined ||
-			userSettings.SAGE2_ptrColor === null) {
-			userSettings.SAGE2_ptrColor = randomHexColor();
-			addCookie('SAGE2_ptrColor', userSettings.SAGE2_ptrColor);
-		}
+	// Post message to the Chrome extension to register the UI
+	if (__SAGE2__.browser.isChrome === true) {
+		window.postMessage('SAGE2_registerUI', '*');
+	}
 
-		// get user id if logged in
-		userSettings.id = window.__uid;
-	};
+	// Deals with the name and color of the pointer
+	if (userSettings.SAGE2_ptrColor === undefined ||
+		userSettings.SAGE2_ptrColor === null) {
+		userSettings.SAGE2_ptrColor = randomHexColor();
+		addCookie('SAGE2_ptrColor', userSettings.SAGE2_ptrColor);
+	}
 
-	/* alert server of disconnect */
-	this.disconnect = function() {
-	};
-
+	// get user id if logged in
+	userSettings.id = window.__uid;
 
 	/**
 	* Handles server notification that action was permitted
@@ -166,9 +149,16 @@ function SAGE2_interaction(wsio) {
 		if (!viewOnlyMode) {
 			// show dialog if not logged in
 			// and not anon
-			if (!userSettings.id) {
+			if (!userSettings.id &&
+				(!this.pointerLabel ||
+					this.pointerLabel.startsWith('Anon ') ||
+					this.pointerLabel === 'SAGE2_mobile') ||
+					this.pointerLabel === 'SAGE2_user'
+				) {
 				this.settingsDialog('init');
 			}
+
+			wsio.emit('registerInteractionClient', this.user);
 		}
 	};
 
@@ -1004,32 +994,6 @@ function SAGE2_interaction(wsio) {
 		userSettings.SAGE2_ptrColor = value || randomHexColor();
 
 		addCookie('SAGE2_ptrColor', userSettings.SAGE2_ptrColor);
-		if ($$("settings_dialog")) {
-			// this should be the same as in settingsdialog
-			// webix.ui({
-			// 	view: "colorpicker", id: "user_color", label: "Color", value: _userSettings.SAGE2_ptrColor
-			// }, $$("user_color"));
-
-			// not sure what that code does
-			webix.ui({
-				cols: [
-					{
-						view: "label",
-						align: "left",
-						label: "Color"
-					},
-					{
-						view: "colorboard",
-						id: "user_color",
-						label: "Color",
-						value: userSettings.SAGE2_ptrColor,
-						width: 290, height: 100,
-						cols: 12, rows: 5,
-						minLightness: 0.3, maxLightness: 0.9
-					}
-				]
-			}, $$("user_color"));
-		}
 	};
 
 	/**
@@ -1130,6 +1094,11 @@ function SAGE2_interaction(wsio) {
 
 			// add options to sign in with 3rd party
 			if (window.__authStrategy) {
+				loginFields.push({
+					view: 'label',
+					label: '– OR –',
+					align: 'center'
+				});
 				window.__authStrategy.split(',').forEach(function(field) {
 					let capitalizedField = field[0].toUpperCase() + field.substring(1);
 					loginFields.push({
@@ -1215,13 +1184,13 @@ function SAGE2_interaction(wsio) {
 					this.changeSage2PointerLabel(uname);
 					this.changeSage2PointerColor(ucolor);
 
-					// this.wsio.emit('editUser', {
-					// 	uid: uid,
-					// 	properties: {
-					// 		SAGE2_ptrColor: ucolor,
-					// 		SAGE2_ptrName: uname
-					// 	}
-					// });
+					this.wsio.emit('updateUser', {
+						uniqueId: this.user.uniqueId,
+						properties: {
+							SAGE2_ptrColor: ucolor,
+							SAGE2_ptrName: uname
+						}
+					});
 
 					// Close the UI
 					$$('settings_dialog').destructor();
@@ -1236,6 +1205,7 @@ function SAGE2_interaction(wsio) {
 				label: this.user.id ? "Sign out" : "Sign in as a user",
 				click: () => {
 					if (this.user.id) {
+						deleteCookie('SAGE2_ptrName');
 						window.open('/logout', '_self');
 					} else {
 						// redirect view to login modal
@@ -1437,9 +1407,13 @@ function SAGE2_interaction(wsio) {
 	this.changeScreenShareQuality    = this.changeScreenShareQualityMethod.bind(this);
 	this.step                        = this.stepMethod.bind(this);
 
-
-	/** init **/
-	this.init();
+	this.wsio.on('logoutUser', function() {
+		if (data && data.id && data.id === userSettings.id) {
+			// refresh browser
+			deleteCookie('SAGE2_ptrName');
+			window.location = '/';
+		}
+	});
 	this.wsio.on('allowAction', allowAction.bind(this));
 	this.wsio.on('cancelAction', cancelAction.bind(this));
 
@@ -1458,8 +1432,9 @@ function SAGE2_interaction(wsio) {
 		get: function() {
 			return {
 				id: userSettings.id,
-				label: userSettings.SAGE2_ptrName,
-				color: userSettings.SAGE2_ptrColor
+				uniqueId: this.uniqueID,
+				label: this.pointerLabel,
+				color: this.pointerColor
 			};
 		}
 	});

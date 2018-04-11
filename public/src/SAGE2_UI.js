@@ -110,9 +110,6 @@ if (window.applicationCache) {
  *
  */
 window.addEventListener('beforeunload', function(event) {
-	if (interactor) {
-		interactor.disconnect();
-	}
 	if (interactor && interactor.broadcasting) {
 		// In fact, the message is unused for most browser as security measure
 		var confirmationMessage = "SAGE2 Desktop sharing in progress";

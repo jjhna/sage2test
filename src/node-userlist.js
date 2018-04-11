@@ -25,6 +25,7 @@ const sageutils   = require('../src/node-utils');
 const pathname = 'logs';
 // Name of the file storing the user DB
 const filename = 'users.json';
+// const rbacFilename = 'rbac.json';
 
 let nAnonClients = 0;
 const strNames = "Aardvark Albatross Alligator Alpaca Ant Anteater Antelope Armadillo " +
@@ -89,16 +90,22 @@ class UserList {
 		if (!sageutils.fileExists(this.filePath)) {
 			fs.writeFileSync(this.filePath, "{}");
 		}
+		// if (!sageutils.fileExists(this.rbacPath)) {
+		// 	fs.writeFileSync(this.rbacPath, "{}");
+		// }
 
-		// create the database
+		// create the databases
 		this.db = new JsonDB(
 			this.filePath,
 			true, 	// save after each push
 			true	// save in human-readable format
 		);
+		// this.rbacDb = new JsonDB(this.rbacPath, true, true);
 
 		// per session
 		shuffle(tempNames);
+		this.connectedUsers = {};
+		this.connectedClients = {};
 		this.clients = {};
 		this.rbac = null;
 		this.rbacList = [];
@@ -533,7 +540,6 @@ class UserList {
 		return this.delete(this.userPath(uid));
 	}
 
-
 	/**
 	 * Edit user properties
 	 *
@@ -608,6 +614,9 @@ class UserList {
 				let user = {
 					id: this.userPath(login.id, login.strategy)
 				};
+				if (login.name) {
+					user.name = user.SAGE2_ptrName = login.name;
+				}
 				this.push(user.id, user);
 				callback(null, user);
 			}
@@ -624,10 +633,72 @@ class UserList {
 	findById(id, callback) {
 		let req = this.getData(id);
 		if (req.success) {
+			this.connectUser(req.data);
 			callback(null, req.data);
 		} else {
 			callback("Could not find user");
 		}
+	}
+
+	registerClient(client) {
+		if (!client.id) {
+			// guest user
+			this.connectedClients[client.uniqueId] = {
+				SAGE2_ptrName: client.label,
+				SAGE2_ptrColor: client.color
+			};
+		} else {
+			// logged in user
+			this.connectedClients[client.uniqueId] = client.id;
+		}
+	}
+
+	closeClient(client) {
+		if (client.uniqueId) {
+			// todo: check to remove users?
+			delete this.connectedClients[client.uniqueId];
+		}
+	}
+
+	updateUser(clientId, properties) {
+		if (!this.connectedClients[clientId]) {
+			return false;
+		}
+		if (typeof this.connectedClients[clientId] === 'string' &&
+			this.connectedUsers[this.connectedClients[clientId]]) {
+			// a real user
+			let user = this.connectedUsers[this.connectedClients[clientId]];
+
+			Object.assign(user, properties);
+			return this.editUser(user.id, properties);
+		} else {
+			// guest user
+			let guest = this.connectedClients[clientId];
+			if (guest) {
+				Object.assign(guest, properties);
+			}
+			return true;
+			console.log(this.connectedUsers, this.connectedClients)
+		}
+	}
+
+	connectUser(data) {
+		if (!this.connectedUsers[data.id]) {
+			this.connectedUsers[data.id] = data;
+		}
+	}
+
+	disconnectUser(data) {
+
+	}
+
+	requestGuestName() {
+		let name = 'Anon ' + tempNames[nAnonClients];
+		nAnonClients = (nAnonClients + 1) % tempNames.length; // FIXME
+		return name;
+	}
+
+	can(user, action) {
 	}
 
 	//*********** Getters functions ***********
@@ -639,6 +710,10 @@ class UserList {
 	get filePath() {
 		return path.join(pathname, filename);
 	}
+
+	// get rbacPath() {
+	// 	return path.join(pathname, rbacFilename);
+	// }
 }
 
 module.exports = new UserList();

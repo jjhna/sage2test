@@ -14,7 +14,7 @@
  * @class server
  * @module server
  * @submodule server-core
- * @requires fs http https os path readline url formidable gm json5 qr-image sprint websocketio
+ * @requires fs http https os path readline url gm json5 qr-image sprint websocketio
  */
 
 
@@ -42,7 +42,6 @@ var readline      = require('readline');         // to build an evaluation loop
 var url           = require('url');              // parses urls
 
 // npm: defined in package.json
-var formidable    = require('formidable');       // upload processor
 var gm            = require('gm');               // graphicsmagick
 var json5         = require('json5');            // Relaxed JSON format
 var qrimage       = require('qr-image');         // qr-code generation
@@ -447,8 +446,6 @@ function initializeSage2Server() {
 
 	// Set up http and https servers
 	var httpServerApp = new HttpServer(publicDirectory, userlist);
-	httpServerApp.post('/upload', uploadForm); // receive newly uploaded files from SAGE Pointer / SAGE UI
-	httpServerApp.get('/config',  sendConfig); // send config object to client using http request
 	var options  = setupHttpsOptions();            // create HTTPS options - sets up security keys
 	sage2Server  = http.createServer(httpServerApp.app);
 	sage2ServerS = https.createServer(options, httpServerApp.app);
@@ -472,7 +469,7 @@ function initializeSage2Server() {
 	// Get full version of SAGE2 - git branch, commit, date
 	sageutils.getFullVersion(function(version) {
 		// fields: base commit branch date
-		SAGE2_version = version;
+		SAGE2_version = config.version = version;
 		sageutils.log("SAGE2", "Full Version:", json5.stringify(SAGE2_version));
 		broadcast('setupSAGE2Version', SAGE2_version);
 
@@ -1026,6 +1023,7 @@ function setupListeners(wsio) {
 	wsio.on('loginUser',                            wsLoginUser);
 	wsio.on('logoutUser',                           wsLogoutUser);
 	wsio.on('createUser',                           wsCreateUser);
+	wsio.on('updateUser',                           wsUpdateUser);
 	wsio.on('editUser',                             wsEditUser);
 	wsio.on('editUserRole',                         wsEditUserRole);
 	wsio.on('editRole',                             wsEditRole);
@@ -1526,6 +1524,12 @@ function wsLoginUser(wsio, data) {
 }
 
 function wsLogoutUser(wsio, data) {
+	broadcast('logoutUser', {
+		id: data.id
+	});
+}
+
+/*function wsLogoutUser(wsio, data) {
 	let res = userlist.getUserById(data);
 
 	if (res.error === null) {
@@ -1565,7 +1569,7 @@ function wsLogoutUser(wsio, data) {
 			id: wsio.id
 		});
 	}
-}
+}*/
 
 function wsCreateUser(wsio, data) {
 	let res = userlist.addNewUser(data.name, data.email, {
@@ -1589,6 +1593,10 @@ function wsCreateUser(wsio, data) {
 			id: wsio.id
 		});
 	}
+}
+
+function wsUpdateUser(wsio, data) {
+	userlist.updateUser(data.uniqueId, data.properties);
 }
 
 function wsEditUser(wsio, data) {
@@ -1656,7 +1664,8 @@ function wsSwitchPermissionsModel(wsio, data) {
 // **************  Sage Pointer Functions *****************
 
 function wsRegisterInteractionClient(wsio, data) {
-	var key;
+	userlist.registerClient(data);
+/*	var key;
 
 	// Update color and name of pointer when UI connects
 	sagePointers[wsio.id].color = data.color;
@@ -1695,7 +1704,7 @@ function wsRegisterInteractionClient(wsio, data) {
 				users[key].actions.push({type: "connect", data: null, time: Date.now()});
 			}
 		}
-	}
+	}*/
 }
 
 function wsStartSagePointer(wsio, data) {
@@ -5238,122 +5247,6 @@ function setupHttpsOptions() {
 	}
 
 	return httpsOptions;
-}
-
-function sendConfig(req, res) {
-	var header = HttpServer.prototype.buildHeader();
-	// Set type
-	header["Content-Type"] = "application/json";
-	// Allow CORS on the /config route
-	if (req.headers.origin !== undefined) {
-		header['Access-Control-Allow-Origin' ] = req.headers.origin;
-		header['Access-Control-Allow-Methods'] = "GET";
-		header['Access-Control-Allow-Headers'] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept";
-		header['Access-Control-Allow-Credentials'] = true;
-	}
-	res.writeHead(200, header);
-	// Adding the calculated version into the data structure
-	config.version = SAGE2_version;
-	res.write(JSON.stringify(config));
-	res.end();
-}
-
-function uploadForm(req, res) {
-	var form = new formidable.IncomingForm();
-	// Drop position
-	var position = [0, 0];
-	// Open or not the file after upload
-	var openAfter = true;
-	// User information
-	var ptrName  = "";
-	var ptrColor = "";
-
-	// Limits the amount of memory all fields together (except files) can allocate in bytes.
-	//    set to 4MB.
-	form.maxFieldsSize = 4 * 1024 * 1024;
-	// Increase file limit to match client limit in SAGE2_interaction.js
-	// Default is 2MB https://github.com/felixge/node-formidable/commit/39f27f29b2824c21d0d9b8e85bcbb5fc0081beaf
-	form.maxFileSize = 1024 * 1024 * 1024;
-	form.type          = 'multipart';
-	form.multiples     = true;
-	form.maxFileSize   = 20 * (1024 * 1024 * 1024); // 20GB
-
-	form.on('fileBegin', function(name, file) {
-		sageutils.log("Upload", file.name, file.type);
-	});
-
-	form.on('error', function(err) {
-		sageutils.log("Upload", 'Request aborted', err);
-		try {
-			// Removing the temporary file
-			fs.unlinkSync(this.openedFiles[0].path);
-		} catch (err) {
-			sageutils.log("Upload", '   error removing the temporary file');
-		}
-	});
-
-	form.on('field', function(field, value) {
-		// Keep user information
-		if (field === 'SAGE2_ptrName') {
-			ptrName = value;
-			sageutils.log("Upload", "by", ptrName);
-		}
-		if (field === 'SAGE2_ptrColor') {
-			ptrColor = value;
-			sageutils.log("Upload", "color", ptrColor);
-		}
-		// convert value [0 to 1] to wall coordinate from drop location
-		if (field === 'dropX') {
-			position[0] = parseInt(parseFloat(value) * config.totalWidth,  10);
-		}
-		if (field === 'dropY') {
-			position[1] = parseInt(parseFloat(value) * config.totalHeight, 10);
-		}
-		// initial application window position
-		if (field === 'width') {
-			position[2] = parseInt(parseFloat(value) * config.totalWidth,  10);
-		}
-		if (field === 'height') {
-			position[3] = parseInt(parseFloat(value) * config.totalHeight,  10);
-		}
-		// open or not the file after upload
-		if (field === 'open') {
-			openAfter = (value === "true");
-		}
-	});
-
-	form.parse(req, function(err, fields, files) {
-		var header = HttpServer.prototype.buildHeader();
-		if (err) {
-			header["Content-Type"] = "text/plain";
-			res.writeHead(500, header);
-			res.write(err + "\n\n");
-			res.end();
-			return;
-		}
-		// build the reply to the upload
-		header["Content-Type"] = "application/json";
-		res.writeHead(200, header);
-		// For webix uploader: status: server
-		fields.done = true;
-
-		// Get the file (only one even if multiple drops, it comes one by one)
-		var file = files[ Object.keys(files)[0] ];
-		var app = registry.getDefaultApp(file.name);
-		if (app === undefined || app === "") {
-			fields.good = false;
-		} else {
-			fields.good = true;
-		}
-		// Send the reply
-		res.end(JSON.stringify({status: 'server',
-			fields: fields, files: files}));
-	});
-
-	form.on('end', function() {
-		// saves files in appropriate directory and broadcasts the items to the displays
-		manageUploadedFiles(this.openedFiles, position, ptrName, ptrColor, openAfter);
-	});
 }
 
 function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
