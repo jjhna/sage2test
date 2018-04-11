@@ -82,13 +82,25 @@ window.onbeforeunload = function() {
 
 window.onfocus = function() {
 	if (wsio !== undefined && standAloneApp !== null) {
-		wsio.emit('startSagePointer', standAloneApp.user);
+		var app = standAloneApp.application;
+		if (app !== null && app.standAloneAppEventSharing === true) {
+			wsio.emit('startSagePointer', standAloneApp.user);
+			wsio.emit('setSagePointerToAppInteraction', standAloneApp.user);
+		} else if (app !== null) {
+			ui.showSagePointer(standAloneApp.user);
+			ui.changeSagePointerMode({id: standAloneApp.user.id, mode: 1});
+		}
 	}
 }
 
 window.onblur = function() {
 	if (wsio !== undefined && standAloneApp !== null) {
-		wsio.emit('stopSagePointer', standAloneApp.user);
+		var app = standAloneApp.application;
+		if (app !== null && app.standAloneAppEventSharing === true) {
+			wsio.emit('stopSagePointer', standAloneApp.user);
+		} else if (app !== null) {
+			ui.hideSagePointer(standAloneApp.user);
+		}
 	}
 }
 /**
@@ -288,6 +300,9 @@ function mouseCheck(event) {
 	document.addEventListener('click',      pointerClick,    false);
 	document.addEventListener('mouseup',    pointerRelease,  false);*/
 	if (standAloneApp) {
+		document.addEventListener('mouseup',   standAloneApp.pointerRelease.bind(standAloneApp),  false);
+		document.addEventListener('mousedown', standAloneApp.pointerPress.bind(standAloneApp), false);
+		document.addEventListener('click',     standAloneApp.pointerClick.bind(standAloneApp), false);
 		document.addEventListener('mousemove', standAloneApp.pointerMove.bind(standAloneApp), false);
 	} else {
 		setTimeout(function() {
@@ -316,7 +331,6 @@ function setupListeners() {
 		pointerX    = 0;
 		pointerY    = 0;
 		wsioID = data.UID;
-
 	});
 
 
@@ -363,8 +377,15 @@ function setupListeners() {
 
 		standAloneApp = new StandAloneApp(appId, wsio);
 		standAloneApp.setup(new UIBuilder(json_cfg, clientID));
-		standAloneApp.user.id = wsioID;
+		standAloneApp.user.id = wsioID + "_pointer";
 		ui = standAloneApp.ui;
+		if (wsio !== undefined && standAloneApp !== null) {
+			var app = standAloneApp.application;
+			if (app !== null && app.standAloneAppEventSharing === true) {
+				wsio.emit('startSagePointer', standAloneApp.user);
+				wsio.emit('setSagePointerToAppInteraction', standAloneApp.user);
+			}
+		}
 	});
 
 	wsio.on('setItemPosition', function(position_data) {
@@ -376,6 +397,7 @@ function setupListeners() {
 	wsio.on('setItemPositionAndSize', function(position_data) {
 		if (standAloneApp && position_data.elemId === standAloneApp.id) {
 			standAloneApp.saveAppPositionAndSize(position_data);
+			standAloneApp.resize();
 		}
 	});
 
@@ -391,22 +413,33 @@ function setupListeners() {
 	});
 
 	wsio.on('showSagePointer', function(pointer_data) {
-		if (pointer_data.id.indexOf(wsioID) > -1) {
+		var app = standAloneApp.application;
+		if (app !== null && app.standAloneAppEventSharing === true) {
 			ui.showSagePointer(pointer_data);
 		}
 	});
 
 	wsio.on('hideSagePointer', function(pointer_data) {
-		SAGE2RemoteSitePointer.notifyAppsPointerIsHidden(pointer_data);
-		standAloneApp.hideSagePointer(pointer_data);
+		var app = standAloneApp.application;
+		if (app !== null && app.standAloneAppEventSharing === true) {
+			SAGE2RemoteSitePointer.notifyAppsPointerIsHidden(pointer_data);
+			ui.hideSagePointer(pointer_data);
+		}
 	});
 
 	wsio.on('updateSagePointerPosition', function(pointer_data) {
-		if (standAloneApp) {
+		var app = standAloneApp.application;
+		if (app !== null && app.standAloneAppEventSharing === true) {
 			standAloneApp.updateSagePointerPosition(pointer_data);
 		}
 	});
 
+	wsio.on('changeSagePointerMode', function(pointer_data) {
+		var app = standAloneApp.application;
+		if (app !== null && app.standAloneAppEventSharing === true) {
+			ui.changeSagePointerMode(pointer_data);
+		}
+	});
 
 	wsio.on('loadApplicationState', function(data) {
 		if (standAloneApp.application && data.id === standAloneApp.application.id) {
@@ -414,6 +447,11 @@ function setupListeners() {
 		}
 	});
 
+	wsio.on('applicationState', function(data) {
+		if (standAloneApp.application && data.id === standAloneApp.application.id) {
+			standAloneApp.application.SAGE2Load(data.state, new Date());
+		}
+	});
 	wsio.on('loadApplicationOptions', function(data) {
 		if (standAloneApp.application && data.id === standAloneApp.application.id) {
 			var app = standAloneApp.application;
@@ -497,7 +535,7 @@ function setupListeners() {
 	});
 
 	wsio.on('deleteElement', function(elem_data) {
-		if (standAloneApp.id === elem_data.id) {
+		if (standAloneApp.id === elem_data.elemId) {
 			window.close();
 		}
 	});
@@ -511,9 +549,9 @@ function setupListeners() {
 	});
 
 	wsio.on('eventInItem', function(event_data) {
-		if (standAloneApp.application && event_data.id === standAloneApp.application.id) {
-			var date = new Date(event_data.date);
-			standAloneApp.application.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, date);
+		var app = standAloneApp.application;
+		if (app !== null && event_data.id === app.id && app.standAloneAppEventSharing === true) {
+			app.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, date);
 		}
 	});
 

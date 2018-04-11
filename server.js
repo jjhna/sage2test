@@ -787,6 +787,24 @@ function closeWebSocketClient(wsio) {
 		for (key in remoteSharingSessions) {
 			remoteSharingSessions[key].wsio.emit('stopRemoteSagePointer', {id: wsio.id});
 		}
+	} else if (wsio.clientType === "standAloneApp"){
+		hidePointer(wsio.id);
+		delete sagePointers[wsio.id];
+		delete remoteInteraction[wsio.id];
+		for (key in remoteSharingSessions) {
+			remoteSharingSessions[key].wsio.emit('stopRemoteSagePointer', {id: wsio.id});
+		}
+		for (key in SAGE2Items.renderSync) {
+			if (SAGE2Items.renderSync.hasOwnProperty(key)) {
+				// If the application had an animation timer, clear it
+				if (SAGE2Items.renderSync[key].clients[wsio.id] &&
+					SAGE2Items.renderSync[key].clients[wsio.id].animateTimer) {
+					clearTimeout(SAGE2Items.renderSync[key].clients[wsio.id].animateTimer);
+				}
+				// Remove the object from the list
+				delete SAGE2Items.renderSync[key].clients[wsio.id];
+			}
+		}
 	} else if (wsio.clientType === "display") {
 		for (key in SAGE2Items.renderSync) {
 			if (SAGE2Items.renderSync.hasOwnProperty(key)) {
@@ -1000,13 +1018,14 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 		initializeExistingAppsPositionSizeTypeOnly(wsio);
 		initializeExistingPartitionsUI(wsio);
 	} else if (wsio.clientType === "standAloneApp") {
+		initializeExistingSagePointers(wsio);
 		createSagePointer(wsio.id);
 		for (key in remoteSharingSessions) {
 			remoteSharingSessions[key].wsio.emit('createRemoteSagePointer', {
 				id: wsio.id, portal: {host: config.host, port: config.port}
 			});
 		}
-		initializeExistingSagePointers(wsio);
+		
 	}
 
 	var remote = findRemoteSiteByConnection(wsio);
@@ -1231,6 +1250,9 @@ function setupListeners(wsio) {
 
 	// message from performance page
 	wsio.on('requestClientUpdate',					wsRequestClientUpdate);
+
+	// message from stand alone app
+	wsio.on('setSagePointerToAppInteraction', 		wsSetSagePointerToAppInteraction);
 }
 
 /**
@@ -2241,7 +2263,6 @@ function wsUpdateAppState(wsio, data) {
 			// app.data.pointersOverApp = [];
 		}
 		sageutils.mergeObjects(data.localState, app.data, ['doc_url', 'video_url', 'video_type', 'audio_url', 'audio_type']);
-
 		if (data.updateRemote === true) {
 			var ts;
 			var portal = findApplicationPortal(app);
@@ -11087,4 +11108,16 @@ function wsVoiceToAction(wsio, data) {
 
 function wsRequestClientUpdate(wsio) {
 	performanceManager.updateClient(wsio);
+}
+
+/**
+ * Set sage pointer mode to app interaction
+ *
+ */
+
+function wsSetSagePointerToAppInteraction(wsio, data) {
+	if (remoteInteraction[wsio.id].windowManagementMode()) {
+		remoteInteraction[wsio.id].toggleModes();
+		broadcast('changeSagePointerMode', {id: sagePointers[wsio.id].id, mode: remoteInteraction[wsio.id].interactionMode});
+	}
 }
