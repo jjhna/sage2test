@@ -94,4 +94,4 @@ class RbacManager {
 	}
 }
 
-module.exports = new RbacManager();
+module.exports = RbacManager;

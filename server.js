@@ -1025,6 +1025,7 @@ function setupListeners(wsio) {
 	wsio.on('createUser',                           wsCreateUser);
 	wsio.on('updateUser',                           wsUpdateUser);
 	wsio.on('editUser',                             wsEditUser);
+	wsio.on('editUserWithRole',                     wsEditUserWithRole);
 	wsio.on('editUserRole',                         wsEditUserRole);
 	wsio.on('editRole',                             wsEditRole);
 	wsio.on('createPermissionsModel',               wsCreatePermissionsModel);
@@ -1478,6 +1479,8 @@ function wsSelectionModeOnOff(wsio, data) {
 function wsGetActiveClients(wsio, data) {
 	broadcast('activeClientsRetrieved', {
 		clients: userlist.clients,
+		connectedClients: userlist.connectedClients,
+		connectedUsers: userlist.connectedUsers,
 		rbac: userlist.rbac
 	});
 }
@@ -1628,6 +1631,13 @@ function wsEditRole(wsio, data) {
 		userlist.revokePermission(data.role, data.action);
 	}
 	wsGetRbac();
+}
+
+function wsEditUserWithRole(wsio, data) {
+	if (data.id) {
+		userlist.assignRoleToUser(data.id, data.role);
+		wsGetActiveClients();
+	}
 }
 
 function wsEditUserRole(wsio, data) {

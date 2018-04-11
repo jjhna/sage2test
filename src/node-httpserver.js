@@ -459,14 +459,11 @@ function userIsAdmin(user, cb) {
 			reject('No user');
 		}
 
-		User.findById(user.id, function(err, user) {
-			if (user) {
-				// TODO: if user has admin access...
-				resolve(true);
-			}
+		if (User.connectedUsers[user.id] && User.connectedUsers[user.id].role === 'admin') {
+			resolve(true);
+		} else {
 			reject();
-		});
-
+		};
 	});
 }
 

@@ -159,7 +159,17 @@
 	 * @method handleClientsRetrieved
 	 */
 	function handleClientsRetrieved(data) {
-		clients = data.clients;
+		console.log(data);
+		clients = data.connectedClients;
+		for (let ip in clients) {
+			if (typeof clients[ip].user === 'string') {
+				if (data.connectedUsers[clients[ip].user]) {
+					clients[ip] = data.connectedUsers[clients[ip].user];
+				} else {
+					delete clients[ip];
+				}
+			}
+		}
 		rbac = data.rbac;
 		redrawUsers();
 	}
@@ -239,10 +249,10 @@
 		}
 
 		for (let ip in clients) {
-			let color = clients[ip].user.SAGE2_ptrColor;
+			let color = clients[ip].user.SAGE2_ptrColor || '';
 			let label = clients[ip].user.SAGE2_ptrName || '';
 			let name = clients[ip].user.name || '';
-			let role = clients[ip].role[0];
+			let role = clients[ip].role;
 
 			let tr = document.createElement('tr');
 			tr.innerHTML = '<td><span class="cursor" style="background-color:' + color + '"></span></td>';
@@ -277,6 +287,13 @@
 								let user = clients[ip].user;
 								return user.name === selectedUser.user.name && user.email === selectedUser.user.email;
 							});
+
+							if (clients[ip].user && clients[ip].user.id) {
+								wsio.emit('editUserWithRole', {
+									id: clients[ip].user.id,
+									role: selectedRole
+								})
+							}
 
 							wsio.emit('editUserRole', {
 								ips: ips,

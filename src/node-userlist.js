@@ -124,12 +124,13 @@ class UserList {
 					'use apps',
 					'share screen',
 					'share pointer',
-					'move/resize windows'
+					'move/resize windows',
+					'access admin pages'
 				],
 				permissions: {
-					admin: 0b11111,
-					user:  0b11111,
-					guest: 0b11111
+					admin: 0b111111,
+					user:  0b111110,
+					guest: 0b111110
 				}
 			});
 		}
@@ -180,6 +181,7 @@ class UserList {
 	*/
 	disconnect(ip) {
 		delete this.clients[ip];
+		delete this.connectedClients[ip];
 	}
 
 	// ***********  Role Management Functions *************
@@ -270,6 +272,11 @@ class UserList {
 		}
 	}
 
+	assignRoleToUser(id, role) {
+		if (this.connectedUsers[id]) {
+			this.connectedUsers[id].role = role;
+		}
+	}
 	/**
 	* Add this role to the list of user's roles
 	*
@@ -641,16 +648,19 @@ class UserList {
 	}
 
 	registerClient(client) {
+		let newClient = {};
 		if (!client.id) {
 			// guest user
-			this.connectedClients[client.uniqueId] = {
+			newClient.user = {
 				SAGE2_ptrName: client.label,
 				SAGE2_ptrColor: client.color
 			};
+			newClient.role = "guest";
 		} else {
 			// logged in user
-			this.connectedClients[client.uniqueId] = client.id;
+			newClient.user = client.id;
 		}
+		this.connectedClients[client.uniqueId] = newClient;
 	}
 
 	closeClient(client) {
@@ -684,12 +694,11 @@ class UserList {
 
 	connectUser(data) {
 		if (!this.connectedUsers[data.id]) {
-			this.connectedUsers[data.id] = data;
+			this.connectedUsers[data.id] = {
+				user: data,
+				role: (Object.keys(this.connectedUsers).length === 0) ? 'admin' : 'user'
+			};
 		}
-	}
-
-	disconnectUser(data) {
-
 	}
 
 	requestGuestName() {
