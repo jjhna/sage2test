@@ -163,6 +163,9 @@ if (parsedURL.hostname) {
 }
 app.commandLine.appendSwitch("ignore-connections-limit", domains);
 
+// For display clients, ignore certificate errors
+app.commandLine.appendSwitch("--ignore-certificate-errors");
+
 // Enable the Chrome builtin FPS display for debug
 if (commander.showFps) {
 	app.commandLine.appendSwitch("show-fps-counter");
