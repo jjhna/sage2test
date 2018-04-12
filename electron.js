@@ -301,8 +301,8 @@ function createWindow() {
 			webSecurity: false, // seems to be an issue on Windows
 			backgroundThrottling: false,
 			plugins: commander.plugins,
-			allowDisplayingInsecureContent: false,
-			allowRunningInsecureContent: false,
+			allowDisplayingInsecureContent: commander.allowDisplayingInsecure,
+			allowRunningInsecureContent: commander.allowRunningInsecure,
 			// this enables things like the CSS grid. add a commander option up top for enable / disable on start.
 			experimentalFeatures: (commander.experimentalFeatures) ? true : false
 		}
