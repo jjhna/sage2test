@@ -24,6 +24,7 @@ var Snippets_List = SAGE2_App.extend({
 		this.element.style.boxSizing = 'border-box';
 
 		this.cols = {};
+		this.blockHeight = ui.titleBarHeight;
 
 		this.svg = d3.select(this.element)
 			.append("svg")
@@ -94,6 +95,7 @@ var Snippets_List = SAGE2_App.extend({
 		}
 
 		let that = this;
+		let blockHeight = this.blockHeight;
 
 		let lengths = {};
 		let currentY = 0;
@@ -106,9 +108,9 @@ var Snippets_List = SAGE2_App.extend({
 			// resize the column background
 			let col = this.cols[type];
 
-			let thisHeight = Math.max(38 * lengths[type] + 8, this.sage2_height / 3);
+			let thisHeight = Math.max((blockHeight + 8) * lengths[type] + 8, this.sage2_height / 3);
 			col.select("rect")
-				.datum(38 * lengths[type] + 8)
+				.datum((blockHeight + 8) * lengths[type] + 8)
 				.attr("height", thisHeight);
 
 			col.attr("transform", `translate(0, ${currentY})`);
@@ -133,7 +135,7 @@ var Snippets_List = SAGE2_App.extend({
 
 					group.append("path")
 						.attr("class", "snippetPath")
-						.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 12, 30, [6, i * 38 + 8]))
+						.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 12, blockHeight, [6, i * (blockHeight + 8) + 8]))
 						.style("stroke-linejoin", "round")
 						.style("fill", d.locked ? "#525252" : lightColor[d.type])
 						.style("stroke-width", 3)
@@ -149,21 +151,23 @@ var Snippets_List = SAGE2_App.extend({
 						.data(d.selectors)
 						.enter().append("line")
 						.attr("class", "snippetSelectors")
-						.attr("y1", (1 + i) * 38 - 4)
-						.attr("y2", (1 + i) * 38 - 4)
+						.attr("y1", (1 + i) * blockHeight - 4)
+						.attr("y2", (1 + i) * blockHeight - 4)
 						.attr("x1", (d, i) => colWidth / 10 + ((selectorWidth + 3) * i) + 13)
 						.attr("x2", (d, i) => colWidth / 10 + ((selectorWidth + 3) * i) + selectorWidth - 3)
 						.style("stroke-width", 4)
 						.style("stroke-linecap", "round")
 						.style("stroke", d => d.color);
 
+					console.log(blockHeight);
+
 					group.append("text")
 						.attr("class", "snippetName")
 						.attr("x", colWidth / 2)
-						.attr("y", (1 + i) * 38 - 9)
+						.attr("y", (i + 1) * blockHeight - blockHeight / 8)
 						.style("text-anchor", "middle")
 						.style("font-weight", "bold")
-						.style("font-size", "12px")
+						.style("font-size", blockHeight / 2  + "px")
 						.style("fill", d.locked ? lightColor[d.type] : "black")
 						.style("pointer-events", "none")
 						.text(`cS-${d.id.split("-")[1]}: ${d.desc}`);
@@ -187,6 +191,7 @@ var Snippets_List = SAGE2_App.extend({
 		let colHeight = this.sage2_height / 3;
 
 		let that = this;
+		let blockHeight = this.blockHeight;
 
 		this.svg
 			.attr("height", this.sage2_height)
@@ -203,7 +208,7 @@ var Snippets_List = SAGE2_App.extend({
 
 
 						d3.select(this).selectAll(".snippetPath")
-							.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 12, 30, [5, i * 38 + 8]))
+							.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 12, blockHeight, [6, i * (blockHeight + 8) + 8]))
 
 						let selectorWidth = (((colWidth - 10) * 0.8) - (func.selectors.length + 1) * 3) / func.selectors.length;
 

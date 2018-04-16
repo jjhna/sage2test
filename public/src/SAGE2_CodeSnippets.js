@@ -377,9 +377,12 @@ let SAGE2_CodeSnippets = (function() {
 			self.isOpeningList = true;
 			console.log("Opening List");
 
+			let minDim = Math.min(ui.width, ui.height * 2);
+
 			wsio.emit("loadApplication", {
 				application:
 					"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_List",
+				dimensions: [minDim / 8, minDim / 4],
 				color: "#ff0000"
 			});
 		}
@@ -509,10 +512,14 @@ let SAGE2_CodeSnippets = (function() {
 				.on("click", function() {
 					console.log("Input Settings Click");
 					if (!app.inputsOpen) {
-						app.sendResize(app.sage2_width + 300, app.sage2_height);
+						app.inputsClosedHeight = app.sage2_height;
+
+						let newHeight = Math.max(app.sage2_height, app.inputs.clientHeight);
+
+						app.sendResize(app.sage2_width + 300, newHeight);
 						app.inputsOpen = true;
 					} else {
-						app.sendResize(app.sage2_width - 300, app.sage2_height);
+						app.sendResize(app.sage2_width - 300, app.inputsClosedHeight ? app.inputsClosedHeight : app.sage2_height);
 						app.inputsOpen = false;
 					}
 				});
@@ -526,8 +533,6 @@ let SAGE2_CodeSnippets = (function() {
 		svg.select(".inputSettingsImage")
 			.attr("x", width - height + 4)
 			.attr("y", 4);
-
-
 
 		//show snippet ancestry
 		svg.selectAll(".snippetFuncBlock").remove();
@@ -550,9 +555,9 @@ let SAGE2_CodeSnippets = (function() {
 
 				group.append("text")
 					.attr("class", "snippetName")
-					.attr("x", thisOffsetX + blockWidth / 2)
-					.attr("y", height / 2)
-					.style("text-anchor", "middle")
+					.attr("x", thisOffsetX + 5 + (blockWidth * 0.075))
+					.attr("y", 3 * ui.titleBarHeight / 4)
+					// .style("text-anchor", "middle")
 					.style("font-weight", "bold")
 					.style("font-size", ui.titleBarHeight / 2 + "px")
 					.style("font-family", "monospace")

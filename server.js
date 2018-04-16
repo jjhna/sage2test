@@ -213,6 +213,8 @@ if (config.folders) {
 var publicDirectory  = "public";
 var uploadsDirectory = path.join(publicDirectory, "uploads");
 var sessionDirectory = path.join(publicDirectory, "sessions");
+let snippetDirectory = path.join(publicDirectory, "snippets");
+
 var whiteboardDirectory = sessionDirectory;
 // Validate all the media folders
 for (var folder in mediaFolders) {
@@ -229,9 +231,13 @@ for (var folder in mediaFolders) {
 		uploadsDirectory = f.path;
 		mainFolder = f;
 		sessionDirectory = path.join(uploadsDirectory, "sessions");
+		snippetDirectory = path.join(uploadsDirectory, "snippets");
 		whiteboardDirectory = path.join(uploadsDirectory, "whiteboard");
 		if (!sageutils.folderExists(sessionDirectory)) {
 			sageutils.mkdirParent(sessionDirectory);
+		}
+		if (!sageutils.folderExists(snippetDirectory)) {
+			sageutils.mkdirParent(snippetDirectory);
 		}
 		sageutils.log("Folders", 'upload to', chalk.yellow.bold(f.path));
 	}
@@ -354,6 +360,11 @@ function initializeSage2Server() {
 	// Make sure sessions directory exists
 	if (!sageutils.folderExists(sessionDirectory)) {
 		fs.mkdirSync(sessionDirectory);
+	}
+
+	// Make sure snippets directory exists
+	if (!sageutils.folderExists(snippetDirectory)) {
+		fs.mkdirSync(snippetDirectory);
 	}
 
 	// Add a flag into the configuration to denote password status (used on display side)

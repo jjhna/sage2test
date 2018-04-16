@@ -66,9 +66,10 @@ var Snippets_Data = SAGE2_App.extend({
 		let content = document.createElement("div");
 		content.style.width = this.sage2_width + "px";
 		content.style.height = "100%";
-		content.style.padding = (ui.titleBarHeight * 2 + 8) + "px 10px";
+		content.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 		content.style.boxSizing = "border-box";
 		content.style.background = "white";
+		content.style.fontSize = ui.titleBarHeight / 2 + "px";
 
 		this.content = content;
 		this.element.appendChild(content);
@@ -79,8 +80,8 @@ var Snippets_Data = SAGE2_App.extend({
 		inputs.style.left = this.sage2_width + "px";
 		inputs.style.top = "0";
 		inputs.style.width = "300px";
-		inputs.style.height = "100%";
-		inputs.style.padding = ui.titleBarHeight * 2 + 8 + "px 10px";
+		inputs.style.minHeight = "100%";
+		inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 		inputs.style.boxSizing = "border-box";
 		inputs.style.background = "lightgray";
 
@@ -90,7 +91,7 @@ var Snippets_Data = SAGE2_App.extend({
 		// add wrapper for function execution information
 		let ancestry = d3.select(this.element).append("svg")
 			.attr("class", "snippetAncestry")
-			.attr("height", ui.titleBarHeight * 2)
+			.attr("height", ui.titleBarHeight * 1.5)
 			.attr("width", data.width);
 
 		this.ancestry = ancestry;
@@ -189,12 +190,12 @@ var Snippets_Data = SAGE2_App.extend({
 		let ancestry = SAGE2_CodeSnippets.getAppAncestry(this);
 		// outsource ancestry drawing ot SAGE2_CodeSnippets
 		SAGE2_CodeSnippets.drawAppAncestry({
-			svg: this.ancestry,
-			width: this.sage2_width,
-			height: ui.titleBarHeight * 2,
-			ancestry,
-			app: this
-		});
+      svg: this.ancestry,
+      width: this.sage2_width,
+      height: ui.titleBarHeight * 1.5,
+      ancestry,
+      app: this
+    });
 	},
 
 	updateAncestorTree: function() {
