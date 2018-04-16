@@ -188,6 +188,12 @@ a:hover {
 	background: #000;
 }
 
+.controls {
+	border: #666666 solid 5px;
+	color: #f0f0f0;
+	background: #666666;
+}
+
 .thresholdline {
 	fill: none;
 	stroke: url(#value-gradient);
