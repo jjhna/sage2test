@@ -2679,6 +2679,10 @@ function addMenuEntry(menuDiv, entry, id, app) {
 	// workingDiv.style.padding = "0 5px 0 5px";
 	// Align main text to the left
 	workingDiv.style.textAlign = "left";
+	// Increase entry size for easier selection on mobile
+	if (__SAGE2__.browser.isMobile) {
+		workingDiv.style.fontSize = "18px";
+	}
 	// special case for a separator (line) entry
 	if (entry.description === "separator") {
 		workingDiv.innerHTML = "<hr>";
