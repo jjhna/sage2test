@@ -33,7 +33,7 @@
  */
 function fileSizeIEC(a, b, c, d, e) {
 	return (b = Math, c = b.log, d = 1024, e = c(a) / c(d) | 0,
-		a / b.pow(d, e)).toFixed(1) + ' ' + (e ? 'KMGTPEZY'[--e] : 'B');
+	a / b.pow(d, e)).toFixed(1) + ' ' + (e ? 'KMGTPEZY'[--e] : 'B');
 }
 
 var interactor;
@@ -1532,6 +1532,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				// Download the file
 				var link = document.createElement('a');
 				link.href = url;
+				link.target = "_blank";
 				if (link.download !== undefined) {
 					// Set HTML5 download attribute. This will prevent file from opening if supported.
 					var fileName = url.substring(url.lastIndexOf('/') + 1, url.length);

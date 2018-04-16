@@ -2569,6 +2569,7 @@ function setAppContextMenuEntries(data) {
 						// Download the file
 						var link = document.createElement('a');
 						link.href = url;
+						link.target = "_blank";
 						if (link.download !== undefined) {
 							// Set HTML5 download attribute. This will prevent file from opening if supported.
 							var fileName = url.substring(url.lastIndexOf('/') + 1, url.length);

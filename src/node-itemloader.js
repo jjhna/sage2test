@@ -396,6 +396,8 @@ AppLoader.prototype.loadVideoFromFile = function(file, mime_type, aUrl, external
 				type: mime_type,
 				url: external_url,
 				data: {
+					// Using CompressorName to determine if should be html player or use the server side decoding
+					CompressorName: (exif) ? ((exif.CompressorName) ? exif.CompressorName : "") : "",
 					width: data.width,
 					height: data.height,
 					colorspace: "YUV420p",
@@ -706,7 +708,9 @@ AppLoader.prototype.loadUnityAppFromZip = function(appLoader, unityLoader, zipFo
 
 		// Title is in the form 'Unity WebGL Player | [Product Name]'
 		// Get just the Product Name
-		htmlTitle = htmlTitle.split("|")[1].trim();
+		if (htmlTitle.split("|")[1] !== undefined) {// If undefined, likely index has already been processed
+			htmlTitle = htmlTitle.split("|")[1].trim();
+		}
 
 		// Set the html <title> the new parsed name
 		indexHtml("title").text(htmlTitle);
