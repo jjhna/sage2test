@@ -5,7 +5,7 @@ image: Visual Studio 2017
 branches:
   only:
   - master
-  - htmlplayer
+  - mobileRightClick
 
 shallow_clone: true
 
