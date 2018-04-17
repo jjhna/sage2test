@@ -2859,6 +2859,9 @@ function createAppFromDescription(app, callback) {
 		callback(appInstance, videohandle);
 	};
 
+	// Use sage2URL if it is available
+	app.url = app.sage2URL || app.url;
+	// Decode URL
 	var appURL = url.parse(app.url);
 
 	if (appURL.hostname === config.host) {
