@@ -348,9 +348,13 @@ let SAGE2_CodeSnippets = (function() {
 
 	function createDataApplication(snippetsID) {
 		if (isMaster) {
+			let minDim = Math.min(ui.width, ui.height * 2);
+
 			wsio.emit("loadApplication", {
-				application: '/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Data',
+				application:
+					"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Data",
 				color: '#ff0000',
+				dimensions: [minDim / 4, minDim / 4],
 				data: {
 					snippetsID
 				}
@@ -360,10 +364,13 @@ let SAGE2_CodeSnippets = (function() {
 
 	function createVisApplication(snippetsID) {
 		if (isMaster) {
+			let minDim = Math.min(ui.width, ui.height * 2);
+
 			wsio.emit("loadApplication", {
 				application:
 					"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Vis",
 				color: "#ff0000",
+				dimensions: [minDim / 4, minDim / 4],
 				data: {
 					snippetsID
 				}
@@ -553,17 +560,26 @@ let SAGE2_CodeSnippets = (function() {
 					.style("stroke-width", 2)
 					.style("stroke", darkColor[d.type]);
 
-				group.append("text")
+				let label = group.append("text")
 					.attr("class", "snippetName")
-					.attr("x", thisOffsetX + 5 + (blockWidth * 0.075))
-					.attr("y", 3 * ui.titleBarHeight / 4)
-					// .style("text-anchor", "middle")
+					.attr("x", thisOffsetX + (blockWidth * .5) - 6)
+					.attr("y", height / 2)
+					.style("text-anchor", "middle")
 					.style("font-weight", "bold")
 					.style("font-size", ui.titleBarHeight / 2 + "px")
 					.style("font-family", "monospace")
 					.style("fill", "black")
 					.style("pointer-events", "none")
 					.text(`cS-${d.id.split("-")[1]}: ${d.desc}`);
+
+				if (label.node().getBBox().width > blockWidth * 0.925) {
+					label.text(`${d.desc}`);
+				}
+
+				if (label.node().getBBox().width > blockWidth * 0.925) {
+					label.text(`cS-${d.id.split("-")[1]}`);
+				}
+
 			});
 	}
 

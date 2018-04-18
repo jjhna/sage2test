@@ -147,12 +147,13 @@ let CodeSnippetInput = (function () {
 				.text(this._state.value);
 
 			parentNode.append("div")
-				// .style("float", "left")
 				.each(function () {
 					let div = d3.select(this);
 
 					div.append("span")
 						.attr("class", "minVal")
+						.style("display", "inline-block")
+						.style("transform", `translateY(-${ui.titleBarHeight / 3}px)`)
 						.text(_this._spec.range[0]);
 
 					// create custom "input" element
@@ -243,6 +244,9 @@ let CodeSnippetInput = (function () {
 
 					div.append("span")
 						.attr("class", "maxVal")
+						.style("display", "inline-block")
+						.style("transform", `translateY(-${ui.titleBarHeight / 3}px)`)
+						// .style("font-size", ui.titleBarHeight / 3 + "px")
 						.text(_this._spec.range[1]);
 				});
 		}
@@ -368,7 +372,7 @@ let CodeSnippetInput = (function () {
 					d3.select(this)
 						.append("span")
 						.style("display", "inline-block")
-						.style("transform", "translateY(-25%)")
+						.style("transform", `translateY(-${ui.titleBarHeight / 3}px)`)
 						.text(d);
 				});
 		}
@@ -407,7 +411,7 @@ let CodeSnippetInput = (function () {
 					d3.select(this)
 						.append("span")
 						.style("display", "inline-block")
-						.style("transform", "translateY(-25%)")
+						.style("transform", `translateY(-${ui.titleBarHeight / 3}px)`)
 						.text(d);
 				});
 		}
@@ -440,13 +444,15 @@ let CodeSnippetInput = (function () {
 			let input = parentNode.append("input")
 				.attr("class", "textInput")
 				.attr("type", "text")
-				.style("height", ui.titleBarHeight);
+				.style("height", ui.titleBarHeight + "px")
+				.style("font-size", 3 * ui.titleBarHeight / 4 + "px");
 
 			input.node().value = this._state.value;
 
 			parentNode.append("div")
 				.attr("class", "textInputGo")
-				// .text("Go")
+				.style("height", ui.titleBarHeight + "px")
+				.style("font-size", ui.titleBarHeight / 2 + "px")
 				.on("click", function () {
 					_this._state.value = input.node().value;
 					console.log("Text Input Submit");

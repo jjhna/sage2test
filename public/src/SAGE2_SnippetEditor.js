@@ -178,11 +178,9 @@ let SAGE2_SnippetEditor = (function () {
 
 
 			if (type === "draw") {
-				self.editor.setValue(`// function drawSnippet (data, svg) {
-	// write your code here:\n\tsvg = d3.select(svg);
-	
-	let width = +svg.attr("width"),
-		height = +svg.attr("height");
+				self.editor.setValue(`// function drawSnippet (data) {
+	// write your code here:\n\tlet { elem, width, height } = SAGE2.SnippetVisElement({ type: "svg" });
+		
 		
 //}`);
 			} else if (type === "gen") {

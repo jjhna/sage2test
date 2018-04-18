@@ -34,11 +34,12 @@ var SAGE2 = SAGE2 || {};
 			// create input element on app
 			let inputDiv = d3.select(link.getChild().inputs).append("div")
 				.attr("id", specification.name)
+				.style("font-size", ui.titleBarHeight * 0.5 + "px")
 				.attr("class", "snippetsInputDiv");
 
 			inputDiv.append("div")
 				.attr("class", "snippetsInputLabel")
-				.style("font-size", ui.titleBarHeight * 0.5 + "px")
+				// .style("font-size", ui.titleBarHeight * 0.5 + "px")
 				.style("margin-top", ui.titleBarHeight * 0.25 + "px")
 				.text(specification.name);
 

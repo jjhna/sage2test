@@ -417,24 +417,20 @@ body {
   content: "";
 	position: absolute;
 	visibility: hidden;
+	left: 9px;
+	top: 5px;
+	width: 5px;
+	height: 10px;
+	-webkit-transform: rotate(45deg);
+	-ms-transform: rotate(45deg);
+	transform: rotate(45deg);
 }
 
 /* Show the checkmark when checked */
 .snippetsInputDiv .checkboxInput.checked:after {
   border: solid white;
 	border-width: 0 3px 3px 0;
-	visibility: visible;
-}
-
-/* Style the checkmark/indicator */
-.snippetsInputDiv .checkboxInput:after {
-  left: 9px;
-  top: 5px;
-  width: 5px;
-  height: 10px;
-  -webkit-transform: rotate(45deg);
-  -ms-transform: rotate(45deg);
-  transform: rotate(45deg);
+	/* visibility: visible; */
 }
 
 .snippetsInputDiv .checkboxInput.checked {
@@ -474,7 +470,7 @@ body {
 .snippetsInputDiv .radioInput.selected:after {
   /* border: solid white;
 	border-width: 0 3px 3px 0; */
-	visibility: visible;
+	/* visibility: visible; */
 }
 
 .snippetsInputDiv .radioInput.selected {
@@ -493,8 +489,6 @@ body {
 
 .snippetsInputDiv .textInputGo {
 	position: relative;
-	width: 25px;
-	height: 25px;
 
 	border-radius: 5px;
 
@@ -514,23 +508,9 @@ body {
 .snippetsInputDiv .textInputGo:after {
 	content: "OK";
 	font-weight: bold;
-	font-size: 14px;
 
   display: inline-block;
-  margin-top: 4px;
-	/* position: absolute; */
-	
-  /* border: solid black; */
-	/* border-width: 0 3px 3px 0; */
-	/* visibility: visible;
-
-  left: 9px;
-  top: 5px; */
-  /* width: 5px; */
-  /* height: 10px; */
-  /* -webkit-transform: rotate(45deg); */
-  /* -ms-transform: rotate(45deg); */
-  /* transform: rotate(45deg); */
+	margin-top: 33%;
 }
 
 .snippetsInputDiv .rangeInput {
