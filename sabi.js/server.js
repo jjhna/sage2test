@@ -115,6 +115,8 @@ var scriptExecutionFunction		= require('./src/script').Script;
 var commandExecutionFunction	= require('./src/script').Command;
 var spawn = require('child_process').spawn;
 
+var currentSabiVersion = "20180419";
+
 // ---------------------------------------------
 //  Parse command line arguments
 // ---------------------------------------------
@@ -215,6 +217,10 @@ if (ConfigFile.indexOf("sage2") >= 0) {
 	if (!folderExists(sabiMediaCheck)) {
 		mkdirParent(sabiMediaCheck);
 	}
+
+	// Version check
+	var sabiVersionIsUpToDate = isSabiVersionCurrent();
+
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "config", "sage2.json");
 	if (!fileExists(sabiMediaCheck)) {
 		sabiMediaCopy = path.join("config", "sage2.json");
@@ -230,7 +236,7 @@ if (ConfigFile.indexOf("sage2") >= 0) {
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts", "s2_on_electron.bat");
-	if (!fileExists(sabiMediaCheck)) {
+	if (!sabiVersionIsUpToDate || !fileExists(sabiMediaCheck)) {
 		sabiMediaCopy = path.join("scripts", "s2_on_electron.bat");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
@@ -259,6 +265,31 @@ if (ConfigFile.indexOf("sage2") >= 0) {
 //
 // Some utility functions
 //
+
+/**
+ * Checks if sabi version file exists in SAGE2_Media
+ * If it does returns the contents which should be a date
+ *
+ * @method checkSabiVersion
+ * @return {String} null or date as yyyymmdd
+ */
+function isSabiVersionCurrent(dirPath) {
+	// Check if version file exists
+	var pathToSabiVersionFile = path.join(pathToSabiConfigFolder, "version");
+	var detectedVersion = null;
+	// If it doesn't exist write it
+	if (!fileExists(pathToSabiVersionFile)) {
+		fs.writeFileSync(pathToSabiVersionFile, currentSabiVersion);
+	} else {
+		detectedVersion = fs.readFileSync(pathToSabiVersionFile);
+	}
+
+	if (detectedVersion != currentSabiVersion) {
+		fs.writeFileSync(pathToSabiVersionFile, currentSabiVersion);
+		return false;
+	}
+	return true;
+}
 
 /**
  * Creates recursively a series of folders if needed (synchronous function and throws error)
@@ -1428,7 +1459,7 @@ function getLaunchParameters(isElectron) {
 	}
 
 	dataReturn.push(pathToElectronConfig);
-	dataReturn.push(cfg.index_port);
+	dataReturn.push(cfg.port);
 
 	// electron bat is designed to get full resolution since it assumes only 1 electorn window.
 	if (isElectron != undefined && isElectron == "electron") {

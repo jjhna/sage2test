@@ -22,9 +22,9 @@ rem delay about 2 seconds
 ping localhost -n 3
 
 rem audio manager
-start "Electron" /MIN electron.bat -s http://%6:%2 -a --hash %5
+start "Electron" /MIN electron.bat -s https://%6:%2 -a --hash %5
 rem delay about 2 seconds
 ping localhost -n 2
 
 rem display
-start "Electron" /MIN electron.bat -s http://%6:%2 -d 0 -n -x 0 -y 0 --width %3 --height %4 --hash %5
+start "Electron" /MIN electron.bat -s https://%6:%2 -d 0 -n -x 0 -y 0 --width %3 --height %4 --hash %5
