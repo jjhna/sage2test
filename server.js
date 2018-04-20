@@ -154,6 +154,7 @@ program = commander
 	.option('-s, --session [name]',       'Load a session file (last session if omitted)')
 	.option('-t, --track-users [file]',   'enable user interaction tracking (specified file indicates users to track)')
 	.option('-p, --password <password>',  'Sets the password to connect to SAGE2 session')
+	.option('--no-monitoring',			  'Disables performance monitoring')
 	.parse(process.argv);
 
 // Logging or not
@@ -300,6 +301,9 @@ function initializeSage2Server() {
 	performanceManager = new PerformanceManager();
 	performanceManager.initializeConfiguration(config);
 	performanceManager.wrapDataTransferFunctions(WebsocketIO);
+	if (program.monitoring === false) {
+		performanceManager.setSamplingInterval('never');
+	}
 	imageMagick = gm.subClass(imageMagickOptions);
 	assets.initializeConfiguration(config);
 	assets.setupBinaries(imageMagickOptions, ffmpegOptions);
