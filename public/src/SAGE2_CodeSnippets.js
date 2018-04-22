@@ -754,8 +754,6 @@ let SAGE2_CodeSnippets = (function() {
 		// helper method
 		function createSubtree(link) {
 			let inputs = {};
-			
-			console.log(link);
 
 			for (let input of Object.keys(link.inputs)) {
 				inputs[input] = {
@@ -763,8 +761,6 @@ let SAGE2_CodeSnippets = (function() {
 					state: link.inputs[input].state
 				};
 			}
-
-			console.log(inputs);
 
 			return {
 				snippetID: link.getSnippetID(),

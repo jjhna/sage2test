@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global ace displayUI wsio */
+/* global ace displayUI wsio SAGE2_SnippetExporter */
 
 let SAGE2_SnippetEditor = (function () {
 	return function (targetID) {
