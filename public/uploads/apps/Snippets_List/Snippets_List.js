@@ -159,8 +159,6 @@ var Snippets_List = SAGE2_App.extend({
 						.style("stroke-linecap", "round")
 						.style("stroke", d => d.color);
 
-					console.log(blockHeight);
-
 					group.append("text")
 						.attr("class", "snippetName")
 						.attr("x", colWidth / 2)

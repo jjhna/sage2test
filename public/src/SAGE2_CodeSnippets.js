@@ -216,17 +216,6 @@ let SAGE2_CodeSnippets = (function() {
 	}
 
 	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src, state) {
-		// replace special syntax pieces using RegExp
-		// let inputs = {};
-
-		let inputsRegex = new SnippetsInputRegExp(/SAGE2.SnippetInput\(({[\w,\W]*?})\)/, "gm");
-		let visElemRegex = new SnippetsVisElementRegExp(/SAGE2.SnippetVisElement\(({[\w,\W]*?})\)/, "gm");
-		let timeoutRegex = new SnippetsTimeoutRegExp(/SAGE2.SnippetTimeout\(({[\w,\W]*?})\)/, "gm");
-
-		// "compile" code and replace/extract special syntax values
-		let codeCompile_1 = code.replace(inputsRegex);
-		let codeCompile_2 = codeCompile_1.replace(timeoutRegex);
-		let codeComile_final = codeCompile_2.replace(visElemRegex);
 
 		let startBlock = `(function() {
 			console.log('Sandbox script Loading');
@@ -272,25 +261,36 @@ let SAGE2_CodeSnippets = (function() {
 
 		})();`;
 
-		return startBlock + createFunctionBlock(type, codeComile_final) + endBlock;
+		return startBlock + createFunctionBlock(type, code) + endBlock;
 		// return startBlock + createFunctionBlock(type, code) + endBlock;
 	}
 
 	function createFunctionBlock(type, code) {
+		// replace special syntax pieces using RegExp
+
+		let inputsRegex = new SnippetsInputRegExp(/SAGE2.SnippetInput\(({[\w,\W]*?})\)/, "gm");
+		let visElemRegex = new SnippetsVisElementRegExp(/SAGE2.SnippetVisElement\(({[\w,\W]*?})\)/, "gm");
+		let timeoutRegex = new SnippetsTimeoutRegExp(/SAGE2.SnippetTimeout\(({[\w,\W]*?})\)/, "gm");
+
+		// "compile" code and replace/extract special syntax values
+		let codeCompile_1 = code.replace(inputsRegex);
+		let codeCompile_2 = codeCompile_1.replace(timeoutRegex);
+		let codeCompile_final = codeCompile_2.replace(visElemRegex);
+
 		let functionBlocks = {
 			data: `(function (data, link) {
 				/* USER DEFINED CODE */
 				// Code written by user will be inserted here
 				
-				${code}
+				${codeCompile_final}
 
 				/* END USER DEFINED CODE*/
 			})`,
-			draw: `(function (data, svg, link) {
+			draw: `(function (data, link) {
 				/* USER DEFINED CODE */
 				// Code written by user will be inserted here
 
-				${code}
+				${codeCompile_final}
 				
 				/* END USER DEFINED CODE*/
 		
@@ -301,7 +301,7 @@ let SAGE2_CodeSnippets = (function() {
 					/* USER DEFINED CODE */
 					// Code written by user will be inserted here
 
-					${code}
+					${codeCompile_final}
 
 				});
 				/* END USER DEFINED CODE*/
@@ -753,9 +753,23 @@ let SAGE2_CodeSnippets = (function() {
 
 		// helper method
 		function createSubtree(link) {
+			let inputs = {};
+			
+			console.log(link);
+
+			for (let input of Object.keys(link.inputs)) {
+				inputs[input] = {
+					drawn: false,
+					state: link.inputs[input].state
+				};
+			}
+
+			console.log(inputs);
+
 			return {
 				snippetID: link.getSnippetID(),
-				children: link.getChild().childLinks.map(createSubtree)
+				children: link.getChild().childLinks.map(createSubtree),
+				inputs
 			};
 		}
 	}
@@ -827,7 +841,7 @@ let SAGE2_CodeSnippets = (function() {
 				} else if (curator.functions[id].type === "draw" && p) {
 					// call function (plots data on svg)
 					try {
-						curator.functions[id].code.call(c, p.getDataset(), c.getElement(), publicObject);
+						curator.functions[id].code.call(c, p.getDataset(), publicObject);
 					} catch (err) {
 						c.displayError(err);
 					}

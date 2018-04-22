@@ -96,11 +96,11 @@ var SAGE2 = SAGE2 || {};
 			if (type === "svg") {
 				d3.select(this)
 					.attr("width", elementWidth)
-					.attr("height", app.sage2_height - (ui.titleBarHeight * 2));
+					.attr("height", app.sage2_height - (ui.titleBarHeight * 1.5));
 			} else {
 				d3.select(this)
 					.style("width", (elementWidth) + "px")
-					.style("height", (app.sage2_height - (ui.titleBarHeight * 2)) + "px");
+					.style("height", (app.sage2_height - (ui.titleBarHeight * 1.5)) + "px");
 			}
 		});
 
