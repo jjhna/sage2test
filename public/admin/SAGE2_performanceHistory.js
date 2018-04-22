@@ -19,7 +19,7 @@
  */
 
 /*global SAGE2_init: true, d3: true, drawDisplaySMMinimal: true, showDisplayClientsHistory: true,
-  setupLineChart: true, charts: true, makeSvg: true, Slider: true */
+  setupLineChart: true, charts: true, makeSvg: true, SAGE2_d3_TimelineSlider: true */
 
 
 /**
