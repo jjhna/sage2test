@@ -107,7 +107,7 @@ var SAGE2 = SAGE2 || {};
 		return {
 			elem: app.snippetsVisElement,
 			width: elementWidth,
-			height: app.sage2_height - ui.titleBarHeight * 2
+			height: app.sage2_height - ui.titleBarHeight * 1.5
 		};
 	};
 
