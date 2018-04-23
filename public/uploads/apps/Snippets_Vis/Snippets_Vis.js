@@ -176,10 +176,12 @@ var Snippets_Vis = SAGE2_App.extend({
 
     // update ancestor list size
     this.ancestry.attr("width", this.sage2_width);
+		this.createAncestorList();
 
 		if (this.parentLink) {
 			this.parentLink.update(); // redraw
 		}
+
 	},
 
 	move: function(date) {

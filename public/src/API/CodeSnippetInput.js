@@ -196,6 +196,8 @@ let CodeSnippetInput = (function () {
 
 									_this._state.value = value;
 									_this._onUpdate();
+
+									label.text(value);
 								}
 							});
 
@@ -212,6 +214,8 @@ let CodeSnippetInput = (function () {
 
 									_this._state.value = value;
 									_this._onUpdate();
+
+									label.text(value);
 								}
 							});
 

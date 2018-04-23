@@ -498,7 +498,6 @@ let SAGE2_CodeSnippets = (function() {
 
 		// create input settings button/image if it doesn't exist
 		if (Object.keys(app.parentLink.inputs).length && !svg.selectAll(".inputSettingsButton").size()) {
-			// console.log(svg.selectAll(".inputSettingsButton"), svg.selectAll(".inputSettingsButton").size());
 
 			svg.append("rect")
 				.attr("class", "inputSettingsButton")

@@ -1,7 +1,180 @@
 let SAGE2_SnippetExporter = (function() {
+	// fetch the same CodeSnippetInput script used in display (for consisentency)
+	let snippetInputsCode;
+	let getSnippetsInputCode = new XMLHttpRequest();
+	getSnippetsInputCode.onload = function() {
+		snippetInputsCode = getSnippetsInputCode.responseText;
+	};
+	getSnippetsInputCode.open("GET", "./src/API/CodeSnippetInput.js");
+	getSnippetsInputCode.send();
+
+	let inputStyles = `
+		.snippetsInputDiv {
+			padding: 5px;
+			font-family: monospace;
+		}
+
+		.snippetsInputLabel {
+			min-width: 75px;
+			margin: 6px 0;
+
+			font-weight: bold;
+		}
+
+		.snippetsInputDiv .checkboxInput {
+			border: 2px solid black;
+			background: gray;
+			display: inline-block;
+			position: relative;
+			margin-left: 10px;
+			border-radius: 3px;
+		}
+
+
+		.snippetsInputDiv .checkboxInput.hovered {
+			background: #a6d854;
+		}
+
+		/* Create the checkmark/indicator (hidden when not checked) */
+		.snippetsInputDiv .checkboxInput:after {
+			content: "";
+			position: absolute;
+			visibility: hidden;
+			left: 9px;
+			top: 5px;
+			width: 5px;
+			height: 10px;
+			-webkit-transform: rotate(45deg);
+			-ms-transform: rotate(45deg);
+			transform: rotate(45deg);
+		}
+
+		/* Show the checkmark when checked */
+		.snippetsInputDiv .checkboxInput.checked:after {
+			border: solid white;
+			border-width: 0 3px 3px 0;
+			/* visibility: visible; */
+		}
+
+		.snippetsInputDiv .checkboxInput.checked {
+			border: 2px solid black;
+			background: #66a61e;
+		}
+
+		/* Snippets Radio Button */
+		/* ===================== */
+		.snippetsInputDiv .radioInput {
+			border: 2px solid black;
+			background: gray;
+			display: inline-block;
+			position: relative;
+			margin: 0 10px;
+			border-radius: 50%;
+		}
+
+		.snippetsInputDiv .radioInput.hovered {
+			background: #66c2a5;
+		}
+
+		/* Create the dot/indicator (hidden when not checked) */
+		.snippetsInputDiv .radioInput:after {
+			content: "";
+			position: absolute;
+			visibility: hidden;
+			top: 9px;
+			left: 9px;
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: white;
+		}
+
+		/* Show the dot when checked */
+		.snippetsInputDiv .radioInput.selected:after {
+			/* border: solid white;
+			border-width: 0 3px 3px 0; */
+			/* visibility: visible; */
+		}
+
+		.snippetsInputDiv .radioInput.selected {
+			border: 2px solid black;
+			background: #1b9e77;
+		}
+
+		.snippetsInputDiv .textInput {
+			width: 200px;
+			height: 24px;
+			font-size: 16px;
+			
+			margin-right: 10px;
+			float: left;
+		}
+
+		.snippetsInputDiv .textInputGo {
+			position: relative;
+
+			border-radius: 5px;
+
+			border: 1.25px solid rgba(0, 0, 0, 0.5);
+			background: #e6f5c9;
+
+			display: inline-block;
+			text-align: center;
+
+			font-family: Arimo, Helvetica, sans-serif;
+		}
+
+		.snippetsInputDiv .textInputGo.hovered {
+			background: #ccebc5;
+		}
+
+		.snippetsInputDiv .textInputGo:after {
+			content: "OK";
+			font-weight: bold;
+
+			display: inline-block;
+			margin-top: 33%;
+		}
+
+		.snippetsInputDiv .rangeInput {
+			display: inline-block;
+			width: 185px;
+
+			position: relative;
+
+			border: 2px solid black;
+			background: gray;
+			margin: 0 5px;
+			border-radius: 3px;
+			/* box-shadow: inset 0 0 10px 2px rgba(0,0,0,0.5) */
+		}
+
+		.snippetsInputDiv .rangeInput .rangeInputHandle {
+			background: white;
+			width: 10px;
+			border-radius: 3px;
+			position: absolute;
+
+			border: 1px solid black;
+			margin-top: -0.5px;
+
+			box-shadow: inset 0 0 2px 1.25px rgba(0, 0, 0, 0.75);
+			pointer-events: none;
+		}
+
+		.snippetsInputDiv .rangeInput .rangeInputOverlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+		}
+	`.replace(/\t\t/gi, "");
+
 	let snippetScriptAPI = `
 		// get a reference to a globally defined SAGE2 Object
 		var SAGE2 = SAGE2 || {};
+		let ui = {
+			titleBarHeight: 20
+		};
 
 		// IIFE to instantiate SAGE2 snippets API calls
 		(function() {
@@ -14,33 +187,50 @@ let SAGE2_SnippetExporter = (function() {
 			*
 			*/
 			SAGE2.SnippetInput = function(specification, link) {
-				// if (!link.inputs[specification.name].drawn) {
-				//   // create new input element if this doesn't exist
-				//   let newInput = CodeSnippetInput.create(specification);
-				//   newInput.onUpdate = link.update;
+				let { type } = functions[link.snippetID];
 
-				//   link.inputs[specification.name] = newInput;
+				if (!link.snippetElement) {
+					createSnippetElement(link);
+				}
 
-				//   // create input element on app
-				//   let inputDiv = d3.select(link.getChild().inputs).append("div")
-				//     .attr("id", specification.name)
-				//     .style("font-size", ui.titleBarHeight * 0.5 + "px")
-				//     .attr("class", "snippetsInputDiv");
+				if (!link.snippetsInputWrapper) {
+					link.snippetsInputWrapper = link.snippetElement.append("div")
+						.style("display", "inline-block")
+						.style("width", "250px")
+						.style("margin", "10px")
+						.node();
+				}
 
-				//   inputDiv.append("div")
-				//     .attr("class", "snippetsInputLabel")
-				//     // .style("font-size", ui.titleBarHeight * 0.5 + "px")
-				//     .style("margin-top", ui.titleBarHeight * 0.25 + "px")
-				//     .text(specification.name);
+				if (!link.inputs[specification.name].drawn) {
+					// create new input element if this doesn't exist
+					let newInput = CodeSnippetInput.create(specification);
+					newInput.onUpdate = function() {
+						runFunction[type](link.data, link, link.ancestry);
+					}
 
-				//   inputDiv
-				//     .each(function() {
-				//       // create the input element based on the Element's specification
-				//       link.inputs[specification.name].createInputElement(d3.select(this));
-				//     });
-				// }
+					link.inputs[specification.name] = newInput;
 
-				// simply return saved value for now
+					// create input element on app
+					let inputDiv = d3.select(link.snippetsInputWrapper).append("div")
+						.attr("id", specification.name)
+						.style("font-size", ui.titleBarHeight * 0.5 + "px")
+						.attr("class", "snippetsInputDiv");
+
+					inputDiv.append("div")
+						.attr("class", "snippetsInputLabel")
+						.style("margin-top", ui.titleBarHeight * 0.25 + "px")
+						.text(specification.name);
+
+					inputDiv
+						.each(function() {
+							// create the input element based on the Element's specification
+							link.inputs[specification.name].createInputElement(d3.select(this));
+						});
+					
+					link.inputs[specification.name].drawn = true;
+				}
+
+				// return state value
 				return link.inputs[specification.name].state;
 			};
 
@@ -51,11 +241,15 @@ let SAGE2_SnippetExporter = (function() {
 			*
 			*/
 			SAGE2.SnippetVisElement = function(specification, link) {
-				let {type} = specification;
+				let { type } = specification;
 
 				if (link.snippetVisElement && link.snippetsVisElement.tagName !== type) {
 					link.snippetsVisElement.remove();
 					delete link.snippetsVisElement;
+				}
+
+				if (!link.snippetElement) {
+					createSnippetElement(link);
 				}
 
 				// set size to leave space for the inputs
@@ -64,28 +258,9 @@ let SAGE2_SnippetExporter = (function() {
 				// if the app doesn't have a vis element, create one
 				if (!link.snippetsVisElement) {
 					// add svg and supplementary info
-					let funcOrder = link.ancestry.concat(link.snippetID).map(f => functions[f].desc);
 
-					let div = d3.select("body").append("div")
+					link.snippetsVisElement = link.snippetElement.append(type)
 						.style("display", "inline-block")
-						.style("padding", "5px")
-						.style("margin", "8px")
-						// .style("border", "2px solid gray")
-						.style("border-radius", "5px")
-						.style("box-shadow", "0 0 10px 2px gray")
-						.style("background", "lightgray");
-
-					div.append("div")
-						.style("text-align", "center")
-						.style("font-family", "'Lucida Console', Monaco, monospace")
-						.style("font-weight", "bold")
-						.style("padding", "8px")
-						.style("border-radius", "3px")
-						.style("background-color", "white")
-						.style("box-shadow", "inset 0 0 5px 1px gray")
-						.html(funcOrder.join(" &#9656; "));
-
-					link.snippetsVisElement = div.append(type)
 						.style("margin", "10px")
 						.node();
 				}
@@ -132,7 +307,30 @@ let SAGE2_SnippetExporter = (function() {
 				}, time);
 			};
 
-			console.log(SAGE2);
+			function createSnippetElement(link) {
+				let funcOrder = link.ancestry.concat(link.snippetID).map(f => functions[f].desc);
+
+				console.log("createSnippetElement", link);
+				let div = d3.select("body").append("div")
+					.style("display", "inline-block")
+					.style("padding", "5px")
+					.style("margin", "8px")
+					.style("border-radius", "5px")
+					.style("box-shadow", "0 0 10px 2px gray")
+					.style("background", "lightgray");
+
+				div.append("div")
+					.style("text-align", "center")
+					.style("font-family", "'Lucida Console', Monaco, monospace")
+					.style("font-weight", "bold")
+					.style("padding", "8px")
+					.style("border-radius", "3px")
+					.style("background-color", "white")
+					.style("box-shadow", "inset 0 0 5px 1px gray")
+					.html(funcOrder.join(" &#9656; "));
+
+				link.snippetElement = div;
+			}
 		}());
 	`.replace(/\t\t/gi, "");
 
@@ -143,6 +341,11 @@ let SAGE2_SnippetExporter = (function() {
 		let newWindow = window.open();
 		let newDocument = newWindow.document;
 
+		// add necessary css for input elements
+		var inputCSS = document.createElement("style");
+		inputCSS.innerHTML = inputStyles;
+		newDocument.head.appendChild(inputCSS);
+
 		let scripts = {
 			gen: newDocument.createElement("script"),
 			data: newDocument.createElement("script"),
@@ -151,6 +354,7 @@ let SAGE2_SnippetExporter = (function() {
 
 		let mainScript = newDocument.createElement("script");
 		let utilScript = newDocument.createElement("script");
+		let inputScript = newDocument.createElement("script");
 		let downloadScript = newDocument.createElement("script");
 
 		for (let type of Object.keys(scripts)) {
@@ -166,11 +370,17 @@ let SAGE2_SnippetExporter = (function() {
 		mainScript.id = "codeSnippets-main";
 		mainScript.async = false;
 
+		inputScript.text = snippetInputsCode;
+		inputScript.id = "codeSnippets-input";
+		inputScript.async = false;
+
 		utilScript.text = snippetScriptAPI;
 		utilScript.id = "codeSnippets-util";
 		utilScript.async = false;
 
 		downloadScript.text = createDownloadScriptText();
+		downloadScript.id = "codeSnippets-download";
+		downloadScript.async = false;
 
 		// add d3 to new page
 		let d3Script = newDocument.createElement("script");
@@ -205,8 +415,12 @@ let SAGE2_SnippetExporter = (function() {
 			newDocument.head.appendChild(scripts.data);
 			newDocument.head.appendChild(scripts.draw);
 
+			newDocument.head.appendChild(inputScript);
 			newDocument.head.appendChild(utilScript);
 			newDocument.head.appendChild(mainScript);
+
+			// run the program once the new scripts are all added
+			newWindow.run();
 		};
 
 		// ======================================================
@@ -232,6 +446,7 @@ let SAGE2_SnippetExporter = (function() {
 		function createMainScriptText(links) {
 			return `
 				var functions = functions || {};
+
 				let linkForest;
 				console.log(document.currentScript.id, "Loaded");
 
@@ -272,9 +487,11 @@ let SAGE2_SnippetExporter = (function() {
 				function init() {
 					linkForest = ${JSON.stringify(links)};
 
+					console.log(linkForest);
+
 					console.log("Init Done", functions);
 					console.log("Links", linkForest);
-					run();
+
 				}
 
 				function invokeChildFunctions(data, children, prevFunctions) {
@@ -282,6 +499,7 @@ let SAGE2_SnippetExporter = (function() {
 					for (let child of children) {
 						let { type } = functions[child.snippetID];
 
+						console.log("Run", child.snippetID);
 						runFunction[type](data, child, prevFunctions);
 					}
 				}
@@ -291,6 +509,9 @@ let SAGE2_SnippetExporter = (function() {
 					// for each root, invoke the function
 					for (let root of linkForest) {
 						let { type } = functions[root.snippetID];
+						root.ancestry = [];
+
+						console.log("Run", root.snippetID);
 
 						runFunction[type](null, root);
 					}
@@ -325,7 +546,7 @@ let SAGE2_SnippetExporter = (function() {
 					let domCopy = document.documentElement.cloneNode(true);
 					let body = domCopy.getElementsByTagName("body")[0];
 					body.innerHTML = "";
-					body.onload = "run";
+					body.setAttribute("onload", "run()");
 
 					var element = document.createElement('a');
 					element.setAttribute('href', 'data:text/html;charset=utf-8,' 
