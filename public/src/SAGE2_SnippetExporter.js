@@ -196,7 +196,7 @@ let SAGE2_SnippetExporter = (function() {
 				if (!link.snippetsInputWrapper) {
 					link.snippetsInputWrapper = link.snippetElement.append("div")
 						.style("display", "inline-block")
-						.style("width", "250px")
+						.style("width", "275px")
 						.style("margin", "10px")
 						.node();
 				}
@@ -261,6 +261,8 @@ let SAGE2_SnippetExporter = (function() {
 
 					link.snippetsVisElement = link.snippetElement.append(type)
 						.style("display", "inline-block")
+						.style("background", "white")
+						.style("overflow", "hidden")
 						.style("margin", "10px")
 						.node();
 				}
