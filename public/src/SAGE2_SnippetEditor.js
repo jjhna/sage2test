@@ -37,7 +37,11 @@ let SAGE2_SnippetEditor = (function () {
 
 		init();
 
-		// setup editor, loadscript, newscript controls
+		/**
+		 * Sets up editor, loadscript, newscript controls
+		 *
+		 * @method init
+		 */
 		function init() {
 			// get overall wrapper div
 			self.div = document.getElementById(targetID);
@@ -74,8 +78,6 @@ let SAGE2_SnippetEditor = (function () {
 			self.saveButton.onclick = saveScript;
 
 			self.descInput = self.div.querySelector("#snippetDescription");
-			// self.descInput.text = "New Snippet";
-			console.log(self.descInput.value);
 
 			// bind new script type buttons
 			self.div.querySelector("#newSnippetGen").onclick = function () {
@@ -108,6 +110,7 @@ let SAGE2_SnippetEditor = (function () {
 			startNewScript("gen");
 		}
 
+		// handles editor visibility
 		function openEditor() {
 			self.div.classList.add("open");
 		}
@@ -116,12 +119,22 @@ let SAGE2_SnippetEditor = (function () {
 			self.div.classList.remove("open");
 		}
 
+		/**
+		 * Handles unloading a script when the close button is clicked
+		 *
+		 * @method closeScript
+		 */
 		function closeScript() {
 			unloadScript();
 			startNewScript(self.loadedSnippetType);
 			hideEditor();
 		}
 
+		/**
+		 * Sends snippet information to the display client to be reloaded and updated
+		 *
+		 * @method saveScript
+		 */
 		function saveScript() {
 			// save script into current file, or create new file if one does not exist (new)
 
@@ -133,6 +146,11 @@ let SAGE2_SnippetEditor = (function () {
 			});
 		}
 
+		/**
+		 * Requests a copy be made of the selected snippet
+		 *
+		 * @method saveCopy
+		 */
 		function saveCopy() {
 			// if -> script !== new, clone that script with any current changes in new file
 			// then open new file in editor (will be sent through wsio)
@@ -146,6 +164,11 @@ let SAGE2_SnippetEditor = (function () {
 			});
 		}
 
+		/**
+		 * Releases control of a loaded snippet so other users may edit it
+		 *
+		 * @method unloadScript
+		 */
 		function unloadScript() {
 			console.log("Unload script -- unlock for others to edit:", self.loadedSnippet);
 
@@ -156,6 +179,11 @@ let SAGE2_SnippetEditor = (function () {
 			}
 		}
 
+		/**
+		 * Requests the snippet load based on the script selector and handles unload of current snippet
+		 *
+		 * @method loadScript
+		 */
 		function loadScript() {
 
 			console.log("Load script:", self.scriptSelect.value);
@@ -174,6 +202,12 @@ let SAGE2_SnippetEditor = (function () {
 			self.loadButton.classList.add("disabled");
 		}
 
+		/**
+		 * Loads the starter code for each script type into the editor
+		 *
+		 * @method startNewScript
+		 * @param {String} type - gen, data, or draw snippet type
+		 */
 		function startNewScript(type) {
 
 
@@ -199,7 +233,6 @@ let SAGE2_SnippetEditor = (function () {
 //}`);
 			}
 
-
 			self.editor.setReadOnly(false);
 			self.editor.clearSelection();
 
@@ -215,10 +248,14 @@ let SAGE2_SnippetEditor = (function () {
 			self.descInput.value = '';
 		}
 
+		/**
+		 * Updates the disabled states for the load button based on the selected snippet
+		 *
+		 * @method scriptSelectorChanged
+		 */
 		function scriptSelectorChanged() {
 			let option = self.scriptSelect.options[self.scriptSelect.selectedIndex];
 
-			// *** you can always load a script, but it won't necessarily be editable (?)
 			let canLoad = option.value !== self.loadedSnippet;
 
 			if (canLoad) {
@@ -228,6 +265,12 @@ let SAGE2_SnippetEditor = (function () {
 			}
 		}
 
+		/**
+		 * Updates selector with the existing snippets and their states
+		 *
+		 * @method updateSnippetStates
+		 * @param {Object} scriptStates - The loaded snippet information, based on name, type, editors, etc.
+		 */
 		function updateSnippetStates(scriptStates) {
 			console.log("scriptStates updated", scriptStates);
 
@@ -260,6 +303,12 @@ let SAGE2_SnippetEditor = (function () {
 			}
 		}
 
+		/**
+		 * Handles receiving a requested snippet and populating the editor
+		 *
+		 * @method receiveLoadedSnippet
+		 * @param {Object} data - The snippet text, id, and type information
+		 */
 		function receiveLoadedSnippet(data) {
 
 			self.editor.setValue(data.text);
@@ -271,6 +320,11 @@ let SAGE2_SnippetEditor = (function () {
 			self.loadedSnippetType = data.type;
 		}
 
+		/**
+		 * Releases control of a snippet for when the page is navigated away from
+		 *
+		 * @method browserClose
+		 */
 		function browserClose() {
 			if (self.loadedSnippet !== "new") {
 				unloadScript();
@@ -281,6 +335,12 @@ let SAGE2_SnippetEditor = (function () {
 			wsio.emit("editorRequestSnippetsExport");
 		}
 
+		/**
+		 * Passes project export information into the SnippetExporter for download
+		 *
+		 * @method receiveProjectExport
+		 * @param {Object} data - The project export information (functions and links)
+		 */
 		function receiveProjectExport(data) {
 			console.log("Editor receive Project Export", data);
 

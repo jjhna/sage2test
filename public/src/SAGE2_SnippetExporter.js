@@ -1,4 +1,5 @@
 "use strict";
+
 /**
  * A tool which exposes export functionality required to make SAGE2 Code Snippets
  * running on the wall into a portable html file.
@@ -323,7 +324,7 @@ let SAGE2_SnippetExporter = (function() {
 	/**
 	 * Function to create the new window and populate it with the snippets from the wall,
 	 * as well as inject all necessary css for the layout and js for the runtime.
-	 * 
+	 *
 	 * @method createTypedScriptText
 	 * @param {Object} functions - the information about the functions (id, type, desc, code)
 	 * @param {Object} links - the runtime associations of the functions being exported
@@ -429,7 +430,7 @@ let SAGE2_SnippetExporter = (function() {
 		/**
 		 * Function to create script contents for subsets of functions.
 		 * This is used to separate by snippet type.
-		 * 
+		 *
 		 * @method createTypedScriptText
 		 * @param {Object} functions - the information about the functions (id, type, desc, code)
 		 */
@@ -454,7 +455,7 @@ let SAGE2_SnippetExporter = (function() {
 		/**
 		 * Function to create the "main" script, which takes the snippet associations and initializes
 		 * the tool, as well as handles running the code in the right order.
-		 * 
+		 *
 		 * @method createMainScriptText
 		 * @param {Object} links - assocations between snippets (call hierarchy).
 		 */
@@ -541,7 +542,7 @@ let SAGE2_SnippetExporter = (function() {
 		/**
 		 * Function to create the download button script (creates the download button to handle download)
 		 * which will remove itself before file download.
-		 * 
+		 *
 		 * @method createDownloadScriptText
 		 */
 		function createDownloadScriptText() {

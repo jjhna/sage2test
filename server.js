@@ -11143,7 +11143,7 @@ function wsSnippetSaveIntoServer(wsio, data) {
 /* ===== Code Snippets Messages from WebUI ====== */
 /**
  * Pass-through function to bounce a load request to the display client
- * 
+ *
  * @method wsEditorSnippetLoadRequest
  * @param {Object} wsio - ws to originator.
  * @param {Object} data - the requested snippet information.
@@ -11156,7 +11156,7 @@ function wsEditorSnippetLoadRequest(wsio, data) {
 
 /**
  * Pass-through function to bounce a close notification to the display client
- * 
+ *
  * @method wsEditorSnippetCloseNotify
  * @param {Object} wsio - ws to originator.
  * @param {Object} data - the requested snippet information.
@@ -11168,7 +11168,7 @@ function wsEditorSnippetCloseNotify(wsio, data) {
 
 /**
  * Pass-through function to bounce a snippet save action to the display client
- * 
+ *
  * @method wsEditorSaveSnippet
  * @param {Object} wsio - ws to originator.
  * @param {Object} data - the requested snippet information.
@@ -11182,7 +11182,7 @@ function wsEditorSaveSnippet(wsio, data) {
 
 /**
  * Pass-through function to bounce a snippet clone request to the display client
- * 
+ *
  * @method wsEditorCloneSnippet
  * @param {Object} wsio - ws to originator.
  * @param {Object} data - the requested snippet information.
@@ -11196,7 +11196,7 @@ function wsEditorCloneSnippet(wsio, data) {
 
 /**
  * Pass-through function to bounce a package/export request to the display client
- * 
+ *
  * @method wsEditorRequestSnippetsExport
  * @param {Object} wsio - ws to originator.
  */
@@ -11208,7 +11208,7 @@ function wsEditorRequestSnippetsExport(wsio) {
 /* ===== Code Snippets Messages from Display ===== */
 /**
  * Pass-through function to bounce the new snippet list to the WebUI
- * 
+ *
  * @method wsSnippetsStateUpdated
  * @param {Object} wsio - ws to originator.
  * @param {Object} data - the snippet list information.
@@ -11221,13 +11221,12 @@ function wsSnippetsStateUpdated(wsio, data) {
 
 /**
  * Pass-through function to bounce a completed snippet load request back to the WebUI
- * 
+ *
  * @method wsSnippetSendCodeOnLoad
  * @param {Object} wsio - ws to originator.
  * @param {Object} data - the requested snippet information, along with the destination.
  */
 function wsSnippetSendCodeOnLoad(wsio, data) {
-	// console.log("SnippetSendCodeOnLoad", data);
 
 	let ind = clients.findIndex(c => c.id === data.to);
 
@@ -11238,7 +11237,7 @@ function wsSnippetSendCodeOnLoad(wsio, data) {
 
 /**
  * Pass-through function to bounce a completed snippet export request back to the WebUI
- * 
+ *
  * @method wsSnippetsSendProjectExport
  * @param {Object} wsio - ws to originator.
  * @param {Object} data - the requested export information, along with the destination.
