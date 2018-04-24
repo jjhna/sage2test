@@ -34,6 +34,11 @@ let SAGE2_CodeSnippets = (function() {
 
 	init();
 
+	/**
+	 * Initializer function for the SAGE2_CodeSnippets runtime
+	 * 
+	 * @method init
+	 */
 	function init() {
 		console.log("SAGE2_CodeSnippets initialized");
 
@@ -55,10 +60,21 @@ let SAGE2_CodeSnippets = (function() {
 		// open app for snippets?
 	}
 
+	/**
+	 * Gets a new, unique snippet ID.
+	 * 
+	 * @method getNewFunctionID
+	 */
 	function getNewFunctionID() {
 		return "codeSnippet-" + self.functionCount++;
 	}
 
+	/**
+	 * Aggregates the information necessary for the WebUI to correctly populate its
+	 * SnippetEditor interface with information.
+	 * 
+	 * @method getFunctionInfo
+	 */
 	function getFunctionInfo() {
 		let functionInfo = {};
 
@@ -82,30 +98,18 @@ let SAGE2_CodeSnippets = (function() {
 		return functionInfo;
 	}
 
+	/**
+	 * Updates the definition of a function when a user saves a snippet.
+	 * 
+	 * Note: This is called from WITHIN the dynamically loaded snippet file.
+	 * 
+	 * @method updateFunctionDefinition
+	 * @param {String} id - the id of the snippet
+	 * @param {Object} definition - the new definition of the function
+	 */
 	function updateFunctionDefinition(id, definition) {
 		// update the saved function definition
 		let func = self.functions[id] = definition;
-
-		// default values for different types of inputs (limited for now)
-		// let stateDefaults = {
-		// 	range: 0,
-		// 	text: "",
-		// 	checkbox: true
-		// };
-
-		// // initialize state values based on input types
-		// for (let input of Object.keys(func.inputs)) {
-		// 	if (!func.state[input]) {
-		// 		func.state[input] = stateDefaults[func.inputs[input].type];
-		// 	}
-		// }
-
-		// // bind the state values as 'this' for function call
-		// // -- this matches the replaced strings in code
-		// func.code = func.code.bind({
-		// 	inputs: func.state
-		// });
-
 
 		// update links which use this function
 		if (func.links) {
@@ -146,6 +150,17 @@ let SAGE2_CodeSnippets = (function() {
 
 	}
 
+	/**
+	 * This function is used to save a new/edited code snippet, recreating the snippet body
+	 * and reloading it into the display client.
+	 * 
+	 * @method saveSnippet
+	 * @param {String} uniqueID - SAGE uniqueID of user who is saving the snippet
+	 * @param {String} code - the code (as a string)
+	 * @param {String} desc - the snippet description (i.e. name)
+	 * @param {String} type - the snippet type (gen, data, draw)
+	 * @param {String} scriptID - the unique snippet id (codeSnippet-2)
+	 */
 	function saveSnippet(uniqueID, code, desc, type, scriptID) {
 		var script = document.createElement("script");
 
@@ -168,13 +183,13 @@ let SAGE2_CodeSnippets = (function() {
 			}
 		}
 
+		// create new script
 		script.text = createScriptBody(uniqueID, code, desc, links, scriptID, type, src, state);
-
 		script.charset = "utf-8";
-
-		console.log("Appending script text");
+		script.id = scriptID;
 		document.body.appendChild(script);
 
+		// open a snippet list if it isn't open already
 		if (Object.values(self.listApps).length === 0) {
 			createListApplication();
 		}
@@ -182,6 +197,13 @@ let SAGE2_CodeSnippets = (function() {
 		updateListApps();
 	}
 
+	/**
+	 * Creates a copy of an existing snippet for a user
+	 * 
+	 * @method cloneSnippet
+	 * @param {String} uniqueID - the SAGE2 uniqueID of the user cloning the snippet
+	 * @param {String} scriptID - the snippet to be cloned
+	 */
 	function cloneSnippet(uniqueID, scriptID) {
 		let originalSnippet = self.functions[scriptID];
 
@@ -194,6 +216,14 @@ let SAGE2_CodeSnippets = (function() {
 		updateListApps();
 	}
 
+	/**
+	 * Notification from the server specifying that a saved snippet's filename in the
+	 * media browser has changed.
+	 * 
+	 * @method sourceFileUpdated
+	 * @param {String} scriptID - the id of the snippet
+	 * @param {String} filename - the new filename
+	 */
 	function sourceFileUpdated(scriptID, filename) {
 		console.log(scriptID, filename);
 		self.functions[scriptID].src = filename;
@@ -201,6 +231,13 @@ let SAGE2_CodeSnippets = (function() {
 		console.log(self.functions[scriptID]);
 	}
 
+	/**
+	 * Loads a script from a static file
+	 * 
+	 * @method loadFromFile
+	 * @param {Object} func - the information about the funtion (code, desc, type)
+	 * @param {String} filename - the name of the script file
+	 */
 	function loadFromFile(func, filename) {
 
 		var script = document.createElement("script");
@@ -215,6 +252,12 @@ let SAGE2_CodeSnippets = (function() {
 		updateListApps();
 	}
 
+	/**
+	 * Function to fill in a template string based on snippet function information with
+	 * necessary wrapper code to properly curate the code.
+	 * 
+	 * @method createScriptBody
+	 */
 	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src, state) {
 
 		let startBlock = `(function() {
@@ -265,6 +308,15 @@ let SAGE2_CodeSnippets = (function() {
 		// return startBlock + createFunctionBlock(type, code) + endBlock;
 	}
 
+	/**
+	 * Create the funtion block for the new snippet. The user-defined code first put through a
+	 * pseudo-compile process in order to append additional parameters to SAGE2 API functions,
+	 * then wrapped in the necessary code to execute the snippet.
+	 * 
+	 * @method createFunctionBlock
+	 * @param {String} type - the type of the snippet (gen, draw, data)
+	 * @param {String} code - the code which a user wrote, to be loaded
+	 */
 	function createFunctionBlock(type, code) {
 		// replace special syntax pieces using RegExp
 
@@ -311,6 +363,13 @@ let SAGE2_CodeSnippets = (function() {
 		return functionBlocks[type];
 	}
 
+	/**
+	 * Handles sending a snippet to a WebUI which is requesting to load/edit a snippet.
+	 * 
+	 * @method requestSnippetLoad
+	 * @param {String} uniqueID - the SAGE2 uniqueID of the user who is requesting to edit the snippet
+	 * @param {String} scriptID - the id of the snippet to be loaded
+	 */
 	function requestSnippetLoad(uniqueID, scriptID) {
 		// send script to user
 		if (self.functions[scriptID] && !self.functions[scriptID].editor) {
@@ -336,6 +395,12 @@ let SAGE2_CodeSnippets = (function() {
 		updateListApps();
 	}
 
+	/**
+	 * Handles updating the editor of a snippet when the user has closed it
+	 * 
+	 * @method notifySnippetClosed
+	 * @param {String} scriptID - the id of the snippet which was closed
+	 */
 	function notifySnippetClosed(scriptID) {
 		self.functions[scriptID].editor = null;
 
@@ -346,6 +411,13 @@ let SAGE2_CodeSnippets = (function() {
 		updateListApps();
 	}
 
+	/**
+	 * Send a request to open a Snippets_Data application, including the reference ID for
+	 * the data application
+	 * 
+	 * @method createDataApplication
+	 * @param {String} snippetsID - the id of the data object for reference
+	 */
 	function createDataApplication(snippetsID) {
 		if (isMaster) {
 			let minDim = Math.min(ui.width, ui.height * 2);
@@ -362,6 +434,13 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	/**
+	 * Send a request to open a Snippets_Vis application, including the reference ID for
+	 * the vis application
+	 * 
+	 * @method createVisApplication
+	 * @param {String} snippetsID - the id of the vis object for reference
+	 */
 	function createVisApplication(snippetsID) {
 		if (isMaster) {
 			let minDim = Math.min(ui.width, ui.height * 2);
@@ -378,6 +457,11 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	/**
+	 * Send a request to open a Snippets_List application to dislay loaded code
+	 * 
+	 * @method createListApplication
+	 */
 	function createListApplication() {
 		console.log("createListApplication", isMaster, !self.isOpeningList);
 		if (isMaster && !self.isOpeningList) {
@@ -394,6 +478,16 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	/**
+	 * A utility function to calculate the path for the generic gen, data, and draw flowchart
+	 * block paths.
+	 * 
+	 * @method createBlockPath
+	 * @param {String} type - the type of snippet block
+	 * @param {Number} width - the width of the block
+	 * @param {Number} height - the height of the block
+	 * @param {Array} offset - the [x,y] offset to add to the path calculation
+	 */
 	function createBlockPath (type, width, height, offset) {
 		let mult = [width, height];
 
@@ -428,6 +522,14 @@ let SAGE2_CodeSnippets = (function() {
 			).join(" ")).join(" L ") + " Z";
 	}
 
+	/**
+	 * Function which is called from the Snippets_Data and Snippets_Vis applications
+	 * to notify the SAGE2_CodeSnippets runtime that the display is ready to draw content.
+	 * 
+	 * @method displayApplicationLoaded
+	 * @param {String} id - the data/vis app id
+	 * @param {Object} app - the reference to the application object
+	 */
 	function displayApplicationLoaded(id, app) {
 		// call required function, update reference
 		if (app.application === "Snippets_Vis") {
@@ -463,6 +565,13 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	/**
+	 * Utility function which takes an app and traverses the parent links in order to construct
+	 * a list of functions (e.g. a pipeline).
+	 * 
+	 * @method createVisApplication
+	 * @param {Object} app - the reference to the app
+	 */
 	function getAppAncestry(app) {
 		let idAncestry = [];
 
@@ -486,6 +595,12 @@ let SAGE2_CodeSnippets = (function() {
 		return ancestry;
 	}
 
+	/**
+	 * Takes an app's ancestry and draws it on an SVG based on height and width specification
+	 * 
+	 * @method drawAppAncestry
+	 * @param {Object} data - information about how to draw the ancestry {svg, width, height, ancestry, app}
+	 */
 	function drawAppAncestry(data) {
 		// snippet color palette
 		let lightColor = { gen: "#b3e2cd", data: "#cbd5e8", draw: "#fdcdac" };
@@ -581,10 +696,13 @@ let SAGE2_CodeSnippets = (function() {
 			});
 	}
 
-	function addAppInput(inputBank, inputs) {
-		console.log("addInputs", inputBank, inputs);
-	}
-
+	/**
+	 * Executes a code snippet by ID on a parent dataset, by ID
+	 * 
+	 * @method executeCodeSnippet
+	 * @param {String} snippetID - the ID of the code snippet
+	 * @param {String} parentID - the SAGE2 ID of the app as the target
+	 */
 	function executeCodeSnippet(snippetID, parentID) {
 		let snippet = self.functions[snippetID];
 
@@ -626,6 +744,13 @@ let SAGE2_CodeSnippets = (function() {
 
 	}
 
+	/**
+	 * Registers a Snippet_List app to receive updates for snippets
+	 * 
+	 * @method registerSnippetListApp
+	 * @param {String} id - the SAGE2 ID of the app
+	 * @param {Object} app - the reference to the SAGE2 application
+	 */
 	function registerSnippetListApp(id, app) {
 		console.log("SAGE2_CodeSnippets> Registered", id);
 
@@ -634,12 +759,24 @@ let SAGE2_CodeSnippets = (function() {
 		app.updateFunctionBank(getFunctionInfo());
 	}
 
+
+	/**
+	 * Unregisters a Snippet_List app on close
+	 * 
+	 * @method unregisterSnippetListApp
+	 * @param {String} id - the SAGE2 ID of the app
+	 */
 	function unregisterSnippetListApp(id) {
 		console.log("SAGE2_CodeSnippets> Unregistered", id);
 
 		delete self.listApps[id];
 	}
 
+	/**
+	 * Updates all list apps based on current function information
+	 * 
+	 * @method updateListApps
+	 */
 	function updateListApps() {
 		let functionInfo = getFunctionInfo();
 
@@ -648,6 +785,14 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	/**
+	 * Notifies the SAGE2_CodeSnippets runtime of a user selection on a function
+	 * in the Snippet_List app. This is necessary to handle multi-click actions
+	 * 
+	 * @method notifyUserListClick
+	 * @param {Object} user - the SAGE2 user object
+	 * @param {Object} func - the function information which was clicked on
+	 */
 	function notifyUserListClick(user, func) {
 		if (func.type === "gen") {
 			// run gen functions without parent selection
@@ -664,12 +809,20 @@ let SAGE2_CodeSnippets = (function() {
 				};
 			}
 
-
+			// update list apps because of new selectors
 			updateListApps();
 		}
 
 	}
 
+	/**
+	 * Notifies the SAGE2_CodeSnippets runtime of a user selection on a Snippets_Data app.
+	 * This is necessary to handle multi-click actions (invocation on data)
+	 * 
+	 * @method notifyUserDataClick
+	 * @param {Object} user - the SAGE2 user object
+	 * @param {String} dataID - the unique data ID associated with the clicked app
+	 */
 	function notifyUserDataClick(user, dataID) {
 		// if the user has queued up a function
 		if (self.userInteractions[user.id]) {
@@ -681,6 +834,13 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	/**
+	 * Notifies the SAGE2_CodeSnippets runtime when a data/vis app was closed so it can be
+	 * deregistered from the system and links can be removed
+	 * 
+	 * @method outputAppClosed
+	 * @param {Object} app - the SAGE2 app reference
+	 */
 	function outputAppClosed(app) {
 		console.log("App Closed", app);
 		for (let linkID of Object.keys(self.links)) {
@@ -714,6 +874,13 @@ let SAGE2_CodeSnippets = (function() {
 		}
 	}
 
+	/**
+	 * Packages and sends all relevant info to the WebUI of the user who requested to export the
+	 * project to be downloaded.
+	 * 
+	 * @method requestSnippetsProjectExport
+	 * @param {String} uniqueID - the SAGE2 uniqueID for a user
+	 */
 	function requestSnippetsProjectExport(uniqueID) {
 
 		// compile snippet function information
@@ -742,6 +909,13 @@ let SAGE2_CodeSnippets = (function() {
 		});
 	}
 
+	/**
+	 * Utility function which converts the links saved (which include app references) into
+	 * a data structure which is stringify compatible. This is necessary to include the
+	 * relevant information to reconstruct the relations in the export project.
+	 * 
+	 * @method convertLinksToIDForest
+	 */
 	function convertLinksToIDForest() {
 		let rootIDs = Object.keys(self.links).filter(id => self.functions[self.links[id].getSnippetID()].type === "gen");
 
@@ -819,6 +993,12 @@ let SAGE2_CodeSnippets = (function() {
 				return self.transformID;
 			}
 
+			/**
+			 * Handles passing information between applications and calling functions based on
+			 * the function type. This function is used to update all children of an app when the app is updated.
+			 * 
+			 * @method update
+			 */
 			function update() {
 				let p = self.parent;
 				let c = self.child;

@@ -1,3 +1,8 @@
+"use strict";
+/**
+ * A tool which exposes export functionality required to make SAGE2 Code Snippets
+ * running on the wall into a portable html file.
+ */
 let SAGE2_SnippetExporter = (function() {
 	// fetch the same CodeSnippetInput script used in display (for consisentency)
 	let snippetInputsCode;
@@ -8,6 +13,7 @@ let SAGE2_SnippetExporter = (function() {
 	getSnippetsInputCode.open("GET", "./src/API/CodeSnippetInput.js");
 	getSnippetsInputCode.send();
 
+	// fetch the same snippetinput.css stylesheet used in display (for consisentency)
 	let snippetInputsStyle;
 	let getSnippetsInputStyle = new XMLHttpRequest();
 	getSnippetsInputStyle.onload = function() {
@@ -16,6 +22,7 @@ let SAGE2_SnippetExporter = (function() {
 	getSnippetsInputStyle.open("GET", "./css/snippetinput.css");
 	getSnippetsInputStyle.send();
 
+	// CSS for styling the export pieces
 	let snippetBlockStyle = `
 		html, body {
 			box-sizing: border-box;
@@ -138,6 +145,7 @@ let SAGE2_SnippetExporter = (function() {
 
 	`.replace(/\t\t/gi, "");
 
+	// API script to handle SAGE2 snippets API calls
 	let snippetScriptAPI = `
 		// get a reference to a globally defined SAGE2 Object
 		var SAGE2 = SAGE2 || {};
@@ -312,7 +320,14 @@ let SAGE2_SnippetExporter = (function() {
 		}());
 	`.replace(/\t\t/gi, "");
 
-	// function to create script from wall which can be run/developed on personal computer
+	/**
+	 * Function to create the new window and populate it with the snippets from the wall,
+	 * as well as inject all necessary css for the layout and js for the runtime.
+	 * 
+	 * @method createTypedScriptText
+	 * @param {Object} functions - the information about the functions (id, type, desc, code)
+	 * @param {Object} links - the runtime associations of the functions being exported
+	 */
 	function generateScriptFromWall(functions, links) {
 		console.log(functions, links);
 
@@ -410,6 +425,14 @@ let SAGE2_SnippetExporter = (function() {
 
 		// ======================================================
 		// helper functions for creating scripts
+
+		/**
+		 * Function to create script contents for subsets of functions.
+		 * This is used to separate by snippet type.
+		 * 
+		 * @method createTypedScriptText
+		 * @param {Object} functions - the information about the functions (id, type, desc, code)
+		 */
 		function createTypedScriptText(functions) {
 			let scriptText = `
 				var functions = functions || {};
@@ -428,6 +451,13 @@ let SAGE2_SnippetExporter = (function() {
 			return scriptText;
 		}
 
+		/**
+		 * Function to create the "main" script, which takes the snippet associations and initializes
+		 * the tool, as well as handles running the code in the right order.
+		 * 
+		 * @method createMainScriptText
+		 * @param {Object} links - assocations between snippets (call hierarchy).
+		 */
 		function createMainScriptText(links) {
 			return `
 				var functions = functions || {};
@@ -508,6 +538,12 @@ let SAGE2_SnippetExporter = (function() {
 			// since string template preserves extra 4 tab indentation from this file's src
 		}
 
+		/**
+		 * Function to create the download button script (creates the download button to handle download)
+		 * which will remove itself before file download.
+		 * 
+		 * @method createDownloadScriptText
+		 */
 		function createDownloadScriptText() {
 			return `
 				let downloadWrapper = document.createElement("div");
