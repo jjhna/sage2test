@@ -11099,11 +11099,14 @@ function wsSnippetSaveIntoServer(wsio, data) {
 
 	let fileString = JSON.stringify(fileContents);
 
-	if (oldname !== "null" && oldname !== filename) {
+	// if the specified name is the same as it previously was
+	if (oldname !== "null" && oldname.split("-")[1] === filename.split("-")[1] && !fs.existsSync(fullpath)) {
+		// reuse old name if possible
+		filename = oldname;
+		fullpath = path.join(snippetWritePath, filename);
+	} else if (oldname !== "null") {
+		// rename old file if the name changed
 		let oldpath = path.join(snippetWritePath, oldname);
-
-		console.log("Rename:", oldname, filename);
-
 		fs.renameSync(oldpath, fullpath);
 	}
 
