@@ -42,6 +42,7 @@ var readline      = require('readline');         // to build an evaluation loop
 var url           = require('url');              // parses urls
 
 // npm: defined in package.json
+var formidable    = require('formidable');       // upload processor
 var gm            = require('gm');               // graphicsmagick
 var json5         = require('json5');            // Relaxed JSON format
 var qrimage       = require('qr-image');         // qr-code generation
@@ -385,45 +386,6 @@ function initializeSage2Server() {
 		}
 	}
 
-	/*
-	Monitor OFF, cause issues with drag-drop files
-	// Monitoring some folders
-	var listOfFolders = [];
-	for (var lf in mediaFolders) {
-		listOfFolders.push(mediaFolders[lf].path);
-	}
-	// try to exclude some folders from the monitoring
-	var excludesFiles   = ['.DS_Store', 'Thumbs.db', 'passwd.json'];
-	var excludesFolders = ['assets', 'apps', 'config', 'savedFiles', 'sessions', 'tmp'];
-	sageutils.monitorFolders(listOfFolders, excludesFiles, excludesFolders,
-		function(change) {
-			sageutils.log("Monitor", "Changes detected in", this.root);
-			if (change.modifiedFiles.length > 0) {
-				sageutils.log("Monitor",  "	Modified files: %j", change.modifiedFiles);
-				// broadcast the new file list
-				// assets.refresh(this.root, function(count) {
-				// 	broadcast('storedFileList', getSavedFilesList());
-				// });
-			}
-			if (change.addedFiles.length > 0) {
-				// sageutils.log("Monitor", "	Added files:    %j",   change.addedFiles);
-			}
-			if (change.removedFiles.length > 0) {
-				// sageutils.log("Monitor", "	Removed files:  %j",   change.removedFiles);
-			}
-			if (change.addedFolders.length > 0) {
-				// sageutils.log("Monitor", "	Added folders:    %j", change.addedFolders);
-			}
-			if (change.modifiedFolders.length > 0) {
-				// sageutils.log("Monitor", "	Modified folders: %j", change.modifiedFolders);
-			}
-			if (change.removedFolders.length > 0) {
-				// sageutils.log("Monitor", "	Removed folders:  %j", change.removedFolders);
-			}
-		}
-	);
-	*/
-
 	// Initialize app loader
 	appLoader = new Loader(mainFolder.path, hostOrigin, config, imageMagickOptions, ffmpegOptions);
 
@@ -446,6 +408,7 @@ function initializeSage2Server() {
 
 	// Set up http and https servers
 	var httpServerApp = new HttpServer(publicDirectory, userlist);
+	httpServerApp.app.post('/upload', uploadForm); // receive newly uploaded files from SAGE Pointer / SAGE UI
 	var options  = setupHttpsOptions();            // create HTTPS options - sets up security keys
 	sage2Server  = http.createServer(httpServerApp.app);
 	sage2ServerS = https.createServer(options, httpServerApp.app);
@@ -1673,8 +1636,13 @@ function wsSwitchPermissionsModel(wsio, data) {
 
 // **************  Sage Pointer Functions *****************
 
-function wsRegisterInteractionClient(wsio, data) {
-	userlist.registerClient(data);
+function wsRegisterInteractionClient(wsio, user) {
+	userlist.watch(user);
+	console.log(user);
+
+	sagePointers[wsio.id].color = user.color;
+	sagePointers[wsio.id].name  = user.name;
+
 /*	var key;
 
 	// Update color and name of pointer when UI connects
@@ -5259,6 +5227,103 @@ function setupHttpsOptions() {
 	return httpsOptions;
 }
 
+function uploadForm(req, res) {
+	var form     = new formidable.IncomingForm();
+	// Drop position
+	var position = [0, 0];
+	// Open or not the file after upload
+	var openAfter = true;
+	// User information
+	var ptrName  = "";
+	var ptrColor = "";
+
+	// Limits the amount of memory all fields together (except files) can allocate in bytes.
+	//    set to 4MB.
+	form.maxFieldsSize = 4 * 1024 * 1024;
+	// Increase file limit to match client limit in SAGE2_interaction.js
+	// Default is 2MB https://github.com/felixge/node-formidable/commit/39f27f29b2824c21d0d9b8e85bcbb5fc0081beaf
+	form.maxFileSize = 1024 * 1024 * 1024;
+	form.type          = 'multipart';
+	form.multiples     = true;
+
+	form.on('fileBegin', function(name, file) {
+		sageutils.log("Upload", file.name, file.type);
+	});
+
+	form.on('error', function(err) {
+		sageutils.log("Upload", 'Request aborted');
+		try {
+			// Removing the temporary file
+			fs.unlinkSync(this.openedFiles[0].path);
+		} catch (err) {
+			sageutils.log("Upload", '   error removing the temporary file');
+		}
+	});
+
+	form.on('field', function(field, value) {
+		// Keep user information
+		if (field === 'SAGE2_ptrName') {
+			ptrName = value;
+			sageutils.log("Upload", "by", ptrName);
+		}
+		if (field === 'SAGE2_ptrColor') {
+			ptrColor = value;
+			sageutils.log("Upload", "color", ptrColor);
+		}
+		// convert value [0 to 1] to wall coordinate from drop location
+		if (field === 'dropX') {
+			position[0] = parseInt(parseFloat(value) * config.totalWidth,  10);
+		}
+		if (field === 'dropY') {
+			position[1] = parseInt(parseFloat(value) * config.totalHeight, 10);
+		}
+		// initial application window position
+		if (field === 'width') {
+			position[2] = parseInt(parseFloat(value) * config.totalWidth,  10);
+		}
+		if (field === 'height') {
+			position[3] = parseInt(parseFloat(value) * config.totalHeight,  10);
+		}
+		// open or not the file after upload
+		if (field === 'open') {
+			openAfter = (value === "true");
+		}
+	});
+
+	form.parse(req, function(err, fields, files) {
+		var header = HttpServer.prototype.buildHeader();
+		if (err) {
+			header["Content-Type"] = "text/plain";
+			res.writeHead(500, header);
+			res.write(err + "\n\n");
+			res.end();
+			return;
+		}
+		// build the reply to the upload
+		header["Content-Type"] = "application/json";
+		res.writeHead(200, header);
+		// For webix uploader: status: server
+		fields.done = true;
+
+		// Get the file (only one even if multiple drops, it comes one by one)
+		var file = files[ Object.keys(files)[0] ];
+		var app = registry.getDefaultApp(file.name);
+		if (app === undefined || app === "") {
+			fields.good = false;
+		} else {
+			fields.good = true;
+		}
+		// Send the reply
+		res.end(JSON.stringify({status: 'server',
+			fields: fields, files: files}));
+	});
+
+	form.on('end', function() {
+		// saves files in appropriate directory and broadcasts the items to the displays
+		manageUploadedFiles(this.openedFiles, position, ptrName, ptrColor, openAfter);
+	});
+}
+
 function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
 	var fileKeys = Object.keys(files);
 	fileKeys.forEach(function(key) {
@@ -5864,10 +5929,11 @@ function formatDateToYYYYMMDD_HHMMSS(date) {
 }
 
 function quitSAGE2() {
-	if (config.register_site) {
-		// de-register with EVL's server
-		sageutils.deregisterSAGE2(config, function() {
-			userlist.save();
+	let cfg = config.register_site ? config : undefined;
+	// de-register with EVL's server
+	sageutils.deregisterSAGE2(cfg)
+		.then(function() {
+			// userlist.save();
 			saveUserLog();
 			saveSession();
 			assets.saveAssets();
@@ -5876,16 +5942,6 @@ function quitSAGE2() {
 			}
 			process.exit(0);
 		});
-	} else {
-		userlist.save();
-		saveUserLog();
-		saveSession();
-		assets.saveAssets();
-		if (omicronRunning) {
-			omicronManager.disconnect();
-		}
-		process.exit(0);
-	}
 }
 
 function findRemoteSiteByConnection(wsio) {

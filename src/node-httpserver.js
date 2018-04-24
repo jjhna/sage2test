@@ -31,14 +31,11 @@ var zlib = require('zlib');  // to enable HTTP compression
 var debug = require('debug')('sage2http');
 
 // npm: defined in package.json
-var formidable = require('formidable');       // upload processor
 var sanitizer = require('sanitizer');         // input sanitizer
-
-// External package to clean up URL requests
-var normalizeURL = require('normalizeurl');
+var normalizeURL = require('normalizeurl');   // clean up URL requests
 
 // SAGE2 own modules
-var sageutils  = require('../src/node-utils');    // provides utility functions
+var sageutils = require('../src/node-utils');    // provides utility functions
 var generateSW = require('../generate-service-worker.js');
 
 // express modules
@@ -59,7 +56,7 @@ var FacebookStrategy = require('passport-facebook').Strategy;
 
 var app = null;
 var publicDirectory;
-var User;
+var UserList;
 
 /**
  * SAGE HTTP request handlers for GET and POST
@@ -71,7 +68,7 @@ var User;
  */
 class HttpServer {
 	constructor(publicDir, userList) {
-		User = userList;
+		UserList = userList;
 		publicDirectory = publicDir;
 
 		this.app = app = express();
@@ -130,19 +127,19 @@ class HttpServer {
 					res.render('admin/login.ejs', {
 						user: req.user,
 						auth: Object.keys(this.strategies)
-					});					
+					});
 				});
 		});
 
 		app.get('/admin/user', ensureAuthenticated, (req, res) => {
 			userIsAdmin(req.user)
 				.then(() => {
-					res.sendFile(path.join(__dirname, '../public', 'admin/SAGE2_user.html'));					
+					res.sendFile(path.join(__dirname, '../public', 'admin/SAGE2_user.html'));
 				})
 				.catch(() => {
 					res.redirect('/admin/login?page=user');
-					return;					
-				})
+					return;
+				});
 		});
 
 		// passport authorization
@@ -157,7 +154,7 @@ class HttpServer {
 			});
 		app.get('/logout', (req, res) => {
 			if (req.user) {
-				User.disconnectUser(req.user);
+				UserList.disconnectUser(req.user);
 				req.logOut();
 			}
 			res.redirect("/");
@@ -250,9 +247,6 @@ class HttpServer {
 			});
 		});
 
-		// receive newly uploaded files from SAGE Pointer / SAGE UI
-		app.post('/upload', uploadForm);
-
 		// handle other paths
 		app.get('*', ensureAuthenticated, handleGet);
 		app.put('*', handlePut);	// not sure if this does anything
@@ -265,7 +259,7 @@ function configureStrategies(passport) {
 	// set up local strategy
 	passport.use(new LocalStrategy(function(username, password, done) {
 		// get user with username/password
-		User.findOrCreate({
+		UserList.findOrCreate({
 			strategy: 'local',
 			username: username,
 			password: password
@@ -310,7 +304,7 @@ function configureStrategies(passport) {
 			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + strategies.google.url
 		},
 		function (accessToken, refreshToken, profile, done) {
-			User.findOrCreate({
+			UserList.findOrCreate({
 				strategy: 'google',
 				id: profile.id,
 				name: profile.displayName
@@ -327,7 +321,7 @@ function configureStrategies(passport) {
 			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + strategies.github.url
 		},
 		function(accessToken, refreshToken, profile, done) {
-			User.findOrCreate({
+			UserList.findOrCreate({
 				strategy: 'github',
 				id: profile.id,
 				name: profile.displayName || profile.username
@@ -344,7 +338,7 @@ function configureStrategies(passport) {
 			callbackURL: "https://" + global.config.host + ":" + global.config.secure_port + strategies.facebook.url
 		},
 		function(accessToken, refreshToken, profile, done) {
-			User.findOrCreate({
+			UserList.findOrCreate({
 				strategy: 'facebook',
 				id: profile.id,
 				name: profile.displayName
@@ -361,7 +355,7 @@ function configureStrategies(passport) {
 	});
 
 	passport.deserializeUser(function(id, done) {
-		User.findById(id, function(err, user) {
+		UserList.findById(id, function(err, user) {
 			// console.log('deserializing user id...', id);
 			if (err) {
 				done(err);
@@ -447,7 +441,7 @@ function secureStatic(req, res, next) {
 			.catch(() => {
 				res.redirect('/admin/login?page=' + pathname.substring(7));
 				return;
-			})
+			});
 	} else {
 		handleHeaders();
 	}
@@ -459,11 +453,12 @@ function userIsAdmin(user, cb) {
 			reject('No user');
 		}
 
-		if (User.connectedUsers[user.id] && User.connectedUsers[user.id].role === 'admin') {
+		if (UserList.connectedUsers[user.id] &&
+			UserList.connectedUsers[user.id].role === 'admin') {
 			resolve(true);
 		} else {
 			reject();
-		};
+		}
 	});
 }
 
@@ -472,7 +467,7 @@ function setUserCookies(req, res, next) {
 		if (req.user.SAGE2_ptrName) {
 			res.cookie('SAGE2_ptrName', req.user.SAGE2_ptrName);
 		} else {
-			res.cookie('SAGE2_ptrName', User.requestGuestName());
+			res.cookie('SAGE2_ptrName', UserList.requestGuestName());
 		}
 		if (req.user.SAGE2_ptrColor) {
 			res.cookie('SAGE2_ptrColor', req.user.SAGE2_ptrColor);
@@ -480,9 +475,9 @@ function setUserCookies(req, res, next) {
 	} else {
 		let cookieName = req.cookies.SAGE2_ptrName;
 		if (!cookieName || cookieName.startsWith('Anon ') || cookieName === 'SAGE2_user' || cookieName === 'SAGE2_mobile') {
-			res.cookie('SAGE2_ptrName', User.requestGuestName());
+			res.cookie('SAGE2_ptrName', UserList.requestGuestName());
 		}
-	}	
+	}
 	next();
 }
 
@@ -720,6 +715,7 @@ function handlePut(req, res) {
 		// Close the write stream
 		wstream.end();
 		// empty 200 OK response for now
+		let header = req.headers;
 		header["Content-Type"] = "text/html; charset=utf-8";
 		res.writeHead(200, "OK", header);
 		res.end();
@@ -832,104 +828,6 @@ function secureHeaders() {
 	}
 
 	return helmetConfig;
-}
-
-function uploadForm(req, res) {
-	var form = new formidable.IncomingForm();
-	// Drop position
-	var position = [0, 0];
-	// Open or not the file after upload
-	var openAfter = true;
-	// User information
-	var ptrName  = "";
-	var ptrColor = "";
-
-	// Limits the amount of memory all fields together (except files) can allocate in bytes.
-	//    set to 4MB.
-	form.maxFieldsSize = 4 * 1024 * 1024;
-	// Increase file limit to match client limit in SAGE2_interaction.js
-	// Default is 2MB https://github.com/felixge/node-formidable/commit/39f27f29b2824c21d0d9b8e85bcbb5fc0081beaf
-	form.maxFileSize = 1024 * 1024 * 1024;
-	form.type          = 'multipart';
-	form.multiples     = true;
-	form.maxFileSize   = 20 * (1024 * 1024 * 1024); // 20GB
-
-	form.on('fileBegin', function(name, file) {
-		sageutils.log("Upload", file.name, file.type);
-	});
-
-	form.on('error', function(err) {
-		sageutils.log("Upload", 'Request aborted', err);
-		try {
-			// Removing the temporary file
-			fs.unlinkSync(this.openedFiles[0].path);
-		} catch (err) {
-			sageutils.log("Upload", '   error removing the temporary file');
-		}
-	});
-
-	form.on('field', function(field, value) {
-		// Keep user information
-		if (field === 'SAGE2_ptrName') {
-			ptrName = value;
-			sageutils.log("Upload", "by", ptrName);
-		}
-		if (field === 'SAGE2_ptrColor') {
-			ptrColor = value;
-			sageutils.log("Upload", "color", ptrColor);
-		}
-		// convert value [0 to 1] to wall coordinate from drop location
-		if (field === 'dropX') {
-			position[0] = parseInt(parseFloat(value) * config.totalWidth,  10);
-		}
-		if (field === 'dropY') {
-			position[1] = parseInt(parseFloat(value) * config.totalHeight, 10);
-		}
-		// initial application window position
-		if (field === 'width') {
-			position[2] = parseInt(parseFloat(value) * config.totalWidth,  10);
-		}
-		if (field === 'height') {
-			position[3] = parseInt(parseFloat(value) * config.totalHeight,  10);
-		}
-		// open or not the file after upload
-		if (field === 'open') {
-			openAfter = (value === "true");
-		}
-	});
-
-	form.parse(req, function(err, fields, files) {
-		let header = {};
-		if (err) {
-			header["Content-Type"] = "text/plain";
-			res.writeHead(500, header);
-			res.write(err + "\n\n");
-			res.end();
-			return;
-		}
-		// build the reply to the upload
-		header["Content-Type"] = "application/json";
-		res.writeHead(200, header);
-		// For webix uploader: status: server
-		fields.done = true;
-
-		// Get the file (only one even if multiple drops, it comes one by one)
-		var file = files[ Object.keys(files)[0] ];
-		var app = registry.getDefaultApp(file.name);
-		if (app === undefined || app === "") {
-			fields.good = false;
-		} else {
-			fields.good = true;
-		}
-		// Send the reply
-		res.end(JSON.stringify({status: 'server',
-			fields: fields, files: files}));
-	});
-
-	form.on('end', function() {
-		// saves files in appropriate directory and broadcasts the items to the displays
-		manageUploadedFiles(this.openedFiles, position, ptrName, ptrColor, openAfter);
-	});
 }
 
 module.exports = HttpServer;

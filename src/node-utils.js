@@ -471,21 +471,23 @@ function registerSAGE2(config) {
  *
  * @method deregisterSAGE2
  * @param config {Object} local SAGE2 configuration
- * @param callback {Function} to be called when done
+ * @return Promise when request completes
  */
-function deregisterSAGE2(config, callback) {
-	request({
-		rejectUnauthorized: false,
-		url: 'https://sage.evl.uic.edu/unregister',
-		// url: 'https://131.193.183.150/unregister',
-		form: config,
-		method: "POST"},
-	function(err, response, body) {
-		log("SAGE2", "Deregistration with EVL site:",
-			(err === null) ? chalk.green.bold("success") : chalk.red.bold(err.code));
-		if (callback) {
-			callback();
-		}
+function deregisterSAGE2(config) {
+	return new Promise((resolve, reject) => {
+		request({
+			rejectUnauthorized: false,
+			url: 'https://sage.evl.uic.edu/unregister',
+			// url: 'https://131.193.183.150/unregister',
+			form: config,
+			method: "POST"
+		},
+		(err, response, body) => {
+			log("SAGE2", "Deregistration with EVL site:",
+				(err === null) ? chalk.green.bold("success") : chalk.red.bold(err.code));
+
+			resolve(err);
+		});
 	});
 }
 
@@ -661,6 +663,30 @@ function deleteFiles(pattern, cb) {
 	}
 }
 
+/**
+ * Return a random v4 UUID of the form xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+ *
+ * @method createUuidV4
+ * @return {String} uuid (uniqueness is dependent on the quality of the 
+ * pseudorandom number generator)
+ */
+function createUuid4() {
+	// generate random values
+	let buf = crypto.randomBytes(16);
+
+	// "y" (= first 4 bits of buf[8]) should be between 8 and b
+	let y = 8 ^ (buf[8] >> 6);
+	buf[8] = (y << 4) | (buf[8] & 15);
+
+	// format hex string
+	let hex = buf.toString('hex');
+
+	return hex.substring(0, 8) + '-' +
+		hex.substring(8, 12) + '-4' + // 13th hex value is the uuid version
+		hex.substring(13, 16) + '-' +
+		hex.substring(16, 20) + '-' +
+		hex.substring(20);
+}
 
 module.exports.nodeVersion       = _NODE_VERSION;
 module.exports.getNodeVersion    = getNodeVersion;
@@ -686,6 +712,7 @@ module.exports.mkdirParent       = mkdirParent;
 module.exports.deleteFiles       = deleteFiles;
 module.exports.sanitizedURL      = sanitizedURL;
 module.exports.mergeObjects      = mergeObjects;
+module.exports.createUuid4	= createUuid4;
 
 module.exports.encodeReservedURL  = encodeReservedURL;
 module.exports.encodeReservedPath = encodeReservedPath;

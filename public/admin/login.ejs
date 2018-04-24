@@ -51,20 +51,22 @@
 			<button>Log in</button>
 		</form>
 
-		<div class="formLogin">
-			———&ensp;OR&ensp;———
-			<br/>
-			<br/>
-			<% auth.forEach(function(strategy) { %>
-			<div>
-				<a href="/auth/<%= strategy %>">
-					<button>
-						Log in with <%= strategy[0].toUpperCase() + strategy.substring(1) %>
-					</button>
-				</a>
+		<% if (auth && auth.length > 0) { %>
+			<div class="formLogin">
+				———&ensp;OR&ensp;———
+				<br/>
+				<br/>
+				<% auth.forEach(function(strategy) { %>
+				<div>
+					<a href="/auth/<%= strategy %>">
+						<button>
+							Log in with <%= strategy[0].toUpperCase() + strategy.substring(1) %>
+						</button>
+					</a>
+				</div>
+				<% }) %>
 			</div>
-			<% }) %>
-		</div>
+		<% } %>
 	<% } %>
 </body>
 </html>

@@ -846,7 +846,8 @@ var listApps = function() {
 var recursiveReaddirSync = function(aPath) {
 	var list     = [];
 	var excludes = ['.DS_Store', 'Thumbs.db', 'tmp', 'passwd.json',
-		'assets', 'sessions', 'config', 'sabiConfig', 'savedFiles', 'apps'];
+		'assets', 'sessions', 'config', 'sabiConfig', 'savedFiles', 'apps',
+		'db'];
 	var excludeExtensions = ['.js', '.css'];
 	var files, stats;
 

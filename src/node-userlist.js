@@ -16,30 +16,33 @@
 // require variables to be declared
 "use strict";
 
-const path        = require('path');
-const fs          = require('fs');
-const JsonDB      = require('node-json-db');
-const sageutils   = require('../src/node-utils');
+const path = require('path');
+const fs = require('fs');
+const JsonDb = require('../src/node-json-db-wrapper');
+const BacManager = require('../src/node-bac');
+const sageutils = require('../src/node-utils');
+
 
 // folder to store the user DB
-const pathname = 'logs';
+const dirname = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "db");
+
 // Name of the file storing the user DB
-const filename = 'users.json';
-// const rbacFilename = 'rbac.json';
+const userFile = path.join(dirname, 'users.json');
+const bacFile = path.join(dirname, 'access.json');
 
 let nAnonClients = 0;
-const strNames = "Aardvark Albatross Alligator Alpaca Ant Anteater Antelope Armadillo " +
-	"Badger Barracuda Bat Beaver Bee Bison Boar Buffalo Butterfly Camel Caribou Cassowary Cat "    +
-	"Caterpillar Cheetah Chicken Chinchilla Cobra Cormorant Coyote Crab Crane Crocodile "         +
-	"Crow Deer Dinosaur Dog Dolphin Dove Dragonfly Duck Eagle Echidna Eel Elephant "       +
-	"Emu Falcon Ferret Finch Flamingo Fox Frog Gazelle Giraffe Goat Goldfish Goose Gorilla "        +
-	"Grasshopper Grizzly Hamster Hawk Hedgehog Heron Hippo Horse Hummingbird Hyena Ibex Jackal "   +
-	"Jaguar Jellyfish Kangaroo Koala Lark Lemur Leopard Lion Llama Lobster Manatee "      +
-	"Mink Mole Mongoose Monkey Mouse Narwhal Newt Nightingale Octopus Okapi Opossum Ostrich "      +
-	"Otter Owl Oyster Panther Parrot Panda Partridge Pelican Penguin Pheasant Pigeon Porcupine "   +
-	"Porpoise Quail Rabbit Raccoon Raven Rhinoceros Salamander Seahorse Seal Shark Sheep "   +
-	"Sloth Snail Squid Squirrel Starling Swan Tapir Tiger T-rex Turtle Walrus Weasel Whale "       +
-	"Wolf Wombat Yak Zebra";
+const strNames = "Aardvark Albatross Alligator Alpaca Anteater Antelope Armadillo Axolotl " +
+	"Badger Barracuda Bat Beaver Bee Beetle Bison Boar Bobcat Buffalo Butterfly Camel Capybara Caribou Cassowary Cat " +
+	"Caterpillar Chameleon Cheetah Chicken Chinchilla Cobra Cormorant Coyote Crab Crane Crocodile " +
+	"Crow Deer Dinosaur Dog Dolphin Dove Dragonfly Duck Eagle Echidna Eel Elephant " +
+	"Emu Falcon Ferret Finch Flamingo Fox Frog Gazelle Gecko Giraffe Goat Goldfish Goose Gorilla " +
+	"Grasshopper Grizzly Hamster Hawk Hedgehog Heron Hippo Horse Hummingbird Hyena Ibex Iguana Jackal " +
+	"Jaguar Jellyfish Kangaroo Koala Lark Lemur Leopard Lion Llama Lobster Lynx Magpie Manatee Meerkat " +
+	"Mink Mole Mongoose Monkey Moose Mouse Narwhal Newt Nightingale Ocelot Octopus Okapi Opossum Ostrich " +
+	"Otter Owl Oyster Panther Parrot Panda Partridge Peacock Pelican Penguin Pheasant Pigeon Platypus Porcupine " +
+	"Porpoise Puffin Quail Rabbit Raccoon Raven Rhinoceros Salamander Seahorse Seal Shark Sheep " +
+	"Sloth Snail Squid Squirrel Starling Starfish Stingray Stork Swan Tapir Tiger Toucan T-rex " +
+	"Turtle Wallaby Walrus Weasel Whale Wolf Wombat Yak Zebra";
 const tempNames = strNames.split(' ');
 
 /**
@@ -51,7 +54,7 @@ const tempNames = strNames.split(' ');
  * @return     {String}  the uid string
  */
 function createUid(name, email) {
-	return name.replace(/[;,=]/g, '-') + '-' + Date.now();
+	return name.replace(/[;,=/]/g, '-') + '-' + Date.now();
 }
 
 /**
@@ -84,23 +87,19 @@ class UserList {
 		this.currentSession = null;
 
 		// make sure that the path and file exist
-		if (!sageutils.folderExists(pathname)) {
-			fs.mkdirSync(pathname);
+		if (!sageutils.folderExists(dirname)) {
+			fs.mkdirSync(dirname);
 		}
-		if (!sageutils.fileExists(this.filePath)) {
-			fs.writeFileSync(this.filePath, "{}");
+		if (!sageutils.fileExists(userFile)) {
+			fs.writeFileSync(userFile, "{}");
 		}
-		// if (!sageutils.fileExists(this.rbacPath)) {
-		// 	fs.writeFileSync(this.rbacPath, "{}");
-		// }
+		if (!sageutils.fileExists(bacFile)) {
+			fs.writeFileSync(bacFile, "{}");
+		}
 
 		// create the databases
-		this.db = new JsonDB(
-			this.filePath,
-			true, 	// save after each push
-			true	// save in human-readable format
-		);
-		// this.rbacDb = new JsonDB(this.rbacPath, true, true);
+		this.db = new JsonDb("Users", userFile);
+		this.bac = new BacManager(bacFile);
 
 		// per session
 		shuffle(tempNames);
@@ -109,31 +108,10 @@ class UserList {
 		this.clients = {};
 		this.rbac = null;
 		this.rbacList = [];
+	}
 
-		// get roles/permissions
-		let getRbac = this.getData('/rbac');
-		if (getRbac.success) {
-			this.rbacList = getRbac.data || [];
-			this.rbac = this.rbacList[0];
-		}
-		if (!this.rbac) {
-			this.initRolesAndPermissions({
-				roles: ['admin', 'user', 'guest'],
-				actions: [
-					'upload files',
-					'use apps',
-					'share screen',
-					'share pointer',
-					'move/resize windows',
-					'access admin pages'
-				],
-				permissions: {
-					admin: 0b111111,
-					user:  0b111110,
-					guest: 0b111110
-				}
-			});
-		}
+	watch() {
+
 	}
 
 	/**
@@ -277,6 +255,7 @@ class UserList {
 			this.connectedUsers[id].role = role;
 		}
 	}
+
 	/**
 	* Add this role to the list of user's roles
 	*
@@ -368,78 +347,6 @@ class UserList {
 
 	// **************  Database Functions *****************
 
-	/**
-	* Reload database if json file was changed externally
-	*
-	* @method reload
-	*/
-	reload() {
-		this.db.reload();
-	}
-
-	/**
-	 * Wrapper for JsonDB.getData()
-	 * Retrieve data from json database or log an error if it fails
-	 *
-	 * @method getData
-	 * @param dbPath {String}
-	 * @return {Object} object with the success flag and the retrieved data
-	 */
-	getData(dbPath) {
-		try {
-			let data = this.db.getData(dbPath);
-			return {
-				success: true,
-				data: data
-			};
-		} catch (error) {
-			// sageutils.log("Userlist", "Error", error.message);
-			return {
-				success: false
-			};
-		}
-	}
-
-	/**
-	 * Wrapper for JsonDB.push()
-	 * Push data to json database or log an error if it fails
-	 *
-	 * @method push
-	 * @param dbPath {String}
-	 * @param data {Object} new data to be pushed
-	 * @param checkIfPathExists {Boolean} check if path exists before pushing * the data; default is false
-	 * @return {Boolean} true if push succeeds
-	 */
-	push(dbPath, data, overwrite = true, checkIfPathExists = false) {
-		try {
-			if (checkIfPathExists) {
-				this.db.getData(dbPath);
-			}
-			this.db.push(dbPath, data, overwrite);
-			return true;
-		} catch (error) {
-			// sageutils.log("Userlist", "Error", error.message);
-			return false;
-		}
-	}
-
-	/**
-	 * Wrapper for JsonDB.delete()
-	 * Remove data at a path or log an error if it fails
-	 *
-	 * @method delete
-	 * @param dbPath {String}
-	 * @return {Boolean} true if delete succeeds
-	 */
-	delete(dbPath) {
-		try {
-			this.db.delete(dbPath);
-			return true;
-		} catch (error) {
-			sageutils.log("Userlist", "Error", error.message);
-		}
-		return false;
-	}
 
 	/**
 	 * Store a new user in the database
@@ -563,7 +470,12 @@ class UserList {
 		if (!properties.email || !properties.email.trim()) {
 			delete properties.email;
 		}
-		return this.push(this.userPath(uid), properties, false, true);
+
+		if (this.db.hasField(this.userPath(uid))) {
+			return this.push(this.userPath(uid), properties, false);
+		} else {
+			return false;
+		}
 	}
 
 	/**
@@ -688,7 +600,6 @@ class UserList {
 				Object.assign(guest, properties);
 			}
 			return true;
-			console.log(this.connectedUsers, this.connectedClients)
 		}
 	}
 
@@ -700,7 +611,7 @@ class UserList {
 			};
 		}
 	}
-
+	disconnectUser() { }
 	requestGuestName() {
 		let name = 'Anon ' + tempNames[nAnonClients];
 		nAnonClients = (nAnonClients + 1) % tempNames.length; // FIXME
@@ -715,14 +626,6 @@ class UserList {
 	userPath(uid, subpath = 'user') {
 		return `/${subpath}/${uid}`;
 	}
-
-	get filePath() {
-		return path.join(pathname, filename);
-	}
-
-	// get rbacPath() {
-	// 	return path.join(pathname, rbacFilename);
-	// }
 }
 
 module.exports = new UserList();

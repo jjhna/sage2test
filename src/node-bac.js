@@ -1,4 +1,24 @@
-class Rbac {
+// SAGE2 is available for use under the SAGE2 Software License
+//
+// University of Illinois at Chicago's Electronic Visualization Laboratory (EVL)
+// and University of Hawai'i at Manoa's Laboratory for Advanced Visualization and
+// Applications (LAVA)
+//
+// See full text, terms and conditions in the LICENSE.txt included file
+//
+// Copyright (c) 2017
+
+/**
+ * @module server
+ * @submodule bac
+ */
+
+// require variables to be declared
+"use strict";
+
+const JsonDb = require('../src/node-json-db-wrapper');
+
+class Bac {
 	constructor(model = {}) {
 		this.roles = model.roles || [];
 		this.actions = model.actions || [];
@@ -74,24 +94,26 @@ class Rbac {
 	}
 }
 
-class RbacManager {
+class BacManager {
 
 	/* 
 	 * 
 	 */
-	constructor(models) {
-		this.rbacs = [];
+	constructor(dbFile) {
+		this.db = new JsonDb("BAC", dbFile);
 
-		if (models) {
-			for (let m in models) {
-				this.rbacs.push(new Rbac(m));
-			}
-		}
+		// this.rbacs = [];
+
+		// if (models) {
+		// 	for (let m in models) {
+		// 		this.rbacs.push(new Rbac(m));
+		// 	}
+		// }
 	}
 
 	new(model) {
-		return new Rbac(model);
+		return new Bac(model);
 	}
 }
 
-module.exports = RbacManager;
+module.exports = BacManager;
