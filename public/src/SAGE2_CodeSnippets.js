@@ -352,7 +352,7 @@ let SAGE2_CodeSnippets = (function() {
 
 			wsio.emit("loadApplication", {
 				application:
-					"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Data",
+					"/uploads/apps/Snippets_Data",
 				color: '#ff0000',
 				dimensions: [minDim / 4, minDim / 4],
 				data: {
@@ -368,7 +368,7 @@ let SAGE2_CodeSnippets = (function() {
 
 			wsio.emit("loadApplication", {
 				application:
-					"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_Vis",
+					"/uploads/apps/Snippets_Vis",
 				color: "#ff0000",
 				dimensions: [minDim / 4, minDim / 4],
 				data: {
@@ -382,13 +382,12 @@ let SAGE2_CodeSnippets = (function() {
 		console.log("createListApplication", isMaster, !self.isOpeningList);
 		if (isMaster && !self.isOpeningList) {
 			self.isOpeningList = true;
-			console.log("Opening List");
 
 			let minDim = Math.min(ui.width, ui.height * 2);
 
 			wsio.emit("loadApplication", {
 				application:
-					"/home/andrew/Documents/Dev/sage2/public/uploads/apps/Snippets_List",
+					"/uploads/apps/Snippets_List",
 				dimensions: [minDim / 8, minDim / 4],
 				color: "#ff0000"
 			});

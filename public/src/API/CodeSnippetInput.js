@@ -287,6 +287,7 @@ let CodeSnippetInput = (function () {
 			parentNode
 				.append("div")
 				.attr("class", "checkboxInput")
+				.style("font-size", 3 * ui.titleBarHeight / 4 + "px")
 				.style("height", ui.titleBarHeight + "px")
 				.style("width", ui.titleBarHeight + "px")
 				.classed("checked", this._state.value ? "true" : null)
@@ -355,6 +356,7 @@ let CodeSnippetInput = (function () {
 					// create new radio input and label
 					d3.select(this).append("div")
 						.attr("class", "radioInput")
+						.style("font-size", 3 * ui.titleBarHeight / 4 + "px")
 						.style("height", ui.titleBarHeight + "px")
 						.style("width", ui.titleBarHeight + "px")
 						.classed("selected", _this._state.value === d ? "true" : null)
@@ -394,6 +396,7 @@ let CodeSnippetInput = (function () {
 
 					d3.select(this).append("div")
 						.attr("class", "radioInput")
+						.style("font-size", 3 * ui.titleBarHeight / 4 + "px")
 						.style("height", ui.titleBarHeight + "px")
 						.style("width", ui.titleBarHeight + "px")
 						.classed("selected", _this._state.value === d ? "true" : null)

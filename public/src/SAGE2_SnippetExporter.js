@@ -8,165 +8,134 @@ let SAGE2_SnippetExporter = (function() {
 	getSnippetsInputCode.open("GET", "./src/API/CodeSnippetInput.js");
 	getSnippetsInputCode.send();
 
-	let inputStyles = `
-		.snippetsInputDiv {
-			padding: 5px;
-			font-family: monospace;
+	let snippetInputsStyle;
+	let getSnippetsInputStyle = new XMLHttpRequest();
+	getSnippetsInputStyle.onload = function() {
+		snippetInputsStyle = getSnippetsInputStyle.responseText;
+	};
+	getSnippetsInputStyle.open("GET", "./css/snippetinput.css");
+	getSnippetsInputStyle.send();
+
+	let snippetBlockStyle = `
+		html, body {
+			box-sizing: border-box;
+			background-color: #eee;
 		}
 
-		.snippetsInputLabel {
-			min-width: 75px;
-			margin: 6px 0;
-
-			font-weight: bold;
+		#top {
+			display: flex;
+			align-items: stretch;
+			margin: 15px 5%;
 		}
 
-		.snippetsInputDiv .checkboxInput {
-			border: 2px solid black;
-			background: gray;
-			display: inline-block;
-			position: relative;
-			margin-left: 10px;
-			border-radius: 3px;
+		#top .snippetElement {
+			flex-basis: 275px;
+			margin: 0 3px;
 		}
 
-
-		.snippetsInputDiv .checkboxInput.hovered {
-			background: #a6d854;
-		}
-
-		/* Create the checkmark/indicator (hidden when not checked) */
-		.snippetsInputDiv .checkboxInput:after {
-			content: "";
-			position: absolute;
-			visibility: hidden;
-			left: 9px;
-			top: 5px;
-			width: 5px;
-			height: 10px;
-			-webkit-transform: rotate(45deg);
-			-ms-transform: rotate(45deg);
-			transform: rotate(45deg);
-		}
-
-		/* Show the checkmark when checked */
-		.snippetsInputDiv .checkboxInput.checked:after {
-			border: solid white;
-			border-width: 0 3px 3px 0;
-			/* visibility: visible; */
-		}
-
-		.snippetsInputDiv .checkboxInput.checked {
-			border: 2px solid black;
-			background: #66a61e;
-		}
-
-		/* Snippets Radio Button */
-		/* ===================== */
-		.snippetsInputDiv .radioInput {
-			border: 2px solid black;
-			background: gray;
-			display: inline-block;
-			position: relative;
-			margin: 0 10px;
-			border-radius: 50%;
-		}
-
-		.snippetsInputDiv .radioInput.hovered {
-			background: #66c2a5;
-		}
-
-		/* Create the dot/indicator (hidden when not checked) */
-		.snippetsInputDiv .radioInput:after {
-			content: "";
-			position: absolute;
-			visibility: hidden;
-			top: 9px;
-			left: 9px;
-			width: 8px;
-			height: 8px;
-			border-radius: 50%;
-			background: white;
-		}
-
-		/* Show the dot when checked */
-		.snippetsInputDiv .radioInput.selected:after {
-			/* border: solid white;
-			border-width: 0 3px 3px 0; */
-			/* visibility: visible; */
-		}
-
-		.snippetsInputDiv .radioInput.selected {
-			border: 2px solid black;
-			background: #1b9e77;
-		}
-
-		.snippetsInputDiv .textInput {
-			width: 200px;
-			height: 24px;
-			font-size: 16px;
-			
-			margin-right: 10px;
-			float: left;
-		}
-
-		.snippetsInputDiv .textInputGo {
-			position: relative;
-
-			border-radius: 5px;
-
-			border: 1.25px solid rgba(0, 0, 0, 0.5);
-			background: #e6f5c9;
-
-			display: inline-block;
+		#bottom {
 			text-align: center;
-
-			font-family: Arimo, Helvetica, sans-serif;
 		}
 
-		.snippetsInputDiv .textInputGo.hovered {
-			background: #ccebc5;
-		}
-
-		.snippetsInputDiv .textInputGo:after {
-			content: "OK";
-			font-weight: bold;
-
+		.snippetElement {
 			display: inline-block;
-			margin-top: 33%;
+			padding: 8px;
+			/* margin: 8px; */
+			/* border-radius: 5px; */
+			/* box-shadow: 0 0 10px 2px grey; */
+			background-color: white;
+			border: 1px solid lightgray;
 		}
 
-		.snippetsInputDiv .rangeInput {
+		.snippetElement.fullWidth {
+			min-width: 90%;
+			float: none;
+			text-align: center;
+			margin: 3px 0;
+		}
+
+		.snippetElement:target {
+			background-color: #ffffe5;
+			animation: highlight-anchored 1s;
+		}
+
+		.snippetElementContent {
+			display: flex;
+			align-items: stretch;
+			justify-content: space-around;
+		}
+
+		.snippetVisElement {
 			display: inline-block;
-			width: 185px;
-
-			position: relative;
-
-			border: 2px solid black;
-			background: gray;
-			margin: 0 5px;
-			border-radius: 3px;
-			/* box-shadow: inset 0 0 10px 2px rgba(0,0,0,0.5) */
-		}
-
-		.snippetsInputDiv .rangeInput .rangeInputHandle {
 			background: white;
-			width: 10px;
-			border-radius: 3px;
-			position: absolute;
-
-			border: 1px solid black;
-			margin-top: -0.5px;
-
-			box-shadow: inset 0 0 2px 1.25px rgba(0, 0, 0, 0.75);
-			pointer-events: none;
+			overflow: hidden;
+			margin: 10px;
+			order: -1;
 		}
 
-		.snippetsInputDiv .rangeInput .rangeInputOverlay {
-			position: absolute;
-			top: 0;
-			left: 0;
+		.snippetInputWrapper {
+			display: inline-block;
+			width: 275px;
+			margin: 10px;
 		}
+
+		.fullWidth .snippetInputWrapper {
+			border: 1px solid gray;
+			background: white;
+			text-align: left;
+		}
+
+		.snippetElementTitle {
+			text-align: left;
+			font-family: 'Lucida Console', Monaco, monospace;
+			font-weight: 700;
+			padding: 8px;
+			// border-radius: 3px;
+			// background-color: white;
+			// box-shadow: inset 0 0 5px 1px gray;
+
+			border: 1px solid #cfcfcf;
+			border-radius: 2px;
+			background: #f7f7f7;
+			// line-height: 1.21429em;
+			color: green;
+		}
+
+		.snippetElementTitle .arrow {
+			color: black;
+		}
+
+		.snippetElementTitle .cellID {
+			font-weight: bolder;
+			cursor: default;
+		}
+
+		.snippetElementTitle .IDref {
+			cursor: pointer;
+		}
+
+		.snippetElementTitle .gen {
+			color: #6ec79f;
+		}
+
+		.snippetElementTitle .data {
+			color: #839bc7;
+		}
+
+		.snippetElementTitle .draw {
+			color: #fa9149;
+		}
+
+		@keyframes highlight-anchored {
+			0% {
+				background-color: #f7fcb9;
+			}
+			
+			100% {
+				background-color: #ffffe5;
+			}
+		}
+
 	`.replace(/\t\t/gi, "");
 
 	let snippetScriptAPI = `
@@ -175,6 +144,8 @@ let SAGE2_SnippetExporter = (function() {
 		let ui = {
 			titleBarHeight: 20
 		};
+
+		let outputNum = 0;
 
 		// IIFE to instantiate SAGE2 snippets API calls
 		(function() {
@@ -194,10 +165,8 @@ let SAGE2_SnippetExporter = (function() {
 				}
 
 				if (!link.snippetsInputWrapper) {
-					link.snippetsInputWrapper = link.snippetElement.append("div")
-						.style("display", "inline-block")
-						.style("width", "275px")
-						.style("margin", "10px")
+					link.snippetsInputWrapper = link.snippetContent.append("div")
+						.attr("class", "snippetInputWrapper")
 						.node();
 				}
 
@@ -259,11 +228,14 @@ let SAGE2_SnippetExporter = (function() {
 				if (!link.snippetsVisElement) {
 					// add svg and supplementary info
 
-					link.snippetsVisElement = link.snippetElement.append(type)
-						.style("display", "inline-block")
-						.style("background", "white")
-						.style("overflow", "hidden")
-						.style("margin", "10px")
+					link.snippetElement.classed("fullWidth", true);
+
+					let el = link.snippetElement.remove().node();
+
+					d3.selectAll("#bottom").select(function() { return this.appendChild(el); });
+
+					link.snippetsVisElement = link.snippetContent.append(type)
+						.attr("class", "snippetVisElement")
 						.node();
 				}
 
@@ -310,26 +282,30 @@ let SAGE2_SnippetExporter = (function() {
 			};
 
 			function createSnippetElement(link) {
-				let funcOrder = link.ancestry.concat(link.snippetID).map(f => functions[f].desc);
+				let funcOrder = link.ancestry.concat(link.snippetID).map(function(f) {
+					if (functions[f]) {
+						return '<span class=' + functions[f].type + '>' + functions[f].desc + '</span>'
+					} else {
+						let link = "#output" + f;
+						return "<a class='IDref' href='" + link + "'>[" + f + "]</a>" 
+					}
+				});
+
+				link.outputInd = outputNum++;
 
 				console.log("createSnippetElement", link);
-				let div = d3.select("body").append("div")
-					.style("display", "inline-block")
-					.style("padding", "5px")
-					.style("margin", "8px")
-					.style("border-radius", "5px")
-					.style("box-shadow", "0 0 10px 2px gray")
-					.style("background", "lightgray");
+				let div = d3.select("#top").append("div")
+					.attr("class", "snippetElement")
+					.attr("id", "output" + link.outputInd)
+					.style("order", link.outputInd);
 
 				div.append("div")
-					.style("text-align", "center")
-					.style("font-family", "'Lucida Console', Monaco, monospace")
-					.style("font-weight", "bold")
-					.style("padding", "8px")
-					.style("border-radius", "3px")
-					.style("background-color", "white")
-					.style("box-shadow", "inset 0 0 5px 1px gray")
-					.html(funcOrder.join(" &#9656; "));
+					.attr("class", "snippetElementTitle")
+					.html("<span class='cellID'>[" + link.outputInd + "]: </span>" +
+						funcOrder.join(" <span class='arrow'>&#9656;</span> "));
+
+				link.snippetContent = div.append("div")
+					.attr("class", "snippetElementContent")
 
 				link.snippetElement = div;
 			}
@@ -345,8 +321,15 @@ let SAGE2_SnippetExporter = (function() {
 
 		// add necessary css for input elements
 		var inputCSS = document.createElement("style");
-		inputCSS.innerHTML = inputStyles;
+		inputCSS.id = "style-inputs";
+		inputCSS.innerHTML = snippetInputsStyle;
 		newDocument.head.appendChild(inputCSS);
+
+		// add necessary css for input elements
+		var snippetElemCSS = document.createElement("style");
+		snippetElemCSS.id = "style-blocks";
+		snippetElemCSS.innerHTML = snippetBlockStyle;
+		newDocument.head.appendChild(snippetElemCSS);
 
 		let scripts = {
 			gen: newDocument.createElement("script"),
@@ -457,27 +440,32 @@ let SAGE2_SnippetExporter = (function() {
 						let func = functions[link.snippetID];
 
 						// save data for re-execution
-						link.data = input;
+						// link.data = input;
 
 						// call function
-						func.code.call(link, input, link)
+						func.code.call(link, link.data || [], link)
 							.then(function(result) {
-								invokeChildFunctions(result, link.children, [link.snippetID]);
+								link.data = result;
+								let prevParam = link.outputInd !== undefined ? [link.outputInd] : [link.snippetID];
+								invokeChildFunctions(result, link.children, prevParam);
 							})
 					},
 					data: function(input, link, prevFunctions) {
 						let func = functions[link.snippetID];
-						let result = func.code.call(link, input, link);
 
 						link.data = input;
 						link.ancestry = prevFunctions;
 
-						invokeChildFunctions(result, link.children, prevFunctions.concat(link.snippetID));
+						let result = func.code.call(link, input, link);
 
+						let prevParam = link.outputInd !== undefined ? [link.outputInd] : prevFunctions.concat(link.snippetID);
+
+						invokeChildFunctions(result, link.children, prevParam);
 					},
 					draw: function(input, link, prevFunctions) {
 						let func = functions[link.snippetID];
 
+						link.data = input;
 						link.ancestry = prevFunctions;
 
 						func.code.call(link, input, link);
@@ -489,8 +477,6 @@ let SAGE2_SnippetExporter = (function() {
 				function init() {
 					linkForest = ${JSON.stringify(links)};
 
-					console.log(linkForest);
-
 					console.log("Init Done", functions);
 					console.log("Links", linkForest);
 
@@ -501,19 +487,18 @@ let SAGE2_SnippetExporter = (function() {
 					for (let child of children) {
 						let { type } = functions[child.snippetID];
 
-						console.log("Run", child.snippetID);
 						runFunction[type](data, child, prevFunctions);
 					}
 				}
 
 				function run() {
+					d3.select("body").append("div").attr("id", "top");
+					d3.select("body").append("div").attr("id", "bottom");
 
 					// for each root, invoke the function
 					for (let root of linkForest) {
 						let { type } = functions[root.snippetID];
 						root.ancestry = [];
-
-						console.log("Run", root.snippetID);
 
 						runFunction[type](null, root);
 					}
