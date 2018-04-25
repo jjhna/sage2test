@@ -955,6 +955,15 @@ function wsAddClient(wsio, data) {
 		reportIfCanWallScreenshot();
 	}
 
+	// Handle snippet initialization for a connecting client
+	if (wsio.clientType === "display") {
+		// handle initialization for display
+		snippetsManager.displayClientConnect(wsio);
+	} else if (wsio.clientType === "sageUI") {
+		// handle sageUI initialization
+		snippetsManager.sageUIClientConnect(wsio);
+	}
+
 	try {
 		// For debugging connections and slow down. Creates varibles apps can request for.
 		sharedServerData.updateInformationAboutConnections(clients, sagePointers);
@@ -11137,7 +11146,11 @@ function wsSnippetSaveIntoServer(wsio, data) {
 
 	fs.writeFileSync(fullpath, fileString);
 
-	console.log("Info:", data.snippetID, data.type);
+	snippetsManager.addLoadedSnippet({
+		snippetID: data.snippetID,
+		snippet: fileContents,
+		filename
+	});
 
 	broadcast("snippetSourceFileUpdated", {
 		snippetID: data.snippetID,
@@ -11222,6 +11235,8 @@ function wsEditorRequestSnippetsExport(wsio) {
  */
 function wsSnippetsStateUpdated(wsio, data) {
 	// console.log("SnippetsStateUpdated", data);
+
+	snippetsManager.updateFunctionStatus(data);
 
 	broadcast("editorReceiveSnippetStates", data);
 }

@@ -81,7 +81,12 @@ let SAGE2_CodeSnippets = (function() {
 	 * @method getNewFunctionID
 	 */
 	function getNewFunctionID() {
-		return "codeSnippet-" + self.functionCount++;
+		if (Object.keys(self.functions).length === 0) {
+			return "codeSnippet-" + 0;
+		}
+
+		return "codeSnippet-" + (Math.max(...Object.keys(self.functions).map(id => id.split("-")[1])) + 1);
+		// return "codeSnippet-" + self.functionCount++;
 	}
 
 	/**
@@ -187,13 +192,18 @@ let SAGE2_CodeSnippets = (function() {
 			let oldFunction = self.functions[scriptID];
 
 			// save the links, remove the old script
-			document.getElementById(scriptID).remove();
-			links = oldFunction.links;
-			src = oldFunction.src;
-			state = oldFunction.state;
+			if (document.getElementById(scriptID)) {
+				document.getElementById(scriptID).remove();
+			}
+
+			if (oldFunction) {
+				links = oldFunction.links;
+				src = oldFunction.src;
+				state = oldFunction.state;
+			}
 
 			// clear any intervals remaining from a generator script
-			if (oldFunction.interval) {
+			if (oldFunction && oldFunction.interval) {
 				clearInterval(oldFunction.interval);
 			}
 		}
@@ -253,14 +263,18 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {Object} func - the information about the funtion (code, desc, type)
 	 * @param {String} filename - the name of the script file
 	 */
-	function loadFromFile(func, filename) {
+	function loadFromFile(func, filename, id = "new") {
 
 		var script = document.createElement("script");
-		script.text = createScriptBody(null, func.text, func.desc, [], "new", func.type, filename);
+		script.text = createScriptBody(null, func.text, func.desc, [], id, func.type, filename);
 		script.charset = "utf-8";
 		document.body.appendChild(script);
 
-		if (Object.values(self.listApps).length === 0) {
+		console.log("loadFromFile", arguments);
+
+		// only create a list application if there are none referenced
+		// and the file is not reloading from state
+		if (Object.values(self.listApps).length === 0 && id === "new") {
 			createListApplication();
 		}
 
@@ -563,7 +577,6 @@ let SAGE2_CodeSnippets = (function() {
 
 		} else if (app.application === "Snippets_Data") {
 			let primedLink = self.datasets[id];
-			console.log(self.datasets, id);
 
 			if (primedLink.getParent()) {
 				primedLink.getParent().addChildLink(primedLink);
@@ -746,9 +759,12 @@ let SAGE2_CodeSnippets = (function() {
 				createVisApplication(snippetsID);
 			} else {
 				let snippetsID = "data-" + self.dataCount++;
+				console.log(snippetsID);
 
 				// get link ready for application finish
 				self.datasets[snippetsID] = newLink;
+
+				console.log(self.datasets);
 
 				createDataApplication(snippetsID);
 			}

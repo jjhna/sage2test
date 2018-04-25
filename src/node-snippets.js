@@ -17,7 +17,9 @@ let SnippetsManager = (function() {
 			comm: communication, // { broadcast, clients }
 			config: (sysConfig.experimental && (sysConfig.experimental.codesnippets || {})) || {},
 
-			loaded: []
+			loaded: {},
+			links: {},
+			status: []
 		};
 
 		function getDependencies() {
@@ -29,11 +31,27 @@ let SnippetsManager = (function() {
 		}
 
 		function addLoadedSnippet(info) {
-			self.loaded.push(info);
+			self.loaded[info.filename] = info;
+
+			console.log(Object.values(self.loaded).map(i => i.snippetID));
 		}
 
-		function displayClientConnect(client) {
+		function updateSnippetAssociations(topology) {
 
+		}
+
+		function updateFunctionStatus(status) {
+			self.status = status;
+		}
+
+		function displayClientConnect(wsio) {
+			for (let filename of Object.keys(self.loaded)) {
+				wsio.emit("createSnippetFromFileWithID", self.loaded[filename]);
+			}
+		}
+
+		function sageUIClientConnect(wsio) {
+			wsio.emit("editorReceiveSnippetStates", self.status);
 		}
 
 		// public
@@ -42,7 +60,12 @@ let SnippetsManager = (function() {
 
 			getLoadedSnippetInfo,
 			addLoadedSnippet,
-			displayClientConnect
+
+			updateSnippetAssociations,
+			updateFunctionStatus,
+
+			displayClientConnect,
+			sageUIClientConnect
 		};
 	};
 }());

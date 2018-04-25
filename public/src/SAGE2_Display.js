@@ -1497,6 +1497,11 @@ function setupListeners() {
 		SAGE2_CodeSnippets.loadFromFile(data.snippet, data.filename);
 	});
 
+	wsio.on("createSnippetFromFileWithID", function(data) {
+
+		SAGE2_CodeSnippets.loadFromFile(data.snippet, data.filename, data.snippetID);
+	});
+
 	wsio.on("snippetsExportRequest", function(data) {
 
 		// only package export on master display client
