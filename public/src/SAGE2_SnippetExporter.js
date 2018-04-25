@@ -1,3 +1,13 @@
+// SAGE2 is available for use under the SAGE2 Software License
+//
+// University of Illinois at Chicago's Electronic Visualization Laboratory (EVL)
+// and University of Hawai'i at Manoa's Laboratory for Advanced Visualization and
+// Applications (LAVA)
+//
+// See full text, terms and conditions in the LICENSE.txt included file
+//
+// Copyright (c) 2014-17
+
 "use strict";
 
 /**
@@ -329,8 +339,8 @@ let SAGE2_SnippetExporter = (function() {
 	 * @param {Object} functions - the information about the functions (id, type, desc, code)
 	 * @param {Object} links - the runtime associations of the functions being exported
 	 */
-	function generateScriptFromWall(functions, links) {
-		console.log(functions, links);
+	function generateScriptFromWall(functions, links, dependencies) {
+		console.log(functions, links, dependencies);
 
 		let newWindow = window.open();
 		let newDocument = newWindow.document;
@@ -370,6 +380,7 @@ let SAGE2_SnippetExporter = (function() {
 		mainScript.text = createMainScriptText(links);
 		mainScript.id = "codeSnippets-main";
 		mainScript.async = false;
+		mainScript.onload = newWindow.run;
 
 		inputScript.text = snippetInputsCode;
 		inputScript.id = "codeSnippets-input";
@@ -389,27 +400,28 @@ let SAGE2_SnippetExporter = (function() {
 		d3Script.async = false;
 		d3Script.src = "https://d3js.org/d3.v4.min.js";
 
-		let vegaScript = newDocument.createElement("script");
-		vegaScript.type = "text/javascript";
-		vegaScript.async = false;
-		vegaScript.src = "https://cdn.jsdelivr.net/npm/vega@3";
-
-		let vegaLiteScript = newDocument.createElement("script");
-		vegaLiteScript.type = "text/javascript";
-		vegaLiteScript.async = false;
-		vegaLiteScript.src = "https://cdn.jsdelivr.net/npm/vega-lite@2";
-
-		let vegaEmbedScript = newDocument.createElement("script");
-		vegaEmbedScript.type = "text/javascript";
-		vegaEmbedScript.async = false;
-		vegaEmbedScript.src = "https://cdn.jsdelivr.net/npm/vega-embed@3";
+		if (dependencies.length === 0) {
+			d3Script.onload = loadRest();
+		}
 
 		newDocument.head.appendChild(d3Script);
-		newDocument.head.appendChild(vegaScript);
-		newDocument.head.appendChild(vegaLiteScript);
-		newDocument.head.appendChild(vegaEmbedScript);
 
-		vegaEmbedScript.onload = function() {
+		for (let ind in dependencies) {
+			let script = newDocument.createElement("script");
+			script.type = "text/javascript";
+			script.async = false;
+			script.src = dependencies[ind];
+
+			if (ind == dependencies.length - 1) {
+				console.log("onload", ind);
+				script.onload = loadRest;
+			}
+
+			newDocument.head.appendChild(script);
+		}
+
+		// load all other text scripts
+		function loadRest() {
 			newDocument.body.appendChild(downloadScript);
 
 			newDocument.head.appendChild(scripts.gen);
@@ -422,7 +434,7 @@ let SAGE2_SnippetExporter = (function() {
 
 			// run the program once the new scripts are all added
 			newWindow.run();
-		};
+		}
 
 		// ======================================================
 		// helper functions for creating scripts

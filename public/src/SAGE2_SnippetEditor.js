@@ -13,8 +13,9 @@
 /* global ace displayUI wsio SAGE2_SnippetExporter */
 
 let SAGE2_SnippetEditor = (function () {
-	return function (targetID) {
+	return function (targetID, config) {
 		let self = {
+			config: config.experimental && config.experimental.codesnippets ? config.experimental.codesnippets : {},
 			div: null,
 
 			editorDiv: null,
@@ -344,7 +345,11 @@ let SAGE2_SnippetEditor = (function () {
 		function receiveProjectExport(data) {
 			console.log("Editor receive Project Export", data);
 
-			SAGE2_SnippetExporter.generateScriptFromWall(data.functions, data.links);
+			SAGE2_SnippetExporter.generateScriptFromWall(
+				data.functions,
+				data.links,
+				self.config.external_dependencies || []
+			);
 		}
 
 		return {

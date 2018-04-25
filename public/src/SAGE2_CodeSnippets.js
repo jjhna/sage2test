@@ -29,18 +29,20 @@ let SAGE2_CodeSnippets = (function() {
 		datasets: {},
 		dataCount: 0,
 		drawings: {},
-		visCount: 0
-	};
+		visCount: 0,
 
-	init();
+		config: {}
+	};
 
 	/**
 	 * Initializer function for the SAGE2_CodeSnippets runtime
 	 *
 	 * @method init
+	 * @param {Object} config - config for codesnippets from the experimental part of the SAGE2 config
 	 */
-	function init() {
-		console.log("SAGE2_CodeSnippets initialized");
+	function init(config) {
+		console.log("SAGE2_CodeSnippets initialized", config);
+		self.config = config;
 
 		// // preload settings icon SVG to prevent flicker
 		let xhr = new XMLHttpRequest();
@@ -57,7 +59,20 @@ let SAGE2_CodeSnippets = (function() {
 		let imgSerial = new XMLSerializer().serializeToString(self.inputsIcon);
 		self.inputsIconB64 = btoa(imgSerial);
 
-		// open app for snippets?
+		// load external dependencies
+		if (self.config.external_dependencies) {
+			for (let dependency of self.config.external_dependencies) {
+				let script = document.createElement("script");
+				script.type = "text/javascript";
+				script.className = "snippets-dependency";
+				script.async = false;
+				script.src = dependency;
+
+				document.head.appendChild(script);
+
+				console.log("loaded", dependency);
+			}
+		}
 	}
 
 	/**
@@ -1036,6 +1051,8 @@ let SAGE2_CodeSnippets = (function() {
 	}());
 
 	return {
+		init,
+
 		getNewFunctionID,
 		updateFunctionDefinition,
 

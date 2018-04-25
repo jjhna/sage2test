@@ -448,8 +448,6 @@ function SAGE2_init() {
 	setupAppContextMenuDiv();
 	setupUiNoteMaker();
 	setupUiDrawCanvas();
-
-	snippetEditor = new SAGE2_SnippetEditor("codeSnippetEditor");
 }
 
 //
@@ -534,6 +532,8 @@ function setupListeners() {
 		} else {
 			document.title = "SAGE2 - " + config.host;
 		}
+
+		snippetEditor = new SAGE2_SnippetEditor("codeSnippetEditor", config);
 	});
 
 	wsio.on('createAppWindowPositionSizeOnly', function(data) {

@@ -79,6 +79,8 @@ var userlist            = require('./src/node-userlist');		  // list of users
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
 var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
 var VoiceActionManager	= require('./src/node-voiceToAction'); // manager for shared data
+var SnippetsManager			= require('./src/node-snippets');
+
 //
 // Globals
 //
@@ -186,6 +188,7 @@ partitions = new PartitionList(config);
 
 // FileBufferManager, I guess
 fileBufferManager = new FileBufferManager();
+
 
 // Create structure to handle automated placement of apps
 var appLaunchPositioning = {
@@ -737,6 +740,10 @@ var variablesUsedInVoiceHandler = {
 	voiceNameMarker: config.voice_commands.system_name
 };
 var voiceHandler = new VoiceActionManager(variablesUsedInVoiceHandler);
+
+
+// Snippets backend manager
+var snippetsManager = new SnippetsManager({ broadcast, clients }, config);  // eslint-disable-line no-unused-vars
 
 //
 // Catch the uncaught errors that weren't wrapped in a domain or try catch statement
