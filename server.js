@@ -4465,6 +4465,7 @@ function wsLoadApplication(wsio, data) {
 			appInstance.customLaunchParams = data.customLaunchParams;
 		}
 
+
 		handleNewApplication(appInstance, null);
 
 		// By not deleting it will be given whenever display client refreshes/connect
@@ -10422,6 +10423,38 @@ function handleNewApplication(appInstance, videohandle) {
 		appInstance.data = {};
 	}
 	appInstance.data.pointersOverApp = [];
+
+
+	
+	// // handle parent/children
+	// if (isAChildApp(appId)) {
+	// 	sendChildMonitoringEvent(getParentApp(appId), appId, "childCloseEvent", {});
+
+	// 	var childList = parentApps[childApps[appId]];
+	// 	for (var i = 0; i < childList.length; i++) {
+	// 		if (childList[i] == appId) {
+	// 			childList.splice(i, 1);
+	// 			parentApps[childApps[appId]] = childList;
+	// 		}
+	// 	}
+	// 	childApps[appId] = null;
+
+	// 	console.log("deleting a child");
+
+	// }
+	// if (isAParentApp(appId)) {
+	// 	console.log("deleting a parent");
+
+	// 	var childList = parentApps[appId];// get list of children
+	// 	for (var i = 0; i < childList.length; i++) {
+	// 		sendParentMonitoringEvent(childList[i], appId, "parentCloseEvent", {});
+	// 		childApps[childList[i]] = null; // child is not longer parented
+	// 	}
+
+	// 	parentApps[appId] = null; // parent no longer has children
+
+	// }
+
 	broadcast('createAppWindow', appInstance);
 	broadcast('createAppWindowPositionSizeOnly', getAppPositionSize(appInstance));
 
