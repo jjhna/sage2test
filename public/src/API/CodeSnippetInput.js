@@ -318,8 +318,8 @@ let CodeSnippetInput = (function () {
 		}
 
 		get defaultValue() {
-			if (this._spec.defaultValue !== undefined && this._spec.options.includes(this.spec.default)) {
-				return this._spec.defaultValue;
+			if (this._spec.defaultVal !== undefined && this._spec.options.includes(this.spec.defaultVal)) {
+				return this._spec.defaultVal;
 			}
 
 			return this._spec.options[0];
@@ -335,7 +335,6 @@ let CodeSnippetInput = (function () {
 			// update the input element for new spec
 			let bind = this._inputElement.selectAll(".radioOption").data(newSpec.options);
 
-			console.log("Update Radio");
 			bind.exit().remove();
 
 			this._inputElement.selectAll(".radioOption")

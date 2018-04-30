@@ -6,7 +6,8 @@
 	"animation": false,
 	"dependencies": [],
 	"load": {
-		"snippetsID": null
+		"snippetsID": null,
+		"inputsOpen": false
 	},
 	"removeFromLauncher": true,
 	"title": "Snippets Vis",

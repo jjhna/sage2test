@@ -958,7 +958,7 @@ function wsAddClient(wsio, data) {
 	// Handle snippet initialization for a connecting client
 	if (wsio.clientType === "display") {
 		// handle initialization for display
-		snippetsManager.displayClientConnect(wsio);
+		// snippetsManager.displayClientConnect(wsio);
 	} else if (wsio.clientType === "sageUI") {
 		// handle sageUI initialization
 		snippetsManager.sageUIClientConnect(wsio);
@@ -1008,6 +1008,7 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 	if (wsio.clientType === "display") {
 		initializeExistingSagePointers(wsio);
 		initializeExistingPartitions(wsio);
+		snippetsManager.displayClientConnect(wsio); // send snippets states before opening apps
 		initializeExistingApps(wsio);
 		initializeRemoteServerInfo(wsio);
 		initializeExistingWallUI(wsio);
@@ -1250,6 +1251,7 @@ function setupListeners(wsio) {
 	// == SAGE2_CodeSnippets messages ==
 	// - Display to Server
 	wsio.on('snippetSaveIntoServer', wsSnippetSaveIntoServer);
+	wsio.on('updateSnippetAssociationState', wsSaveSnippetState);
 	// - WebUI to Display
 	wsio.on('editorSnippetLoadRequest', wsEditorSnippetLoadRequest);
 	wsio.on('editorSnippetCloseNotify', wsEditorSnippetCloseNotify);
@@ -11158,6 +11160,10 @@ function wsSnippetSaveIntoServer(wsio, data) {
 	});
 
 	broadcast('storedFileList', getSavedFilesList());
+}
+
+function wsSaveSnippetState(wsio, data) {
+	snippetsManager.updateSnippetAssociations(data);
 }
 
 /* ===== Code Snippets Messages from WebUI ====== */

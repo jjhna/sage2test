@@ -25,12 +25,12 @@ var Snippets_Data = SAGE2_App.extend({
 		this.parentLink = null;
 		this.childLinks = [];
 
-		this.inputsOpen = false;
-
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
 		// this.moveEvents   = "continuous";
 		// this.resize = "fixed";
+
+		console.log(this.state, data);
 
 		// SAGE2 Application Settings
 		// Not adding controls but making the default buttons available
@@ -62,9 +62,11 @@ var Snippets_Data = SAGE2_App.extend({
 		this.errorBox = errorBox;
 		this.element.appendChild(errorBox);
 
+		let contentWidth = this.state.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
+
 		// add content wrapper to app
 		let content = document.createElement("div");
-		content.style.width = this.sage2_width + "px";
+		content.style.width = contentWidth + "px";
 		content.style.height = "100%";
 		content.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 		content.style.boxSizing = "border-box";
@@ -77,7 +79,7 @@ var Snippets_Data = SAGE2_App.extend({
 		let inputs = document.createElement("div");
 		inputs.className = "snippetsInputWrapper";
 		inputs.style.position = "absolute";
-		inputs.style.left = this.sage2_width + "px";
+		inputs.style.left = contentWidth + "px";
 		inputs.style.top = "0";
 		inputs.style.width = "300px";
 		inputs.style.minHeight = "100%";
@@ -101,7 +103,7 @@ var Snippets_Data = SAGE2_App.extend({
 
 		console.log(this.state);
 		// set up link to parent
-		SAGE2_CodeSnippets.displayApplicationLoaded(this.state.snippetsID, this);
+		SAGE2_CodeSnippets.displayApplicationLoaded(this.id, this);
 
 		this.createAncestorList();
 
@@ -210,7 +212,7 @@ var Snippets_Data = SAGE2_App.extend({
 		// Called when window is resized
 
 		// set content size to leave space for the inputs
-		let contentWidth = this.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
+		let contentWidth = this.state.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
 		this.content.style.width = contentWidth + "px";
 
 		this.inputs.style.left = contentWidth + "px";
@@ -219,7 +221,7 @@ var Snippets_Data = SAGE2_App.extend({
 		this.ancestry.attr("width", this.sage2_width);
 		this.createAncestorList();
 
-		// this.refresh(date);
+		this.refresh(date);
 	},
 
 	move: function(date) {
@@ -235,7 +237,7 @@ var Snippets_Data = SAGE2_App.extend({
 	event: function(eventType, position, user_id, data, date) {
 		if (eventType === "pointerPress" && (data.button === "left")) {
 			// click
-			SAGE2_CodeSnippets.notifyUserDataClick(user_id, this.state.snippetsID);
+			SAGE2_CodeSnippets.notifyUserDataClick(user_id, this.id);
 		} else if (eventType === "pointerMove" && this.dragging) {
 			// move
 		} else if (eventType === "pointerRelease" && (data.button === "left")) {

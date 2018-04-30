@@ -21,7 +21,7 @@ var Snippets_Vis = SAGE2_App.extend({
 		this.parentLink = null;
 		this.childLinks = [];
 
-		this.inputsOpen = false;
+		// this.inputsOpen = false;
 
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
@@ -93,7 +93,7 @@ var Snippets_Vis = SAGE2_App.extend({
 
 		this.ancestry = ancestry;
 
-		SAGE2_CodeSnippets.displayApplicationLoaded(this.state.snippetsID, this);
+		SAGE2_CodeSnippets.displayApplicationLoaded(this.id, this);
 
 		this.createAncestorList();
 
@@ -169,7 +169,7 @@ var Snippets_Vis = SAGE2_App.extend({
 
 	resize: function(date) {
 		// Called when window is resized
-		let contentWidth = this.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
+		let contentWidth = this.state.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
     this.content.style.width = contentWidth + "px";
 
     this.inputs.style.left = contentWidth + "px";
@@ -182,6 +182,7 @@ var Snippets_Vis = SAGE2_App.extend({
 			this.parentLink.update(); // redraw
 		}
 
+		this.refresh(date);
 	},
 
 	move: function(date) {

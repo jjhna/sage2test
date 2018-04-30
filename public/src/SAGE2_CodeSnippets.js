@@ -24,14 +24,15 @@ let SAGE2_CodeSnippets = (function() {
 		links: {},
 		linkCount: 0,
 
+		pendingDataLinks: [],
+		pendingVisLinks: [],
+
 		inputs: {},
 
-		datasets: {},
-		dataCount: 0,
-		drawings: {},
-		visCount: 0,
+		outputApps: {},
 
-		config: {}
+		config: {},
+		loadingApps: {}
 	};
 
 	/**
@@ -250,10 +251,8 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} filename - the new filename
 	 */
 	function sourceFileUpdated(scriptID, filename) {
-		console.log(scriptID, filename);
+		// update scripts filename
 		self.functions[scriptID].src = filename;
-
-		console.log(self.functions[scriptID]);
 	}
 
 	/**
@@ -448,7 +447,8 @@ let SAGE2_CodeSnippets = (function() {
 	 */
 	function createDataApplication(snippetsID) {
 		if (isMaster) {
-			let minDim = Math.min(ui.width, ui.height * 2);
+			let minDim = Math.min(ui.json_cfg.totalWidth, ui.json_cfg.totalHeight * 2);
+			// let minDim = Math.min(ui.width, ui.height * 2);
 
 			wsio.emit("loadApplication", {
 				application:
@@ -471,7 +471,7 @@ let SAGE2_CodeSnippets = (function() {
 	 */
 	function createVisApplication(snippetsID) {
 		if (isMaster) {
-			let minDim = Math.min(ui.width, ui.height * 2);
+			let minDim = Math.min(ui.json_cfg.totalWidth, ui.json_cfg.totalHeight * 2);
 
 			wsio.emit("loadApplication", {
 				application:
@@ -495,7 +495,8 @@ let SAGE2_CodeSnippets = (function() {
 		if (isMaster && !self.isOpeningList) {
 			self.isOpeningList = true;
 
-			let minDim = Math.min(ui.width, ui.height * 2);
+			let minDim = Math.min(ui.json_cfg.totalWidth, ui.json_cfg.totalHeight * 2);
+			// let minDim = Math.min(ui.width, ui.height * 2);
 
 			wsio.emit("loadApplication", {
 				application:
@@ -559,9 +560,20 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {Object} app - the reference to the application object
 	 */
 	function displayApplicationLoaded(id, app) {
+		if (self.loadingApps[app.id]) {
+			// resolve app load (from reloading state)
+			console.log("App Loaded:", app.id);
+			self.loadingApps[app.id]();
+		} else {
+			// handle a normal load (on normal interaction)
+			handleLoadedApplication(app);
+		}
+	}
+
+	function handleLoadedApplication(app) {
 		// call required function, update reference
 		if (app.application === "Snippets_Vis") {
-			let primedLink = self.drawings[id];
+			let primedLink = self.pendingVisLinks.pop();
 
 			if (primedLink.getParent()) {
 				primedLink.getParent().addChildLink(primedLink);
@@ -573,10 +585,10 @@ let SAGE2_CodeSnippets = (function() {
 			primedLink.update();
 
 			// fix reference
-			self.drawings[id] = app;
+			self.outputApps[app.id] = app;
 
 		} else if (app.application === "Snippets_Data") {
-			let primedLink = self.datasets[id];
+			let primedLink = self.pendingDataLinks.pop();
 
 			if (primedLink.getParent()) {
 				primedLink.getParent().addChildLink(primedLink);
@@ -588,7 +600,51 @@ let SAGE2_CodeSnippets = (function() {
 			primedLink.update();
 
 			// fix reference
-			self.datasets[id] = app;
+			self.outputApps[app.id] = app;
+		}
+
+		updateSavedSnippetAssociations();
+	}
+
+	function updateSavedSnippetAssociations() {
+		wsio.emit("updateSnippetAssociationState", {
+			apps: Object.keys(self.outputApps),
+			links: convertLinksToIDForest()
+		});
+	}
+
+	function handleReloadedSnippetAssociations(associations) {
+
+		// start at root nodes, recursively handle children
+		for (let root of associations.links) {
+			handleLink(root, null);
+		}
+
+		function handleLink(link, parent) {
+			let { linkID, appID, snippetID, children, inputs } = link;
+
+			let newLink = new Link(
+				parent ? applications[parent] : null,
+				applications[appID],
+				snippetID
+			);
+
+			self.links[linkID] = newLink;
+			self.functions[snippetID].links.push(linkID);
+
+			if (parent) {
+				applications[parent].addChildLink(newLink);
+			}
+
+			applications[appID].setParentLink(newLink);
+			self.outputApps[appID] = applications[appID];
+
+			newLink.setInputInitialValues(inputs);
+			newLink.update();
+
+			for (let child of children) {
+				handleLink(child, link.appID);
+			}
 		}
 	}
 
@@ -638,7 +694,9 @@ let SAGE2_CodeSnippets = (function() {
 		let blockWidth = (width - height) / Math.max(ancestry.length, 3);
 
 		// create input settings button/image if it doesn't exist
-		if (Object.keys(app.parentLink.inputs).length && !svg.selectAll(".inputSettingsButton").size()) {
+		if (app.parentLink &&
+			Object.keys(app.parentLink.inputs).length &&
+			!svg.selectAll(".inputSettingsButton").size()) {
 
 			svg.append("rect")
 				.attr("class", "inputSettingsButton")
@@ -647,7 +705,7 @@ let SAGE2_CodeSnippets = (function() {
 				.attr("width", height - 8)
 				.attr("height", height - 8)
 				.style("stroke", "black")
-				.style("fill", app.inputsOpen ? "gold" : "white");
+				.style("fill", app.state.inputsOpen ? "gold" : "white");
 
 			// fix the use of image by href later (flashes on redraw)
 			svg.append("image")
@@ -658,16 +716,16 @@ let SAGE2_CodeSnippets = (function() {
 				.attr("height", height - 16)
 				.on("click", function() {
 					console.log("Input Settings Click");
-					if (!app.inputsOpen) {
+					if (!app.state.inputsOpen) {
 						app.inputsClosedHeight = app.sage2_height;
 
 						let newHeight = Math.max(app.sage2_height, app.inputs.clientHeight);
 
+						app.state.inputsOpen = true;
 						app.sendResize(app.sage2_width + 300, newHeight);
-						app.inputsOpen = true;
 					} else {
+						app.state.inputsOpen = false;
 						app.sendResize(app.sage2_width - 300, app.inputsClosedHeight ? app.inputsClosedHeight : app.sage2_height);
-						app.inputsOpen = false;
 					}
 				});
 		}
@@ -675,7 +733,7 @@ let SAGE2_CodeSnippets = (function() {
 		svg.select(".inputSettingsButton")
 			.attr("x", width - height)
 			.attr("y", 0)
-			.style("fill", app.inputsOpen ? "gold" : "white");
+			.style("fill", app.state.inputsOpen ? "gold" : "white");
 
 		svg.select(".inputSettingsImage")
 			.attr("x", width - height + 4)
@@ -733,7 +791,9 @@ let SAGE2_CodeSnippets = (function() {
 	function executeCodeSnippet(snippetID, parentID) {
 		let snippet = self.functions[snippetID];
 
-		let parent = parentID ? self.datasets[parentID] : null;
+		console.log(snippetID, parentID);
+
+		let parent = parentID ? self.outputApps[parentID] : null;
 
 		let linkIndex = Object.keys(self.links).findIndex((link) => {
 			return self.links[link].getSnippetID() === snippetID && self.links[link].getParent() === parent;
@@ -754,17 +814,14 @@ let SAGE2_CodeSnippets = (function() {
 				let snippetsID = "vis-" + self.visCount++;
 
 				// get link ready for application finish
-				self.drawings[snippetsID] = newLink;
+				self.pendingVisLinks.push(newLink);
 
 				createVisApplication(snippetsID);
 			} else {
 				let snippetsID = "data-" + self.dataCount++;
-				console.log(snippetsID);
 
 				// get link ready for application finish
-				self.datasets[snippetsID] = newLink;
-
-				console.log(self.datasets);
+				self.pendingDataLinks.push(newLink);
 
 				createDataApplication(snippetsID);
 			}
@@ -902,6 +959,8 @@ let SAGE2_CodeSnippets = (function() {
 			}
 
 		}
+
+		updateSavedSnippetAssociations();
 	}
 
 	/**
@@ -954,7 +1013,7 @@ let SAGE2_CodeSnippets = (function() {
 		return forest;
 
 		// helper method
-		function createSubtree(link) {
+		function createSubtree(link, linkID) {
 			let inputs = {};
 
 			for (let input of Object.keys(link.inputs)) {
@@ -965,11 +1024,32 @@ let SAGE2_CodeSnippets = (function() {
 			}
 
 			return {
+				linkID,
+				appID: link.getChild().id,
 				snippetID: link.getSnippetID(),
 				children: link.getChild().childLinks.map(createSubtree),
 				inputs
 			};
 		}
+	}
+
+
+	function initializeSnippetAssociations(info) {
+		console.log("initializing Snippets", info);
+
+		let appPromises = [];
+
+		for (let app of info.apps) {
+			appPromises.push(new Promise(function(resolve, reject) {
+				self.loadingApps[app] = resolve;
+			}));
+		}
+
+		Promise.all(appPromises)
+			.then(function() {
+				console.log("all Snippets Apps loaded");
+				handleReloadedSnippetAssociations(info);
+			});
 	}
 
 	// Link class used by SAGE2_CodeSnippets
@@ -982,7 +1062,8 @@ let SAGE2_CodeSnippets = (function() {
 				child,
 				transformID,
 
-				inputs: {}
+				inputs: {},
+				inputInit: {}
 			};
 
 			let publicObject = {
@@ -992,6 +1073,8 @@ let SAGE2_CodeSnippets = (function() {
 				setChild,
 				getChild,
 				getSnippetID,
+				setInputInitialValues,
+				getInputInitialValues,
 
 				// expose inputs object for now
 				inputs: self.inputs
@@ -1023,6 +1106,14 @@ let SAGE2_CodeSnippets = (function() {
 				return self.transformID;
 			}
 
+			function setInputInitialValues(vals) {
+				self.inputInit = vals;
+			}
+
+			function getInputInitialValues() {
+				return self.inputInit;
+			}
+
 			/**
 			 * Handles passing information between applications and calling functions based on
 			 * the function type. This function is used to update all children of an app when the app is updated.
@@ -1046,6 +1137,7 @@ let SAGE2_CodeSnippets = (function() {
 					// call function (plots data on svg)
 					try {
 						curator.functions[id].code.call(c, p.getDataset(), publicObject);
+						c.updateAncestorTree();
 					} catch (err) {
 						c.displayError(err);
 					}
@@ -1096,7 +1188,10 @@ let SAGE2_CodeSnippets = (function() {
 		notifyUserListClick,
 		notifyUserDataClick,
 
-		requestSnippetsProjectExport
+		requestSnippetsProjectExport,
+		convertLinksToIDForest,
+		initializeSnippetAssociations,
+		updateSavedSnippetAssociations
 	};
 }());
 

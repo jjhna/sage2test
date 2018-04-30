@@ -1464,6 +1464,10 @@ function setupListeners() {
 	/*
 	 * SAGE2 Code Snippets WebSocketIO Handlers
 	 */
+	wsio.on("initializeSnippetAssociations", function(data) {
+		SAGE2_CodeSnippets.initializeSnippetAssociations(data);
+	});
+
 	wsio.on("snippetLoadRequest", function(data) {
 
 		SAGE2_CodeSnippets.requestSnippetLoad(data.from, data.scriptID);

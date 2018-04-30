@@ -18,7 +18,10 @@ let SnippetsManager = (function() {
 			config: (sysConfig.experimental && (sysConfig.experimental.codesnippets || {})) || {},
 
 			loaded: {},
-			links: {},
+			associations: {
+				apps: [],
+				links: []
+			},
 			status: []
 		};
 
@@ -32,12 +35,11 @@ let SnippetsManager = (function() {
 
 		function addLoadedSnippet(info) {
 			self.loaded[info.filename] = info;
-
-			console.log(Object.values(self.loaded).map(i => i.snippetID));
 		}
 
-		function updateSnippetAssociations(topology) {
-
+		function updateSnippetAssociations(associations) {
+			self.associations = associations;
+			console.log("self.associations:", associations);
 		}
 
 		function updateFunctionStatus(status) {
@@ -45,9 +47,13 @@ let SnippetsManager = (function() {
 		}
 
 		function displayClientConnect(wsio) {
+			// load existing snippets
 			for (let filename of Object.keys(self.loaded)) {
 				wsio.emit("createSnippetFromFileWithID", self.loaded[filename]);
 			}
+
+			// send the snippet associations
+			wsio.emit("initializeSnippetAssociations", self.associations);
 		}
 
 		function sageUIClientConnect(wsio) {

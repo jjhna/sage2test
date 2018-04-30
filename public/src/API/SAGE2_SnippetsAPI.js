@@ -2,12 +2,11 @@
 // get a reference to a globally defined SAGE2 Object
 var SAGE2 = SAGE2 || {};
 
-/* global d3 CodeSnippetInput */
+/* global d3 CodeSnippetInput SAGE2_CodeSnippets */
 
 // IIFE to instantiate SAGE2 snippets API calls
 (function() {
-	// console.log(CodeSnippetInput.create({type: "text", name: "textField"}));
-	// console.log(CodeSnippetInput.create({type: "checkbox", name: "checkboxBool"}));
+
 	/*
 	 * SAGE2.SnippetInput API
 	 *
@@ -26,8 +25,18 @@ var SAGE2 = SAGE2 || {};
 
 		if (!link.inputs[specification.name]) {
 			// create new input element if this doesn't exist
+
+			// take initialization values if applicable
+			let initVals = link.getInputInitialValues();
+			if (initVals && initVals[specification.name]) {
+				specification.defaultVal = initVals[specification.name].state;
+			}
+
 			let newInput = CodeSnippetInput.create(specification);
-			newInput.onUpdate = link.update;
+			newInput.onUpdate = function() {
+				SAGE2_CodeSnippets.updateSavedSnippetAssociations();
+				link.update();
+			};
 
 			link.inputs[specification.name] = newInput;
 
