@@ -686,11 +686,10 @@ var exifAsync = function(cmds, cb) {
 					instructions.directory !== null && instructions.directory !== "") {
 				metadata.fileTypes = instructions.fileTypes;
 				metadata.directory = instructions.directory;
-				metadata.removeFromLauncher = !!instructions.removeFromLauncher; // convert to bool
 			} else {
 				metadata.fileTypes = [];
-				metadata.removeFromLauncher = false;
 			}
+			metadata.removeFromLauncher = sageutils.isTrue(instructions.removeFromLauncher);
 
 			var exif = {FileName: app, icon: appIcon, MIMEType: "application/custom", metadata: metadata};
 

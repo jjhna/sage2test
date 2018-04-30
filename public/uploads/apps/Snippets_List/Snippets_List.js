@@ -162,7 +162,7 @@ var Snippets_List = SAGE2_App.extend({
 					group.append("text")
 						.attr("class", "snippetName")
 						.attr("x", colWidth / 2)
-						.attr("y", (i + 1) * blockHeight - blockHeight / 8)
+						.attr("y", (1 + i) * (blockHeight + 8) - 8)
 						.style("text-anchor", "middle")
 						.style("font-weight", "bold")
 						.style("font-size", blockHeight / 2  + "px")
