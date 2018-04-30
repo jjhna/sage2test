@@ -37,6 +37,104 @@ let SAGE2_SnippetExporter = (function() {
 	let snippetBlockStyle = `
 		html, body {
 			box-sizing: border-box;
+			padding: 0;
+			margin: 0;
+			background-color: #ddd;
+		}
+
+		#content {
+			display: flex;
+			height: 100vh;
+			flex-direction: row;
+			align-items: center;
+		}
+
+		#inspector {
+			display: none;
+			flex-basis: 500px;
+			flex: 0 0 auto;
+			flex-direction: column;
+
+			padding: 10px;
+			margin: 10px;
+			height: 85%;
+			font-family: 'Lucida Console', Monaco, monospace;
+			font-size: 12px;
+
+			text-align: left;
+			background-color: white;
+			border: 1px solid lightgray;
+
+			position: relative;
+		}
+
+		#inspector .title {
+			top: 0;
+			padding: 10px;
+			font-weight: 700;
+			font-size: 14px;
+			border-radius: 3px;
+		}
+
+		#inspector .title .closeButton {
+			margin-left: 20px;
+			cursor: pointer;
+			float: right;
+
+			margin: -3px 0;
+			padding: 3px 7px;
+			background-color: white;
+			border-radius: 2px;
+			border: 1px solid black;
+		}
+
+		#inspector .title .closeButton:hover {
+			color: white;
+			border-color: white;
+			background-color: #cb181d;
+		}
+
+		#inspector .title.gen {
+			background-color: #b3e2cd;
+			border: 2px solid #87d1b0;
+		}
+
+		#inspector .title.data {
+			background-color: #cbd5e8;
+			border: 2px solid #9db0d3;
+		}
+
+		#inspector .title.draw {
+			background-color: #fdcdac;
+			border: 2px solid #fba76d;
+		}
+
+		#inspector .code {
+			flex: 1;
+			margin-top: 20px;
+			// padding: 10px 15px;
+			white-space: pre;
+			overflow-y: scroll;
+
+			border: 1px solid #cfcfcf;
+			border-radius: 2px;
+			background: #f7f7f7;
+		}
+
+		#inspector .code .prettyprint {
+			border: none;
+			padding: 10px 15px;
+			margin: 0;
+			border-radius: 3px;
+		}
+
+		#notebook {
+			display: flex;
+			flex-direction: column;
+			flex: 1 1 auto;
+			overflow: auto;
+			height: 100vh;
+			max-height: 100vh;
 			background-color: #eee;
 		}
 
@@ -44,6 +142,7 @@ let SAGE2_SnippetExporter = (function() {
 			display: flex;
 			align-items: stretch;
 			margin: 15px 5%;
+			flex-shrink: 0;
 		}
 
 		#top .snippetElement {
@@ -126,6 +225,14 @@ let SAGE2_SnippetExporter = (function() {
 		.snippetElementTitle .cellID {
 			font-weight: bolder;
 			cursor: default;
+		}
+
+		.snippetElementTitle .funcName {
+			cursor: zoom-in;
+		}
+
+		.snippetElementTitle .funcName:not(:last-child):after {
+			content: ' > ';
 		}
 
 		.snippetElementTitle .IDref {
@@ -303,7 +410,7 @@ let SAGE2_SnippetExporter = (function() {
 			function createSnippetElement(link) {
 				let funcOrder = link.ancestry.concat(link.snippetID).map(function(f) {
 					if (functions[f]) {
-						return '<span class=' + functions[f].type + '>' + functions[f].desc + '</span>'
+						return '<span class=funcName ' + functions[f].type + '>' + functions[f].desc + '</span>'
 					} else {
 						let link = "#output" + f;
 						return "<a class='IDref' href='" + link + "'>[" + f + "]</a>" 
@@ -318,10 +425,45 @@ let SAGE2_SnippetExporter = (function() {
 					.attr("id", "output" + link.outputInd)
 					.style("order", link.outputInd);
 
-				div.append("div")
+				let title = div.append("div")
 					.attr("class", "snippetElementTitle")
-					.html("<span class='cellID'>[" + link.outputInd + "]: </span>" +
-						funcOrder.join(" <span class='arrow'>&#9656;</span> "));
+
+				title.append("span")
+					.attr("class", "cellID")
+					.text("[" + link.outputInd + "]: ");
+				
+					// .html("<span class='cellID'>[" + link.outputInd + "]: </span>" +
+					// 	funcOrder.join(" <span class='arrow'>&#9656;</span> "))
+
+				title.selectAll(".funcName")
+					.data(link.ancestry.concat(link.snippetID))
+				.enter().append("span")
+					.attr("class", "funcName")
+				.html(function(f) {
+						if (functions[f]) {
+							d3.select(this).classed(functions[f].type, true)
+								.on("click", () => {
+									let inspector = d3.select("#inspector").style("display", "flex");
+
+									inspector.select(".codeTitle")
+										.text(functions[f].desc);
+
+									inspector.select(".title")
+										.attr("class", "title " + functions[f].type);
+
+									inspector.select(".code .prettyprint")
+										.text(functions[f].text)
+										.classed("prettyprinted", false);
+
+										PR.prettyPrint();
+								});
+
+							return functions[f].desc;
+						} else {
+							let link = "#output" + f;
+							return "<a class='IDref' href='" + link + "'>[" + f + "]</a>" 
+						}
+					});
 
 				link.snippetContent = div.append("div")
 					.attr("class", "snippetElementContent")
@@ -394,6 +536,14 @@ let SAGE2_SnippetExporter = (function() {
 		downloadScript.id = "codeSnippets-download";
 		downloadScript.async = false;
 
+		let prettyPrint = newDocument.createElement("script");
+		prettyPrint.type = "text/javascript";
+		prettyPrint.async = false;
+		prettyPrint.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?&amp;lang=js";
+		// prettyPrint.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?skin=sunburst&amp;lang=js";
+
+		newDocument.head.appendChild(prettyPrint);
+
 		// add d3 to new page
 		let d3Script = newDocument.createElement("script");
 		d3Script.type = "text/javascript";
@@ -457,6 +607,7 @@ let SAGE2_SnippetExporter = (function() {
 					functions["${func.id}"] = {
 						type: "${func.type}",
 						desc: "${func.desc}",
+						text: \`${func.text.replace(/`/gi, "\\`").replace(/\$/gi, "\\$")}\`,
 						code: ${func.code}
 					}`.replace(/\t\t\t\t/gi, "");
 			}
@@ -535,8 +686,20 @@ let SAGE2_SnippetExporter = (function() {
 				}
 
 				function run() {
-					d3.select("body").append("div").attr("id", "top");
-					d3.select("body").append("div").attr("id", "bottom");
+					let content = d3.select("body").append("div").attr("id", "content");
+					let notebook = content.append("div").attr("id", "notebook");
+					notebook.append("div").attr("id", "top");
+					notebook.append("div").attr("id", "bottom");
+
+					let inspector = content.append("div").attr("id", "inspector");
+					let title = inspector.append("div").attr("class", "title");
+					title.append("span").attr("class", "codeTitle");
+					title.append("span").attr("class", "closeButton")
+						.text("X")
+						.on("click", () => inspector.style("display", "none"));
+
+
+					inspector.append("div").attr("class", "code").append("pre").attr("class", "prettyprint linenums");
 
 					// for each root, invoke the function
 					for (let root of linkForest) {
@@ -566,6 +729,9 @@ let SAGE2_SnippetExporter = (function() {
 				downloadButton.value = "Download Project";
 				downloadButton.onclick = download;
 
+				downloadWrapper.style.position = "fixed";
+				downloadWrapper.style.zIndex = "50";
+
 				downloadButton.style.backgroundColor = "#b9e1f1";
 				downloadButton.style.border = "3px solid rgba(42, 165, 213, 0.25)";
 				downloadButton.style.padding = "8px";
@@ -573,7 +739,10 @@ let SAGE2_SnippetExporter = (function() {
 				downloadButton.style.borderRadius = "5px";
 				downloadButton.style.fontSize = "16px";
 				downloadButton.style.cursor = "pointer";
+				downloadButton.style.boxShadow = "0 0 25px 5px gray";
 
+				document.body.innerHTML += "<style>#notebook {padding-top: 50px; height: calc(100vh - 50px)}</style>"
+				
 				downloadWrapper.appendChild(downloadButton);
 				document.body.appendChild(downloadWrapper);
 
@@ -583,6 +752,16 @@ let SAGE2_SnippetExporter = (function() {
 					let body = domCopy.getElementsByTagName("body")[0];
 					body.innerHTML = "";
 					body.setAttribute("onload", "run()");
+
+					// restore prettyprint script which removes itself and remove stylesheet..
+					let prettyPrint = document.createElement("script");
+					prettyPrint.type = "text/javascript";
+					prettyPrint.async = false;
+					prettyPrint.src = "https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?&amp;lang=js";
+					
+					let head = domCopy.getElementsByTagName("head")[0];
+					head.getElementsByTagName("link")[0].remove();
+					head.appendChild(prettyPrint);
 
 					var element = document.createElement('a');
 					element.setAttribute('href', 'data:text/html;charset=utf-8,' 

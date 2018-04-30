@@ -646,6 +646,9 @@ let SAGE2_CodeSnippets = (function() {
 				handleLink(child, link.appID);
 			}
 		}
+
+		// restore link index
+		self.linkCount = Math.max(...Object.keys(self.links).map(id => +id.split("-")[1])) + 1;
 	}
 
 	/**
@@ -984,6 +987,7 @@ let SAGE2_CodeSnippets = (function() {
 				id: key,
 				type: self.functions[key].type,
 				desc: self.functions[key].desc,
+				text: self.functions[key].text,
 				code: functionBodies[key]
 			}));
 
@@ -1027,7 +1031,9 @@ let SAGE2_CodeSnippets = (function() {
 				linkID,
 				appID: link.getChild().id,
 				snippetID: link.getSnippetID(),
-				children: link.getChild().childLinks.map(createSubtree),
+				children: link.getChild().childLinks.map((child) => {
+					return createSubtree(child, Object.keys(self.links).find(id => self.links[id] === child));
+				}),
 				inputs
 			};
 		}
