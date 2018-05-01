@@ -1137,6 +1137,7 @@ let SAGE2_CodeSnippets = (function() {
 						let result = curator.functions[id].code.call(c, p.getDataset(), publicObject);
 						c.updateDataset(result);
 					} catch (err) {
+						console.log(err);
 						c.displayError(err);
 					}
 				} else if (curator.functions[id].type === "draw" && p) {
@@ -1145,6 +1146,7 @@ let SAGE2_CodeSnippets = (function() {
 						curator.functions[id].code.call(c, p.getDataset(), publicObject);
 						c.updateAncestorTree();
 					} catch (err) {
+						console.log(err);
 						c.displayError(err);
 					}
 				} else if (curator.functions[id].type === "gen") {
@@ -1155,6 +1157,7 @@ let SAGE2_CodeSnippets = (function() {
 							c.updateDataset(data);
 						})
 						.catch(err => {
+							console.log(err);
 							c.displayError(err);
 						});
 				}

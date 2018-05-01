@@ -369,11 +369,11 @@ let SAGE2_SnippetExporter = (function() {
 				d3.select(link.snippetsVisElement).each(function() {
 					if (type === "svg") {
 						d3.select(this)
-							.attr("width", 600).attr("height", 300);
+							.attr("width", 600).attr("height", 450);
 					} else {
 						d3.select(this)
 							.style("width", "600px")
-							.style("height", "300px");
+							.style("height", "450px");
 					}
 				});
 
@@ -381,7 +381,7 @@ let SAGE2_SnippetExporter = (function() {
 				return {
 					elem: link.snippetsVisElement,
 					width: 600,
-					height: 300
+					height: 450
 				};
 			};
 

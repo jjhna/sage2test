@@ -39,7 +39,6 @@ let SnippetsManager = (function() {
 
 		function updateSnippetAssociations(associations) {
 			self.associations = associations;
-			console.log("self.associations:", associations);
 		}
 
 		function updateFunctionStatus(status) {

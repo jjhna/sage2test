@@ -35,6 +35,7 @@ var Snippets_Vis = SAGE2_App.extend({
 		this.content.style.boxSizing = "border-box";
 		this.content.style.left = "0";
 		this.content.style.top = ui.titleBarHeight * 1.5 + "px";
+		this.content.style.overflow = "hidden";
 		
 		this.element.appendChild(this.content);
 
@@ -171,6 +172,7 @@ var Snippets_Vis = SAGE2_App.extend({
 		// Called when window is resized
 		let contentWidth = this.state.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
     this.content.style.width = contentWidth + "px";
+		this.content.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
 
     this.inputs.style.left = contentWidth + "px";
 

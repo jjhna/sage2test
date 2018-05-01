@@ -89,7 +89,7 @@ var SAGE2 = SAGE2 || {};
 		}
 
 		// set size to leave space for the inputs
-		let elementWidth = app.inputsOpen ? app.sage2_width - 300 : app.sage2_width;
+		let elementWidth = app.state.inputsOpen ? app.sage2_width - 300 : app.sage2_width;
 
 		// if the app doesn't have a vis element, create one
 		if (!app.snippetsVisElement) {
