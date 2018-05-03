@@ -2664,7 +2664,7 @@ function saveSession(filename) {
 	states.numapps = 0;
 	states.partitions = [];
 	states.numpartitions = 0;
-	states.snippets = snippetsManager.getSnippetAssociations();
+	states.snippets = {};
 	states.date    = Date.now();
 	for (key in SAGE2Items.applications.list) {
 		// make a copy of the application object
@@ -2716,6 +2716,12 @@ function saveSession(filename) {
 		states.partitions.push(p);
 		states.numpartitions++;
 	}
+
+	// save snippet information
+	states.snippets = {
+		loaded: snippetsManager.getLoadedSnippetInfo(),
+		associations: snippetsManager.getSnippetAssociations()
+	};
 
 	// session with only partitions considered a "LAYOUT"
 	if (states.numapps === 0 && states.numpartitions > 0 && filename !== "default.json") {
@@ -2927,6 +2933,21 @@ function loadSession(filename) {
 
 			var session = JSON.parse(data);
 			sageutils.log("Session", "number of applications", session.numapps);
+
+			// reload snippets in the display and get them ready for session load
+			if (session.snippets) {
+				let { loaded, associations } = session.snippets;
+
+				// load existing snippets
+				for (let filename of Object.keys(loaded)) {
+					snippetsManager.addLoadedSnippet(loaded[filename]);
+					broadcast("createSnippetFromFileWithID", loaded[filename]);
+				}
+
+				snippetsManager.updateSnippetAssociations(associations);
+				// send the snippet associations
+				broadcast("initializeSnippetAssociations", associations);
+			}
 
 			// recreate partitions
 			if (session.partitions) {

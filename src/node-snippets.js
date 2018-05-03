@@ -19,6 +19,8 @@ let SnippetsManager = (function() {
 
 			loaded: {},
 			associations: {
+				dataCount: 0,
+				visCount: 0,
 				apps: [],
 				links: []
 			},

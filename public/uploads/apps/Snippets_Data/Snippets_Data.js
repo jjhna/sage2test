@@ -183,12 +183,12 @@ var Snippets_Data = SAGE2_App.extend({
 
 		if (this.parentLink) {
       if (this.parentLink.getParent()) {
-        this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().id})`);
+        this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().state.snippetsID})`);
       } else {
-        this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}()`);
+        this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}()`);
       }
     } else {
-      this.updateTitle("Snippets - " + this.id);
+      this.updateTitle("Snippets - " + this.state.snippetsID);
     }
 	},
 

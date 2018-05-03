@@ -29,10 +29,14 @@ let SAGE2_CodeSnippets = (function() {
 
 		inputs: {},
 
+		dataCount: 0,
+		visCount: 0,
 		outputApps: {},
+		appIDmap: {},
 
 		config: {},
-		loadingApps: {}
+		loadingApps: {},
+		loadingAppsSession: {}
 	};
 
 	/**
@@ -559,10 +563,13 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {Object} app - the reference to the application object
 	 */
 	function displayApplicationLoaded(id, app) {
-		if (self.loadingApps[app.id]) {
+		self.appIDmap[app.state.snippetsID] = app.id;
+
+		if (self.loadingApps[app.state.snippetsID]) {
 			// resolve app load (from reloading state)
-			console.log("App Loaded:", app.id);
-			self.loadingApps[app.id]();
+			console.log("App Loaded:", app.state.snippetsID);
+
+			self.loadingApps[app.state.snippetsID]();
 		} else {
 			// handle a normal load (on normal interaction)
 			handleLoadedApplication(app);
@@ -584,7 +591,7 @@ let SAGE2_CodeSnippets = (function() {
 			primedLink.update();
 
 			// fix reference
-			self.outputApps[app.id] = app;
+			self.outputApps[app.state.snippetsID] = app;
 
 		} else if (app.application === "Snippets_Data") {
 			let primedLink = self.pendingDataLinks.pop();
@@ -599,7 +606,7 @@ let SAGE2_CodeSnippets = (function() {
 			primedLink.update();
 
 			// fix reference
-			self.outputApps[app.id] = app;
+			self.outputApps[app.state.snippetsID] = app;
 		}
 
 
@@ -608,13 +615,17 @@ let SAGE2_CodeSnippets = (function() {
 
 	function updateSavedSnippetAssociations() {
 		console.log("CurrentApps:", Object.keys(self.outputApps));
-
-		wsio.emit("updateSnippetAssociationState", {
-			apps: Object.keys(self.outputApps),
-			links: convertLinksToIDForest()
-		});
+		if (isMaster) {
+			wsio.emit("updateSnippetAssociationState", {
+				dataCount: self.dataCount,
+				visCount: self.visCount,
+				apps: Object.keys(self.outputApps),
+				links: convertLinksToIDForest()
+			});
+		}
 	}
 
+	// this is to handle reloads (client reconnect)
 	function handleReloadedSnippetAssociations(associations) {
 
 		// start at root nodes, recursively handle children
@@ -625,9 +636,12 @@ let SAGE2_CodeSnippets = (function() {
 		function handleLink(link, parent) {
 			let { linkID, appID, snippetID, children, inputs } = link;
 
+			let id = self.appIDmap[appID];
+			console.log(self.appIDmap, appID, id);
+
 			let newLink = new Link(
 				parent ? applications[parent] : null,
-				applications[appID],
+				applications[id],
 				snippetID
 			);
 
@@ -638,14 +652,14 @@ let SAGE2_CodeSnippets = (function() {
 				applications[parent].addChildLink(newLink);
 			}
 
-			applications[appID].setParentLink(newLink);
-			self.outputApps[appID] = applications[appID];
+			applications[id].setParentLink(newLink);
+			self.outputApps[appID] = applications[id];
 
 			newLink.setInputInitialValues(inputs);
 			newLink.update();
 
 			for (let child of children) {
-				handleLink(child, link.appID);
+				handleLink(child, id);
 			}
 		}
 
@@ -798,9 +812,13 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} parentID - the SAGE2 ID of the app as the target
 	 */
 	function executeCodeSnippet(snippetID, parentID) {
+		console.log("executeCodeSnippet", snippetID, parentID);
 		let snippet = self.functions[snippetID];
 
-		let parent = parentID ? self.outputApps[parentID] : null;
+		console.log("appID map", self.appIDmap);
+
+		let parent = parentID ? applications[parentID] : null;
+		console.log("execute parent", parent);
 
 		let linkIndex = Object.keys(self.links).findIndex((link) => {
 			return self.links[link].getSnippetID() === snippetID && self.links[link].getParent() === parent;
@@ -963,6 +981,7 @@ let SAGE2_CodeSnippets = (function() {
 				}
 
 				delete self.links[linkID];
+				delete self.outputApps[app.state.snippetsID];
 			}
 
 		}
@@ -1033,7 +1052,7 @@ let SAGE2_CodeSnippets = (function() {
 
 			return {
 				linkID,
-				appID: link.getChild().id,
+				appID: link.getChild().state.snippetsID,
 				snippetID: link.getSnippetID(),
 				children: link.getChild().childLinks.map((child) => {
 					return createSubtree(child, Object.keys(self.links).find(id => self.links[id] === child));
@@ -1048,6 +1067,8 @@ let SAGE2_CodeSnippets = (function() {
 		console.log("initializing Snippets", info);
 
 		let appPromises = [];
+		self.dataCount = info.dataCount;
+		self.visCount = info.visCount;
 
 		for (let app of info.apps) {
 			appPromises.push(new Promise(function(resolve, reject) {
@@ -1147,6 +1168,9 @@ let SAGE2_CodeSnippets = (function() {
 				} else if (curator.functions[id].type === "draw" && p) {
 					// call function (plots data on svg)
 					try {
+						// remove error dialogue when the element is requested for draw function
+						c.errorBox.style.display = "none";
+
 						curator.functions[id].code.call(c, p.getDataset(), publicObject);
 						c.updateAncestorTree();
 					} catch (err) {
