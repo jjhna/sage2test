@@ -72,7 +72,7 @@
 		"sw-precache": "latest",
 		"websocketio": "https://github.com/renambot-uic/websocketio.git",
 		"rimraf": "latest",
-		"electron": "beta",
+		"electron": "latest",
 		"electron-squirrel-startup": "latest",
 		"systeminformation": "latest",
 		"ws": "^3.3.1",
@@ -96,7 +96,7 @@
 		"coveralls": "latest"
 	},
 	"engines": {
-		"node": ">=0.10.x"
+		"node": ">=8.x"
 	},
 	"scripts": {
 		"start": "node server.js -l",
