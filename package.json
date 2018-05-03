@@ -79,7 +79,7 @@
 		"ytdl-core": "latest"
 	},
 	"optionalDependencies": {
-		"node-demux": "https://github.com/renambot-uic/node-demux.git"
+		"node-demux": "git+https://github.com/renambot-uic/node-demux.git"
 	},
 	"devDependencies": {
 		"grunt": "latest",
