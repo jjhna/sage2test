@@ -171,8 +171,13 @@ var SAGE2_App = Class.extend({
 		this.SAGE2InitializeAppOptionsFromState();
 
 
-		this.parentApp = data.parentApp;
-		this.childList = data.childList;
+		//this.parentApp = data.parentApp;
+		//this.childList = data.childList;
+
+		if( data.parentApp != null )
+			this.parentApp = data.parentApp;
+		if( data.childList != null )
+			this.childList = data.childList;
 
 
 		// Check for customLaunchParams and optionally a function to activate on next frame

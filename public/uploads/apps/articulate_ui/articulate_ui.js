@@ -227,15 +227,18 @@ console.log("debugDatagram: "+ data);
 		this.refresh();
 		this.systemInstruction = ">> Sending Request . . ."
 		this.refresh();
+
+		console.log("TEXT INPUT " + data.text);
 		//new logic to maintain the same sessionId
 		var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/";
 		var requestIndex = this.requests.push(base_url + data.text); //returns the number of elements
 		//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
 
 		//only send url and the index of the request
-		if( isMaster )
+		if( isMaster ){
+			console.log("ABOUT TO CONTACT ARTICULATE HUB")
 			this.contactArticulateHub(base_url+data.text, requestIndex - 1);  //send to the articulate hub
-
+		}
 		//----------------------------------------
 
 		//if( isMaster ){
@@ -345,6 +348,7 @@ console.log("debugDatagram: "+ data);
 
 	//this gets the data from the smart hub, in a callback
 	callback: function(err, specObj, requestIndex) {
+		console.log("IN CALLBACK");
 			if (err){
 				console.log("error connecting to articulate smart hub" + err);
 				this.refresh();
@@ -510,6 +514,7 @@ console.log("debugDatagram: "+ data);
 					while( line.indexOf(",") != -1 )
 						line = line.replace(",", "#");
 					tokens = line.split("#");
+					console.log(tokens);
 					obj = new Object();
 
 					if( id == null ){
@@ -630,12 +635,12 @@ console.log("debugDatagram: "+ data);
 			console.log("child close");
 		if( type == "childOpenEvent") {
 			//center and resize the current child
-			if( this.getNumberOfChildren() > 1){
-				this.resizeChild(this.getNumberOfChildren()-2, 400, 300, false);
-				this.moveChild(this.getNumberOfChildren()-2, 50, 2000) //move aside
-			}
-			this.moveChild(this.getNumberOfChildren()-1, 2000, 750); //center
-			this.resizeChild(this.getNumberOfChildren()-1, 1600, 1200, false);
+			//if( this.getNumberOfChildren() > 1){
+			//	this.resizeChild(this.getNumberOfChildren()-2, 400, 300, false);
+			//	this.moveChild(this.getNumberOfChildren()-2, 50, 2000) //move aside
+			//}
+			//this.moveChild(this.getNumberOfChildren()-1, 2000, 750); //center
+			//this.resizeChild(this.getNumberOfChildren()-1, 1600, 1200, false);
 			console.log("child open");
 			this.refresh(date);
 		}

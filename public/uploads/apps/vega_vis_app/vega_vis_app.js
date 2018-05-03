@@ -176,7 +176,8 @@ var vega_vis_app = SAGE2_App.extend( {
 
 	//this is vega's function to make a bar chart, from the spec
 	parseBar: function(spec) {
-		console.log("parse");
+		console.log("parse ")
+		console.log( spec);
   		vg.parse.spec(spec, this.vegaCallbackFuncBar);
   		//vg.embed("#vis", spec, this.vegaCallbackFunc);
 
@@ -222,7 +223,8 @@ var vega_vis_app = SAGE2_App.extend( {
 
 	//vega's parsing the line charts
 	parseLine: function(spec) {
-		console.log("parse");
+		console.log("parse ");
+		console.log(spec);
   		vg.parse.spec(spec, this.vegaCallbackFuncLine);
   		//vg.embed("#vis", spec, this.vegaCallbackFunc);
 
