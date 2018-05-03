@@ -10638,8 +10638,10 @@ var omicronManager = new Omicron(config);
 
 // Helper function for omicron to switch pointer mode
 function omi_pointerChangeMode(uniqueID) {
-	remoteInteraction[uniqueID].toggleModes();
-	broadcast('changeSagePointerMode', {id: sagePointers[uniqueID].id, mode: remoteInteraction[uniqueID].interactionMode});
+	if(remoteInteraction[uniqueID]){
+		remoteInteraction[uniqueID].toggleModes();
+		broadcast('changeSagePointerMode', {id: sagePointers[uniqueID].id, mode: remoteInteraction[uniqueID].interactionMode});
+	}
 }
 
 // Set callback functions so Omicron can generate SAGEPointer events
