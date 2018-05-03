@@ -491,7 +491,6 @@ let SAGE2_CodeSnippets = (function() {
 	 * @method createListApplication
 	 */
 	function createListApplication() {
-		console.log("createListApplication", isMaster, !self.isOpeningList);
 		if (isMaster && !self.isOpeningList) {
 			self.isOpeningList = true;
 
@@ -603,10 +602,13 @@ let SAGE2_CodeSnippets = (function() {
 			self.outputApps[app.id] = app;
 		}
 
+
 		updateSavedSnippetAssociations();
 	}
 
 	function updateSavedSnippetAssociations() {
+		console.log("CurrentApps:", Object.keys(self.outputApps));
+
 		wsio.emit("updateSnippetAssociationState", {
 			apps: Object.keys(self.outputApps),
 			links: convertLinksToIDForest()
@@ -648,7 +650,11 @@ let SAGE2_CodeSnippets = (function() {
 		}
 
 		// restore link index
-		self.linkCount = Math.max(...Object.keys(self.links).map(id => +id.split("-")[1])) + 1;
+		if (Object.keys(self.links).length) {
+			self.linkCount = Math.max(...Object.keys(self.links).map(id => +id.split("-")[1])) + 1;
+		} else {
+			self.linkCount = 0;
+		}
 	}
 
 	/**
@@ -793,8 +799,6 @@ let SAGE2_CodeSnippets = (function() {
 	 */
 	function executeCodeSnippet(snippetID, parentID) {
 		let snippet = self.functions[snippetID];
-
-		console.log(snippetID, parentID);
 
 		let parent = parentID ? self.outputApps[parentID] : null;
 

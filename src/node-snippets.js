@@ -39,6 +39,11 @@ let SnippetsManager = (function() {
 
 		function updateSnippetAssociations(associations) {
 			self.associations = associations;
+			console.log(associations);
+		}
+
+		function getSnippetAssociations() {
+			return self.associations;
 		}
 
 		function updateFunctionStatus(status) {
@@ -67,6 +72,7 @@ let SnippetsManager = (function() {
 			addLoadedSnippet,
 
 			updateSnippetAssociations,
+			getSnippetAssociations,
 			updateFunctionStatus,
 
 			displayClientConnect,

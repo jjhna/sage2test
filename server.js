@@ -2664,6 +2664,7 @@ function saveSession(filename) {
 	states.numapps = 0;
 	states.partitions = [];
 	states.numpartitions = 0;
+	states.snippets = snippetsManager.getSnippetAssociations();
 	states.date    = Date.now();
 	for (key in SAGE2Items.applications.list) {
 		// make a copy of the application object
@@ -11126,7 +11127,6 @@ function wsSnippetSaveIntoServer(wsio, data) {
 	var filename = `${data.type}-${data.desc.replace(" ", "_")}-${now.getTime()}.snip`;
 	var fullpath = path.join(snippetWritePath, filename);
 
-	console.log("Write To:", fullpath);
 	let fileContents = {
 		text: data.text,
 		type: data.type,

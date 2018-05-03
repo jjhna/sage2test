@@ -109,12 +109,12 @@ var Snippets_Data = SAGE2_App.extend({
 
 		if (this.parentLink) {
 			if (this.parentLink.getParent()) {
-				this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().state.snippetsID})`);
+				this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().id})`);
 			} else {
-				this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}()`);
+				this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}()`);
 			}
 		} else {
-			this.updateTitle("Snippets - " + this.state.snippetsID);
+			this.updateTitle("Snippets - " + this.id);
 		}
 	},
 
@@ -180,6 +180,16 @@ var Snippets_Data = SAGE2_App.extend({
 	setParentLink: function (link, date) {
 		// save the parent of the function
 		this.parentLink = link;
+
+		if (this.parentLink) {
+      if (this.parentLink.getParent()) {
+        this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().id})`);
+      } else {
+        this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}()`);
+      }
+    } else {
+      this.updateTitle("Snippets - " + this.id);
+    }
 	},
 
 	removeParentLink: function() {

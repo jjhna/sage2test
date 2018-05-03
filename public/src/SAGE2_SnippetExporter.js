@@ -52,6 +52,7 @@ let SAGE2_SnippetExporter = (function() {
 		#inspector {
 			display: none;
 			flex-basis: 500px;
+			max-width: 550px;
 			flex: 0 0 auto;
 			flex-direction: column;
 
