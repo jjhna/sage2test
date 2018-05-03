@@ -298,7 +298,7 @@ function createWindow() {
 		// resizable: !commander.fullscreen,
 		webPreferences: {
 			nodeIntegration: true,
-			webSecurity: false, // seems to be an issue on Windows
+			webSecurity: true,
 			backgroundThrottling: false,
 			plugins: commander.plugins,
 			allowDisplayingInsecureContent: commander.allowDisplayingInsecure,
