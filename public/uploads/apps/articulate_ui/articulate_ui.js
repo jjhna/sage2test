@@ -440,7 +440,7 @@ console.log("debugDatagram: "+ data);
 					id = null;//specificationObj["id"];
 				else
 					id = specificationObj["horizontalAxis"].toLowerCase();
-			data = [];
+			dataToVisualize = [];
 
 			//print for sanity
 			console.log('type' + type + "x " + x + " y " + y + " hub_id " + hub_id);
@@ -479,11 +479,18 @@ console.log("debugDatagram: "+ data);
 						if( val > maxVal )
 							maxVal = val;
 					}
-					else {
+					else { //FIX SOMETIME
+						console.log(tokens);
+						obj["latitude"] = parseFloat(tokens[2]);
+						obj["longitude"] = parseFloat(tokens[6]);
+						val = parseFloat(tokens[8]);
+						obj["value"] = val;
+						if( val > maxVal )
+							maxVal = val;
 						//to do... maybe?
 					}
 
-					data.push(obj);
+					dataToVisualize.push(obj);
 				}
 				// data parsed!
 
@@ -491,11 +498,11 @@ console.log("debugDatagram: "+ data);
 				applicationType ="custom", //its a custom app (as opposed to say video app)
 				application = "apps/heat_map"; //I called it 'heat map'
 				msg = "this is a message from articulate_ui", //not really used, but an option
-				console.log(data); //just for sanity
+				console.log(dataToVisualize); //just for sanity
 
 				initState = {  // these values will load on child app init
 					value: 20,
-					data: data, //here is where I send the locations and number of crimes at this location, which came from the nlp smart hub
+					data: dataToVisualize, //here is where I send the locations and number of crimes at this location, which came from the nlp smart hub
 					maxValue: maxVal,
 					title: "visualization response"
 				};
@@ -524,11 +531,13 @@ console.log("debugDatagram: "+ data);
 						obj["id"] = "null";
 					}
 					else {
-						//to do
+						obj["y"] = parseInt(tokens[2]);
+						obj["x"] = tokens[6];
+						obj["id"] = "null"; //NULL FOR NOW!!
 					}
 
 
-					data.push(obj);
+					dataToVisualize.push(obj);
 					// console.log(obj);
 				}
 
@@ -536,7 +545,7 @@ console.log("debugDatagram: "+ data);
 				applicationType ="custom",
 				application = "apps/vega_vis_app"; 	 //its a vega app
 				msg = "this is a message from articulate_ui", //not used so much, but could
-				console.log(data);
+				console.log(dataToVisualize);
 
 				initState = {  // the vis app will get these values and use them to draw appropriately
 					value: 10,
@@ -545,7 +554,7 @@ console.log("debugDatagram: "+ data);
 					y: y.toLowerCase(), //y axis for the bar chart (usually counts in our case)
 					color: color, //what color to give the bars - at this point a single color- someday need multiple colors
 					visId: this.counter,  //unique id for the vis, based on the count
-					data: data, //the data to visualize- like counts and labels
+					data: dataToVisualize, //the data to visualize- like counts and labels
 					title: "visualization response" //should make this better someday...
 				};
 			}
@@ -585,7 +594,7 @@ console.log("debugDatagram: "+ data);
 					}
 
 
-					data.push(obj);
+					dataToVisualize.push(obj);
 					// console.log(obj);
 				}
 
@@ -593,7 +602,7 @@ console.log("debugDatagram: "+ data);
 				applicationType ="custom",
 				application = "apps/vega_vis_app"; // launch the vega app
 				msg = "this is a message from articulate_ui",
-				console.log(data);
+				console.log(dataToVisualize);
 
 				initState = {  // these values will load on child app init
 					value: 10, //not used
@@ -603,7 +612,7 @@ console.log("debugDatagram: "+ data);
 					id: id, //what are the lines
 					color: color, //i can't remember where the colors for the lines get set- maybe in the vega vis app... but someday need to be able to pass array of colors associated with lines
 					visId: this.counter, //unique id for the vis
-					data: data, //data to draw
+					data: dataToVisualize, //data to draw
 					title: "visualization response"
 				};
 			}// this is the end of the line chart
