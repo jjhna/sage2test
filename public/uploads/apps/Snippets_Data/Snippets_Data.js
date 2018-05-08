@@ -30,8 +30,6 @@ var Snippets_Data = SAGE2_App.extend({
 		// this.moveEvents   = "continuous";
 		// this.resize = "fixed";
 
-		console.log(this.state, data);
-
 		// SAGE2 Application Settings
 		// Not adding controls but making the default buttons available
 		this.controls.finishedAddingControls();
@@ -89,7 +87,7 @@ var Snippets_Data = SAGE2_App.extend({
 
 		this.inputs = inputs;
 		this.element.appendChild(inputs);
-		
+
 		// add wrapper for function execution information
 		let ancestry = d3.select(this.element).append("svg")
 			.attr("class", "snippetAncestry")
@@ -101,7 +99,6 @@ var Snippets_Data = SAGE2_App.extend({
 		// use mouse events normally
 		this.passSAGE2PointerAsMouseEvents = true;
 
-		console.log(this.state);
 		// set up link to parent
 		SAGE2_CodeSnippets.displayApplicationLoaded(this.id, this);
 

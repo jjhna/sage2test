@@ -2944,7 +2944,7 @@ function loadSession(filename) {
 					broadcast("createSnippetFromFileWithID", loaded[filename]);
 				}
 
-				snippetsManager.updateSnippetAssociations(associations);
+				// snippetsManager.updateSnippetAssociations(associations);
 				// send the snippet associations
 				broadcast("initializeSnippetAssociations", associations);
 			}

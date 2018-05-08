@@ -37,6 +37,7 @@ let SnippetsManager = (function() {
 
 		function addLoadedSnippet(info) {
 			self.loaded[info.filename] = info;
+			console.log(Object.keys(self.loaded).map(f => ({f, id: self.loaded[f].snippetID})));
 		}
 
 		function updateSnippetAssociations(associations) {

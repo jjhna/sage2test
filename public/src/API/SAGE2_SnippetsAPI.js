@@ -137,6 +137,4 @@ var SAGE2 = SAGE2 || {};
 		// create and save new timeout
 		link.timeout = setTimeout(link.update, time);
 	};
-
-	console.log(SAGE2);
 }());

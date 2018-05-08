@@ -36,7 +36,9 @@ let SAGE2_CodeSnippets = (function() {
 
 		config: {},
 		loadingApps: {},
-		loadingAppsSession: {}
+		reloadAppIDmap: {},
+		reloadSnippetIDmap: {},
+		reloadSnippetFilemap: {}
 	};
 
 	/**
@@ -87,11 +89,16 @@ let SAGE2_CodeSnippets = (function() {
 	 */
 	function getNewFunctionID() {
 		if (Object.keys(self.functions).length === 0) {
+			self.functionCount++;
 			return "codeSnippet-" + 0;
 		}
 
-		return "codeSnippet-" + (Math.max(...Object.keys(self.functions).map(id => id.split("-")[1])) + 1);
-		// return "codeSnippet-" + self.functionCount++;
+		self.functionCount = Math.max(
+			Math.max(...Object.keys(self.functions).map(id => id.split("-")[1])) + 1,
+			self.functionCount
+		);
+
+		return "codeSnippet-" + self.functionCount++;
 	}
 
 	/**
@@ -135,6 +142,13 @@ let SAGE2_CodeSnippets = (function() {
 	function updateFunctionDefinition(id, definition) {
 		// update the saved function definition
 		let func = self.functions[id] = definition;
+
+		console.log("Loaded:", id, definition);
+
+		// handle assocation from reload
+		if (func.src && self.reloadSnippetFilemap[func.src]) {
+			self.reloadSnippetIDmap[self.reloadSnippetFilemap[func.src]] = id;
+		}
 
 		// update links which use this function
 		if (func.links) {
@@ -267,13 +281,16 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} filename - the name of the script file
 	 */
 	function loadFromFile(func, filename, id = "new") {
+		if (id !== "new") {
+			self.reloadSnippetFilemap[filename] = id;
+		}
+
+		console.log("Load From File", filename, id);
 
 		var script = document.createElement("script");
-		script.text = createScriptBody(null, func.text, func.desc, [], id, func.type, filename);
+		script.text = createScriptBody(null, func.text, func.desc, [], "new", func.type, filename);
 		script.charset = "utf-8";
 		document.body.appendChild(script);
-
-		console.log("loadFromFile", arguments);
 
 		// only create a list application if there are none referenced
 		// and the file is not reloading from state
@@ -290,7 +307,7 @@ let SAGE2_CodeSnippets = (function() {
 	 *
 	 * @method createScriptBody
 	 */
-	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src, state) {
+	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src) {
 
 		let startBlock = `(function() {
 			console.log('Sandbox script Loading');
@@ -563,13 +580,31 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {Object} app - the reference to the application object
 	 */
 	function displayApplicationLoaded(id, app) {
+		let originalID = app.state.snippetsID;
+		// if the saved ID of the application is already in use, update
+		if (self.outputApps[app.state.snippetsID]) {
+			let newID = app.application === "Snippets_Vis" ?
+				"vis-" + self.visCount++ :
+				"data-" + self.dataCount++;
+
+			// save this updated ID
+			self.reloadAppIDmap[app.state.snippetsID] = newID;
+
+			// update change in state of snippet id
+			app.state.snippetsID = newID;
+			app.refresh();
+		} else {
+			// save the original ID
+			self.reloadAppIDmap[app.state.snippetsID] = app.state.snippetsID;
+		}
+
 		self.appIDmap[app.state.snippetsID] = app.id;
 
-		if (self.loadingApps[app.state.snippetsID]) {
+		if (self.loadingApps[originalID]) {
 			// resolve app load (from reloading state)
-			console.log("App Loaded:", app.state.snippetsID);
+			console.log("App Loaded:", originalID);
 
-			self.loadingApps[app.state.snippetsID]();
+			self.loadingApps[originalID]();
 		} else {
 			// handle a normal load (on normal interaction)
 			handleLoadedApplication(app);
@@ -609,12 +644,13 @@ let SAGE2_CodeSnippets = (function() {
 			self.outputApps[app.state.snippetsID] = app;
 		}
 
-
 		updateSavedSnippetAssociations();
 	}
 
 	function updateSavedSnippetAssociations() {
 		console.log("CurrentApps:", Object.keys(self.outputApps));
+		console.log(self.links);
+
 		if (isMaster) {
 			wsio.emit("updateSnippetAssociationState", {
 				dataCount: self.dataCount,
@@ -627,6 +663,7 @@ let SAGE2_CodeSnippets = (function() {
 
 	// this is to handle reloads (client reconnect)
 	function handleReloadedSnippetAssociations(associations) {
+		console.log("Promise.all resolved, reloading Snippet associations");
 
 		// start at root nodes, recursively handle children
 		for (let root of associations.links) {
@@ -636,8 +673,12 @@ let SAGE2_CodeSnippets = (function() {
 		function handleLink(link, parent) {
 			let { linkID, appID, snippetID, children, inputs } = link;
 
+			// get mapping information from appID change or snippetID change
+			appID = self.reloadAppIDmap[appID];
+			snippetID = self.reloadSnippetIDmap[snippetID];
+			linkID = "link" + self.linkCount++;
+
 			let id = self.appIDmap[appID];
-			console.log(self.appIDmap, appID, id);
 
 			let newLink = new Link(
 				parent ? applications[parent] : null,
@@ -669,6 +710,8 @@ let SAGE2_CodeSnippets = (function() {
 		} else {
 			self.linkCount = 0;
 		}
+
+		updateSavedSnippetAssociations();
 	}
 
 	/**
