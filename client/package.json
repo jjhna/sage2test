@@ -12,7 +12,7 @@
     "commander": "latest"
   },
   "devDependencies": {
-    "electron": "1.8.2-beta.3",
+    "electron": "latest",
     "electron-packager": "latest"
   },
   "optionalDependencies": {

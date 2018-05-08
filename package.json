@@ -51,8 +51,6 @@
 		"commander": "latest",
 		"debug": "latest",
 		"decompress-zip": "latest",
-		"electron": "latest",
-		"electron-squirrel-startup": "latest",
 		"fluent-ffmpeg": "latest",
 		"formidable": "latest",
 		"fsmonitor": "latest",
@@ -62,23 +60,20 @@
 		"mime": "latest",
 		"mv": "latest",
 		"node-json-db": "latest",
-		"node-pre-gyp": "latest",
+		"node-pre-gyp": "0.8.0",
 		"normalizeurl": "latest",
 		"qr-image": "latest",
 		"rbush": ">=2",
 		"request": "latest",
 		"net-snmp": "latest",
-		"rimraf": "latest",
 		"sanitize-filename": "latest",
 		"sanitizer": "latest",
 		"semver": "latest",
 		"sprint": "latest",
 		"sw-precache": "latest",
-		"systeminformation": "latest",
 		"websocketio": "https://github.com/renambot-uic/websocketio.git",
 		"rimraf": "latest",
-		"node-pre-gyp": "latest",
-		"electron": "1.8.2-beta.3",
+		"electron": "latest",
 		"electron-squirrel-startup": "latest",
 		"systeminformation": "latest",
 		"ws": "^3.3.1",
@@ -102,7 +97,7 @@
 		"coveralls": "latest"
 	},
 	"engines": {
-		"node": ">=0.10.x"
+		"node": ">=8.x"
 	},
 	"scripts": {
 		"start": "node server.js -l",

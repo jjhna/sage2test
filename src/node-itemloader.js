@@ -706,7 +706,9 @@ AppLoader.prototype.loadUnityAppFromZip = function(appLoader, unityLoader, zipFo
 
 		// Title is in the form 'Unity WebGL Player | [Product Name]'
 		// Get just the Product Name
-		htmlTitle = htmlTitle.split("|")[1].trim();
+		if (htmlTitle.split("|")[1] !== undefined) {// If undefined, likely index has already been processed
+			htmlTitle = htmlTitle.split("|")[1].trim();
+		}
 
 		// Set the html <title> the new parsed name
 		indexHtml("title").text(htmlTitle);
