@@ -592,7 +592,7 @@ let SAGE2_CodeSnippets = (function() {
 
 			// update change in state of snippet id
 			app.state.snippetsID = newID;
-			app.refresh();
+			app.callback("refresh"); // refresh the saved state in the server
 		} else {
 			// save the original ID
 			self.reloadAppIDmap[app.state.snippetsID] = app.state.snippetsID;
