@@ -8134,8 +8134,12 @@ function shareApplicationWithRemoteSite(uniqueID, app, remote) {
 	}
 	SAGE2Items.applications.editButtonVisibilityOnItem(app.application.id, "syncButton", true);
 
+	//Removing the cyclic reference before sending app info to remote site
+	var appCopy = Object.assign({}, app.application);
+	appCopy.backgroundItem = null;
+
 	remote.wsio.emit('addNewSharedElementFromRemoteServer',
-		{application: app.application, id: sharedId, remoteAppId: app.application.id});
+		{application: appCopy, id: sharedId, remoteAppId: app.application.id});
 	broadcast('setAppSharingFlag', {id: app.application.id, sharing: true});
 
 	var eLogData = {
