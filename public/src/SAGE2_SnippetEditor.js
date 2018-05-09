@@ -51,6 +51,10 @@ let SAGE2_SnippetEditor = (function () {
 			self.editorDiv = self.div.querySelector("#snippetEditor");
 			self.editor = ace.edit(self.editorDiv);
 
+			self.editor.setOptions({
+				printMargin: false
+			});
+
 			// set style and javascript syntax
 			self.editor.setTheme("ace/theme/monokai");
 			self.editor.getSession().setMode("ace/mode/javascript");
@@ -312,7 +316,16 @@ let SAGE2_SnippetEditor = (function () {
 		 */
 		function receiveLoadedSnippet(data) {
 
+			// next cursor position
+			let cursorPosition = {row: 0, column: 0};
+
+			// retain position if the loaded snippet is the same as the current
+			if (data.scriptID === self.loadedSnippet) {
+				cursorPosition = self.editor.getCursorPosition();
+			}
+
 			self.editor.setValue(data.text);
+			self.editor.moveCursorToPosition(cursorPosition);
 			self.editor.clearSelection();
 
 			self.descInput.value = data.desc;

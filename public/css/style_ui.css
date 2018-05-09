@@ -1356,8 +1356,8 @@ The z-index is very important.
     top: 50%;
     left: 50%;
     height: 90%;
-    width: 75%;
-    max-width: 650px;
+    width: 80%;
+    max-width: 1250px;
     transform: translateX(-50%) translateY(-50%);
     border: 1.25px solid rgba(100, 100, 100, 0.5);
     background-color: white;
