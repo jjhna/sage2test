@@ -421,6 +421,12 @@ let SAGE2_CodeSnippets = (function() {
 	function requestSnippetLoad(uniqueID, scriptID) {
 		// send script to user
 		if (self.functions[scriptID] && !self.functions[scriptID].editor) {
+			for (let id of Object.keys(self.functions)) {
+				if (self.functions[id].editor === uniqueID) {
+					self.functions[id].editor = null;
+				}
+			}
+
 			self.functions[scriptID].editor = uniqueID;
 
 			if (isMaster) {
@@ -453,8 +459,11 @@ let SAGE2_CodeSnippets = (function() {
 		self.functions[scriptID].editor = null;
 
 		// broadcast update of function states
-		let functionState = getFunctionInfo();
-		wsio.emit("snippetsStateUpdated", functionState);
+		// broadcast update of function states
+		if (isMaster) {
+			let functionState = getFunctionInfo();
+			wsio.emit("snippetsStateUpdated", functionState);
+		}
 
 		updateListApps();
 	}

@@ -197,6 +197,23 @@ var Snippets_Vis = SAGE2_App.extend({
 		SAGE2_CodeSnippets.outputAppClosed(this);
 	},
 
+	requestEdit: function(data) {
+		// handled the same as a load request in the editor
+		SAGE2_CodeSnippets.requestSnippetLoad(data.clientId, this.parentLink.getSnippetID());
+	},
+
+	getContextEntries() {
+		return [
+			{
+				description: "Edit Snippet",
+				// callback
+				callback: "requestEdit",
+				// parameters of the callback function
+				parameters:  {}
+			}
+		]
+	},
+
 	event: function(eventType, position, user_id, data, date) {
 		if (eventType === "pointerPress" && (data.button === "left")) {
 			// click

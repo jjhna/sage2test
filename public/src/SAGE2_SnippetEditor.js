@@ -332,6 +332,9 @@ let SAGE2_SnippetEditor = (function () {
 
 			self.loadedSnippet = data.scriptID;
 			self.loadedSnippetType = data.type;
+
+			// if the editor is closed, open it
+			openEditor();
 		}
 
 		/**
