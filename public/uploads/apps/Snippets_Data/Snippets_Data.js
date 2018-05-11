@@ -26,14 +26,9 @@ var Snippets_Data = SAGE2_App.extend({
 		this.childLinks = [];
 
 		// move and resize callbacks
-		this.resizeEvents = "onfinish"; // continuous
-		// this.moveEvents   = "continuous";
-		// this.resize = "fixed";
+		this.resizeEvents = "continuous";
 
 		// SAGE2 Application Settings
-		// Not adding controls but making the default buttons available
-		this.controls.finishedAddingControls();
-		this.enableControls = true;
 
 		// add error popup to app
 		let errorBox = document.createElement("div");
@@ -116,12 +111,11 @@ var Snippets_Data = SAGE2_App.extend({
 	},
 
 	load: function(date) {
-		console.log("Snippets_Data> Load with state value", this.state.value);
+		console.log("Snippets_Data> Load", this.state);
 		this.refresh(date);
 	},
 
 	draw: function(date) {
-		console.log('Snippets_Data> Draw with state value', this.state.value);
 	},
 
 	getDataset: function (date) {

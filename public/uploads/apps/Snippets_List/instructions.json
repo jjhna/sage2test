@@ -1,6 +1,6 @@
 {
   "main_script": "Snippets_List.js",
-	"icon": "Snippets_List.png",
+  "icon": "Snippets_List.png",
   "width": 300,
   "height": 600,
   "resize": "free",

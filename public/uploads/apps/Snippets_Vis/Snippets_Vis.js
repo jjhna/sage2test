@@ -25,8 +25,6 @@ var Snippets_Vis = SAGE2_App.extend({
 
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
-		// this.moveEvents   = "continuous";
-		// this.resize = "fixed";
 
 		this.content = document.createElement("div");
 		this.content.style.width = "100%";
@@ -82,9 +80,6 @@ var Snippets_Vis = SAGE2_App.extend({
 		this.passSAGE2PointerAsMouseEvents = true;
 
 		// SAGE2 Application Settings
-		// Not adding controls but making the default buttons available
-		this.controls.finishedAddingControls();
-		this.enableControls = true
 
 		// add wrapper for function execution information
 		let ancestry = d3.select(this.element).append("svg")
@@ -111,12 +106,11 @@ var Snippets_Vis = SAGE2_App.extend({
 	},
 
 	load: function(date) {
-		console.log('Snippets_Vis> Load with state value', this.state.value);
+		console.log('Snippets_Vis> Load with state', this.state);
 		this.refresh(date);
 	},
 
 	draw: function(date) {
-		console.log('Snippets_Vis> Draw with state value', this.state.value);
 	},
 
 	getElement: function (data, date) {
@@ -159,16 +153,16 @@ var Snippets_Vis = SAGE2_App.extend({
 	},
 
 	createAncestorList: function() {
-	// build sequential function call list and display
+		// build sequential function call list and display
 		let ancestry = SAGE2_CodeSnippets.getAppAncestry(this);
 		// outsource ancestry drawing ot SAGE2_CodeSnippets
 		SAGE2_CodeSnippets.drawAppAncestry({
-      svg: this.ancestry,
-      width: this.sage2_width,
-      height: ui.titleBarHeight * 1.5,
-      ancestry,
-      app: this
-    });
+			svg: this.ancestry,
+			width: this.sage2_width,
+			height: ui.titleBarHeight * 1.5,
+			ancestry,
+			app: this
+		});
 	},
 
 	updateAncestorTree: function() {
@@ -182,24 +176,19 @@ var Snippets_Vis = SAGE2_App.extend({
 	resize: function(date) {
 		// Called when window is resized
 		let contentWidth = this.state.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
-    this.content.style.width = contentWidth + "px";
+		this.content.style.width = contentWidth + "px";
 		this.content.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
 
-    this.inputs.style.left = contentWidth + "px";
+		this.inputs.style.left = contentWidth + "px";
 
-    // update ancestor list size
-    this.ancestry.attr("width", this.sage2_width);
+		// update ancestor list size
+		this.ancestry.attr("width", this.sage2_width);
 		this.createAncestorList();
 
 		if (this.parentLink) {
 			this.parentLink.update(); // redraw
 		}
 
-		this.refresh(date);
-	},
-
-	move: function(date) {
-		// Called when window is moved (set moveEvents to continuous)
 		this.refresh(date);
 	},
 
@@ -238,7 +227,7 @@ var Snippets_Vis = SAGE2_App.extend({
 				this.refresh(date);
 			}
 		} else if (eventType === "dataUpdate") {
-			console.log("JupyterLab Data Update", data);
+			console.log("Data Update", data);
 
 			this.updateContent(data, date);
 			// this.refresh(date);

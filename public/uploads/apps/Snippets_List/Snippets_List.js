@@ -64,17 +64,10 @@ var Snippets_List = SAGE2_App.extend({
 		console.log(this.cols);
 
 		// move and resize callbacks
-		this.resizeEvents = "continuous"; // onfinish
-		// this.moveEvents   = "continuous";
-		// this.resize = "fixed";
+		this.resizeEvents = "continuous";
 
 		// use mouse events normally
 		this.passSAGE2PointerAsMouseEvents = true;
-
-		// SAGE2 Application Settings
-		// Not adding controls but making the default buttons available
-		this.controls.finishedAddingControls();
-		this.enableControls = true;
 
 		SAGE2_CodeSnippets.registerSnippetListApp(data.id, this);
 	},
