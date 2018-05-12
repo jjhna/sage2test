@@ -926,18 +926,20 @@ var SAGE2_App = Class.extend({
 	*
 	* @method log
 	* @param msg {Object} list of arguments to be printed
+	* @param params {Array} extras parameters
 	*/
-	log: function(msg) {
-		if (arguments.length === 0) {
-			return;
+	log: function(msg, ...params) {
+		if (msg) {
+			let args;
+			// Put the aguments into an array
+			if (params) {
+				args = [msg].concat(params);
+			} else {
+				args = [msg];
+			}
+			// Put everything into an object
+			sage2Log({app: this.div.id, message: args});
 		}
-		var args;
-		if (arguments.length > 1) {
-			args = Array.prototype.slice.call(arguments);
-		} else {
-			args = msg;
-		}
-		sage2Log({app: this.div.id, message: args});
 	},
 
 	/**

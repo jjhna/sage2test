@@ -2166,7 +2166,7 @@ function wsReceivedMediaBlockStreamFrame(wsio, data) {
 
 // Print message from remote applications
 function wsPrintDebugInfo(wsio, data) {
-	sageutils.log("Client", "Node " + data.node + " [" + data.app + "] " + data.message);
+	sageutils.log("Client", "client #" + data.node + " [" + data.app + "]", data.message);
 }
 
 function wsRequestVideoFrame(wsio, data) {
