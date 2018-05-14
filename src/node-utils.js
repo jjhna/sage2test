@@ -297,7 +297,7 @@ function log(head, ...params) {
 		console.log.apply(console, [header(head)].concat(params));
 	}
 	if (global.emitLog) {
-		global.emitLog(stripansi(head + "> " + params + "\n"));
+		global.emitLog({head: head, params: params});
 	}
 	if (global.logger) {
 		global.logger.log(head, stripansi(params.toString()));
