@@ -1,19 +1,20 @@
 {
-	"main_script": "Snippets_Vis.js",
-	"width": 500,
-	"height": 500,
-	"resize": "free",
-	"animation": false,
-	"dependencies": [],
-	"load": {
-		"snippetsID": null,
-		"inputsOpen": false
-	},
-	"removeFromLauncher": true,
-	"title": "Snippets Vis",
-	"version": "1.0.0",
-	"description": "SAGE2 Code Snippets Vis App",
-	"keywords": [ "sage2", "data", "visualization", "code", "snippets"],
-	"author": "Andrew Burks <aburks3@uic.edu>",
-	"license": "SAGE2-Software-License"
+  "main_script": "Snippets_Vis.js",
+  "icon": "Snippets_Vis.png",
+  "width": 500,
+  "height": 500,
+  "resize": "free",
+  "animation": false,
+  "dependencies": [],
+  "load": {
+    "snippetsID": null,
+    "inputsOpen": false
+  },
+  "removeFromLauncher": true,
+  "title": "Snippets Vis",
+  "version": "1.0.0",
+  "description": "SAGE2 Code Snippets Vis App",
+  "keywords": ["sage2", "data", "visualization", "code", "snippets"],
+  "author": "Andrew Burks <aburks3@uic.edu>",
+  "license": "SAGE2-Software-License"
 }

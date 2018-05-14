@@ -459,7 +459,6 @@ let SAGE2_CodeSnippets = (function() {
 		self.functions[scriptID].editor = null;
 
 		// broadcast update of function states
-		// broadcast update of function states
 		if (isMaster) {
 			let functionState = getFunctionInfo();
 			wsio.emit("snippetsStateUpdated", functionState);

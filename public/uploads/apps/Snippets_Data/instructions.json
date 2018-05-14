@@ -1,5 +1,6 @@
 {
   "main_script": "Snippets_Data.js",
+  "icon": "Snippets_Data.png",
   "width": 500,
   "height": 500,
   "resize": "free",
