@@ -984,7 +984,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				value: _this.allFiles[elt.id].exif.Creator || '-'});
 			metadata.config.elements.push({label: "File",
 				value: _this.allFiles[elt.id].exif.MIMEType || '-'});
-		} else if (_this.allFiles[elt.id].exif.MIMEType.indexOf('sage2/snippet') >= 0) {
+		} else if (_this.allFiles[elt.id].sage2Type.indexOf('sage2/snippet') >= 0) {
 			// Clear the panel
 			metadata.config.elements = [];
 
@@ -1528,7 +1528,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				response = "load_session";
 			} else if (elt.exif.MIMEType.indexOf('sage2/url') >= 0) {
 				response = "sage2/url";
-			} else if (elt.exif.MIMEType.indexOf('sage2/snippet') >= 0) {
+			} else if (elt.sage2Type.indexOf('sage2/snippet') >= 0) {
 				response = "load_snippet";
 			}
 		}
@@ -1645,7 +1645,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 			});
 		} else if (searchParam === "Snippet:/") {
 			_this.allTable.filter(function(obj) {
-				return _this.allFiles[obj.id].exif.MIMEType.indexOf('sage2/snippet') >= 0;
+				return (_this.allFiles[obj.id].sage2Type &&
+					_this.allFiles[obj.id].sage2Type.indexOf('sage2/snippet') >= 0
+				);
 			});
 		} else if (searchParam === "Mine:/") {
 			_this.allTable.filter(function(obj) {
@@ -1808,6 +1810,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			this.allFiles[f.id] = f;
 		}
 
+
 		i = 0;
 		var mm, createDate;
 		for (var a in this.allFiles) {
@@ -1850,7 +1853,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 					type: "LINK",
 					size: fileSizeIEC(f.exif.FileSize)
 				});
-			} else if (f.exif.MIMEType.indexOf('sage2/snippet') >= 0) {
+			} else if (f.sage2Type.indexOf('sage2/snippet') >= 0) {
 				// It's a SAGE2 session
 				mm = moment(f.exif.FileDate, 'YYYY/MM/DD HH:mm:ssZ');
 				f.exif.FileModifyDate = mm;
