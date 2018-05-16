@@ -19,7 +19,7 @@
  */
 
 /*global SAGE2_init: true, d3: true, drawDisplaySMMinimal: true, showDisplayClientsHistory: true,
-  setupLineChart: true, charts: true, makeSvg: true, Slider: true */
+  setupLineChart: true, charts: true, makeSvg: true, SAGE2_d3_TimelineSlider: true */
 
 
 /**
@@ -91,18 +91,18 @@ function SAGE2_init() {
 	initializeCharts();
 }
 
-var slider;
+var timeLineSlider;
 
 function createUI() {
 	var dataRangeDiv = document.getElementById('dataRange');
 	var svgObject = makeSvg('dataRange');
-	slider = new Slider(svgObject.svg, {
+	timeLineSlider = new SAGE2_d3_TimelineSlider(svgObject.svg, {
 		left: 0,
 		top: 0,
 		width: dataRangeDiv.clientWidth,
 		height: dataRangeDiv.clientHeight
 	});
-	slider.setRange(0, 0);
+	timeLineSlider.setRange(0, 0);
 }
 
 function getDateRangeFromFileData(array) {
@@ -126,19 +126,19 @@ function processHistory() {
 
 		var dates = getDateRangeFromFileData(list);
 
-		slider.onValueChange = function(l, h) {
-			console.log("range", new Date(l), new Date(h));
-			displayStartDate = l;
-			displayEndDate = h;
-			findMaxValues(l, h);
+		timeLineSlider.onValueChange = function(minValueSelected, maxValueSelected) {
+			//console.log("range", new Date(minValueSelected), new Date(maxValueSelected));
+			displayStartDate = minValueSelected;
+			displayEndDate = maxValueSelected;
+			findMaxValues(minValueSelected, maxValueSelected);
 			initializeCharts();
-			drawCharts(l, h);
+			drawCharts(minValueSelected, maxValueSelected);
 		};
-		slider.setRange(dates.start, dates.end);
+		timeLineSlider.setRange(dates.start, dates.end, 1000 * 60);
 
-		var initDates = slider.getValues();
-		displayStartDate = initDates.l;
-		displayEndDate = initDates.h;
+		var initDates = timeLineSlider.getValues();
+		displayStartDate = initDates.minValueSelected;
+		displayEndDate = initDates.maxValueSelected;
 
 		findMaxValues(displayStartDate, displayEndDate);
 		initializeCharts();
@@ -148,7 +148,7 @@ function processHistory() {
 
 	};
 	var fileInput = document.getElementById('historyFileLoaderId');
-	console.log(fileInput.files);
+
 	if (fileInput.files.length > 0 && (fileInput.files[0].name).indexOf('.json') > -1) {
 		reader.readAsText(fileInput.files[0]);
 	}

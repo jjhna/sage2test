@@ -154,6 +154,7 @@ program = commander
 	.option('-s, --session [name]',       'Load a session file (last session if omitted)')
 	.option('-t, --track-users [file]',   'enable user interaction tracking (specified file indicates users to track)')
 	.option('-p, --password <password>',  'Sets the password to connect to SAGE2 session')
+	.option('--no-monitoring',			  'Disables performance monitoring')
 	.parse(process.argv);
 
 // Logging or not
@@ -294,6 +295,9 @@ function initializeSage2Server() {
 	performanceManager = new PerformanceManager();
 	performanceManager.initializeConfiguration(config);
 	performanceManager.wrapDataTransferFunctions(WebsocketIO);
+	if (program.monitoring === false) {
+		performanceManager.setSamplingInterval('never');
+	}
 	imageMagick = gm.subClass(imageMagickOptions);
 	assets.initializeConfiguration(config);
 	assets.setupBinaries(imageMagickOptions, ffmpegOptions);
@@ -2162,7 +2166,7 @@ function wsReceivedMediaBlockStreamFrame(wsio, data) {
 
 // Print message from remote applications
 function wsPrintDebugInfo(wsio, data) {
-	sageutils.log("Client", "Node " + data.node + " [" + data.app + "] " + data.message);
+	sageutils.log("Client", "client #" + data.node + " [" + data.app + "]", data.message);
 }
 
 function wsRequestVideoFrame(wsio, data) {
@@ -8130,8 +8134,23 @@ function shareApplicationWithRemoteSite(uniqueID, app, remote) {
 	}
 	SAGE2Items.applications.editButtonVisibilityOnItem(app.application.id, "syncButton", true);
 
-	remote.wsio.emit('addNewSharedElementFromRemoteServer',
-		{application: app.application, id: sharedId, remoteAppId: app.application.id});
+	var sharedElement = {
+		application: app.application,
+		id: sharedId,
+		remoteAppId: app.application.id
+	};
+
+	if ((app.application.foregroundItems !== null && app.application.foregroundItems !== undefined) ||
+			(app.application.backgroundItem !== null && app.application.backgroundItem !== undefined)) {
+		//Removing the cyclic references before sending app info to remote site
+		var appCopy = Object.assign({}, app.application);
+		appCopy.backgroundItem = null;
+		appCopy.foregroundItems = null;
+		sharedElement.application = appCopy;
+	}
+
+	remote.wsio.emit('addNewSharedElementFromRemoteServer', sharedElement);
+
 	broadcast('setAppSharingFlag', {id: app.application.id, sharing: true});
 
 	var eLogData = {
@@ -9159,7 +9178,7 @@ function deleteApplication(appId, portalId, wsio) {
 		performanceManager.removeDataReceiver(appId);
 	}
 
-	var stickingItems = stickyAppHandler.getFirstLevelStickingItems(app);
+	var stickingItems = stickyAppHandler.getFirstLevelStickingItemIDs(app);
 	stickyAppHandler.removeElement(app);
 
 	SAGE2Items.applications.removeItem(appId);
@@ -9176,7 +9195,7 @@ function deleteApplication(appId, portalId, wsio) {
 	if (stickingItems.length > 0) {
 		for (var s in stickingItems) {
 			// When background gets deleted, sticking items stop sticking
-			toggleStickyPin(stickingItems[s].id);
+			handleStickyItem(stickingItems[s].id);
 		}
 	} else {
 		// Refresh the pins on all the unpinned apps
