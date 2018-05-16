@@ -243,9 +243,11 @@ function setupListeners() {
 			var videosTable = document.getElementById('videos');
 
 			var vid;
-			if (__SAGE2__.browser.isFirefox) {
-				// Firefox seems to crash with audio elements
+			if (__SAGE2__.browser.isFirefox || isFileTypeSupportedByHtmlPlayer(data.data.audio_url)) {
+				// Firefox seems to crash with audio elements, html player also uses this
 				vid = document.createElement('video');
+				window.vidRef = vid;
+				vid.isUsingHtmlPlayer = true;
 			} else {
 				vid = document.createElement('audio');
 			}
@@ -282,12 +284,20 @@ function setupListeners() {
 			var url    = cleanURL(data.data.audio_url);
 			var source = document.createElement('source');
 			var param  = url.indexOf('?');
-			if (param >= 0) {
+
+			// Remove the URL params when using the html player.
+			if (vid.isUsingHtmlPlayer) {
+				source.src = url;
+				console.log(url);
+			} else if (param >= 0) {
 				source.src = url + "&clientID=audio";
 			} else {
 				source.src = url + "?clientID=audio";
 			}
-			source.type = data.data.audio_type;
+			// Having the audio type interferes with playback on certain video types. Probably alters how file is read.
+			if (!vid.isUsingHtmlPlayer) {
+				source.type = data.data.audio_type;
+			}
 			vid.appendChild(source);
 
 			// WebAudio API
@@ -606,4 +616,30 @@ function playVideo(videoId) {
  */
 function updateVideotime(videoId, timestamp, play) {
 	wsio.emit('updateVideoTime', {id: videoId, timestamp: timestamp, play: play});
+}
+
+/**
+ * Checks if the filetype is supported by the html player
+ *
+ * @method isFileTypeSupportedByHtmlPlayer
+ * @param file {String} url path of the file
+ */
+function isFileTypeSupportedByHtmlPlayer(file) {
+	// supportedTypes based on https://developer.mozilla.org/en-US/docs/Web/HTML/Supported_media_formats
+	let supportedTypes = ["webm", "ogg", "mp4", "mov"]; // flac
+	let ext = file.lastIndexOf(".");
+	if (ext > -1) {
+		ext = file.substring(ext + 1);
+		ext = ext.trim().toLowerCase();
+		for (let i = 0; i < supportedTypes.length; i++) {
+			if (ext === supportedTypes[i]) {
+				console.log("Extension " + file + " supported by html player");
+				return true;
+			}
+		}
+		console.log("Extension " + file + " didn't match any of the known player formats: " + supportedTypes);
+	} else {
+		console.log("No extension in: " + file);
+	}
+	return false;
 }
