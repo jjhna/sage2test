@@ -300,7 +300,7 @@ function initializeSage2Server() {
 
 	// Set default host origin for this server
 	if (config.rproxy_port === undefined) {
-		hostOrigin = "http://" + config.host + (config.port === 80 ? "" : ":" + config.port) + "/";
+		hostOrigin = "https://" + config.host + (config.port === 80 ? "" : ":" + config.port) + "/";
 	}
 
 	// Initialize sage2 item lists
