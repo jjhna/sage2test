@@ -28,7 +28,7 @@
  * @type {Object}
  */
 var __SAGE2__ = {};
-__SAGE2__.version = "2.0.0";
+__SAGE2__.version = "3.0.0";
 
 
 /**
@@ -321,8 +321,8 @@ function _typeOf(value) {
  */
 function sage2Log(msgObject) {
 	// Local console print
-	console.log("%c[%s] %c%s", "color: cyan;", msgObject.app,
-		"color: grey;", JSON.stringify(msgObject.message));
+	console.log.apply(console, ["%c[%s] %c%s"].concat("color: cyan;",
+		msgObject.app, "color: grey;", msgObject.message));
 
 	// Add the display node ID to the message
 	msgObject.node = clientID;
@@ -895,6 +895,21 @@ function addCookie(sKey, sValue) {
 		"; expires=Fri, 31 Dec 9999 23:59:59 GMT" +
 		"; domain=" + domain +
 		"; path=/";
+	return true;
+}
+
+/**
+ * Delete a cookie for a given key
+ *
+ * @method deleteCookie
+ * @param sKey {String} key
+ * @return {Boolean} true/false
+ */
+function deleteCookie(sKey) {
+	if (!sKey) {
+		return false;
+	}
+	document.cookie = encodeURIComponent(sKey) + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 	return true;
 }
 

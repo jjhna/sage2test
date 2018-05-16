@@ -413,10 +413,14 @@ SAGE2DisplayUI.prototype.addAppWindow = function(data) {
 	appIcon.className = "appWindowIcon";
 	appIcon.onerror = function(event) {
 		setTimeout(function() {
-			if (data.icon.startsWith('data:image')) {
-				appIcon.src = data.icon;
+			if (data.icon) {
+				if (data.icon.startsWith('data:image')) {
+					appIcon.src = data.icon;
+				} else {
+					appIcon.src = data.icon + "_512.jpg";
+				}
 			} else {
-				appIcon.src = data.icon + "_512.jpg";
+				appIcon.src = "/images/unknownapp_512.jpg";
 			}
 		}, 1000);
 	};
@@ -682,6 +686,16 @@ SAGE2DisplayUI.prototype.updateHighlightedPartition = function(data) {
 				highlighted.style.backgroundColor = "rgba(1, 1, 1, 0.25)";
 				highlighted.style.border = "1px solid #a5a5a5";
 			}
+		}
+	}
+};
+
+SAGE2DisplayUI.prototype.setPartitionColor = function (data) {
+	if (data && data.id) {
+		var ptnWindowTitle = document.getElementById(data.id + "_title");
+
+		if (ptnWindowTitle) {
+			ptnWindowTitle.style.backgroundColor = data.color;
 		}
 	}
 };

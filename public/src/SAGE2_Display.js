@@ -18,6 +18,8 @@
 /* global hideWidgetToAppConnectors */
 /* global createWidgetToAppConnector, getTextFromTextInputWidget */
 /* global SAGE2_Partition, require */
+/* global SAGE2RemoteSitePointer */
+/* global process */
 
 /* global require */
 
@@ -171,6 +173,27 @@ function setupFocusHandlers() {
 			setTimeout(function() {
 				deleteElement('problemDialog');
 			}, 2500);
+		});
+
+		// Receive hardware info from the main process (electron node)
+		require('electron').ipcRenderer.on('hardwareData', function(event, message) {
+			if (wsio !== undefined) {
+				// and send it to the server
+				wsio.emit('displayHardware', message);
+			}
+		});
+		// Receive performance info from the main process (electron node)
+		require('electron').ipcRenderer.on('performanceData', function(event, message) {
+			if (wsio !== undefined) {
+				// Add renderer process load info
+				var procMem = process.getProcessMemoryInfo();
+				var procCPU = process.getCPUUsage();
+				message.processLoad.memResidentSet += procMem.workingSetSize;
+				message.processLoad.memPercent += (procMem.workingSetSize / message.mem.total) * 100;
+				message.processLoad.cpuPercent += procCPU.percentCPUUsage;
+				// and send it to the server
+				wsio.emit('performanceData', message);
+			}
 		});
 	}
 }
@@ -432,6 +455,7 @@ function setupListeners() {
 	});
 
 	wsio.on('hideSagePointer', function(pointer_data) {
+		SAGE2RemoteSitePointer.notifyAppsPointerIsHidden(pointer_data);
 		ui.hideSagePointer(pointer_data);
 		var uniqueID = pointer_data.id.slice(0, pointer_data.id.lastIndexOf("_"));
 		var re = /\.|:/g;
@@ -623,6 +647,18 @@ function setupListeners() {
 			}
 		}
 	});
+	wsio.on('updatePartitionColor', function(data) {
+		if (data && partitions.hasOwnProperty(data.id)) {
+			partitions[data.id].updateColor(data.color);
+		}
+	});
+	wsio.on('updatePartitionSnapping', function(data) {
+		if (data && partitions.hasOwnProperty(data.id)) {
+			partitions[data.id].setSnappedBorders(data.snapping);
+			partitions[data.id].setAnchoredBorders(data.anchor);
+			partitions[data.id].updateBorders();
+		}
+	});
 
 	wsio.on('createAppWindowInDataSharingPortal', function(data) {
 		var portal = dataSharingPortals[data.portal];
@@ -635,7 +671,9 @@ function setupListeners() {
 
 		// Tell the application it is over
 		var app = applications[elem_data.elemId];
-		app.terminate();
+		if (app) {
+			app.terminate();
+		}
 
 		// Remove the app from the list
 		delete applications[elem_data.elemId];
@@ -953,6 +991,7 @@ function setupListeners() {
 				app.move(date);
 			}
 		}
+		SAGE2RemoteSitePointer.checkIfAppNeedsUpdate(app);
 	});
 
 	wsio.on('startResize', function(data) {
@@ -976,6 +1015,7 @@ function setupListeners() {
 				app.resize(date);
 			}
 		}
+		SAGE2RemoteSitePointer.checkIfAppNeedsUpdate(app);
 	});
 
 	wsio.on('animateCanvas', function(data) {
@@ -989,6 +1029,9 @@ function setupListeners() {
 
 	wsio.on('eventInItem', function(event_data) {
 		var app = applications[event_data.id];
+
+		// console.log(event_data, app, applications);
+
 		if (app) {
 			var date = new Date(event_data.date);
 			app.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, date);
@@ -1394,6 +1437,24 @@ function setupListeners() {
 		titleText.style.marginLeft = Math.round(titleBarHeight / 4.0) + "px";
 		windowIconPinned.style.display = "none";
 		windowIconPinout.style.display = "none";
+	});
+
+	wsio.on('getPerformanceData', function(data) {
+		if (__SAGE2__.browser.isElectron) {
+			require('electron').ipcRenderer.send('getPerformanceData');
+		}
+	});
+
+	wsio.on('performanceData', function(data) {
+		var perfAppList = data.appList;
+		var app;
+		if (perfAppList === undefined || perfAppList === null) {
+			return;
+		}
+		for (var i = 0; i < perfAppList.length; i++) {
+			app = applications[perfAppList[i]];
+			app.SAGE2Event('performanceData', null, null, data, data.date);
+		}
 	});
 }
 

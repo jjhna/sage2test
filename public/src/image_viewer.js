@@ -45,7 +45,7 @@ var image_viewer = SAGE2_App.extend({
 		// old image url
 		this.old_img_url = "";
 
-		this.title  = data.title;
+		this.title = data.title;
 
 		this.updateAppFromState();
 		this.addWidgetControlsToImageViewer();
@@ -127,14 +127,6 @@ var image_viewer = SAGE2_App.extend({
 	getContextEntries: function() {
 		var entries = [];
 
-		// Show overlay with EXIF data
-		entries.push({
-			description: "Show EXIF",
-			accelerator: "i",
-			callback: "showEXIF",
-			parameters: {}
-		});
-
 		// Special callback: download the file
 		entries.push({
 			description: "Download image",
@@ -151,15 +143,27 @@ var image_viewer = SAGE2_App.extend({
 			}
 		});
 
-		if (this.checkIfHasGpsData()) {
-			entries.push({
-				description: "Try plot geo location on open map",
-				callback: "tryPlotOnGoogleMap",
-				parameters: {}
-			});
+		// Show overlay with EXIF data
+		entries.push({
+			description: "Show EXIF",
+			accelerator: "I",
+			callback: "showEXIF",
+			parameters: {}
+		});
 
+		entries.push({
+			description: "separator"
+		});
+
+		if (this.checkIfHasGpsData()) {
+			// Disable this for now
+			// entries.push({
+			// 	description: "Plot Location On Open Map",
+			// 	callback: "tryPlotOnGoogleMap",
+			// 	parameters: {}
+			// });
 			entries.push({
-				description: "Plot geo location on new map",
+				description: "Plot Location On New Map",
 				callback: "plotOnNewGoogleMap",
 				parameters: {}
 			});
@@ -182,7 +186,6 @@ var image_viewer = SAGE2_App.extend({
 			&& this.state.exif.GPSLongitude) {
 			return true;
 		}
-
 		return false;
 	},
 
@@ -200,7 +203,8 @@ var image_viewer = SAGE2_App.extend({
 
 	checkForGoogleMapApp: function() {
 		var keys = Object.keys(applications);
-		for (let i = 0; i < keys.length; i++) {
+		// go from most recent to oldest
+		for (let i = keys.length - 1; i >= 0; i--) {
 			if (applications[keys[i]].application == "googlemaps") {
 				return keys[i];
 			}
@@ -210,10 +214,10 @@ var image_viewer = SAGE2_App.extend({
 
 	plotOnNewGoogleMap: function() {
 		if (isMaster) {
-			// function(appName, params, x, y, funcToPassParams) {
 			this.launchAppWithValues("googlemap", {
 				lat: this.state.exif.GPSLatitude,
 				lng: this.state.exif.GPSLongitude,
+				sourceAppId: this.id,
 				shouldFocusViewOnNewMarker: true
 			}, this.sage2_x + 100, this.sage2_y, "addMarkerToMap");
 		}
@@ -379,4 +383,3 @@ var image_viewer = SAGE2_App.extend({
 	}
 
 });
-

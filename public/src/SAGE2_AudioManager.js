@@ -180,7 +180,8 @@ function setupListeners() {
 		// Select the jinggle sound (default or configuration file)
 		// var jingle = "sage2_jinggle.mp3";
 		// var jingle = "kola-startup.mp3";
-		var jingle = "blues_lick_in_a.mp3";
+		// var jingle = "blues_lick_in_a.mp3";
+		var jingle = "waipio-jingle.mp3";
 		if (json_cfg.ui.startup_sound) {
 			// use the jingle file if specificied in configuration file
 			jingle = json_cfg.ui.startup_sound;
@@ -218,7 +219,7 @@ function setupListeners() {
 		createjs.Sound.registerSounds(soundAssets, audioPath);
 
 		// Main audio context (for low-level operations)
-		audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+		audioCtx = new(window.AudioContext || window.webkitAudioContext)();
 		audioCtx.listener.setPosition(0, 0, 0);
 		totalWidth  = json_cfg.totalWidth;
 	});
