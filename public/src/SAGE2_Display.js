@@ -291,6 +291,45 @@ function setupListeners() {
 
 		// Request list of assets
 		wsio.emit('requestStoredFiles');
+
+		//////////////////////////////////
+		// WebRTC
+		var peer = new SimplePeer({initiator: false, trickle: false})
+
+		peer.on('error', function (err) {
+			console.log('error', err)
+		})
+		peer.on('close', function (rr) {
+			console.log('closed')
+		})
+
+		peer.on('signal', function (data) {
+			console.log('SIGNAL', JSON.stringify(data))
+			wsio.emit("webRTCSignal", {id: clientID, webrtc: data});
+		})
+
+		peer.on('connect', function () {
+			console.log('CONNECT')
+			// peer.send('whatever' + Math.random())
+		})
+
+		peer.on('data', function (data) {
+			console.log('data: ' + data)
+			peer.send('whatever back ' + Math.random())
+		})
+
+		wsio.on('webRTCSignal', function(data) {
+			console.log('webRTCSignal', data.id)
+			if (data.id !== clientID) {
+				console.log('webrtc: got something for me', data, peer)
+				if (!peer.destroyed) {
+					peer.signal(data.webrtc);
+				} else {
+					console.log('Peer has been destroyed')
+				}
+			}
+		});
+		//////////////////////////////////
 	});
 
 	wsio.on('setAsMasterDisplay', function() {

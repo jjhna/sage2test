@@ -72,7 +72,7 @@ var Sagepointer         = require('./src/node-sagepointer');      // handles sag
 var StickyItems         = require('./src/node-stickyitems');
 var registry            = require('./src/node-registry');         // Registry Manager
 var FileBufferManager	= require('./src/node-filebuffer');
-var PartitionList	= require('./src/node-partitionlist');    // list of SAGE2 Partitions
+var PartitionList       = require('./src/node-partitionlist');    // list of SAGE2 Partitions
 
 //
 // Globals
@@ -1054,6 +1054,14 @@ function setupListeners(wsio) {
 	wsio.on('partitionScreen',                      wsPartitionScreen);
 	wsio.on('deleteAllPartitions',                  wsDeleteAllPartitions);
 	wsio.on('partitionsGrabAllContent',             wsPartitionsGrabAllContent);
+
+	// webrtc
+	wsio.on('webRTCSignal', webRTCSignal);
+}
+
+function webRTCSignal(wsio, data) {
+	console.log('webRTCSignal', data);
+	broadcast('webRTCSignal', data);
 }
 
 /**

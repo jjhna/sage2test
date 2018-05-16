@@ -352,6 +352,37 @@ function SAGE2_init() {
 
 		// Send message to desktop capture Chrome extension
 		window.postMessage('SAGE2_desktop_capture_enabled', "*");
+
+		//////////////////////////////////
+		// WebRTC
+		var peer = new SimplePeer({initiator: true, trickle: false})
+
+		peer.on('error', function (err) {
+			console.log('error', err)
+		})
+
+		peer.on('signal', function (data) {
+			console.log('SIGNAL', JSON.stringify(data))
+			wsio.emit("webRTCSignal", {id: interactor.uniqueID, webrtc: data});
+		})
+
+		peer.on('connect', function () {
+			console.log('CONNECT')
+			peer.send('whatever ' + Math.random())
+		})
+
+		peer.on('data', function (data) {
+			console.log('data: ' + data)
+		})
+
+		wsio.on('webRTCSignal', function(data) {
+			console.log('webRTCSignal', data.id, interactor.uniqueID)
+			if (data.id !== interactor.uniqueID) {
+				console.log('webrtc: got something for me', data);
+				peer.signal(data.webrtc);
+			}
+		});
+		//////////////////////////////////
 	});
 
 	// socket close event (i.e. server crashed)
