@@ -373,8 +373,6 @@ function setupListeners() {
 		}
 		makeSvgBackgroundForWidgetConnectors(ui.main.style.width, ui.main.style.height);
 
-		console.log(json_cfg);
-
 		SAGE2_CodeSnippets.init(json_cfg.experimental ? json_cfg.experimental.codesnippets : {});
 	});
 
@@ -1480,9 +1478,9 @@ function setupListeners() {
 	});
 
 	wsio.on("saveSnippet", function(data) {
-
-		// { uniqueID, code, desc, type, scriptID }
-		SAGE2_CodeSnippets.saveSnippet(data.from, data.text, data.desc, data.type, data.scriptID);
+		console.log(data);
+		// { uniqueID, code, desc, type, scriptID, author }
+		SAGE2_CodeSnippets.saveSnippet(data.from, data.text, data.desc, data.type, data.scriptID, data.author);
 	});
 
 	wsio.on("cloneSnippet", function(data) {

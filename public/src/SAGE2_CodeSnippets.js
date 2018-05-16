@@ -48,7 +48,7 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {Object} config - config for codesnippets from the experimental part of the SAGE2 config
 	 */
 	function init(config) {
-		console.log("SAGE2_CodeSnippets initialized", config);
+		console.log("CodeSnippets> Initialized", config);
 		self.config = config;
 
 		// // preload settings icon SVG to prevent flicker
@@ -76,8 +76,6 @@ let SAGE2_CodeSnippets = (function() {
 				script.src = dependency;
 
 				document.head.appendChild(script);
-
-				console.log("loaded", dependency);
 			}
 		}
 	}
@@ -143,7 +141,7 @@ let SAGE2_CodeSnippets = (function() {
 		// update the saved function definition
 		let func = self.functions[id] = definition;
 
-		console.log("Loaded:", id, definition);
+		console.log(definition);
 
 		// handle assocation from reload
 		if (func.src && self.reloadSnippetFilemap[func.src]) {
@@ -170,6 +168,7 @@ let SAGE2_CodeSnippets = (function() {
 				text: func.text,
 				type: func.type,
 				desc: func.desc,
+				creator: func.creator ? func.creator : null,
 				snippetID: id,
 				filename: func.src ? func.src : null
 			});
@@ -199,13 +198,14 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} desc - the snippet description (i.e. name)
 	 * @param {String} type - the snippet type (gen, data, draw)
 	 * @param {String} scriptID - the unique snippet id (codeSnippet-2)
+	 * @param {String} author - the display name of the user saving changes
 	 */
-	function saveSnippet(uniqueID, code, desc, type, scriptID) {
+	function saveSnippet(uniqueID, code, desc, type, scriptID, author) {
 		var script = document.createElement("script");
 
 		let links = [];
 		let src = null;
-		let state = {};
+		let creator = author;
 
 		if (scriptID !== "new") {
 			let oldFunction = self.functions[scriptID];
@@ -218,7 +218,7 @@ let SAGE2_CodeSnippets = (function() {
 			if (oldFunction) {
 				links = oldFunction.links;
 				src = oldFunction.src;
-				state = oldFunction.state;
+				creator = oldFunction.creator;
 			}
 
 			// clear any intervals remaining from a generator script
@@ -228,7 +228,7 @@ let SAGE2_CodeSnippets = (function() {
 		}
 
 		// create new script
-		script.text = createScriptBody(uniqueID, code, desc, links, scriptID, type, src, state);
+		script.text = createScriptBody(uniqueID, code, desc, links, scriptID, type, src, creator);
 		script.charset = "utf-8";
 		script.id = scriptID;
 		document.body.appendChild(script);
@@ -285,10 +285,17 @@ let SAGE2_CodeSnippets = (function() {
 			self.reloadSnippetFilemap[filename] = id;
 		}
 
-		console.log("Load From File", filename, id);
-
 		var script = document.createElement("script");
-		script.text = createScriptBody(null, func.text, func.desc, [], "new", func.type, filename);
+		script.text = createScriptBody(
+			null,
+			func.text,
+			func.desc,
+			[],
+			"new",
+			func.type,
+			filename,
+			func.creator ? func.creator : "unknown");
+
 		script.charset = "utf-8";
 		document.body.appendChild(script);
 
@@ -307,10 +314,9 @@ let SAGE2_CodeSnippets = (function() {
 	 *
 	 * @method createScriptBody
 	 */
-	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src) {
+	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src, creator) {
 
 		let startBlock = `(function() {
-			console.log('Sandbox script Loading');
 			// check if script with same src exists
 
 			let key;
@@ -338,6 +344,7 @@ let SAGE2_CodeSnippets = (function() {
 				type: "${type}",
 				desc: "${desc}",
 				editor: "${uniqueID}",
+				creator: "${creator ? creator : uniqueID}",
 				links: JSON.parse(\`${links ? JSON.stringify(links) : []}\`),
 				text: \`${code.replace(/`/gi, "\\`").replace(/\$/gi, "\\$")}\`,
 				code: `;
@@ -610,7 +617,6 @@ let SAGE2_CodeSnippets = (function() {
 
 		if (self.loadingApps[originalID]) {
 			// resolve app load (from reloading state)
-			console.log("App Loaded:", originalID);
 
 			self.loadingApps[originalID]();
 		} else {
@@ -656,8 +662,6 @@ let SAGE2_CodeSnippets = (function() {
 	}
 
 	function updateSavedSnippetAssociations() {
-		console.log("CurrentApps:", Object.keys(self.outputApps));
-		console.log(self.links);
 
 		if (isMaster) {
 			wsio.emit("updateSnippetAssociationState", {
@@ -671,7 +675,6 @@ let SAGE2_CodeSnippets = (function() {
 
 	// this is to handle reloads (client reconnect)
 	function handleReloadedSnippetAssociations(associations) {
-		console.log("Promise.all resolved, reloading Snippet associations");
 
 		// start at root nodes, recursively handle children
 		for (let root of associations.links) {
@@ -789,7 +792,6 @@ let SAGE2_CodeSnippets = (function() {
 				.attr("width", height - 16)
 				.attr("height", height - 16)
 				.on("click", function() {
-					console.log("Input Settings Click");
 					if (!app.state.inputsOpen) {
 						app.inputsClosedHeight = app.sage2_height;
 
@@ -863,13 +865,10 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} parentID - the SAGE2 ID of the app as the target
 	 */
 	function executeCodeSnippet(snippetID, parentID) {
-		console.log("executeCodeSnippet", snippetID, parentID);
+
 		let snippet = self.functions[snippetID];
 
-		console.log("appID map", self.appIDmap);
-
 		let parent = parentID ? applications[parentID] : null;
-		console.log("execute parent", parent);
 
 		let linkIndex = Object.keys(self.links).findIndex((link) => {
 			return self.links[link].getSnippetID() === snippetID && self.links[link].getParent() === parent;
@@ -915,7 +914,6 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {Object} app - the reference to the SAGE2 application
 	 */
 	function registerSnippetListApp(id, app) {
-		console.log("SAGE2_CodeSnippets> Registered", id);
 
 		self.listApps[id] = app;
 		self.isOpeningList = false;
@@ -930,7 +928,6 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} id - the SAGE2 ID of the app
 	 */
 	function unregisterSnippetListApp(id) {
-		console.log("SAGE2_CodeSnippets> Unregistered", id);
 
 		delete self.listApps[id];
 	}
@@ -1005,7 +1002,6 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {Object} app - the SAGE2 app reference
 	 */
 	function outputAppClosed(app) {
-		console.log("App Closed", app);
 		for (let linkID of Object.keys(self.links)) {
 			let parent = self.links[linkID].getParent();
 			let child = self.links[linkID].getChild();
@@ -1019,8 +1015,6 @@ let SAGE2_CodeSnippets = (function() {
 				} else if (parent !== null) {
 					parent.removeChildLink(self.links[linkID]);
 				}
-
-				console.log("Removing Link:", self.links[linkID]);
 
 				// remove ID from function's links
 				let funcLinkIndex = func.links.indexOf(linkID);
@@ -1115,7 +1109,6 @@ let SAGE2_CodeSnippets = (function() {
 
 
 	function initializeSnippetAssociations(info) {
-		console.log("initializing Snippets", info);
 
 		let appPromises = [];
 		self.dataCount = info.dataCount;
@@ -1129,7 +1122,6 @@ let SAGE2_CodeSnippets = (function() {
 
 		Promise.all(appPromises)
 			.then(function() {
-				console.log("all Snippets Apps loaded");
 				handleReloadedSnippetAssociations(info);
 			});
 	}
@@ -1213,7 +1205,6 @@ let SAGE2_CodeSnippets = (function() {
 						let result = curator.functions[id].code.call(c, p.getDataset(), publicObject);
 						c.updateDataset(result);
 					} catch (err) {
-						console.log(err);
 						c.displayError(err);
 					}
 				} else if (curator.functions[id].type === "draw" && p) {
@@ -1225,7 +1216,6 @@ let SAGE2_CodeSnippets = (function() {
 						curator.functions[id].code.call(c, p.getDataset(), publicObject);
 						c.updateAncestorTree();
 					} catch (err) {
-						console.log(err);
 						c.displayError(err);
 					}
 				} else if (curator.functions[id].type === "gen") {
@@ -1236,7 +1226,6 @@ let SAGE2_CodeSnippets = (function() {
 							c.updateDataset(data);
 						})
 						.catch(err => {
-							console.log(err);
 							c.displayError(err);
 						});
 				}

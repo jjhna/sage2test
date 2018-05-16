@@ -61,8 +61,6 @@ var Snippets_List = SAGE2_App.extend({
 					.style("stroke", "white");
 			});
 
-		console.log(this.cols);
-
 		// move and resize callbacks
 		this.resizeEvents = "continuous";
 
@@ -226,11 +224,6 @@ var Snippets_List = SAGE2_App.extend({
 			});
 
 		// this.refresh(date);
-	},
-
-	move: function (date) {
-		// Called when window is moved (set moveEvents to continuous)
-		this.refresh(date);
 	},
 
 	quit: function () {

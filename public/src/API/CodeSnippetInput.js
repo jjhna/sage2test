@@ -14,8 +14,6 @@ let CodeSnippetInput = (function () {
 
 			this._inputElement = null;
 			this._onUpdate = () => {};
-
-			console.log("Creating:", this.constructor.name);
 		}
 
 		get state() {
@@ -92,7 +90,6 @@ let CodeSnippetInput = (function () {
 	class SnippetRange extends SnippetInput {
 		constructor(specification) {
 			super(specification);
-
 		}
 
 		get defaultValue() {
@@ -135,8 +132,6 @@ let CodeSnippetInput = (function () {
 		createInputElement(parentNode) {
 			let _this = this;
 			this._inputElement = parentNode;
-
-			console.log(`Creating ${this.constructor.name}:`, parentNode);
 
 			let label = parentNode.append("div")
 				.style("text-align", "center")
@@ -283,7 +278,6 @@ let CodeSnippetInput = (function () {
 			let _this = this;
 			this._inputElement = parentNode;
 
-			console.log(`Creating ${this.constructor.name}:`, parentNode);
 			parentNode
 				.append("div")
 				.attr("class", "checkboxInput")
@@ -386,7 +380,6 @@ let CodeSnippetInput = (function () {
 			let _this = this;
 			this._inputElement = parentNode;
 
-			console.log(`Creating ${this.constructor.name}:`, parentNode);
 			parentNode.selectAll(".radioOption")
 				.data(this._spec.options)
 				.enter().append("div")
@@ -444,8 +437,6 @@ let CodeSnippetInput = (function () {
 
 		createInputElement(parentNode) {
 			let _this = this;
-
-			console.log(`Creating ${this.constructor.name}:`, parentNode);
 
 			let input = parentNode.append("input")
 				.attr("class", "textInput")

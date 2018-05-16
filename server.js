@@ -3562,8 +3562,6 @@ function wsLoadFileFromServer(wsio, data) {
 		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
 			application: {id: null, type: "session"}}, time: Date.now()});
 	} else if (data.application === "load_snippet") {
-		console.log("wsLoadFileFromServer - load_snippet");
-		// load snippet into browser
 		loadSnippet(data.filename);
 
 		broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
@@ -5132,14 +5130,10 @@ function getSavedFilesList() {
 	var savedSessions  = listSessions();
 	savedSessions.sort(sageutils.compareFilename);
 
-	var savedSnippets = listSnippets();
-	savedSnippets.sort(sageutils.compareFilename);
-
 	// Get everything from the asset manager
 	var list = assets.listAssets();
 	// add the sessions
 	list.sessions = savedSessions;
-	list.snippets = savedSnippets;
 
 	return list;
 }
@@ -5444,8 +5438,18 @@ function uploadForm(req, res) {
 
 function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
 	var fileKeys = Object.keys(files);
+	console.log("uploadedFiles", fileKeys);
 	fileKeys.forEach(function(key) {
 		var file = files[key];
+
+		// handle snippet loading
+		if (registry.getMimeType(file.name) === "sage2/snippet") {
+			uploadSnippet(file);
+
+			// don't use appLoader for snippets
+			return;
+		}
+
 		appLoader.manageAndLoadUploadedFile(file, function(appInstance, videohandle) {
 
 			if (appInstance === null) {
@@ -11090,43 +11094,19 @@ function wsRequestClientUpdate(wsio) {
 /* ======== Code Snippets Event Handlers ======== */
 
 /**
- * Produces a list of snippets with .snip filename in the /snippets/ media folder
+ * Loads a snippet with a .snip filename from file for uploaded files
  *
- * @method listSnippets
+ * @method loadSnippet
+ * @param {Object} file - file of .snip format
  */
-function listSnippets() {
-	var thelist = [];
-	let snippetDirectory = path.join(mediaFolders.user.path, "snippets");
-	// Walk through the session files: sync I/Os to build the array
-	var files = fs.readdirSync(snippetDirectory);
-	for (var i = 0; i < files.length; i++) {
-		var file = files[i];
-		var filename = path.join(snippetDirectory, file);
-		var stat = fs.statSync(filename);
-		// is it a file
-		if (stat.isFile()) {
-			// doest it ends in .snip
-			if (filename.indexOf(".snip", filename.length - 5) >= 0) {
-				// use its change time (creation, update, ...)
-				var ad = new Date(stat.mtime);
-				var strdate = sprint("%4d/%02d/%02d %02d:%02d:%02s",
-					ad.getFullYear(), ad.getMonth() + 1, ad.getDate(),
-					ad.getHours(), ad.getMinutes(), ad.getSeconds()
-				);
+function uploadSnippet(file) {
+	console.log("Upload snippet:", file.name);
+	let newPath = path.join(mediaFolders.user.path, "snippets", file.name);
 
-				// Make it look like an exif data structure
-				thelist.push({id: filename,
-					sage2URL: '/uploads/' + file,
-					exif: { FileName: file.slice(0, -5),
-						FileSize: stat.size,
-						FileDate: strdate,
-						MIMEType: 'sage2/snippet'
-					}
-				});
-			}
-		}
-	}
-	return thelist;
+	// move asset from tmp (and process into asset manager)
+	assets.moveAsset(file.path, newPath, function() {
+		loadSnippet(newPath);
+	});
 }
 
 /**
@@ -11163,10 +11143,13 @@ function wsSnippetSaveIntoServer(wsio, data) {
 	var filename = `${data.type}-${data.desc.replace(" ", "_")}-${now.getTime()}.snip`;
 	var fullpath = path.join(snippetWritePath, filename);
 
+	var writepath = path.join(snippetWritePath, filename);
+
 	let fileContents = {
 		text: data.text,
 		type: data.type,
-		desc: data.desc
+		desc: data.desc,
+		creator: data.creator
 	};
 
 	let fileString = JSON.stringify(fileContents);
@@ -11176,26 +11159,59 @@ function wsSnippetSaveIntoServer(wsio, data) {
 		// reuse old name if possible
 		filename = oldname;
 		fullpath = path.join(snippetWritePath, filename);
+		writepath = fullpath;
 	} else if (oldname !== "null") {
 		// rename old file if the name changed
 		let oldpath = path.join(snippetWritePath, oldname);
-		fs.renameSync(oldpath, fullpath);
+		writepath = oldpath;
 	}
 
-	fs.writeFileSync(fullpath, fileString);
+	// write to the file
+	fs.writeFileSync(writepath, fileString);
 
-	snippetsManager.addLoadedSnippet({
-		snippetID: data.snippetID,
-		snippet: fileContents,
-		filename
-	});
+	// if the file needs to be moved because of a name update
+	if (writepath !== fullpath) {
 
-	broadcast("snippetSourceFileUpdated", {
-		snippetID: data.snippetID,
-		filename
-	});
+		// move the asset with the manager
+		assets.moveAsset(writepath, fullpath, function() {
+			snippetAssetAdded();
+		});
+	} else {
+		// otherwise just add the new asset
+		exiftool.file(fullpath, function(err2, data) {
+			if (err2) {
+				sageutils.log("Loader", "internal error", err2);
+			} else {
+				assets.addFile(data.SourceFile, data, function() {
+					assets.addTag(fullpath, "SAGE2user", fileContents.creator);
 
-	broadcast('storedFileList', getSavedFilesList());
+					// add the user and save
+					assets.saveAssets();
+
+					snippetAssetAdded();
+				});
+			}
+		});
+	}
+
+
+	// callback for asset addition finishing
+	function snippetAssetAdded() {
+		console.log("snippet asset added");
+
+		snippetsManager.addLoadedSnippet({
+			snippetID: data.snippetID,
+			snippet: fileContents,
+			filename
+		});
+
+		broadcast("snippetSourceFileUpdated", {
+			snippetID: data.snippetID,
+			filename
+		});
+
+		broadcast('storedFileList', getSavedFilesList());
+	}
 }
 
 function wsSaveSnippetState(wsio, data) {
@@ -11276,8 +11292,7 @@ function wsEditorRequestSnippetsExport(wsio) {
  * @param {Object} data - the snippet list information.
  */
 function wsSnippetsStateUpdated(wsio, data) {
-	// console.log("SnippetsStateUpdated", data);
-
+	// update the snippets manager with the new states
 	snippetsManager.updateFunctionStatus(data);
 
 	broadcast("editorReceiveSnippetStates", data);

@@ -1270,7 +1270,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	///////////////////////////////////////////////////////////////////////////////////
 
 	/**
-     * Setup the callbacks for a menu, using a closure (tricky one)
+		 * Setup the callbacks for a menu, using a closure (tricky one)
 	 *
 	 * @method attachCallbacks
 	 * @param element {Object} webix menu object to attach the callbacks to
@@ -1293,7 +1293,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Build a submenu for a description object. Each entry with id and value fields.
+		 * Build a submenu for a description object. Each entry with id and value fields.
 	 *
 	 * @method buildSubmenu
 	 * @param actions {Object} object containing the callback for each id
@@ -1324,7 +1324,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Return the tooltip field of an object or empty string
+		 * Return the tooltip field of an object or empty string
 	 *
 	 * @method showTooltip
 	 * @param element {Object} object with tooltip value or not
@@ -1335,7 +1335,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Build some HTML to show info about the SAGE2 server
+		 * Build some HTML to show info about the SAGE2 server
 	 *
 	 * @method buildAboutHTML
 	 * @return {String} HTML popup showing version and info
@@ -1366,7 +1366,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Try to delete one or several selected files
+		 * Try to delete one or several selected files
 	 *
 	 * @method deleteFilesUI
 	 */
@@ -1412,7 +1412,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Try to create a folder inside the currently selected folder
+		 * Try to create a folder inside the currently selected folder
 	 *
 	 * @method createFolderUI
 	 */
@@ -1854,9 +1854,19 @@ function FileManager(wsio, mydiv, uniqueID) {
 					size: fileSizeIEC(f.exif.FileSize)
 				});
 			} else if (f.sage2Type.indexOf('sage2/snippet') >= 0) {
-				// It's a SAGE2 session
-				mm = moment(f.exif.FileDate, 'YYYY/MM/DD HH:mm:ssZ');
+				// It's a SAGE2 code snippet
+				createDate = f.exif.CreateDate ||
+						f.exif.DateTimeOriginal ||
+						f.exif.ModifyDate ||
+						f.exif.FileModifyDate;
+				mm = moment(createDate, 'YYYY/MM/DD HH:mm:ssZ');
 				f.exif.FileModifyDate = mm;
+
+				if (!mm.isValid()) {
+					// sometimes a value is not valid
+					mm = moment(f.exif.FileModifyDate, "YYYY:MM:DD HH:mm:ssZ");
+				}
+
 				this.allTable.data.add({id: f.id,
 					name: f.exif.FileName,
 					user: f.exif.SAGE2user ? f.exif.SAGE2user : "-",

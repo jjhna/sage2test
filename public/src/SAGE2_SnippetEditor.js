@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global ace displayUI wsio SAGE2_SnippetExporter */
+/* global ace displayUI interactor wsio SAGE2_SnippetExporter */
 
 let SAGE2_SnippetEditor = (function () {
 	return function (targetID, config) {
@@ -82,7 +82,13 @@ let SAGE2_SnippetEditor = (function () {
 			self.saveButton = self.div.querySelector("#snippetEditorSave");
 			self.saveButton.onclick = saveScript;
 
+			// script name entry, save on Enter
 			self.descInput = self.div.querySelector("#snippetDescription");
+			self.descInput.onkeyup = function(e) {
+				if (e.keyCode === 13) {
+					saveScript();
+				}
+			};
 
 			// bind new script type buttons
 			self.div.querySelector("#newSnippetGen").onclick = function () {
@@ -144,6 +150,7 @@ let SAGE2_SnippetEditor = (function () {
 			// save script into current file, or create new file if one does not exist (new)
 
 			wsio.emit('editorSaveSnippet', {
+				author: interactor.user.label,
 				text: self.editor.getValue(),
 				type: self.loadedSnippetType,
 				desc: self.descInput.value ? self.descInput.value : self.loadedSnippetType + " snippet",

@@ -600,6 +600,7 @@ var addTag = function(id, tagName, tagValue) {
 	id = path.resolve(id);
 	if (id in AllAssets.list) {
 		AllAssets.list[id].exif[tagName] = tagValue;
+		console.log(id, AllAssets.list[id].exif[tagName]);
 		return true;
 	}
 	return false;
@@ -729,12 +730,13 @@ var exifAsync = function(cmds, cb) {
 };
 
 var listAssets = function() {
-	var pdfs   = [];
-	var videos = [];
-	var apps   = [];
-	var images = [];
-	var links  = [];
-	var others = [];
+	var pdfs     = [];
+	var videos   = [];
+	var apps     = [];
+	var images   = [];
+	var links    = [];
+	var snippets = [];
+	var others   = [];
 
 	// Get all the assets
 	var keys = Object.keys(AllAssets.list);
@@ -762,6 +764,8 @@ var listAssets = function() {
 				videos.push(one);
 			} else if (defaultApp === "Webview") {
 				links.push(one);
+			} else if (defaultApp === "load_snippet") {
+				snippets.push(one);
 			} else {
 				others.push(one);
 			}
@@ -773,10 +777,11 @@ var listAssets = function() {
 	pdfs.sort(sageutils.compareFilename);
 	apps.sort(sageutils.compareFilename);
 	links.sort(sageutils.compareFilename);
+	snippets.sort(sageutils.compareFilename);
 
 	return {
 		images: images, videos: videos, pdfs: pdfs,
-		applications: apps, links: links,
+		applications: apps, links: links, snippets: snippets,
 		others: others
 	};
 };
