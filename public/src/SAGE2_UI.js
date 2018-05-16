@@ -1971,9 +1971,16 @@ function touchStart(event) {
 			displayUI.pointerMove(touchStartX, touchStartY);
 			displayUI.pointerPress("left");
 			touchHold = setTimeout(function() {
-				// simulate backspace
-				displayUI.keyDown(touchStartX, touchStartY, 8);
-				displayUI.keyUp(touchStartX, touchStartY, 8);
+				// // simulate backspace
+				// displayUI.keyDown(touchStartX, touchStartY, 8);
+				// displayUI.keyUp(touchStartX, touchStartY, 8);
+
+				// Simulate right click
+				// It needs to bubble to the document level
+				let e = new CustomEvent("contextmenu", {bubbles: true});
+				e.clientX = event.touches[0].clientX;
+				e.clientY = event.touches[0].clientY;
+				event.target.dispatchEvent(e);
 			}, 1500);
 			touchMode = "translate";
 		} else if (event.touches.length === 2) {
@@ -2672,6 +2679,10 @@ function addMenuEntry(menuDiv, entry, id, app) {
 	// workingDiv.style.padding = "0 5px 0 5px";
 	// Align main text to the left
 	workingDiv.style.textAlign = "left";
+	// Increase entry size for easier selection on mobile
+	if (__SAGE2__.browser.isMobile) {
+		workingDiv.style.fontSize = "18px";
+	}
 	// special case for a separator (line) entry
 	if (entry.description === "separator") {
 		workingDiv.innerHTML = "<hr>";

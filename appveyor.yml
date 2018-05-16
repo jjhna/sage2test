@@ -5,7 +5,11 @@ image: Visual Studio 2017
 branches:
   only:
   - master
+<<<<<<< HEAD
   - masterprep
+=======
+  - mobileRightClick
+>>>>>>> mobileRightClick
 
 shallow_clone: true
 
