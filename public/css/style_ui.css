@@ -1488,25 +1488,53 @@ The z-index is very important.
 }
 
 #codeSnippetEditor .loadSnippetOption {
+    position: relative;
     box-sizing: border-box;
     display: block;
     white-space: nowrap;
     width: 100%;
-    padding: 7px 10px;
+    padding: 7px 10px 7px 15px;
     border: 0.5px solid rgba(100, 100, 100, 0.25);
     border-width: 1px 0 1px 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+#codeSnippetEditor .loadedSnippetOption span {
+    pointer-events: none;
 }
 
 #codeSnippetEditor .loadSnippetOption.loaded {
-    /* color: green; */
+    background: #c7e9c0;
 }
 
 #codeSnippetEditor .loadSnippetOption.locked {
+    background-color: #eee;
     color: gray;
+    cursor: copy;
 }
 
-#codeSnippetEditor #loadSnippetOptions > .loadSnippetOption:hover {
+#codeSnippetEditor .loadSnippetOption.locked span {
+    color: gray;
+    font-style: italic;
+}
+
+#codeSnippetEditor .loadSnippetOption .typeBadge {
+    width: 8px;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    border-right: 2px solid white;
+}
+
+#codeSnippetEditor .loadSnippetOption:hover {
     background-color: lightgray;
+}
+
+#codeSnippetEditor .loadSnippetOption.loaded:hover {
+    background-color: #a1d99b;
 }
 
 #codeSnippetEditor #loadSnippetDropdown:hover > #loadSnippetOptions {
@@ -1546,14 +1574,6 @@ The z-index is very important.
 }
 
 #codeSnippetEditor #snippetEditorClose {
-    /* float: right; */
-}
-
-#codeSnippetEditor #snippetEditorCopy {
-    /* float: right; */
-}
-
-#codeSnippetEditor #snippetEditorLoad {
     /* float: right; */
 }
 

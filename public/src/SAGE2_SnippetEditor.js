@@ -173,8 +173,7 @@ let SAGE2_SnippetEditor = (function () {
 		 * @method unloadScript
 		 */
 		function unloadScript() {
-			console.log("Unload script -- unlock for others to edit:", self.loadedSnippet);
-
+			// unlock script for others
 			if (self.loadedSnippet !== "new") {
 				wsio.emit('editorSnippetCloseNotify', {
 					scriptID: self.loadedSnippet
@@ -188,8 +187,7 @@ let SAGE2_SnippetEditor = (function () {
 		 * @method loadScript
 		 */
 		function loadScript(id) {
-			console.log("Load script:", id);
-
+			// make sure to unload a snippet if another is already loaded
 			if (self.loadedSnippet !== "new") {
 				unloadScript();
 			}
@@ -257,17 +255,21 @@ let SAGE2_SnippetEditor = (function () {
 			for (let script of Object.values(scriptStates)) {
 				// populate Dropdown
 				let newOption = document.createElement("div");
+				let typeBadge = document.createElement("div");
+				let name = document.createElement("span");
+
 				newOption.className = "loadSnippetOption";
+				typeBadge.className = "typeBadge " + script.type + "SnippetColor";
 
 				newOption.onclick = function() {
-					if (newOption.locked) {
+					if (script.locked) {
 						saveCopy(script.id);
 					} else if (script.id !== self.loadedSnippet) {
 						loadScript(script.id);
 					}
 				};
 
-				newOption.innerHTML = `${script.id.replace("codeSnippet", "cS")} - ${script.desc}`;
+				name.innerHTML = `${script.id.replace("codeSnippet", "cS")} - ${script.desc}`;
 
 				if (script.id === self.loadedSnippet) {
 					newOption.disabled = true;
@@ -277,6 +279,8 @@ let SAGE2_SnippetEditor = (function () {
 					newOption.classList.add("locked");
 				}
 
+				newOption.appendChild(typeBadge);
+				newOption.appendChild(name);
 				self.scriptDropdown.appendChild(newOption);
 			}
 		}
