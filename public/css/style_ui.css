@@ -1382,7 +1382,7 @@ The z-index is very important.
     height: 50px;
     top: 0;
     left: 0;
-    background: #cccccc;
+    background: #eee;
     box-sizing: border-box;
     border: 1.25px solid white;
     border-bottom: 2.25px solid rgba(100, 100, 100, 0.25);
@@ -1390,11 +1390,11 @@ The z-index is very important.
 
 #codeSnippetEditor .control {
     box-sizing: border-box;
-    padding: 8px;
+    /* padding: 8px; */
     height: 100%;
     vertical-align: middle;
     display: inline-flex;
-    align-items: center;
+    align-items: stretch;
 }
 
 #codeSnippetEditor .control.right {
@@ -1402,14 +1402,20 @@ The z-index is very important.
 }
 
 #codeSnippetEditor .controlButton {
-    background-color: #eee;
+    box-sizing: border-box;
+    background: #ddd;
+    background: linear-gradient(#eee, #ddd 80%);
     border: 1.25px solid rgba(100, 100, 100, 0.25);
     padding: 8px;
     cursor: pointer;
+    height: 100%;
+    display: flex;
+    align-items: center;
 }
 
 #codeSnippetEditor .controlButton:hover {
-    background-color: #ccc;
+    background: #ccc;
+    background: linear-gradient(#ccc, #ddd 80%);
     border: 1.25px solid white;
 }
 
@@ -1438,6 +1444,7 @@ The z-index is very important.
 #codeSnippetEditor #newSnippetDropdown {
     position: relative;
     display: inline-block;
+    margin-right: 10px;
 }
 
 #codeSnippetEditor #newSnippetOptions {
@@ -1546,27 +1553,7 @@ The z-index is very important.
     background-color: #eee;
     border: 1.25px solid rgba(100, 100, 100, 0.25);
     padding: 5px;
-    margin: 8px 3px;
-    border-radius: 5px;
-}
-
-#codeSnippetEditor #snippetEditorCopy {
-    margin-left: 25px;
-}
-
-#codeSnippetEditor #snippetSelect {
-    margin: 6px 3px;
-    font-size: 1.25em;
-    padding: 5px;
-    border-radius: 3px;
-}
-
-#codeSnippetEditor #snippetSelect>option.locked {
-    background-color: #d6604d;
-}
-
-#codeSnippetEditor #snippetSelect>option.loaded {
-    background-color: #74add1;
+    font-size: 16px;
 }
 
 #codeSnippetEditor #snippetEditorHide {
@@ -1590,7 +1577,9 @@ The z-index is very important.
 }
 
 #codeSnippetEditor #snippetEditorClose:hover {
-    color: rgb(225, 0, 0);
+    background: linear-gradient(#ef3b2c, #a50f15 80%);
+    color: white;
+    /* color: rgb(225, 0, 0); */
 }
 
 #codeSnippetEditor #createNewScriptWrapper {
