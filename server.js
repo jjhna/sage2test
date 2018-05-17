@@ -5438,7 +5438,6 @@ function uploadForm(req, res) {
 
 function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
 	var fileKeys = Object.keys(files);
-	console.log("uploadedFiles", fileKeys);
 	fileKeys.forEach(function(key) {
 		var file = files[key];
 
@@ -11096,11 +11095,11 @@ function wsRequestClientUpdate(wsio) {
 /**
  * Loads a snippet with a .snip filename from file for uploaded files
  *
- * @method loadSnippet
+ * @method uploadSnippet
  * @param {Object} file - file of .snip format
  */
 function uploadSnippet(file) {
-	console.log("Upload snippet:", file.name);
+	// move the snippet to the correct directory
 	let newPath = path.join(mediaFolders.user.path, "snippets", file.name);
 
 	// move asset from tmp (and process into asset manager)
@@ -11116,7 +11115,6 @@ function uploadSnippet(file) {
  * @param {String} filename - filename to a file of .snip format
  */
 function loadSnippet(filename) {
-	console.log("Load snippet:", filename);
 
 	let content = JSON.parse(fs.readFileSync(filename).toString());
 

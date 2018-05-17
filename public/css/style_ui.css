@@ -1359,10 +1359,9 @@ The z-index is very important.
     width: 80%;
     max-width: 1250px;
     transform: translateX(-50%) translateY(-50%);
-    border: 1.25px solid rgba(100, 100, 100, 0.5);
     background-color: white;
-    border-radius: 20px;
-    box-shadow: 1px 1px 50px black;
+    border: 4px solid #787878;
+    border-radius: 0 0 12px 12px;
     padding: 10px;
     z-index: 1000;
 }
@@ -1373,28 +1372,45 @@ The z-index is very important.
 
 #codeSnippetEditor #snippetEditorControls {
     width: 100%;
-    height: 10%;
+    height: 45px;
     margin: 5px 0;
 }
 
 #codeSnippetEditor .controlRow {
+    position: absolute;
     width: 100%;
-    margin: 5px 0;
+    height: 50px;
+    top: 0;
+    left: 0;
+    background: #cccccc;
+    box-sizing: border-box;
+    border: 1.25px solid white;
+    border-bottom: 2.25px solid rgba(100, 100, 100, 0.25);
+}
+
+#codeSnippetEditor .control {
+    box-sizing: border-box;
+    padding: 8px;
+    height: 100%;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+}
+
+#codeSnippetEditor .control.right {
+    float: right;
 }
 
 #codeSnippetEditor .controlButton {
-    float: left;
     background-color: #eee;
     border: 1.25px solid rgba(100, 100, 100, 0.25);
-    padding: 5px;
-    margin: 3px;
-    border-radius: 5px;
+    padding: 8px;
     cursor: pointer;
 }
 
 #codeSnippetEditor .controlButton:hover {
     background-color: #ccc;
-    border: 1.25px solid rgba(225, 225, 225, 0.5);
+    border: 1.25px solid white;
 }
 
 #codeSnippetEditor .controlButton.disabled {
@@ -1402,6 +1418,99 @@ The z-index is very important.
     color: #aaa;
     /* border-color: rgba(225, 225, 225, 0.5); */
     pointer-events: none;
+}
+
+#codeSnippetEditor .controlDropdown {
+    padding-right: 20px;
+}
+
+#codeSnippetEditor .controlDropdown:after {
+    content: "▼";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    z-index: 1;
+    text-align: center;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+
+#codeSnippetEditor #newSnippetDropdown {
+    position: relative;
+    display: inline-block;
+}
+
+#codeSnippetEditor #newSnippetOptions {
+    display: none;
+    box-sizing: border-box;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+
+    background: white;
+    border: 1px solid gray;
+    padding: 10px 10px;
+    text-align: center;
+}
+
+#codeSnippetEditor #newSnippetOptions > div {
+    box-sizing: border-box;
+    display: block;
+    white-space: nowrap;
+    width: 100%;
+    margin: 3px 0;
+}
+
+#codeSnippetEditor #newSnippetDropdown:hover > #newSnippetOptions {
+    display: initial;
+}
+
+#codeSnippetEditor #loadSnippetDropdown {
+    position: relative;
+    display: inline-block;
+}
+
+#codeSnippetEditor #loadSnippetOptions {
+    display: none;
+    box-sizing: border-box;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 100;
+    
+    background: white;
+    border: 1px solid gray;
+    text-align: center;
+
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+#codeSnippetEditor .loadSnippetOption {
+    box-sizing: border-box;
+    display: block;
+    white-space: nowrap;
+    width: 100%;
+    padding: 7px 10px;
+    border: 0.5px solid rgba(100, 100, 100, 0.25);
+    border-width: 1px 0 1px 0;
+}
+
+#codeSnippetEditor .loadSnippetOption.loaded {
+    /* color: green; */
+}
+
+#codeSnippetEditor .loadSnippetOption.locked {
+    color: gray;
+}
+
+#codeSnippetEditor #loadSnippetOptions > .loadSnippetOption:hover {
+    background-color: lightgray;
+}
+
+#codeSnippetEditor #loadSnippetDropdown:hover > #loadSnippetOptions {
+    display: initial;
 }
 
 #codeSnippetEditor #snippetDescription {
@@ -1418,7 +1527,6 @@ The z-index is very important.
 }
 
 #codeSnippetEditor #snippetSelect {
-    float: right;
     margin: 6px 3px;
     font-size: 1.25em;
     padding: 5px;
@@ -1434,19 +1542,19 @@ The z-index is very important.
 }
 
 #codeSnippetEditor #snippetEditorHide {
-    float: right;
+    /* float: right; */
 }
 
 #codeSnippetEditor #snippetEditorClose {
-    float: right;
+    /* float: right; */
 }
 
 #codeSnippetEditor #snippetEditorCopy {
-    float: right;
+    /* float: right; */
 }
 
 #codeSnippetEditor #snippetEditorLoad {
-    float: right;
+    /* float: right; */
 }
 
 #codeSnippetEditor #exportProject {
@@ -1518,7 +1626,7 @@ The z-index is very important.
 
 #codeSnippetEditor #snippetEditor {
     width: 100%;
-    height: 85%;
+    height: calc(100% - 65px);
     border-radius: 10px;
     margin-top: 15px;
 }
@@ -1529,12 +1637,15 @@ The z-index is very important.
     left: 0%;
     width: 100%;
     height: 100%;
-    background-color: rgba(100, 100, 100, 0.3)
+    background-color: rgba(0, 0, 0, 0.65)
 }
 
 /* override the span and * selectors for inside ace editor... */
 .ace_editor * {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace !important;
+    
+    /* this is accompanied by an editor init option for line height, etc. */
+    font-size: 16px;
 }
 
 .ace_editor span {

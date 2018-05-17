@@ -478,33 +478,49 @@
 		</div>
 	</div>
 
-	<div id="codeSnippetEditor" class="">
+	<div id="codeSnippetEditor" class="open">
 		<div class="overlay"></div>
 		<div class="editorWrapper">
 			<div id="snippetEditorControls">
 				<div class="controlRow">
-					<i id="snippetEditorSave" class="controlButton fa fa-2x fa-floppy-o"></i>
-					<input type="text" id="snippetDescription" placeholder="Snippet Name">
-					
-					<i id="exportProject" class="controlButton fa fa-2x fa-download">
-						<div>Export Project</div>
-					</i>
-					<i id="snippetEditorClose" class="controlButton fa fa-2x fa-times-circle-o"></i>
-					<i id="snippetEditorHide" class="controlButton fa fa-2x fa-minus"></i>
-					<div style="clear: both;"></div>
-				</div>
-				<div class="controlRow">
-					<div id="createNewScriptWrapper">
-						<span id="newSnippetLabel">New:</span>
-						<span id="newSnippetGen" class="newSnippetButton genSnippetColor">Gen</span>
-						<span id="newSnippetData" class="newSnippetButton dataSnippetColor">Data</span>
-						<span id="newSnippetDraw" class="newSnippetButton drawSnippetColor">Draw</span>
+					<div class="control">
+						<div id="newSnippetDropdown">
+							<div class="controlButton controlDropdown">
+								New Snippet
+							</div>
+							<div id="newSnippetOptions">
+								<div id="newSnippetGen" class="newSnippetButton genSnippetColor">Data Generator</div>
+								<div id="newSnippetData" class="newSnippetButton dataSnippetColor">Data Processing</div>
+								<div id="newSnippetDraw" class="newSnippetButton drawSnippetColor">Visualization</div>
+							</div>
+						</div>
 					</div>
 
-					<select name="snippetOpen" id="snippetSelect">
-					</select>
-					<i id="snippetEditorLoad" class="controlButton fa fa-2x fa-folder-open-o"></i>
-					<i id="snippetEditorCopy" class="controlButton fa fa-2x fa-clone"></i>
+					<div class="control">
+						<i id="snippetEditorSave" class="controlButton fa fa-2x fa-floppy-o"></i>
+						<input type="text" id="snippetDescription" placeholder="Snippet Name">
+						<div id="loadSnippetDropdown">
+							<div class="controlButton controlDropdown">
+								Load
+							</div>
+							<div id="loadSnippetOptions">
+
+							</div>
+						</div>
+					</div>
+					
+					<div class="control right">
+						<i id="snippetEditorClose" class="controlButton fa fa-2x fa-times-circle-o"></i>
+					</div>
+
+					<div class="control right">
+						<i id="exportProject" class="controlButton fa fa-2x fa-download">
+							<div>Export Project</div>
+						</i>
+					</div>
+					
+
+					<!-- <i id="snippetEditorHide" class="controlButton fa fa-2x fa-minus"></i> -->
 					<div style="clear: both;"></div>
 				</div>
 			</div>

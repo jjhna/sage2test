@@ -27,8 +27,7 @@ let SAGE2_SnippetEditor = (function () {
 			copyButton: null,
 			loadButton: null,
 
-			scriptSelect: null,
-			snippetChanged: false,
+			scriptDropdown: null,
 
 			loadedSnippet: "new",
 			loadedSnippetType: null,
@@ -52,7 +51,8 @@ let SAGE2_SnippetEditor = (function () {
 			self.editor = ace.edit(self.editorDiv);
 
 			self.editor.setOptions({
-				printMargin: false
+				printMargin: false,
+				fontSize: "16px"
 			});
 
 			// set style and javascript syntax
@@ -72,10 +72,10 @@ let SAGE2_SnippetEditor = (function () {
 			});
 
 			// bind hide and close button
-			self.div.querySelector("#snippetEditorHide").onclick = hideEditor;
+			// self.div.querySelector("#snippetEditorHide").onclick = hideEditor; // remove hide function
 			self.div.querySelector("#snippetEditorClose").onclick = closeScript;
 
-			// bind close action to click on overlay as well
+			// bind hide action to click on overlay
 			self.div.querySelector(".overlay").onclick = hideEditor;
 
 			// bind save action
@@ -105,16 +105,7 @@ let SAGE2_SnippetEditor = (function () {
 			};
 
 			// ready script selector dropdown
-			self.scriptSelect = self.div.querySelector("#snippetSelect");
-			self.scriptSelect.onchange = scriptSelectorChanged;
-
-			// bind load script button
-			self.loadButton = self.div.querySelector("#snippetEditorLoad");
-			self.loadButton.onclick = loadScript;
-
-			// bind copy action
-			self.copyButton = self.div.querySelector("#snippetEditorCopy");
-			self.copyButton.onclick = saveCopy;
+			self.scriptDropdown = self.div.querySelector("#loadSnippetOptions");
 
 			self.div.querySelector("#exportProject").onclick = requestProjectExport;
 
@@ -163,7 +154,7 @@ let SAGE2_SnippetEditor = (function () {
 		 *
 		 * @method saveCopy
 		 */
-		function saveCopy() {
+		function saveCopy(id) {
 			// if -> script !== new, clone that script with any current changes in new file
 			// then open new file in editor (will be sent through wsio)
 
@@ -172,7 +163,7 @@ let SAGE2_SnippetEditor = (function () {
 			}
 
 			wsio.emit('editorCloneSnippet', {
-				scriptID: self.scriptSelect.value
+				scriptID: id
 			});
 		}
 
@@ -196,22 +187,16 @@ let SAGE2_SnippetEditor = (function () {
 		 *
 		 * @method loadScript
 		 */
-		function loadScript() {
-
-			console.log("Load script:", self.scriptSelect.value);
+		function loadScript(id) {
+			console.log("Load script:", id);
 
 			if (self.loadedSnippet !== "new") {
 				unloadScript();
 			}
 
 			wsio.emit('editorSnippetLoadRequest', {
-				scriptID: self.scriptSelect.value
+				scriptID: id
 			});
-
-			self.loadedSnippet = self.scriptSelect.value;
-
-			// you can't load what you just loaded
-			self.loadButton.classList.add("disabled");
 		}
 
 		/**
@@ -251,30 +236,10 @@ let SAGE2_SnippetEditor = (function () {
 			// can save a new script
 			self.saveButton.classList.remove("disabled");
 
-			// can load a different script now
-			self.loadButton.classList.remove("disabled");
-
 			self.loadedSnippet = "new";
 			self.loadedSnippetType = type;
 
 			self.descInput.value = '';
-		}
-
-		/**
-		 * Updates the disabled states for the load button based on the selected snippet
-		 *
-		 * @method scriptSelectorChanged
-		 */
-		function scriptSelectorChanged() {
-			let option = self.scriptSelect.options[self.scriptSelect.selectedIndex];
-
-			let canLoad = option.value !== self.loadedSnippet;
-
-			if (canLoad) {
-				self.loadButton.classList.remove("disabled");
-			} else {
-				self.loadButton.classList.add("disabled");
-			}
 		}
 
 		/**
@@ -287,31 +252,32 @@ let SAGE2_SnippetEditor = (function () {
 			console.log("scriptStates updated", scriptStates);
 
 			self.scriptStates = scriptStates;
-			self.scriptSelect.innerHTML = ''; // This works to remove options... real method removing one-by-one was failing
+			self.scriptDropdown.innerHTML = ""; // This works to remove options... real method removing one-by-one was failing
 
 			for (let script of Object.values(scriptStates)) {
-				let newOption = document.createElement("option");
+				// populate Dropdown
+				let newOption = document.createElement("div");
+				newOption.className = "loadSnippetOption";
 
-				newOption.value = script.id;
-				// newOption.innerHTML = `${script.type} - ${script.id.replace("codeSnippet", "cS")}`;
+				newOption.onclick = function() {
+					if (newOption.locked) {
+						saveCopy(script.id);
+					} else if (script.id !== self.loadedSnippet) {
+						loadScript(script.id);
+					}
+				};
+
 				newOption.innerHTML = `${script.id.replace("codeSnippet", "cS")} - ${script.desc}`;
 
 				if (script.id === self.loadedSnippet) {
+					newOption.disabled = true;
 					newOption.classList.add("loaded");
 				} else if (script.locked) {
+					newOption.disabled = true;
 					newOption.classList.add("locked");
 				}
 
-				self.scriptSelect.appendChild(newOption);
-			}
-
-			if (self.loadedSnippet !== "new") {
-				self.scriptSelect.value = self.loadedSnippet;
-				self.loadButton.classList.add("disabled");
-			} else if (scriptStates[self.scriptSelect.value].locked) {
-				self.loadButton.classList.add("disabled");
-			} else {
-				self.loadButton.classList.remove("disabled");
+				self.scriptDropdown.appendChild(newOption);
 			}
 		}
 
