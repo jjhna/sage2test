@@ -3855,13 +3855,13 @@ function wsCommand(wsio, data) {
 
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
-
+	let position = data.position || [0, 0];
 	wsLoadApplication(wsio, {
 		application: "/uploads/apps/Webview",
 		user: wsio.id,
 		// pass the url in the data object
 		data: data,
-		position: [0, 0]
+		position: position
 	});
 
 	// Check if the web-browser is connected
