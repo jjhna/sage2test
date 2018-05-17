@@ -5,7 +5,6 @@ image: Visual Studio 2017
 branches:
   only:
   - master
-  - displayhttps
 
 shallow_clone: true
 
