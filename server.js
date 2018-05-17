@@ -1194,19 +1194,13 @@ function setupListeners(wsio) {
 	wsio.on('serverDataSubscribeToValue',			wsServerDataSubscribeToValue);
 	wsio.on('serverDataGetAllTrackedValues',		wsServerDataGetAllTrackedValues);
 	wsio.on('serverDataGetAllTrackedDescriptions',	wsServerDataGetAllTrackedDescriptions);
-<<<<<<< HEAD
-	wsio.on('serverDataSubscribeToNewValueNotification',	wsServerDataSubscribeToNewValueNotification);
+	wsio.on('serverDataSubscribeToNewValueNotification',
+		wsServerDataSubscribeToNewValueNotification);
 	// experimental detection of data types
 	wsio.on('serverDataLinkerSubmit',				wsServerDataGetAllTrackedValues);
 	wsio.on('serverDataLinkerRequest',			wsServerDataGetAllTrackedValues);
-
-=======
-	wsio.on('serverDataSubscribeToNewValueNotification',
-		wsServerDataSubscribeToNewValueNotification);
-
 	// voice to sage2 actions
 	wsio.on('voiceToAction',                        wsVoiceToAction);
->>>>>>> master
 
 	// Screenshot messages
 	wsio.on('startWallScreenshot',                  wsStartWallScreenshot);

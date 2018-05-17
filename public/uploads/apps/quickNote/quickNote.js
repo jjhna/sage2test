@@ -336,7 +336,7 @@ var quickNote = SAGE2_App.extend({
 
 
 		entry = {};
-		entry.description = "Edit";
+		entry.description = "Edit in separate page (proto)";
 		entry.callback    = "SAGE2_openPage";
 		entry.parameters  = {
 			url: this.resrcPath + "quickNoteControls.html"
@@ -348,7 +348,7 @@ var quickNote = SAGE2_App.extend({
 		entries.push(entry);
 
 		entry = {};
-		entry.description = "Edit Note";
+		entry.description = "Edit Note in UI (default)";
 		entry.callback    = "SAGE2_editQuickNote";
 		entry.parameters  = {
 			currentContent: this.state.clientInput,

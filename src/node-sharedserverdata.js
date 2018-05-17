@@ -809,7 +809,6 @@ SharedServerDataManager.prototype.updateInformationAboutConnectionsFailedRemoteS
 	}
 	// wsio is not needed to set value
 	this.setValue(null, data);
->>>>>>> master
 };
 
 module.exports = SharedServerDataManager;

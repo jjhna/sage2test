@@ -2580,8 +2580,8 @@ function setAppContextMenuEntries(data) {
 					var appUrl;
 					if (this.parameters.url !== undefined && this.parameters.url !== null) {
 						appUrl = this.parameters.url + "?appId=" + this.app;
-						appUrl += "&pointerName=" + document.getElementById('sage2PointerLabel').value;
-						appUrl += "&pointerColor='" + document.getElementById('sage2PointerColor').value + "'";
+						appUrl += "&pointerName=" + interactor.user.label;
+						appUrl += "&pointerColor='" + interactor.user.color + "'";
 						open(appUrl, "App Control Panel");
 					}
 				} else if (this.callback === "SAGE2_editQuickNote") {
