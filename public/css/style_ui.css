@@ -52,6 +52,9 @@ h2 {
 #mainUI {
     margin: 0;
     overflow: hidden;
+
+    /* disable user selection on iOS */
+    -webkit-user-select: none;
 }
 
 #displayUIDiv {
