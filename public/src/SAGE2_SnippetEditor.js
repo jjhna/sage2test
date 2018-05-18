@@ -352,7 +352,7 @@ let SAGE2_SnippetEditor = (function () {
 					}
 				};
 
-				name.innerHTML = `${script.id.replace("codeSnippet", "cS")} - ${script.desc}`;
+				name.innerHTML = `[${script.id.split("-")[1]}] - ${script.desc}`;
 
 				if (script.id === self.loadedSnippet) {
 					newOption.disabled = true;

@@ -57,7 +57,7 @@ var Snippets_List = SAGE2_App.extend({
 					.attr("width", data.width)
 					.attr("height", 46)
 					.style("fill", bgColor[d])
-					.style("opacity", 0.25)
+					.style("opacity", 0.5)
 					.style("stroke", "white");
 			});
 
@@ -99,13 +99,25 @@ var Snippets_List = SAGE2_App.extend({
 			// resize the column background
 			let col = this.cols[type];
 
-			let thisHeight = Math.max((blockHeight + 8) * lengths[type] + 8, this.sage2_height / 3);
+			// let thisHeight = Math.max((blockHeight + 8) * lengths[type] + 8, this.sage2_height / 3);
+			let thisHeight = (blockHeight + 8) * lengths[type] + 8;
 			col.select("rect")
 				.datum((blockHeight + 8) * lengths[type] + 8)
 				.attr("height", thisHeight);
 
 			col.attr("transform", `translate(0, ${currentY})`);
 			currentY += thisHeight;
+		}
+
+		// handle extra height
+		let extraHeight = this.sage2_height - currentY;
+
+		if (extraHeight > 0) {
+			this.cols["draw"].selectAll("rect")
+				.attr("height", (+this.cols["draw"].selectAll("rect").attr("height") + extraHeight))
+				.datum(function() {
+					return +d3.select(this).attr("height");
+				});
 		}
 
 
@@ -126,7 +138,7 @@ var Snippets_List = SAGE2_App.extend({
 
 					group.append("path")
 						.attr("class", "snippetPath")
-						.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 12, blockHeight, [6, i * (blockHeight + 8) + 8]))
+						.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 24, blockHeight, [12, i * (blockHeight + 8) + 8]))
 						.style("stroke-linejoin", "round")
 						.style("fill", d.locked ? "#525252" : lightColor[d.type])
 						.style("stroke-width", 3)
@@ -150,7 +162,7 @@ var Snippets_List = SAGE2_App.extend({
 						.style("stroke-linecap", "round")
 						.style("stroke", d => d.color);
 
-					group.append("text")
+					let label = group.append("text")
 						.attr("class", "snippetName")
 						.attr("x", colWidth / 2)
 						.attr("y", (1 + i) * (blockHeight + 8) - 8)
@@ -160,6 +172,14 @@ var Snippets_List = SAGE2_App.extend({
 						.style("fill", d.locked ? lightColor[d.type] : "black")
 						.style("pointer-events", "none")
 						.text(`[${d.id.split("-")[1]}] ${d.desc}`);
+
+					if (label.node().getBBox().width > (colWidth - 24) * 0.925) {
+						label.text(`${d.desc}`);
+					}
+
+					if (label.node().getBBox().width > (colWidth - 24) * 0.925) {
+						label.text(`[${d.id.split("-")[1]}]`);
+					}
 				});
 		}
 
@@ -197,7 +217,7 @@ var Snippets_List = SAGE2_App.extend({
 
 
 						d3.select(this).selectAll(".snippetPath")
-							.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 12, blockHeight, [6, i * (blockHeight + 8) + 8]))
+							.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 24, blockHeight, [12, i * (blockHeight + 8) + 8]))
 
 						let selectorWidth = (((colWidth - 10) * 0.8) - (func.selectors.length + 1) * 3) / func.selectors.length;
 
@@ -208,20 +228,42 @@ var Snippets_List = SAGE2_App.extend({
 							.style("stroke-linecap", "round")
 							.style("stroke", d => d.color);
 
-						d3.select(this).selectAll(".snippetName")
+						let label = d3.select(this).selectAll(".snippetName")
 							.attr("x", colWidth / 2)
+							.text(`[${func.id.split("-")[1]}] ${func.desc}`);
+
+						if (label.node().getBBox().width > (colWidth - 24) * 0.925) {
+							label.text(`${func.desc}`);
+						}
+
+						if (label.node().getBBox().width > (colWidth - 24) * 0.925) {
+							label.text(`[${func.id.split("-")[1]}]`);
+						}
 					});
 
 				d3.select(this).selectAll(".snippetTypeColBG")
 					.attr("width", colWidth)
 					.attr("height", d => {
-						let height = Math.max(d, colHeight);
+						// let height = Math.max(d, colHeight);
+						let height = d;
 
 						currentY += height;
 
 						return height;
 					});
 			});
+
+		
+		// handle extra height
+		let extraHeight = this.sage2_height - currentY;
+
+		if (extraHeight > 0) {
+			this.cols["draw"].selectAll("rect")
+				.attr("height", (+this.cols["draw"].selectAll("rect").attr("height") + extraHeight))
+				.datum(function() {
+					return +d3.select(this).attr("height");
+				});
+		}
 
 		// this.refresh(date);
 	},
