@@ -484,26 +484,41 @@
 			<div id="snippetEditorControls">
 				<div class="controlRow">
 					<div class="control">
-						<div id="newSnippetDropdown">
+						<div id="newSnippetDropdown" class="dropdownWrapper">
 							<div class="controlButton controlDropdown">
 								New Snippet
 							</div>
-							<div id="newSnippetOptions">
-								<div id="newSnippetGen" class="newSnippetButton genSnippetColor">Data Generator</div>
-								<div id="newSnippetData" class="newSnippetButton dataSnippetColor">Data Processing</div>
-								<div id="newSnippetDraw" class="newSnippetButton drawSnippetColor">Visualization</div>
+							<div id="newSnippetOptions" class="dropdownOptionList left">
+								<div id="newSnippetGen" class="dropdownOption">
+									<div class="colorBadge genSnippetColor"></div>
+									<span>
+										Data Generator
+									</span>
+								</div>
+								<div id="newSnippetData" class="dropdownOption">
+									<div class="colorBadge dataSnippetColor"></div>
+									<span>
+										Data Processing
+									</span>
+								</div>
+								<div id="newSnippetDraw" class="dropdownOption">
+									<div class="colorBadge drawSnippetColor"></div>
+									<span>
+										Visualization
+									</span>
+								</div>
 							</div>
 						</div>
 					</div>
 
 					<div class="control">
-						<i id="snippetEditorSave" class="controlButton fa fa-2x fa-floppy-o"></i>
 						<input type="text" id="snippetDescription" placeholder="Snippet Name">
-						<div id="loadSnippetDropdown">
+						<div id="snippetEditorSave" class="controlButton">Save</div>
+						<div id="loadSnippetDropdown" class="dropdownWrapper">
 							<div class="controlButton controlDropdown">
 								Load
 							</div>
-							<div id="loadSnippetOptions">
+							<div id="loadSnippetOptions" class="dropdownOptionList right">
 
 							</div>
 						</div>
@@ -518,7 +533,16 @@
 						<!-- <i id="exportProject" class="controlButton fa fa-2x fa-download"> -->
 						<!-- </i> -->
 					</div>
-					
+
+					<div class="control right">
+						<div id="snippetApiDropdown" class="dropdownWrapper">
+							<div class="controlButton controlDropdown">
+								Snippets API
+							</div>
+							<div id="snippetApiOptions" class="dropdownOptionList right">
+							</div>
+						</div>
+					</div>
 
 					<!-- <i id="snippetEditorHide" class="controlButton fa fa-2x fa-minus"></i> -->
 					<div style="clear: both;"></div>

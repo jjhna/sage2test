@@ -1447,49 +1447,17 @@ The z-index is very important.
     transform: translate(-50%, -50%);
 }
 
-#codeSnippetEditor #newSnippetDropdown {
+#codeSnippetEditor .dropdownWrapper {
     position: relative;
     display: inline-block;
     margin-right: 10px;
 }
 
-#codeSnippetEditor #newSnippetOptions {
+#codeSnippetEditor .dropdownOptionList {
     display: none;
     box-sizing: border-box;
     position: absolute;
     top: 100%;
-    left: 0;
-    z-index: 100;
-
-    background: white;
-    border: 1px solid gray;
-    padding: 10px 10px;
-    text-align: center;
-}
-
-#codeSnippetEditor #newSnippetOptions > div {
-    box-sizing: border-box;
-    display: block;
-    white-space: nowrap;
-    width: 100%;
-    margin: 3px 0;
-}
-
-#codeSnippetEditor #newSnippetDropdown:hover > #newSnippetOptions {
-    display: initial;
-}
-
-#codeSnippetEditor #loadSnippetDropdown {
-    position: relative;
-    display: inline-block;
-}
-
-#codeSnippetEditor #loadSnippetOptions {
-    display: none;
-    box-sizing: border-box;
-    position: absolute;
-    top: 100%;
-    right: 0;
     z-index: 100;
     
     background: white;
@@ -1500,7 +1468,20 @@ The z-index is very important.
     max-height: 400px;
 }
 
-#codeSnippetEditor .loadSnippetOption {
+#codeSnippetEditor .dropdownOptionList.left {
+    left: 0;
+}
+
+#codeSnippetEditor .dropdownOptionList.right {
+    right: 0;
+}
+
+#codeSnippetEditor .dropdownWrapper:hover > .dropdownOptionList {
+    display: initial;
+}
+
+
+#codeSnippetEditor .dropdownOption {
     position: relative;
     box-sizing: border-box;
     display: block;
@@ -1513,26 +1494,10 @@ The z-index is very important.
     cursor: pointer;
 }
 
-#codeSnippetEditor .loadedSnippetOption span {
+#codeSnippetEditor .dropdownOption span {
     pointer-events: none;
 }
-
-#codeSnippetEditor .loadSnippetOption.loaded {
-    background: #c7e9c0;
-}
-
-#codeSnippetEditor .loadSnippetOption.locked {
-    background-color: #eee;
-    color: gray;
-    cursor: copy;
-}
-
-#codeSnippetEditor .loadSnippetOption.locked span {
-    color: gray;
-    font-style: italic;
-}
-
-#codeSnippetEditor .loadSnippetOption .typeBadge {
+#codeSnippetEditor .dropdownOption .colorBadge {
     width: 8px;
     height: 100%;
     position: absolute;
@@ -1541,17 +1506,27 @@ The z-index is very important.
 
     border-right: 2px solid white;
 }
-
-#codeSnippetEditor .loadSnippetOption:hover {
+#codeSnippetEditor .dropdownOption:hover {
     background-color: lightgray;
 }
 
-#codeSnippetEditor .loadSnippetOption.loaded:hover {
-    background-color: #a1d99b;
+#codeSnippetEditor #loadSnippetOptions .dropdownOption.loaded {
+    background: #c7e9c0;
 }
 
-#codeSnippetEditor #loadSnippetDropdown:hover > #loadSnippetOptions {
-    display: initial;
+#codeSnippetEditor #loadSnippetOptions .dropdownOption.locked {
+    background-color: #eee;
+    color: gray;
+    cursor: copy;
+}
+
+#codeSnippetEditor #loadSnippetOptions .dropdownOption.locked span {
+    color: gray;
+    font-style: italic;
+}
+
+#codeSnippetEditor #loadSnippetOptions .dropdownOption.loaded:hover {
+    background-color: #a1d99b;
 }
 
 #codeSnippetEditor #snippetDescription {

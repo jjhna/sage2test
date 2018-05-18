@@ -11195,19 +11195,20 @@ function wsSnippetSaveIntoServer(wsio, data) {
 
 	// callback for asset addition finishing
 	function snippetAssetAdded() {
-		console.log("snippet asset added");
-
+		// add snippet as loaded to state manager
 		snippetsManager.addLoadedSnippet({
 			snippetID: data.snippetID,
 			snippet: fileContents,
 			filename
 		});
 
+		// notify the display runtime that the sourcefile could be updated
 		broadcast("snippetSourceFileUpdated", {
 			snippetID: data.snippetID,
 			filename
 		});
 
+		// update the stored file list (name could change)
 		broadcast('storedFileList', getSavedFilesList());
 	}
 }

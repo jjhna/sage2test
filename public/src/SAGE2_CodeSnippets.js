@@ -141,8 +141,6 @@ let SAGE2_CodeSnippets = (function() {
 		// update the saved function definition
 		let func = self.functions[id] = definition;
 
-		console.log(definition);
-
 		// handle assocation from reload
 		if (func.src && self.reloadSnippetFilemap[func.src]) {
 			self.reloadSnippetIDmap[self.reloadSnippetFilemap[func.src]] = id;
