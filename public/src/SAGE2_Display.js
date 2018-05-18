@@ -1478,7 +1478,7 @@ function setupListeners() {
 	});
 
 	wsio.on("saveSnippet", function(data) {
-		console.log(data);
+
 		// { uniqueID, code, desc, type, scriptID, author }
 		SAGE2_CodeSnippets.saveSnippet(data.from, data.text, data.desc, data.type, data.scriptID, data.author);
 	});

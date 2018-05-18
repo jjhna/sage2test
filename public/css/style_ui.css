@@ -1464,8 +1464,9 @@ The z-index is very important.
     border: 1px solid gray;
     text-align: center;
 
-    overflow-y: auto;
-    max-height: 400px;
+    /* Turning on overflow breaks submenus... */
+    /* overflow-y: auto;
+    max-height: 400px; */
 }
 
 #codeSnippetEditor .dropdownOptionList.left {
@@ -1474,6 +1475,19 @@ The z-index is very important.
 
 #codeSnippetEditor .dropdownOptionList.right {
     right: 0;
+}
+
+#codeSnippetEditor .dropdownOption > .dropdownOptionList {
+    top: 0;
+    margin-top: -2px;
+}
+
+#codeSnippetEditor .dropdownOption > .dropdownOptionList.left {
+    left: 100%;
+}
+
+#codeSnippetEditor .dropdownOption > .dropdownOptionList.right {
+    right: 100%;
 }
 
 #codeSnippetEditor .dropdownWrapper:hover > .dropdownOptionList {
@@ -1497,6 +1511,7 @@ The z-index is very important.
 #codeSnippetEditor .dropdownOption span {
     pointer-events: none;
 }
+
 #codeSnippetEditor .dropdownOption .colorBadge {
     width: 8px;
     height: 100%;
@@ -1506,8 +1521,13 @@ The z-index is very important.
 
     border-right: 2px solid white;
 }
+
 #codeSnippetEditor .dropdownOption:hover {
     background-color: lightgray;
+}
+
+#codeSnippetEditor .dropdownOption:hover > .dropdownOptionList {
+    display: initial;
 }
 
 #codeSnippetEditor #loadSnippetOptions .dropdownOption.loaded {

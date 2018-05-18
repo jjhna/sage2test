@@ -600,7 +600,6 @@ var addTag = function(id, tagName, tagValue) {
 	id = path.resolve(id);
 	if (id in AllAssets.list) {
 		AllAssets.list[id].exif[tagName] = tagValue;
-		console.log(id, AllAssets.list[id].exif[tagName]);
 		return true;
 	}
 	return false;

@@ -3552,8 +3552,6 @@ function wsLoadFileFromServer(wsio, data) {
 		return;
 	}
 
-	console.log("wsLoadFileFromServer");
-
 	if (data.application === "load_session") {
 		// if it's a session, then load it
 		loadSession(data.filename);

@@ -16,19 +16,30 @@ let SAGE2_SnippetEditor = (function () {
 	// api examples to be inserted in the editor
 	let apiExamples = {
 		SnippetVisElement: `let { elem, width, height } = SAGE2.SnippetVisElement({ type: "svg" });`,
-		SnippetInput: `let inputValue = SAGE2.SnippetInput({
-		name: "input_name", // name your input element
-		type: "input_type", // 'checkbox', 'text', 'radio', or 'range'
-
-		// required for 'radio' input
-		// 	options: ['one', 'two', 'three'],
-
-		// required for 'range' input
-		// 	range: [1, 20],
-		// 	step: 1,
-
-		defaultVal: 1 // an *optional* default value for the input
+		SnippetInput: {
+			Checkbox: `let checkbox = SAGE2.SnippetInput({
+		name: "my_checkbox", // name your input element
+		type: "checkbox",
+		defaultVal: false // an *optional* default value for the input
 	});`,
+			Text: `let textfield = SAGE2.SnippetInput({
+		name: "my_textInput", // name your input element
+		type: "text",
+		defaultVal: "foo" // an *optional* default value for the input
+	});`,
+			Radio: `let radiogroup = SAGE2.SnippetInput({
+		name: "my_radio", // name your input element
+		type: "radio",
+		options: ['one', 'two', 'three'],
+		defaultVal: 'one' // an *optional* default value for the input
+	});`,
+			Range: `let slider = SAGE2.SnippetInput({
+		name: "my_slider", // name your input element
+		range: [1, 20],
+		step: 1,
+		defaultVal: 1 // an *optional* default value for the input
+	});`
+		},
 		SnippetTimeout: `SAGE2.SnippetTimeout({time: 500}); // 500ms timeout`
 	};
 
@@ -130,7 +141,7 @@ let SAGE2_SnippetEditor = (function () {
 
 			// api helper element
 			self.apiHelper = self.div.querySelector("#snippetApiOptions");
-			addApiHelperOptions();
+			addApiHelperOptions(apiExamples, self.apiHelper);
 
 			self.div.querySelector("#exportProject").onclick = requestProjectExport;
 
@@ -265,21 +276,40 @@ let SAGE2_SnippetEditor = (function () {
 			self.descInput.value = '';
 		}
 
-		function addApiHelperOptions() {
-			for (let key of Object.keys(apiExamples)) {
+		/**
+		 * Populate the API dropdown with the template names
+		 *
+		 * @method addApiHelperOptions
+		 */
+		function addApiHelperOptions(examples, parent) {
+			for (let key of Object.keys(examples)) {
 				let newOption = document.createElement("div");
 				let name = document.createElement("span");
 
 				newOption.className = "dropdownOption";
 
-				newOption.onclick = function() {
-					insertApiCall(key);
-				};
+				console.log(examples, key);
+
+				if (typeof examples[key] === "string") {
+					newOption.onclick = function() {
+						insertApiCall(examples[key]);
+					};
+
+				} else { // recurse if it finds an object
+					let optionList = document.createElement("div");
+					optionList.className = "dropdownOptionList right";
+
+					newOption.classList.add("controlDropdown");
+
+					addApiHelperOptions(examples[key], optionList);
+
+					newOption.appendChild(optionList);
+				}
 
 				name.innerHTML = key;
 
 				newOption.appendChild(name);
-				self.apiHelper.appendChild(newOption);
+				parent.appendChild(newOption);
 			}
 		}
 
@@ -289,8 +319,8 @@ let SAGE2_SnippetEditor = (function () {
 		 * @method insertApiCall
 		 * @param {String} type - Helper control to add a SAGE2 Snippets API Call at the cursor
 		 */
-		function insertApiCall(type) {
-			self.editor.insert(apiExamples[type]);
+		function insertApiCall(text) {
+			self.editor.insert(text);
 		}
 
 		/**
@@ -314,7 +344,7 @@ let SAGE2_SnippetEditor = (function () {
 				typeBadge.className = "colorBadge " + script.type + "SnippetColor";
 
 				newOption.onclick = function() {
-					if (script.locked) {
+					if (script.locked && script.id !== self.loadedSnippet) {
 						saveCopy(script.id);
 					} else if (script.id !== self.loadedSnippet) {
 						loadScript(script.id);
