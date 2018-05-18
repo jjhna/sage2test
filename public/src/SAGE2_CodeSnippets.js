@@ -863,6 +863,7 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} parentID - the SAGE2 ID of the app as the target
 	 */
 	function executeCodeSnippet(snippetID, parentID) {
+		console.log(snippetID, parentID);
 
 		let snippet = self.functions[snippetID];
 
@@ -949,7 +950,7 @@ let SAGE2_CodeSnippets = (function() {
 	 *
 	 * @method notifyUserListClick
 	 * @param {Object} user - the SAGE2 user object
-	 * @param {Object} func - the function information which was clicked on
+	 * @param {Object} funcID - the function id which was clicked on
 	 */
 	function notifyUserListClick(user, func) {
 		if (func.type === "gen") {

@@ -26,6 +26,8 @@ var Snippets_List = SAGE2_App.extend({
 		this.cols = {};
 		this.blockHeight = ui.titleBarHeight;
 
+		this.blockPositions = {};
+
 		this.svg = d3.select(this.element)
 			.append("svg")
 			.attr("width", data.width)
@@ -72,6 +74,7 @@ var Snippets_List = SAGE2_App.extend({
 
 	updateFunctionBank: function (data, date) {
 		// console.log("Snippets_List> Update Functions", data);
+		this.currentFunctions = data;
 
 		let lightColor = {
 			gen: "#b3e2cd",
@@ -136,17 +139,16 @@ var Snippets_List = SAGE2_App.extend({
 				.each(function (d, i) {
 					let group = d3.select(this);
 
+					let colY = +col.attr("transform").split(/[()]/)[1].split(",")[1];
+					that.blockPositions[d.id] = [colY + (i * blockHeight) + 8, colY + (i * blockHeight) + blockHeight + 8];
+
 					group.append("path")
 						.attr("class", "snippetPath")
 						.attr("d", SAGE2_CodeSnippets.createBlockPath(type, colWidth - 24, blockHeight, [12, i * (blockHeight + 8) + 8]))
 						.style("stroke-linejoin", "round")
 						.style("fill", d.locked ? "#525252" : lightColor[d.type])
 						.style("stroke-width", 3)
-						.style("stroke", () => d.locked ? lightColor[d.type] : darkColor[d.type])
-						.on("click", function (e) {
-							SAGE2_CodeSnippets.notifyUserListClick(that.lastUserClick, d);
-							that.lastUserClick = null;
-						});
+						.style("stroke", () => d.locked ? lightColor[d.type] : darkColor[d.type]);
 
 					let selectorWidth = (((colWidth - 10) * 0.8) - (d.selectors.length + 1) * 3) / d.selectors.length;
 
@@ -275,8 +277,14 @@ var Snippets_List = SAGE2_App.extend({
 
 	event: function (eventType, position, user_id, data, date) {
 		if (eventType === "pointerPress" && (data.button === "left")) {
-			// click
-			this.lastUserClick = user_id;
+			// find object on click
+			for (let id of Object.keys(this.blockPositions)) {
+				if (position.y >= this.blockPositions[id][0] && position.y <= this.blockPositions[id][1]) {
+
+					SAGE2_CodeSnippets.notifyUserListClick(user_id, this.currentFunctions[id]);
+					break;
+				}
+			}
 		} else if (eventType === "pointerMove" && this.dragging) {
 			// move
 		} else if (eventType === "pointerRelease" && (data.button === "left")) {
