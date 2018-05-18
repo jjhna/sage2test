@@ -199,6 +199,7 @@ let SAGE2_SnippetEditor = (function () {
 			}
 
 			wsio.emit('editorCloneSnippet', {
+				author: interactor.user.label,
 				scriptID: id
 			});
 		}

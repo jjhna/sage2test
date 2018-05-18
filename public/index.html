@@ -481,6 +481,13 @@
 	<div id="codeSnippetEditor" class="">
 		<div class="overlay"></div>
 		<div class="editorWrapper">
+			<div id="snippetEditorTitlebar">
+				<div style="font-size: 16px;font-weight:bold;">
+					VizSnippets Editor
+				</div>
+
+				<i id="snippetEditorClose" class="controlButton fa fa-2x fa-times-circle-o"></i>
+			</div>
 			<div id="snippetEditorControls">
 				<div class="controlRow">
 					<div class="control">
@@ -490,11 +497,6 @@
 							</div>
 							<div id="newSnippetOptions" class="dropdownOptionList left">
 								<div id="newSnippetGen" class="dropdownOption">
-									<div class="dropdownOptionList left">
-										<div class="dropdownOption">
-											Test
-										</div>
-									</div>
 									<div class="colorBadge genSnippetColor"></div>
 									<span>
 										Data Generator
@@ -530,23 +532,14 @@
 					</div>
 
 					<div class="control right">
-						<i id="snippetEditorClose" class="controlButton fa fa-2x fa-times-circle-o"></i>
-					</div>
-
-					<div class="control right">
-						<div id="exportProject" class="controlButton">Export Project</div>
-						<!-- <i id="exportProject" class="controlButton fa fa-2x fa-download"> -->
-						<!-- </i> -->
-					</div>
-
-					<div class="control right">
 						<div id="snippetApiDropdown" class="dropdownWrapper">
 							<div class="controlButton controlDropdown">
-								Add S2 API Call
+								<div style="font-weight: bold; font-size: 20px;margin-right:5px;">+</div>S2 API Call
 							</div>
 							<div id="snippetApiOptions" class="dropdownOptionList right">
 							</div>
 						</div>
+						<div id="exportProject" class="controlButton">Export Project</div>
 					</div>
 
 					<!-- <i id="snippetEditorHide" class="controlButton fa fa-2x fa-minus"></i> -->

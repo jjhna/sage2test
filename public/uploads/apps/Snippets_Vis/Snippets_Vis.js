@@ -96,12 +96,12 @@ var Snippets_Vis = SAGE2_App.extend({
 		// give descriptive title to app
 		if (this.parentLink) {
 			if (this.parentLink.getParent()) {
-				this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().id})`);
+				this.updateTitle("VizSnippets: " + `s[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
 			} else {
-				this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}()`);
+				this.updateTitle("VizSnippets: " + `s[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
 			}
 		} else {
-			this.updateTitle("Snippets - " + this.id);
+			this.updateTitle("VizSnippets: " + this.state.snippetsID);
 		}
 	},
 
@@ -137,12 +137,12 @@ var Snippets_Vis = SAGE2_App.extend({
 		// give descriptive title to app
 		if (this.parentLink) {
 			if (this.parentLink.getParent()) {
-				this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().id})`);
+				this.updateTitle("VizSnippets: " + `s[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
 			} else {
-				this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}()`);
+				this.updateTitle("VizSnippets: " + `s[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
 			}
 		} else {
-			this.updateTitle("Snippets - " + this.id);
+			this.updateTitle("VizSnippets: " + this.state.snippetsID);
 		}
 	},
 

@@ -159,7 +159,7 @@ var Snippets_List = SAGE2_App.extend({
 						.style("font-size", blockHeight / 2  + "px")
 						.style("fill", d.locked ? lightColor[d.type] : "black")
 						.style("pointer-events", "none")
-						.text(`cS-${d.id.split("-")[1]}: ${d.desc}`);
+						.text(`[${d.id.split("-")[1]}] ${d.desc}`);
 				});
 		}
 

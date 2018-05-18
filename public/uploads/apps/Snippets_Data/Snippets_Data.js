@@ -101,12 +101,12 @@ var Snippets_Data = SAGE2_App.extend({
 
 		if (this.parentLink) {
 			if (this.parentLink.getParent()) {
-				this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().id})`);
+				this.updateTitle("VizSnippets: " + `s[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
 			} else {
-				this.updateTitle("Snippets - " + this.id + " - " + `${this.parentLink.getSnippetID()}()`);
+				this.updateTitle("VizSnippets: " + `s[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
 			}
 		} else {
-			this.updateTitle("Snippets - " + this.id);
+			this.updateTitle("VizSnippets: " + this.state.snippetsID);
 		}
 	},
 
@@ -173,14 +173,14 @@ var Snippets_Data = SAGE2_App.extend({
 		this.parentLink = link;
 
 		if (this.parentLink) {
-      if (this.parentLink.getParent()) {
-        this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}(${this.parentLink.getParent().state.snippetsID})`);
-      } else {
-        this.updateTitle("Snippets - " + this.state.snippetsID + " - " + `${this.parentLink.getSnippetID()}()`);
-      }
-    } else {
-      this.updateTitle("Snippets - " + this.state.snippetsID);
-    }
+			if (this.parentLink.getParent()) {
+				this.updateTitle("VizSnippets: " + `s[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
+			} else {
+				this.updateTitle("VizSnippets: " + `s[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
+			}
+		} else {
+			this.updateTitle("VizSnippets: " + this.state.snippetsID);
+		}
 	},
 
 	removeParentLink: function() {
@@ -193,12 +193,12 @@ var Snippets_Data = SAGE2_App.extend({
 		let ancestry = SAGE2_CodeSnippets.getAppAncestry(this);
 		// outsource ancestry drawing ot SAGE2_CodeSnippets
 		SAGE2_CodeSnippets.drawAppAncestry({
-      svg: this.ancestry,
-      width: this.sage2_width,
-      height: ui.titleBarHeight * 1.5,
-      ancestry,
-      app: this
-    });
+			svg: this.ancestry,
+			width: this.sage2_width,
+			height: ui.titleBarHeight * 1.5,
+			ancestry,
+			app: this
+		});
 	},
 
 	updateAncestorTree: function() {

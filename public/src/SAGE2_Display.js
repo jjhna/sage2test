@@ -1486,7 +1486,7 @@ function setupListeners() {
 	wsio.on("cloneSnippet", function(data) {
 
 		// { uniqueID, code, desc, type, scriptID }
-		SAGE2_CodeSnippets.cloneSnippet(data.from, data.scriptID);
+		SAGE2_CodeSnippets.cloneSnippet(data.from, data.scriptID, data.author);
 	});
 
 	wsio.on("snippetSourceFileUpdated", function(data) {

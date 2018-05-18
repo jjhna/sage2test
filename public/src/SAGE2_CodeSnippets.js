@@ -246,14 +246,14 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} uniqueID - the SAGE2 uniqueID of the user cloning the snippet
 	 * @param {String} scriptID - the snippet to be cloned
 	 */
-	function cloneSnippet(uniqueID, scriptID) {
+	function cloneSnippet(uniqueID, scriptID, author) {
 		let originalSnippet = self.functions[scriptID];
 
 		let code = originalSnippet.text;
 		let desc = originalSnippet.desc + " (copy)";
 		let type = originalSnippet.type;
 
-		saveSnippet(uniqueID, code, desc, type, "new");
+		saveSnippet(uniqueID, code, desc, type, "new", author);
 
 		updateListApps();
 	}
@@ -842,14 +842,14 @@ let SAGE2_CodeSnippets = (function() {
 					.style("font-family", "monospace")
 					.style("fill", "black")
 					.style("pointer-events", "none")
-					.text(`cS-${d.id.split("-")[1]}: ${d.desc}`);
+					.text(`[${d.id.split("-")[1]}]: ${d.desc}`);
 
-				if (label.node().getBBox().width > blockWidth * 0.925) {
+				if (label.node().getBBox().width > blockWidth * 0.925 - 6) {
 					label.text(`${d.desc}`);
 				}
 
-				if (label.node().getBBox().width > blockWidth * 0.925) {
-					label.text(`cS-${d.id.split("-")[1]}`);
+				if (label.node().getBBox().width > blockWidth * 0.925 - 6) {
+					label.text(`[${d.id.split("-")[1]}]`);
 				}
 
 			});
