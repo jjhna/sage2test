@@ -892,9 +892,9 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	var accelDistance = 0;
 	var accelX = 0;
 	var accelY = 0;
-	
+
 	var touchGroupSize = 0;
-	
+
 	// As of 2015/11/13 all touch gesture events touch have an init value
 	// (zoomDelta moved to extraData index 4 instead of 2)
 	// ExtraDataFloats
@@ -912,19 +912,16 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		initX *= omicronManager.totalWidth;
 		initY *= omicronManager.totalHeight;
-		
+
 		if (e.extraDataItems >= 5) {
 			touchGroupSize = msg.readFloatLE(offset); offset += 4;
-			for(var i = 0; i < touchGroupSize; i++)
-			{
-				var subTouchID = msg.readFloatLE(offset); offset += 4;
-				var subTouchPosX = msg.readFloatLE(offset); offset += 4;
-				var subTouchPosY = msg.readFloatLE(offset); offset += 4;
+			for (var i = 0; i < touchGroupSize; i++) {
+				//var subTouchID = msg.readFloatLE(offset); offset += 4;
+				//var subTouchPosX = msg.readFloatLE(offset); offset += 4;
+				//var subTouchPosY = msg.readFloatLE(offset); offset += 4;
 				//sageutils.log('Omicron', " TouchGroup ", sourceID, " size:", touchGroupSize);
 				//sageutils.log('Omicron', "   [", i, "] ID:", subTouchID, " (", subTouchPosX, ",", subTouchPosY, ")");
-				
 			}
-			
 		}
 	} else {
 		initX = posX;
