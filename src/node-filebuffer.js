@@ -21,9 +21,7 @@ var sageutils = require('../src/node-utils');    // provides utility functions
 /* global  */
 if (!String.prototype.splice) {
 
-    /**
-     * {JSDoc}
-     *
+	/**
      * The splice() method changes the content of a string by removing a range of
      * characters and/or adding new characters.
      *
@@ -250,7 +248,7 @@ FileBuffer.prototype.associateFile = function(data) {
 	var fullPath = path.join(fileDir, fileName);
 
 	this.files[data.appId] = fullPath;
-	console.log(sageutils.header("SAGE2") + "File " + fileName + " attached to buffer of " + data.appName);
+	sageutils.log("SAGE2", "File", fileName, "attached to buffer of", data.appName);
 };
 
 FileBuffer.prototype.writeToFile = function(appId) {

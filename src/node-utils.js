@@ -14,7 +14,7 @@
  * @class node-utils
  * @module server
  * @submodule node-utils
- * @requires package.json, request, semver, chalk
+ * @requires package.json, request, semver, chalk, strip-ansi
  */
 
 // require variables to be declared
@@ -41,6 +41,7 @@ var semver    = require('semver');            // parse version numbers
 var fsmonitor = require('fsmonitor');         // file system monitoring
 var sanitizer = require('sanitizer');         // Caja's HTML Sanitizer as a Node.js module
 var chalk     = require('chalk');             // colorize console output
+var stripansi = require('strip-ansi');        // remove ANSI color codes (dep. of chalk)
 var rimraf    = require('rimraf');            // command rm -rf for node
 
 /**
@@ -151,7 +152,7 @@ function loadCABundle(filename) {
 			}
 		});
 	} else {
-		console.log('loadCABundle>	Could not find CA file:', filename);
+		log('loadCABundle', 'Could not find CA file:', filename);
 	}
 	return certs_array;
 }
@@ -179,7 +180,8 @@ function getShortVersion() {
  * @return {String} version number
  */
 function getNodeVersion() {
-	return _NODE_VERSION.toString() +  " (v" +  process.versions.node + ")";
+	// return _NODE_VERSION.toString() +  " (v" +  process.versions.node + ")";
+	return process.versions.node;
 }
 
 /**
@@ -257,10 +259,13 @@ function updateWithGIT(branch, callback) {
  * @return {String} cleanup string
  */
 function sanitizedURL(aURL) {
+	// replace several consecutive forward slashes into one
+	var cleaner = aURL.replace(/\/+/g, "/");
+	// var cleaner = aURL;
 	// convert HTML encoded content
 	// Node doc: It will try to use decodeURIComponent in the first place, but if that fails it falls back
 	// to a safer equivalent that doesn't throw on malformed URLs.
-	var decode = querystring.unescape(aURL);
+	var decode = querystring.unescape(cleaner);
 	// Then, remove the bad parts
 	return sanitizer.sanitize(decode);
 }
@@ -279,6 +284,25 @@ function header(h) {
 	return chalk.green.bold.dim(h + ">\t");
 }
 
+/**
+ * Log function for SAGE2, adds a header with color
+ *
+ * @method     log
+ * @param      {String}  head    The header
+ * @param      {Array}   params  The parameters
+ */
+function log(head, ...params) {
+	// Adds the header strings in a new argument array
+	if (!global.quiet) {
+		console.log.apply(console, [header(head)].concat(params));
+	}
+	if (global.emitLog) {
+		global.emitLog({head: head, params: params});
+	}
+	if (global.logger) {
+		global.logger.log(head, stripansi(params.toString()));
+	}
+}
 
 /**
  * Utility function to compare two strings independently of case.
@@ -386,7 +410,7 @@ function checkPackages(inDevelopement) {
 		function(error, stdout, stderr) {
 			// returns error code 1 if found outdated packages
 			if (error && error.code !== 1) {
-				console.log(header("Packages") + "Warning, error running update [ " + error.cmd + '] ',
+				log("Packages", "Warning, error running update [ " + error.cmd + '] ',
 					'code: ' + error.code + ' signal: ' + error.signal);
 				return;
 			}
@@ -394,29 +418,29 @@ function checkPackages(inDevelopement) {
 			var key;
 			var output = stdout ? JSON.parse(stdout) : {};
 			for (key in output) {
-				// if not a valid version number
-				if (!semver.valid(output[key].current)) {
-					packages.missing.push(key);
-				} else if (semver.lt(output[key].current, output[key].wanted)) {
-					// if the version is strictly lower than requested
-					packages.outdated.push(key);
+				// if it is not a git repository
+				if (output[key].wanted != "git") {
+					// if not a valid version number
+					if (!semver.valid(output[key].current)) {
+						packages.missing.push(key);
+					} else if (semver.lt(output[key].current, output[key].wanted)) {
+						// if the version is strictly lower than requested
+						packages.outdated.push(key);
+					}
 				}
 			}
 
 			if (packages.missing.length > 0 || packages.outdated.length > 0) {
-				console.log(header("Packages") + chalk.yellow.bold("Warning") +
-					" - Packages not up to date");
+				log("Packages", chalk.yellow.bold("Warning") + " - Packages not up to date");
 				if (packages.missing.length  > 0) {
-					console.log(header("Packages") + "  " + chalk.red.bold("Missing:"),
-						chalk.red.bold(packages.missing));
+					log("Packages", chalk.red.bold("Missing:"), chalk.red.bold(packages.missing));
 				}
 				if (packages.outdated.length > 0) {
-					console.log(header("Packages") + "  " + chalk.yellow.bold("Outdated:"),
-						chalk.yellow.bold(packages.outdated));
+					log("Packages", chalk.yellow.bold("Outdated:"), chalk.yellow.bold(packages.outdated));
 				}
-				console.log(header("Packages") + "To update, execute: " + chalk.yellow.bold("npm run in"));
+				log("Packages", "To update, execute: " + chalk.yellow.bold("npm run in"));
 			} else {
-				console.log(header("Packages") + chalk.green.bold("All packages up to date"));
+				log("Packages", chalk.green.bold("All packages up to date"));
 			}
 		}
 	);
@@ -436,11 +460,10 @@ function registerSAGE2(config) {
 		// url: 'https://131.193.183.150/register',
 		form: config,
 		method: "POST"},
-		function(err, response, body) {
-			console.log(header("SAGE2") + "Registration with EVL site:",
-				(err === null) ? chalk.green.bold("success") : chalk.red.bold(err.code));
-		}
-	);
+	function(err, response, body) {
+		log("SAGE2", "Registration with EVL site:",
+			(err === null) ? chalk.green.bold("success") : chalk.red.bold(err.code));
+	});
 }
 
 /**
@@ -457,14 +480,13 @@ function deregisterSAGE2(config, callback) {
 		// url: 'https://131.193.183.150/unregister',
 		form: config,
 		method: "POST"},
-		function(err, response, body) {
-			console.log(header("SAGE2") + "Deregistration with EVL site:",
-				(err === null) ? chalk.green.bold("success") : chalk.red.bold(err.code));
-			if (callback) {
-				callback();
-			}
+	function(err, response, body) {
+		log("SAGE2", "Deregistration with EVL site:",
+			(err === null) ? chalk.green.bold("success") : chalk.red.bold(err.code));
+		if (callback) {
+			callback();
 		}
-	);
+	});
 }
 
 /**
@@ -475,9 +497,9 @@ function deregisterSAGE2(config, callback) {
  * @return {String} cleanup version of the URL
  */
 function encodeReservedURL(aUrl) {
-	return encodeURI(aUrl).replace(/\$/g, "%24").replace(/\&/g, "%26").replace(/\+/g, "%2B")
-		.replace(/\,/g, "%2C").replace(/\:/g, "%3A").replace(/\;/g, "%3B").replace(/\=/g, "%3D")
-		.replace(/\?/g, "%3F").replace(/\@/g, "%40");
+	return encodeURI(aUrl).replace(/\$/g, "%24").replace(/&/g, "%26").replace(/\+/g, "%2B")
+		.replace(/,/g, "%2C").replace(/:/g, "%3A").replace(/;/g, "%3B").replace(/=/g, "%3D")
+		.replace(/\?/g, "%3F").replace(/@/g, "%40");
 }
 
 /**
@@ -565,7 +587,7 @@ function monitorFolders(folders, excludesFiles, excludesFolders, callback) {
 		var stat       = fs.lstatSync(folderpath);
 		// making sure it is a folder
 		if (stat.isDirectory()) {
-			console.log(header("Monitor") + "watching folder " + chalk.yellow.bold(folderpath));
+			log("Monitor", "watching folder " + chalk.yellow.bold(folderpath));
 			var monitor = fsmonitor.watch(folderpath, {
 				// excludes non-valid filenames
 				matches:  function(relpath) {
@@ -587,19 +609,6 @@ function monitorFolders(folders, excludesFiles, excludesFolders, callback) {
 		}
 	}
 }
-
-// Example of callback:
-//
-// function fsChanged(change) {
-// 	console.log("fsChanged in", this.root);
-// 	console.log("   Added files:    %j",   change.addedFiles);
-// 	console.log("   Modified files: %j",   change.modifiedFiles);
-// 	console.log("   Removed files:  %j",   change.removedFiles);
-// 	console.log("   Added folders:    %j", change.addedFolders);
-// 	console.log("   Modified folders: %j", change.modifiedFolders);
-// 	console.log("   Removed folders:  %j", change.removedFolders);
-// }
-//
 
 /**
  * Merges object a and b into b
@@ -646,7 +655,7 @@ function deleteFiles(pattern, cb) {
 	} else {
 		rimraf(pattern, {glob: true}, function(err) {
 			if (err) {
-				console.log(header('Files') + 'error deleting files ' + pattern);
+				log('Files', 'error deleting files ' + pattern);
 			}
 		});
 	}
@@ -661,6 +670,7 @@ module.exports.secureContext     = secureContext;
 module.exports.fileExists        = fileExists;
 module.exports.folderExists      = folderExists;
 module.exports.header            = header;
+module.exports.log               = log;
 module.exports.compareString     = compareString;
 module.exports.compareFilename   = compareFilename;
 module.exports.compareTitle      = compareTitle;

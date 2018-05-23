@@ -88,10 +88,10 @@ var hserver;
 // the HTTP port
 var hport = 9000;
 
-// the HTTP server
+// the TCP server
 var tcp_server;
-// the HTTP port
-var tcp_port = 11000;
+// the TCP port
+var tcp_port = -1; // 11000;
 var tcp_clients = [];
 
 var platform = os.platform() === "win32" ? "Windows" : os.platform() === "darwin" ? "Mac OS X" : "Linux";
@@ -929,12 +929,13 @@ function newTCPSocket(socket) {
 	});
 }
 
-// Create a new server and provide a callback for when a connection occurs
-tcp_server = net.createServer(newTCPSocket);
-
-// Listen on port tcp_port
-tcp_server.listen(tcp_port);
-// console.log("TCP server running at localhost:" + tcp_port);
+if (tcp_port != -1) {
+	// Create a new server and provide a callback for when a connection occurs
+	tcp_server = net.createServer(newTCPSocket);
+	// Listen on port tcp_port
+	tcp_server.listen(tcp_port);
+	console.log("TCP server running at localhost:" + tcp_port);
+}
 
 
 // ---------------------------------------------
@@ -1079,6 +1080,10 @@ function processRPC(data, socket) {
 		console.log('Setting new launcher password', data.value[0]);
 		htdigest.htdigest_save("users.htpasswd", "sabi", "sage2", data.value[0]);
 	}
+	if (!found && data.method === "removeMeetingID") {
+		console.log('Removing meetingID');
+		removeMeetingID();
+	}
 	if (!found && data.method === "performGitUpdate") {
 		console.log('Rewriting launcher to initiate git update before launching sabi');
 
@@ -1114,6 +1119,14 @@ function getMeetingIDFromPasswd() {
 	return cfg.pwd;
 }
 
+function removeMeetingID() {
+	//if there is no passwd file, then can't do anything.
+	if (!fileExists(pathToSageUiPwdFile)) {
+		return null;
+	}
+	fs.unlinkSync(pathToSageUiPwdFile);
+}
+
 function updateCertificates() {
 	var pathToConfig; //config name differs depending on OS.
 	if (platform === "Windows") {
@@ -1137,7 +1150,9 @@ function updateCertificates() {
 	rewriteContents += "call init_webserver.bat localhost\n";
 	rewriteContents += "call init_webserver.bat 127.0.0.1\n";
 	rewriteContents += "call init_webserver.bat " + host + "\n";
-	rewriteContents += "call init_webserver.bat " + alternate + "\n";
+	for (var i = 0; i < alternate.length; i++) {
+		rewriteContents += "call init_webserver.bat " + alternate[i] + "\n";
+	}
 	fs.writeFileSync(pathToGoWindowsCertGenFile, rewriteContents);
 
 	rewriteContents = "@echo off\n\n";
@@ -1346,26 +1361,10 @@ function socketOnRequestConfigAndTips(socket) {
 function socketOnAssistedConfigSend(socket, sentCfg) {
 	var cfg           = JSON5.parse(fs.readFileSync(pathToWinDefaultConfig));
 	var electronCfg   = JSON5.parse(fs.readFileSync(pathToElectronConfig));
-	var totalMonitors = sentCfg.layout.columns * sentCfg.layout.rows;
 
 	// copy over layout
 	cfg.layout = sentCfg.layout;
-	// double check the displays
-	if (sentCfg.displays.length != totalMonitors) { // if display values don't match, make them
-		var tdisp;
-		cfg.displays = [];
-
-		for (var height = 0; height < cfg.layout.rows; height++) {
-			for (var width = 0; width < cfg.layout.columns; width++) {
-				tdisp = {};
-				tdisp.row = height;
-				tdisp.column = width;
-				cfg.displays.push(tdisp);
-			}
-		}
-	} else { // else it should be correct from UI
-		cfg.displays = sentCfg.displays;
-	}
+	cfg.displays = sentCfg.displays;
 	// copy over all other relevent data.
 	cfg.host = sentCfg.host;
 	cfg.port = sentCfg.port;
@@ -1411,25 +1410,22 @@ function socketOnAssistedConfigSend(socket, sentCfg) {
 	rem %6 row count
 	rem %7 col count
 
-	this only works with windows, actually probably everything only works with windows.
+	This only works with windows, actually probably everything only works with windows.
+	Using a custom launch file, will require writer to fill out the values themselves.
+	Launching custom will still end up giving that bat file these parameters.
+	But the only usable one is probably meetingID.
 */
 
 function getLaunchParameters(isElectron) {
 	var cfg;
 	var dataReturn = [];
 
-	// if launching electron, need to ensure that the defaultWin-cfg.json file has the correct width, height on display 0
+	// grab the correct config file
 	if (isElectron != undefined && isElectron == "electron") {
 		cfg = JSON5.parse(fs.readFileSync(pathToElectronConfig));
-		cfg.displays[0].width = cfg.layout.columns;
-		cfg.displays[0].height = cfg.layout.rows;
 	} else {
 		cfg = JSON5.parse(fs.readFileSync(pathToWinDefaultConfig));
-		cfg.displays[0].width = 1;
-		cfg.displays[0].height = 1;
 	}
-
-
 
 	dataReturn.push(pathToElectronConfig);
 	dataReturn.push(cfg.index_port);
@@ -1444,16 +1440,7 @@ function getLaunchParameters(isElectron) {
 	}
 
 	dataReturn.push(getMeetingIDFromPasswd());
-	dataReturn.push(cfg.layout.rows);
-	dataReturn.push(cfg.layout.columns);
-
-
-	// now write the file with its adjustments
-	if (isElectron != undefined && isElectron == "electron") {
-		fs.writeFileSync(pathToElectronConfig, JSON5.stringify(cfg, null, 4));
-	} else {
-		fs.writeFileSync(pathToWinDefaultConfig, JSON5.stringify(cfg, null, 4));
-	}
+	dataReturn.push(cfg.host);
 
 	return dataReturn;
 }

@@ -1,21 +1,37 @@
-FROM    ubuntu
+FROM    ubuntu:16.04
 MAINTAINER	EVL avatar <evl.avatar@gmail.com>
-RUN     apt-get -y update
-RUN     apt-get install -y software-properties-common
-RUN     add-apt-repository -y ppa:mc3man/xerus-media
-RUN     apt-get -y update
-RUN     apt-get -y install g++ make wget git curl yasm bzip2 devscripts
-RUN     apt-get -y install ffmpeg libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libx264-dev
-RUN     curl -sL https://deb.nodesource.com/setup_7.x | bash -
-RUN     apt-get -y install nodejs ghostscript libnss3-tools libimage-exiftool-perl libgs-dev
-RUN     apt-get -y install imagemagick libmagickcore-dev libmagickwand-dev libmagick++-dev libgraphviz-dev
+RUN     apt-get update && apt-get install -y \
+		software-properties-common \
+		git \
+		curl \
+		bzip2
+RUN     add-apt-repository -y ppa:jonathonf/ffmpeg-3
+RUN     curl -sL https://deb.nodesource.com/setup_9.x | bash -
+RUN     apt-get update && apt-get install -y \
+		ffmpeg \
+		ghostscript \
+		libnss3-tools \
+		libimage-exiftool-perl \
+		imagemagick \
+		nodejs \
+		ntp \
+		tzdata \
+	&& rm -rf /var/lib/apt/lists/*
 
 COPY    package.json /tmp/package.json
-RUN     cd /tmp; npm install
+RUN     cd /tmp; npm install --production
 RUN     mkdir -p /sage2; cp -a /tmp/node_modules /sage2/
 
+# Set this environment variable to true to set timezone on container start.
+ENV SET_CONTAINER_TIMEZONE true
+# Default container timezone as found under the directory /usr/share/zoneinfo/.
+ENV CONTAINER_TIMEZONE America/Chicago
+
 COPY    . /sage2
-EXPOSE  80
-EXPOSE  443
+
+RUN     /sage2/bin/docker_set_timezone.sh
+
+EXPOSE  9090
+EXPOSE  9292
 WORKDIR /sage2
 CMD ["nodejs", "/sage2/server.js", "-f", "/sage2/config/docker-cfg.json", "-i"]

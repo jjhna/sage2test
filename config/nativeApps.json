@@ -10,8 +10,10 @@
         {
             "name": "Webview",
             "types": [
-                "application/url"
-            ]
+                "application/url",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            ],
+            "directory": "web"
         },
         {
             "name": "image_viewer",
@@ -20,6 +22,7 @@
                 "image/webp",
                 "image/png",
                 "image/bmp",
+                "image/x-ms-bmp",
                 "image/gif",
                 "image/tiff",
                 "image/svg",
