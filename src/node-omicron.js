@@ -138,15 +138,15 @@ function OmicronManager(sysConfig) {
 	}
 
 	// Config: Touch
-	this.enableTouch =  this.config.enableTouch;
+	this.enableTouch = this.config.enableTouch === undefined ? true : this.config.enableTouch;
 	console.log(sageutils.header('Omicron') + 'Touch Enabled: ', this.enableTouch);
 
 	// Config: Mocap
-	this.enableMocap =  this.config.enableMocap;
+	this.enableMocap =  this.config.enableMocap === undefined ? false : this.config.enableMocap;
 	console.log(sageutils.header('Omicron') + 'Mocap Enabled: ', this.enableMocap);
 
 	// Config: Wand
-	this.enableWand =  this.config.enableWand;
+	this.enableWand =  this.config.enableWand === undefined ? false : this.config.enableWand;
 	console.log(sageutils.header('Omicron') + 'Wand Enabled: ', this.enableWand);
 
 	if (this.config.touchOffset) {

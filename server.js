@@ -304,7 +304,7 @@ function initializeSage2Server() {
 
 	// Set default host origin for this server
 	if (config.rproxy_port === undefined) {
-		hostOrigin = "http://" + config.host + (config.port === 80 ? "" : ":" + config.port) + "/";
+		hostOrigin = "https://" + config.host + (config.secure_port === 443 ? "" : ":" + config.secure_port) + "/";
 	}
 
 	// Initialize sage2 item lists
@@ -3855,13 +3855,13 @@ function wsCommand(wsio, data) {
 
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
-
+	let position = data.position || [0, 0];
 	wsLoadApplication(wsio, {
 		application: "/uploads/apps/Webview",
 		user: wsio.id,
 		// pass the url in the data object
 		data: data,
-		position: [0, 0]
+		position: position
 	});
 
 	// Check if the web-browser is connected
