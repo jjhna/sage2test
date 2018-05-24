@@ -810,6 +810,9 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
  * @param offset {Integer} Current offset position of msg
  */
 OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY, msg, offset, address) {
+	if (sourceID === 0)
+		return;
+	
 	// TouchGestureManager Flags:
 	// 1 << 18 = User flag start (as of 8/3/14)
 	// User << 1 = Unprocessed
@@ -1004,12 +1007,44 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 					if (touchGroupChildrenIDs.has(childID) === false) {
 						sageutils.log('Omicron', "TouchGroup ", sourceID, " has removed touch id ", childID);
 						//lastTouchGroupPoints.set(childID, touchGroupChildrenIDs.get(childID));
+						omicronManager.hidePointer(address + "_" + childID);
 					}
 				}
 				for (var childID of touchGroupChildrenIDs.keys()) {
+					var posX = touchGroupChildrenIDs.get(childID).pointerX;
+					var posY = touchGroupChildrenIDs.get(childID).pointerY;
+					
 					if (lastTouchGroupPoints.has(childID) === false) {
-						sageutils.log('Omicron', "TouchGroup ", sourceID, " has new touch id ", childID);
+						//sageutils.log('Omicron', "TouchGroup ", sourceID, " has new touch id ", childID);
 						//lastTouchGroupPoints.set(childID, touchGroupChildrenIDs.get(childID));
+						// Create the pointer
+						omicronManager.createSagePointer(address + "_" + childID);
+
+						// Set the pointer style
+						var pointerStyle = "Touch";
+						if (omicronManager.config.style !== undefined) {
+							pointerStyle = omicronManager.config.style;
+						}
+						omicronManager.showPointer(address + "_" + childID, {
+							label:  "Touch: " + childID,
+							color: "rgba(122, 92, 6, 1.0)",
+							sourceType: pointerStyle
+						});
+
+						// Set pointer mode
+						var mode = "Window";
+						if (omicronManager.config.interactionMode !== undefined) {
+							mode = omicronManager.config.interactionMode;
+						}
+
+						if (mode === "App") {
+							omicronManager.pointerChangeMode(address + "_" + childID);
+						}
+
+						// Set the initial pointer position
+						omicronManager.pointerPosition(address + "_" + childID, { pointerX: posX, pointerY: posY });
+					} else {
+						omicronManager.pointerPosition(address + "_" + childID, { pointerX: posX, pointerY: posY });
 					}
 				}
 				omicronManager.touchGroups.set(sourceID, touchGroupChildrenIDs);
@@ -1080,6 +1115,17 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		
 		// Remove from touchgroup list only if multi/single touch event (not gestures)
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
+			
+			var lastTouchGroupPoints = omicronManager.touchGroups.get(sourceID);
+			if (lastTouchGroupPoints !== undefined) {
+				for (var childID of lastTouchGroupPoints.keys()) {
+					omicronManager.hidePointer(address + "_" + childID);
+				}
+			}
+			for (var childID of touchGroupChildrenIDs.keys()) {
+				omicronManager.hidePointer(address + "_" + childID);
+			}
+				
 			omicronManager.touchGroups.delete(sourceID);
 		}
 	} else if (e.type === 15 && omicronManager.enableTwoFingerZoom) {
