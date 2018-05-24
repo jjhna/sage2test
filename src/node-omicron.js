@@ -260,21 +260,8 @@ function OmicronManager(sysConfig) {
 	}
 
 
-	// Unity WebView
-	var wsPort = 19090;
-
-	// Note this is not secure!!!!
-	this.wsServer = new WebSocket.Server({ port: wsPort });
-	sageutils.log('Omicron', 'Starting WebSocketIO on port ' + wsPort);
-	this.wsServer.on('connection', this.openWebSocketClient);
-
-	this.wsServer.broadcast = function broadcast(data) {
-		omicronManager.wsServer.clients.forEach(function each(client) {
-			if (client.readyState === WebSocket.OPEN) {
-				client.send(data);
-			}
-		});
-	};
+	// Touch Point/Gesture Tracking
+	this.touchGroups = new Map();
 }
 
 OmicronManager.prototype.openWebSocketClient = function(ws, req) {
@@ -823,48 +810,6 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
  * @param offset {Integer} Current offset position of msg
  */
 OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY, msg, offset, address) {
-	var touchWidth  = 0;
-	var touchHeight = 0;
-
-	if (e.extraDataItems >= 2) {
-		touchWidth  = msg.readFloatLE(offset); offset += 4;
-		touchHeight = msg.readFloatLE(offset); offset += 4;
-	}
-
-	// the touch size is normalized
-	touchWidth *=  omicronManager.totalWidth;
-	touchHeight *= omicronManager.totalHeight;
-
-	if (omicronManager.eventDebug) {
-		var eventTypeSrt = "";
-		if (e.type == 4) {
-			eventTypeSrt = "Move";
-		} else if (e.type == 5) {
-			eventTypeSrt = "Down";
-		} else if (e.type == 6) {
-			eventTypeSrt = "Up";
-		}
-		sageutils.log('Omicron', "pointer ID", sourceID, " event! type:", eventTypeSrt);
-		// sageutils.log('Omicron', "pointer event! type: " + e.type);
-		// sageutils.log('Omicron', "ServiceTypePointer> source", e.sourceId);
-		// sageutils.log('Omicron', "ServiceTypePointer> serviceID", e.serviceId);
-		// sageutils.log('Omicron', "   pos: " + posX.toFixed(2) + ", " + posY.toFixed(2) + " size: " + touchWidth.toFixed(2) + ", " + touchHeight.toFixed(2));
-		// sageutils.log('Omicron', "pointer address", address);
-	}
-
-	if (drawingManager.drawingMode && e.type !== 6) {
-		// If the touch is coming from oinput send it to node-drawing and stop after that
-		// If touch up, still send to SAGE to clear touch
-		drawingManager.pointerEvent(e, sourceID, posX, posY, touchWidth, touchHeight);
-		return;
-	}
-
-	// If the user touches on the palette with drawing disabled, enable it
-	if ((!drawingManager.drawingMode) && drawingManager.touchInsidePalette(posX, posY)
-		&& e.type === 5) {
-		// drawingManager.reEnableDrawingMode();
-	}
-
 	// TouchGestureManager Flags:
 	// 1 << 18 = User flag start (as of 8/3/14)
 	// User << 1 = Unprocessed
@@ -883,51 +828,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	var FLAG_SINGLE_CLICK = User << 7;
 	var FLAG_DOUBLE_CLICK = User << 8;
 	var FLAG_MULTI_TOUCH = User << 9;
-
-	var initX = 0;
-	var initY = 0;
-
-	var distance = 0;
-	var angle = 0;
-	var accelDistance = 0;
-	var accelX = 0;
-	var accelY = 0;
-
-	var touchGroupSize = 0;
-
-	// As of 2015/11/13 all touch gesture events touch have an init value
-	// (zoomDelta moved to extraData index 4 instead of 2)
-	// ExtraDataFloats
-	// [0] width
-	// [1] height
-	// [2] initX
-	// [3] initY
-	// [4] touch count in group
-	// [c] id of touch n
-	// [c+1] xPos of touch n
-	// [c+2] yPos of touch n
-	if (e.extraDataItems >= 4) {
-		initX = msg.readFloatLE(offset); offset += 4;
-		initY = msg.readFloatLE(offset); offset += 4;
-
-		initX *= omicronManager.totalWidth;
-		initY *= omicronManager.totalHeight;
-
-		if (e.extraDataItems >= 5) {
-			touchGroupSize = msg.readFloatLE(offset); offset += 4;
-			for (var i = 0; i < touchGroupSize; i++) {
-				//var subTouchID = msg.readFloatLE(offset); offset += 4;
-				//var subTouchPosX = msg.readFloatLE(offset); offset += 4;
-				//var subTouchPosY = msg.readFloatLE(offset); offset += 4;
-				//sageutils.log('Omicron', " TouchGroup ", sourceID, " size:", touchGroupSize);
-				//sageutils.log('Omicron', "   [", i, "] ID:", subTouchID, " (", subTouchPosX, ",", subTouchPosY, ")");
-			}
-		}
-	} else {
-		initX = posX;
-		initY = posY;
-	}
-
+	
 	var flagStrings = {};
 	flagStrings[FLAG_SINGLE_TOUCH] = "FLAG_SINGLE_TOUCH";
 	flagStrings[FLAG_BIG_TOUCH] = "FLAG_BIG_TOUCH";
@@ -952,7 +853,112 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	typeStrings[15] = "Zoom";
 	typeStrings[18] = "Split";
 	typeStrings[21] = "Rotate";
+	
+	var touchWidth  = 0;
+	var touchHeight = 0;
 
+	if (e.extraDataItems >= 2) {
+		touchWidth  = msg.readFloatLE(offset); offset += 4;
+		touchHeight = msg.readFloatLE(offset); offset += 4;
+	}
+
+	// the touch size is normalized
+	touchWidth *=  omicronManager.totalWidth;
+	touchHeight *= omicronManager.totalHeight;
+
+	if (drawingManager.drawingMode && e.type !== 6) {
+		// If the touch is coming from oinput send it to node-drawing and stop after that
+		// If touch up, still send to SAGE to clear touch
+		drawingManager.pointerEvent(e, sourceID, posX, posY, touchWidth, touchHeight);
+		return;
+	}
+
+	// If the user touches on the palette with drawing disabled, enable it
+	if ((!drawingManager.drawingMode) && drawingManager.touchInsidePalette(posX, posY)
+		&& e.type === 5) {
+		// drawingManager.reEnableDrawingMode();
+	}
+
+	var initX = 0;
+	var initY = 0;
+
+	var distance = 0;
+	var angle = 0;
+	var accelDistance = 0;
+	var accelX = 0;
+	var accelY = 0;
+
+	var touchGroupSize = 0;
+	var touchGroupChildrenIDs = new Map();
+	
+	// As of 2015/11/13 all touch gesture events touch have an init value
+	// (zoomDelta moved to extraData index 4 instead of 2)
+	// ExtraDataFloats
+	// [0] width
+	// [1] height
+	// [2] initX
+	// [3] initY
+	// [4] touch count in group
+	// [c] id of touch n
+	// [c+1] xPos of touch n
+	// [c+2] yPos of touch n
+	if (e.extraDataItems >= 4) {
+		initX = msg.readFloatLE(offset); offset += 4;
+		initY = msg.readFloatLE(offset); offset += 4;
+
+		initX *= omicronManager.totalWidth;
+		initY *= omicronManager.totalHeight;
+		
+		if (e.extraDataItems >= 5) {
+			touchGroupSize = msg.readFloatLE(offset); offset += 4;
+			
+			for (var i = 0; i < touchGroupSize; i++) {
+				var subTouchID = msg.readFloatLE(offset); offset += 4;
+				var subTouchPosX = msg.readFloatLE(offset); offset += 4;
+				var subTouchPosY = msg.readFloatLE(offset); offset += 4;
+
+				subTouchPosX = subTouchPosX * omicronManager.totalWidth;
+				subTouchPosY = subTouchPosY * omicronManager.totalHeight;
+				subTouchPosX += omicronManager.touchOffset[0];
+				subTouchPosY += omicronManager.touchOffset[1];
+				
+				touchGroupChildrenIDs.set(subTouchID, { pointerX: subTouchPosX, pointerY: subTouchPosY });
+			}
+		}
+	} else {
+		initX = posX;
+		initY = posY;
+	}
+
+	
+	if (omicronManager.eventDebug && (e.type == 4 || e.type == 5 || e.type == 6) ) {
+		var eventTypeSrt = "";
+		if (e.type == 4) {
+			eventTypeSrt = "Move";
+		} else if (e.type == 5) {
+			eventTypeSrt = "Down";
+		} else if (e.type == 6) {
+			eventTypeSrt = "Up";
+			/*
+			sageutils.log('Omicron', "pointer ID", sourceID, " event type:", eventTypeSrt);
+			sageutils.log('Omicron', "pointer address", address);
+			sageutils.log('Omicron', "sourceID ", e.sourceId);
+			sageutils.log('Omicron', "serviceID ", e.serviceId);
+			sageutils.log('Omicron', "   pos: " + posX.toFixed(2) + ", " + posY.toFixed(2) + " size: " + touchWidth.toFixed(2) + ", " + touchHeight.toFixed(2));
+			sageutils.log('Omicron', "   flags: ", flagStrings[e.flags]);
+			sageutils.log('Omicron', "   touchGroup size: ", touchGroupSize);
+			if (touchGroupSize > 0)
+			{
+				for (var subID of touchGroupChildrenIDs.keys()) {
+					var posX = touchGroupChildrenIDs.get(subID).pointerX;
+					var posY = touchGroupChildrenIDs.get(subID).pointerY;
+					sageutils.log('Omicron', "      id: ", subID, "pos: " + posX.toFixed(2) + ", " + posY.toFixed(2));
+				}
+			}*/
+		}
+		
+	}
+	
 	if (e.type === 4) { // EventType: MOVE
 		//if (omicronManager.sagePointers[address] === undefined) {
 		//	return;
@@ -988,6 +994,28 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			}
 		}
 		*/
+		
+		
+		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
+			// Get previous touchgroup list
+			var lastTouchGroupPoints = omicronManager.touchGroups.get(sourceID);
+			if (lastTouchGroupPoints !== undefined) {
+				for (var childID of lastTouchGroupPoints.keys()) {
+					if (touchGroupChildrenIDs.has(childID) === false) {
+						sageutils.log('Omicron', "TouchGroup ", sourceID, " has removed touch id ", childID);
+						//lastTouchGroupPoints.set(childID, touchGroupChildrenIDs.get(childID));
+					}
+				}
+				for (var childID of touchGroupChildrenIDs.keys()) {
+					if (lastTouchGroupPoints.has(childID) === false) {
+						sageutils.log('Omicron', "TouchGroup ", sourceID, " has new touch id ", childID);
+						//lastTouchGroupPoints.set(childID, touchGroupChildrenIDs.get(childID));
+					}
+				}
+				omicronManager.touchGroups.set(sourceID, touchGroupChildrenIDs);
+			}
+		}
+		
 	} else if (e.type === 5) { // EventType: DOWN
 		//if (omicronManager.sagePointers[address] !== undefined) {
 		//	return;
@@ -1028,7 +1056,11 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Send 'click' event
 		omicronManager.pointerPress(address, posX, posY, { button: "left" });
-
+		
+		// Set touchgroup child only if multi/single touch event (not gestures)
+		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
+			omicronManager.touchGroups.set(sourceID, touchGroupChildrenIDs);
+		}
 	} else if (e.type === 6) { // EventType: UP
 		//if (omicronManager.sagePointers[address] === undefined) {
 		//	return;
@@ -1045,7 +1077,11 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Release event
 		omicronManager.pointerRelease(address, posX, posY, { button: "left" });
-
+		
+		// Remove from touchgroup list only if multi/single touch event (not gestures)
+		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
+			omicronManager.touchGroups.delete(sourceID);
+		}
 	} else if (e.type === 15 && omicronManager.enableTwoFingerZoom) {
 		// zoom
 
@@ -1112,7 +1148,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			}
 		}
 	} else {
-		console.log("\t UNKNOWN event type ", e.type, typeStrings[e.type]);
+		//console.log("\t UNKNOWN event type ", e.type, typeStrings[e.type]);
 	}
 };
 
