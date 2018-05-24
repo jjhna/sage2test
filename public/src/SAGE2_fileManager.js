@@ -489,14 +489,14 @@ function FileManager(wsio, mydiv, uniqueID) {
 		display_menu: {value: "Display Client 0",
 			tooltip: "Opens a new page with the first display client",
 			callback: function (evt) {
-				var displayUrl = "http://" + window.location.hostname + _this.http_port +  "/display.html?clientID=0";
+				var displayUrl = "https://" + window.location.hostname + _this.https_port +  "/display.html?clientID=0";
 				window.open(displayUrl, '_blank');
 			}
 		},
 		overview_menu: {value: "Display Full Wall",
 			tooltip: "Opens a new page with the overview display client",
 			callback: function (evt) {
-				var overviewUrl = "http://" + window.location.hostname + _this.http_port +  "/display.html?clientID=-1";
+				var overviewUrl = "https://" + window.location.hostname + _this.https_port +  "/display.html?clientID=-1";
 				window.open(overviewUrl, '_blank');
 			}
 		},
@@ -504,7 +504,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		audio_menu: {value: "Audio Manager",
 			tooltip: "Opens a new page with the audio manager",
 			callback: function (evt) {
-				var audioUrl = "http://" + window.location.hostname + _this.http_port +  "/audioManager.html";
+				var audioUrl = "https://" + window.location.hostname + _this.https_port +  "/audioManager.html";
 				window.open(audioUrl, '_blank');
 			}
 		},
