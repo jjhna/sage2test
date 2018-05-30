@@ -29,8 +29,6 @@ var sageutils           = require('./node-utils');            // provides the cu
 var CoordinateCalculator = require('./node-coordinateCalculator');
 var OneEuroFilter        = require('./node-1euro');
 
-var WebSocket = require('ws'); // Communication between SAGE2 and Unity Webviews
-
 /* eslint consistent-this: ["error", "omicronManager"] */
 var omicronManager; // Handle to OmicronManager inside of udp blocks (instead of this)
 var drawingManager; // Connect to the node-drawing
@@ -154,6 +152,9 @@ function OmicronManager(sysConfig) {
 		console.log(sageutils.header('Omicron') + 'Touch points offset by: ', this.touchOffset);
 	}
 
+	// Config: Gestures
+	this.enableGestures =  this.config.enableGestures === undefined ? true : this.config.enableGestures;
+
 	if (this.config.zoomGestureScale) {
 		this.touchZoomScale = this.config.zoomGestureScale;
 	}
@@ -261,7 +262,8 @@ function OmicronManager(sysConfig) {
 
 
 	// Touch Point/Gesture Tracking
-	this.touchGroups = new Map();
+	this.touchList = new Map(); // All touch points
+	this.touchGroups = new Map(); // Touch groups and their child points
 }
 
 OmicronManager.prototype.openWebSocketClient = function(ws, req) {
@@ -810,9 +812,10 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
  * @param offset {Integer} Current offset position of msg
  */
 OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY, msg, offset, address) {
-	if (sourceID === 0)
+	if (sourceID === 0) {
 		return;
-	
+	}
+
 	// TouchGestureManager Flags:
 	// 1 << 18 = User flag start (as of 8/3/14)
 	// User << 1 = Unprocessed
@@ -831,7 +834,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	var FLAG_SINGLE_CLICK = User << 7;
 	var FLAG_DOUBLE_CLICK = User << 8;
 	var FLAG_MULTI_TOUCH = User << 9;
-	
+
 	var flagStrings = {};
 	flagStrings[FLAG_SINGLE_TOUCH] = "FLAG_SINGLE_TOUCH";
 	flagStrings[FLAG_BIG_TOUCH] = "FLAG_BIG_TOUCH";
@@ -856,7 +859,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	typeStrings[15] = "Zoom";
 	typeStrings[18] = "Split";
 	typeStrings[21] = "Rotate";
-	
+
 	var touchWidth  = 0;
 	var touchHeight = 0;
 
@@ -882,18 +885,19 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		// drawingManager.reEnableDrawingMode();
 	}
 
+	if (!omicronManager.enableGestures && !(e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH)) {
+		return;
+	}
+
 	var initX = 0;
 	var initY = 0;
 
 	var distance = 0;
-	var angle = 0;
-	var accelDistance = 0;
-	var accelX = 0;
-	var accelY = 0;
 
 	var touchGroupSize = 0;
 	var touchGroupChildrenIDs = new Map();
-	
+	var secondaryEventFlag = -1;
+
 	// As of 2015/11/13 all touch gesture events touch have an init value
 	// (zoomDelta moved to extraData index 4 instead of 2)
 	// ExtraDataFloats
@@ -911,10 +915,14 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		initX *= omicronManager.totalWidth;
 		initY *= omicronManager.totalHeight;
-		
+
 		if (e.extraDataItems >= 5) {
+			secondaryEventFlag = msg.readFloatLE(offset); offset += 4;
+		}
+
+		if (e.extraDataItems >= 6 && e.flags === FLAG_MULTI_TOUCH) {
 			touchGroupSize = msg.readFloatLE(offset); offset += 4;
-			
+
 			for (var i = 0; i < touchGroupSize; i++) {
 				var subTouchID = msg.readFloatLE(offset); offset += 4;
 				var subTouchPosX = msg.readFloatLE(offset); offset += 4;
@@ -924,7 +932,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				subTouchPosY = subTouchPosY * omicronManager.totalHeight;
 				subTouchPosX += omicronManager.touchOffset[0];
 				subTouchPosY += omicronManager.touchOffset[1];
-				
+
 				touchGroupChildrenIDs.set(subTouchID, { pointerX: subTouchPosX, pointerY: subTouchPosY });
 			}
 		}
@@ -933,35 +941,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		initY = posY;
 	}
 
-	
-	if (omicronManager.eventDebug && (e.type == 4 || e.type == 5 || e.type == 6) ) {
-		var eventTypeSrt = "";
-		if (e.type == 4) {
-			eventTypeSrt = "Move";
-		} else if (e.type == 5) {
-			eventTypeSrt = "Down";
-		} else if (e.type == 6) {
-			eventTypeSrt = "Up";
-			/*
-			sageutils.log('Omicron', "pointer ID", sourceID, " event type:", eventTypeSrt);
-			sageutils.log('Omicron', "pointer address", address);
-			sageutils.log('Omicron', "sourceID ", e.sourceId);
-			sageutils.log('Omicron', "serviceID ", e.serviceId);
-			sageutils.log('Omicron', "   pos: " + posX.toFixed(2) + ", " + posY.toFixed(2) + " size: " + touchWidth.toFixed(2) + ", " + touchHeight.toFixed(2));
-			sageutils.log('Omicron', "   flags: ", flagStrings[e.flags]);
-			sageutils.log('Omicron', "   touchGroup size: ", touchGroupSize);
-			if (touchGroupSize > 0)
-			{
-				for (var subID of touchGroupChildrenIDs.keys()) {
-					var posX = touchGroupChildrenIDs.get(subID).pointerX;
-					var posY = touchGroupChildrenIDs.get(subID).pointerY;
-					sageutils.log('Omicron', "      id: ", subID, "pos: " + posX.toFixed(2) + ", " + posY.toFixed(2));
-				}
-			}*/
-		}
-		
-	}
-	
 	if (e.type === 4) { // EventType: MOVE
 		//if (omicronManager.sagePointers[address] === undefined) {
 		//	return;
@@ -997,8 +976,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			}
 		}
 		*/
-		
-		
+
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
 			// Get previous touchgroup list
 			var lastTouchGroupPoints = omicronManager.touchGroups.get(sourceID);
@@ -1008,13 +986,15 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 						sageutils.log('Omicron', "TouchGroup ", sourceID, " has removed touch id ", childID);
 						//lastTouchGroupPoints.set(childID, touchGroupChildrenIDs.get(childID));
 						omicronManager.hidePointer(address + "_" + childID);
+						omicronManager.touchList.delete(childID);
 					}
 				}
-				for (var childID of touchGroupChildrenIDs.keys()) {
-					var posX = touchGroupChildrenIDs.get(childID).pointerX;
-					var posY = touchGroupChildrenIDs.get(childID).pointerY;
-					
+				for (childID of touchGroupChildrenIDs.keys()) {
+					var childX = touchGroupChildrenIDs.get(childID).pointerX;
+					var childY = touchGroupChildrenIDs.get(childID).pointerY;
+
 					if (lastTouchGroupPoints.has(childID) === false) {
+						omicronManager.touchList.set(childID, { pointerX: childX, pointerY: childY });
 						//sageutils.log('Omicron', "TouchGroup ", sourceID, " has new touch id ", childID);
 						//lastTouchGroupPoints.set(childID, touchGroupChildrenIDs.get(childID));
 						// Create the pointer
@@ -1026,8 +1006,8 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 							pointerStyle = omicronManager.config.style;
 						}
 						omicronManager.showPointer(address + "_" + childID, {
-							label:  "Touch: " + childID,
-							color: "rgba(122, 92, 6, 1.0)",
+							label:  "Touch: " + address + "_" + childID,
+							color: "rgba(122, 192, 6, 1.0)",
 							sourceType: pointerStyle
 						});
 
@@ -1042,16 +1022,18 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 						}
 
 						// Set the initial pointer position
-						omicronManager.pointerPosition(address + "_" + childID, { pointerX: posX, pointerY: posY });
+						omicronManager.pointerPosition(address + "_" + childID, { pointerX: childX, pointerY: childY });
 					} else {
-						omicronManager.pointerPosition(address + "_" + childID, { pointerX: posX, pointerY: posY });
+						omicronManager.pointerPosition(address + "_" + childID, { pointerX: childX, pointerY: childY });
 					}
 				}
 				omicronManager.touchGroups.set(sourceID, touchGroupChildrenIDs);
 			}
 		}
-		
+
 	} else if (e.type === 5) { // EventType: DOWN
+		omicronManager.touchList.set(sourceID, { pointerX: posX, pointerY: posY });
+
 		//if (omicronManager.sagePointers[address] !== undefined) {
 		//	return;
 		//}
@@ -1066,7 +1048,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		omicronManager.createSagePointer(address);
 
 		// Set the pointer style
-		var pointerStyle = "Touch";
+		pointerStyle = "Touch";
 		if (omicronManager.config.style !== undefined) {
 			pointerStyle = omicronManager.config.style;
 		}
@@ -1077,7 +1059,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		});
 
 		// Set pointer mode
-		var mode = "Window";
+		mode = "Window";
 		if (omicronManager.config.interactionMode !== undefined) {
 			mode = omicronManager.config.interactionMode;
 		}
@@ -1091,12 +1073,13 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Send 'click' event
 		omicronManager.pointerPress(address, posX, posY, { button: "left" });
-		
+
 		// Set touchgroup child only if multi/single touch event (not gestures)
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
 			omicronManager.touchGroups.set(sourceID, touchGroupChildrenIDs);
 		}
 	} else if (e.type === 6) { // EventType: UP
+		omicronManager.touchList.delete(sourceID);
 		//if (omicronManager.sagePointers[address] === undefined) {
 		//	return;
 		//}
@@ -1112,20 +1095,17 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Release event
 		omicronManager.pointerRelease(address, posX, posY, { button: "left" });
-		
+
 		// Remove from touchgroup list only if multi/single touch event (not gestures)
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
-			
-			var lastTouchGroupPoints = omicronManager.touchGroups.get(sourceID);
+
+			lastTouchGroupPoints = omicronManager.touchGroups.get(sourceID);
 			if (lastTouchGroupPoints !== undefined) {
-				for (var childID of lastTouchGroupPoints.keys()) {
+				for (childID of lastTouchGroupPoints.keys()) {
 					omicronManager.hidePointer(address + "_" + childID);
+					omicronManager.touchList.delete(childID);
 				}
 			}
-			for (var childID of touchGroupChildrenIDs.keys()) {
-				omicronManager.hidePointer(address + "_" + childID);
-			}
-				
 			omicronManager.touchGroups.delete(sourceID);
 		}
 	} else if (e.type === 15 && omicronManager.enableTwoFingerZoom) {
@@ -1136,14 +1116,14 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		// 1 = touchHeight (parsed above)
 		// 2 = initX (parsed above)
 		// 3 = initY (parsed above)
-		// 4 = zoom delta
-		// 5 = event second type ( 1 = Down, 2 = Move, 3 = Up )
+		// 4 = event second type ( parsed above: 1 = Down, 2 = Move, 3 = Up )
+		// 5 = zoom delta
 
 		// extraDataType 1 = float
 		// console.log("Touch zoom " + e.extraDataType  + " " + e.extraDataItems );
-		if (e.extraDataType === 1 && e.extraDataItems >= 4) {
+		if (e.extraDataType === 1 && e.extraDataItems === 6) {
 			var zoomDelta = msg.readFloatLE(offset); offset += 4;
-			var eventType = msg.readFloatLE(offset);  offset += 4;
+			var eventType = secondaryEventFlag;
 
 			// Zoom start/down
 			if (eventType === 1) {
@@ -1172,6 +1152,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 					console.log("Touch zoom state: " + omicronManager.pointerGestureState[sourceID]);
 				}
 
+				/*
 				if (omicronManager.enableTwoFingerWindowDrag && distance > omicronManager.zoomToMoveGestureMinimumDistance) {
 					if (omicronManager.pointerGestureState[sourceID] === "zoom") {
 						omicronManager.pointerScrollEnd(address, posX, posY);
@@ -1191,11 +1172,19 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				omicronManager.pointerPosition(address, { pointerX: accelX, pointerY: accelY });
 				omicronManager.pointerMove(address, accelX, accelY, { deltaX: 0, deltaY: 0, button: "left" });
 				omicronManager.lastNonCritEventTime = Date.now();
+				*/
 			}
 		}
 	} else {
-		//console.log("\t UNKNOWN event type ", e.type, typeStrings[e.type]);
+		console.log("\t UNKNOWN event type ", e.type, typeStrings[e.type]);
 	}
+
+	/*
+	console.log("TouchList:");
+	for (var tp of omicronManager.touchList.keys()) {
+		var data = omicronManager.touchList.get(tp);
+		console.log("[" + tp + "] (" + data.pointerX + ", " + data.pointerY + ")");
+	}*/
 };
 
 module.exports = OmicronManager;
