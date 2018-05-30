@@ -121,7 +121,7 @@ commander
 	.option('-y, --yorigin <n>',         'Window position y (int)', myParseInt, 0)
 	.option('--allowDisplayingInsecure', 'Allow displaying of insecure content (http on https)', false)
 	.option('--allowRunningInsecure',    'Allow running insecure content (scripts accessed on http vs https)', false)
-	.option('--cache',                   'Clear the cache', true)
+	.option('--no-cache',                'Do not clear the cache at startup', true)
 	.option('--console',                 'Open the devtools console', false)
 	.option('--debug',                   'Open the port debug protocol (port number is 9222 + clientID)', false)
 	.option('--experimentalFeatures',    'Enable experimental features', false)
