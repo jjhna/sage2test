@@ -105,10 +105,11 @@ function OmicronManager(sysConfig) {
 	// If the distance from the initial position exceeds threshold,
 	// zoom becomes a drag
 	this.initZoomPos = {};
-	this.zoomToMoveGestureMinimumDistance = 100;
+	this.zoomToMoveGestureMinimumDistance = this.config.zoomToMoveGestureMinimumDistance === undefined
+		? 100 : this.config.zoomToMoveGestureMinimumDistance;
 
 	// Used to track changes in the pointer state (like a zoom becoming a move)
-	this.pointerGestureState = {};
+	this.pointerState = {};
 
 	// Default Gestures
 	this.enableDoubleClickMaximize = false;
@@ -898,6 +899,16 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	var touchGroupChildrenIDs = new Map();
 	var secondaryEventFlag = -1;
 
+	// Set pointer mode
+	var mode = "Window";
+	if (omicronManager.config.interactionMode !== undefined) {
+		mode = omicronManager.config.interactionMode;
+	}
+
+	if (omicronManager.pointerState[sourceID] === undefined) {
+		omicronManager.pointerState[sourceID] = {gesture: "", mode: mode};
+	}
+
 	// As of 2015/11/13 all touch gesture events touch have an init value
 	// (zoomDelta moved to extraData index 4 instead of 2)
 	// ExtraDataFloats
@@ -1007,18 +1018,12 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 						}
 						omicronManager.showPointer(address + "_" + childID, {
 							label:  "Touch: " + address + "_" + childID,
-							color: "rgba(122, 192, 6, 1.0)",
+							color: "rgba(122, 92, 6, 1.0)",
 							sourceType: pointerStyle
 						});
 
-						// Set pointer mode
-						var mode = "Window";
-						if (omicronManager.config.interactionMode !== undefined) {
-							mode = omicronManager.config.interactionMode;
-						}
-
 						if (mode === "App") {
-							omicronManager.pointerChangeMode(address + "_" + childID);
+							omicronManager.pointerChangeMode(address);
 						}
 
 						// Set the initial pointer position
@@ -1057,12 +1062,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			color: "rgba(242, 182, 15, 1.0)",
 			sourceType: pointerStyle
 		});
-
-		// Set pointer mode
-		mode = "Window";
-		if (omicronManager.config.interactionMode !== undefined) {
-			mode = omicronManager.config.interactionMode;
-		}
 
 		if (mode === "App") {
 			omicronManager.pointerChangeMode(address);
@@ -1128,51 +1127,41 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			// Zoom start/down
 			if (eventType === 1) {
 				// console.log("Touch zoom start");
-				if (omicronManager.pointerGestureState[sourceID] !== "move") {
+				if (omicronManager.pointerState[sourceID].gesture !== "move") {
 					omicronManager.pointerScrollStart(address, posX, posY);
 					omicronManager.initZoomPos[sourceID] = {initX: posX, initY: posY};
-					omicronManager.pointerGestureState[sourceID] = "zoom";
+					omicronManager.pointerState[sourceID].gesture = "zoom";
 				}
 			} else {
-				// Zoom move
-				omicronManager.pointerScroll(address, { wheelDelta: -zoomDelta * omicronManager.touchZoomScale });
-
 				if (omicronManager.initZoomPos[sourceID] !== undefined &&
-					omicronManager.pointerGestureState[sourceID] === "zoom") {
+					omicronManager.pointerState[sourceID].gesture === "zoom") {
 					initX = omicronManager.initZoomPos[sourceID].initX;
 					initY = omicronManager.initZoomPos[sourceID].initY;
 				}
 
 				distance = Math.sqrt(Math.pow(Math.abs(posX - initX), 2) + Math.pow(Math.abs(posY - initY), 2));
 
-				if (omicronManager.gestureDebug) {
-					console.log("Touch zoom at - (" + posX.toFixed(2) + "," + posY.toFixed(2) + ") initPos: ("
-					+ initX.toFixed(2) + "," + initY.toFixed(2) + ")");
-					console.log("Touch zoom distance: " + distance);
-					console.log("Touch zoom state: " + omicronManager.pointerGestureState[sourceID]);
-				}
-
-				/*
+				// If two-finger move enabled and distance > minDistance, stop zooming and move
 				if (omicronManager.enableTwoFingerWindowDrag && distance > omicronManager.zoomToMoveGestureMinimumDistance) {
-					if (omicronManager.pointerGestureState[sourceID] === "zoom") {
+					if (omicronManager.pointerState[sourceID].gesture === "zoom") {
 						omicronManager.pointerScrollEnd(address, posX, posY);
 						omicronManager.pointerRelease(address, posX, posY, { button: "left" });
 						omicronManager.createSagePointer(address);
 						omicronManager.pointerPress(address, posX, posY, { button: "left" });
-						omicronManager.pointerGestureState[sourceID] = "move";
+						omicronManager.pointerState[sourceID].gesture = "move";
 					}
-
+				} else {
+					// Zoom move
+					var wheelDelta = -zoomDelta * omicronManager.touchZoomScale;
+					omicronManager.pointerScroll(address, { wheelDelta: wheelDelta });
 				}
-				angle = Math.atan2(posY -  initY, posX - initX);
 
-				accelDistance = distance * omicronManager.acceleratedDragScale;
-				accelX = posX + accelDistance * Math.cos(angle);
-				accelY = posY + accelDistance * Math.sin(angle);
-
-				omicronManager.pointerPosition(address, { pointerX: accelX, pointerY: accelY });
-				omicronManager.pointerMove(address, accelX, accelY, { deltaX: 0, deltaY: 0, button: "left" });
-				omicronManager.lastNonCritEventTime = Date.now();
-				*/
+				if (omicronManager.gestureDebug) {
+					console.log("Touch zoom at - (" + posX.toFixed(2) + "," + posY.toFixed(2) + ") initPos: ("
+					+ initX.toFixed(2) + "," + initY.toFixed(2) + ")");
+					console.log("Touch zoom distance: " + distance);
+					console.log("Touch zoom state: " + omicronManager.pointerState[sourceID].gesture);
+				}
 			}
 		}
 	} else {
