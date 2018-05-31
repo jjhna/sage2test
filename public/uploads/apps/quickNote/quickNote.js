@@ -31,6 +31,7 @@ var quickNote = SAGE2_App.extend({
 		at 300px wide, this is 15px per character.
 		each character is roughly 26.8px tall
 		*/
+		this.useStaticFontSize      = false;
 		this.startingFontSize       = 19.9;
 		this.startingAppWidth       = 300; // Hardcode necessary(?) to keep scale on resize/restart/reload
 		this.startingAppHeight      = 134; // 5 lines is 26.8 * 5 = 134;
@@ -274,12 +275,20 @@ var quickNote = SAGE2_App.extend({
 
 	resize: function(date) {
 		this.element.style.background = this.backgroundChoice;
-		this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
-		this.element.style.fontSize = (this.startingFontSize * this.sizeModification) + "px";
+		if (!this.useStaticFontSize) {
+			this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
+			this.element.style.fontSize = (this.startingFontSize * this.sizeModification) + "px";
+		}
 	},
 
 	event: function(eventType, position, user_id, data, date) {
-		// left intentionally blank
+		// arrow down
+		if (data.code === 40 && data.state === "down") {
+			this.adjustFontSize({ modifier: "decrease" });
+		} else if (data.code === 38 && data.state === "down") {
+			// arrow up
+			this.adjustFontSize({ modifier: "increase" });
+		}
 	},
 
 	duplicate: function(responseObject) {
@@ -373,6 +382,42 @@ var quickNote = SAGE2_App.extend({
 		entry.entryColor  = "lightsalmon";
 		entries.push(entry);
 
+		entries.push({description: "separator"});
+
+		entries.push({
+			description: "Increase font size",
+			accelerator: "\u2191",     // up-arrow
+			callback: "adjustFontSize",
+			parameters: {
+				modifier: "increase"
+			},
+		});
+		entries.push({
+			description: "Decrease font size",
+			accelerator: "\u2193",     // down-arrow
+			callback: "adjustFontSize",
+			parameters: {
+				modifier: "decrease"
+			},
+		});
+		entry = {
+			description: "Set static font size:",
+			callback: "adjustFontSize",
+			inputField: true,
+			inputFieldSize: 5,
+			parameters: {
+				modifier: "static"
+			},
+		};
+		if (this.useStaticFontSize) {
+			entry.value = this.startingFontSize;
+		} else {
+			entry.value = (this.startingFontSize * parseInt(this.element.clientWidth) / this.startingAppWidth);
+		}
+		entries.push(entry);
+
+		entries.push({description: "separator"});
+
 		entries.push({
 			description: "Copy content to clipboard",
 			callback: "SAGE2_copyURL",
@@ -382,6 +427,26 @@ var quickNote = SAGE2_App.extend({
 		});
 
 		return entries;
+	},
+
+	adjustFontSize: function(responseObject) {
+		if (responseObject.modifier === "increase") {
+			this.startingFontSize += 1;
+			this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
+			this.element.style.fontSize = (this.startingFontSize * this.sizeModification) + "px";
+		} else if (responseObject.modifier === "decrease") {
+			this.startingFontSize -= 1;
+			if (this.startingFontSize <= 0) {
+				this.startingFontSize = 1;
+			}
+			this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
+			this.element.style.fontSize = (this.startingFontSize * this.sizeModification) + "px";
+		} else if (responseObject.modifier === "static") {
+			this.useStaticFontSize = true;
+			this.startingFontSize = parseInt(responseObject.clientInput);
+			this.element.style.fontSize = this.startingFontSize + "px";
+		}
+		this.getFullContextMenuAndUpdate();
 	},
 
 	quit: function() {
