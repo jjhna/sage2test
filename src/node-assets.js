@@ -1032,7 +1032,7 @@ var initialize = function(mainFolder, mediaFolders, whenDone) {
 			refreshAssets(root, function() {
 				// Finally, delete the elements which are not there anymore
 				for (var item in AllAssets.list) {
-					if (item.startsWith(root) && AllAssets.list[item].valid === false) {
+					if (AllAssets.list[item].valid === false) {
 						sageutils.log("Assets", "Removing old item", item);
 						delete AllAssets.list[item];
 					} else {
