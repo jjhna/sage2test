@@ -1198,7 +1198,7 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 			// Set the URL
 			appData.data = {url: appData.url};
 			// Set the path of the app
-			appData.url  = webpath;
+			appData.url  = this.hostOrigin + '/uploads/apps/Webview';
 			// Load the webview
 			this.loadAppFromFile(webpath, appData.type, appData.url, appData.url, "", appData.data,
 				function(appInstance) {

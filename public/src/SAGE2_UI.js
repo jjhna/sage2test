@@ -1393,17 +1393,17 @@ function handleClick(element) {
 				}
 				// if we have something valid, open a webview
 				if (url) {
-					wsio.emit('openNewWebpage', {
-						id: interactor.uniqueID,
-						url: url
-					});
-					// wsio.emit('addNewWebElement', {
-					// 	type: "application/url",
-					// 	url: url, position: [0, 0],
+					// wsio.emit('openNewWebpage', {
 					// 	id: interactor.uniqueID,
-					// 	SAGE2_ptrName:  localStorage.SAGE2_ptrName,
-					// 	SAGE2_ptrColor: localStorage.SAGE2_ptrColor
+					// 	url: url
 					// });
+					wsio.emit('addNewWebElement', {
+						type: "application/url",
+						url: url, position: [0, 0],
+						id: interactor.uniqueID,
+						SAGE2_ptrName:  localStorage.SAGE2_ptrName,
+						SAGE2_ptrColor: localStorage.SAGE2_ptrColor
+					});
 				}
 				// close the form
 				this.getTopParentView().hide();
