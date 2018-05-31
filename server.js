@@ -74,15 +74,13 @@ var StickyItems         = require('./src/node-stickyitems');
 var registry            = require('./src/node-registry');         // Registry Manager
 var FileBufferManager	= require('./src/node-filebuffer');
 var PartitionList       = require('./src/node-partitionlist');    // list of SAGE2 Partitions
-<<<<<<< HEAD
 
-=======
 var SharedDataManager	= require('./src/node-sharedserverdata'); // manager for shared data
 var userlist            = require('./src/node-userlist');		  // list of users
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
 var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
 var VoiceActionManager	= require('./src/node-voiceToAction'); // manager for shared data
->>>>>>> master
+
 //
 // Globals
 //
@@ -939,6 +937,10 @@ function wsAddClient(wsio, data) {
 		wsio.capableOfScreenshot = data.browser.isElectron;
 		// Send message to UI clients
 		reportIfCanWallScreenshot();
+
+		if (webRTCData) {
+			// wsio.emit('webRTCSignal', webRTCData);
+		}
 	}
 
 	try {
@@ -1217,22 +1219,22 @@ function setupListeners(wsio) {
 	wsio.on('deleteAllPartitions',                  wsDeleteAllPartitions);
 	wsio.on('partitionsGrabAllContent',             wsPartitionsGrabAllContent);
 
-<<<<<<< HEAD
 	// webrtc
 	wsio.on('webRTCSignal', webRTCSignal);
-}
 
-function webRTCSignal(wsio, data) {
-	console.log('webRTCSignal', data);
-	broadcast('webRTCSignal', data);
-=======
 	// message from electron display client
 	wsio.on('displayHardware',                      wsDisplayHardware);
 	wsio.on('performanceData',                      wsPerformanceData);
 
 	// message from performance page
 	wsio.on('requestClientUpdate',					wsRequestClientUpdate);
->>>>>>> master
+}
+
+var webRTCData;
+function webRTCSignal(wsio, data) {
+	console.log('webRTCSignal', data.id);
+	broadcast('webRTCSignal', data);
+	webRTCData = data;
 }
 
 /**

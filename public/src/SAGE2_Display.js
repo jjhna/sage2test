@@ -64,6 +64,9 @@ var uiTimerDelay;
 // Global variables for screenshot functionality
 var makingScreenshotDialog = null;
 
+// WebRTC peer
+var peer;
+
 // Explicitely close web socket when web browser is closed
 window.onbeforeunload = function() {
 	if (wsio !== undefined) {
@@ -264,6 +267,64 @@ function SAGE2_init() {
 
 		setupListeners();
 
+		// //////////////////////////////////
+		// // WebRTC
+		// peer = new SimplePeer({initiator: false,
+		// 	trickle: true
+		// });
+
+		// peer.on('error', function (err) {
+		// 	console.log('Peer> error', err)
+		// });
+		// peer.on('close', function (rr) {
+		// 	console.log('Peer> closed')
+		// });
+
+		// peer.on('signal', function (data) {
+		// 	// console.log('Peer> SIGNAL', JSON.stringify(data))
+		// 	console.log('Peer> SIGNAL', clientID);
+		// 	wsio.emit("webRTCSignal", {id: clientID, webrtc: data});
+		// });
+
+		// peer.on('connect', function () {
+		// 	var val = 	
+		// 	console.log('Peer> CONNECT')
+		// 	// peer.send('whatever' + Math.random())
+		// });
+
+		// peer.on('data', function (data) {
+		// 	console.log('Peer>', 'data: ' + data);
+		// 	let val = Math.random();
+		// 	console.log('Peer> sending', val);			
+		// 	peer.send('whatever back' + val)
+		// });
+
+		// peer.on('stream', function (stream) {
+		// 	console.log('Peer> Got Stream');
+		// 	// got video stream
+		// 	// _this.element.src = window.URL.createObjectURL(stream);
+		// 	// _this.element.srcObject = stream;
+		// 	// _this.element.play();
+		// });
+		// peer.on('track', function (track) {
+		// 	console.log('Peer> Got Track');
+		// });
+
+
+		wsio.on('webRTCSignal', function(data) {
+			console.log('webRTCSignal', data.id)
+			if (data.id !== clientID) {
+				console.log('webrtc: got something for me', data, peer.destroyed, peer)
+				if (!peer.destroyed) {
+					console.log('webrtc', 'setting signal')
+					peer.signal(data.webrtc);
+				} else {
+					console.log('Peer has been destroyed')
+				}
+			}
+		});
+		//////////////////////////////////
+
 		// Get the cookie for the session, if there's one
 		var session = getCookie("session");
 
@@ -314,45 +375,6 @@ function setupListeners() {
 
 		// Request list of assets
 		wsio.emit('requestStoredFiles');
-
-		//////////////////////////////////
-		// WebRTC
-		var peer = new SimplePeer({initiator: false, trickle: false})
-
-		peer.on('error', function (err) {
-			console.log('error', err)
-		})
-		peer.on('close', function (rr) {
-			console.log('closed')
-		})
-
-		peer.on('signal', function (data) {
-			console.log('SIGNAL', JSON.stringify(data))
-			wsio.emit("webRTCSignal", {id: clientID, webrtc: data});
-		})
-
-		peer.on('connect', function () {
-			console.log('CONNECT')
-			// peer.send('whatever' + Math.random())
-		})
-
-		peer.on('data', function (data) {
-			console.log('data: ' + data)
-			peer.send('whatever back ' + Math.random())
-		})
-
-		wsio.on('webRTCSignal', function(data) {
-			console.log('webRTCSignal', data.id)
-			if (data.id !== clientID) {
-				console.log('webrtc: got something for me', data, peer)
-				if (!peer.destroyed) {
-					peer.signal(data.webrtc);
-				} else {
-					console.log('Peer has been destroyed')
-				}
-			}
-		});
-		//////////////////////////////////
 	});
 
 	wsio.on('setAsMasterDisplay', function() {

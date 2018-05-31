@@ -1,0 +1,17 @@
+{
+	"main_script": "webrtc.js",
+	"icon": "webrtc.png",
+	"width": 500,
+	"height": 281,
+	"resize": "free",
+	"animation": true,
+	"dependencies": [
+		"lib/simplepeer.min.js"
+	],
+	"title": "webrtc",
+	"version": "1.0.0",
+	"description": "SAGE2 tutorial application using the Webrtc API to create a communication data channel between all the application instances (peers) running on distinct display clients.",
+	"keywords": [ "perr", "channel", "webrtc", "simplepeer", "demo" ],
+	"author": "Luc Renambot <renambot@gmail.com>",
+	"license": "SAGE2-Software-License"
+}
