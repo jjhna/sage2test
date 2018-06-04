@@ -10736,9 +10736,10 @@ function appFileSaveRequest(wsio, data) {
 				fileObject[0] = {
 					name: filename,
 					type: data.filePath.ext,
-					path: fullpath};
-				// Add the file to the asset library and open it
-				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", true);
+					path: fullpath
+				};
+				// Add the file to the asset library and not open it (false)
+				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", false);
 			}
 		} catch (err) {
 			sageutils.log('File', "error while saving to", fullpath + ":" + err);
