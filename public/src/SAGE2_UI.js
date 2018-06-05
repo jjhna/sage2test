@@ -1970,11 +1970,21 @@ function touchStart(event) {
 			touchStartY = event.touches[0].clientY - rect.top;
 			displayUI.pointerMove(touchStartX, touchStartY);
 			displayUI.pointerPress("left");
-			touchHold = setTimeout(function() {
-				// simulate backspace
-				displayUI.keyDown(touchStartX, touchStartY, 8);
-				displayUI.keyUp(touchStartX, touchStartY, 8);
-			}, 1500);
+			if (__SAGE2__.browser.isIOS) {
+				touchHold = setTimeout(function() {
+					// simulate backspace
+					// displayUI.keyDown(touchStartX, touchStartY, 8);
+					// displayUI.keyUp(touchStartX, touchStartY, 8);
+
+					// Simulate right click
+					// It needs to bubble to the document level
+					let e = new CustomEvent("contextmenu", {bubbles: true});
+					e.clientX = event.touches[0].clientX;
+					e.clientY = event.touches[0].clientY;
+					event.target.dispatchEvent(e);
+
+				}, 500);
+			}
 			touchMode = "translate";
 		} else if (event.touches.length === 2) {
 			rect    = event.target.getBoundingClientRect();
@@ -2672,16 +2682,20 @@ function addMenuEntry(menuDiv, entry, id, app) {
 	// workingDiv.style.padding = "0 5px 0 5px";
 	// Align main text to the left
 	workingDiv.style.textAlign = "left";
+	// Increase entry size for easier selection on mobile
+	if (__SAGE2__.browser.isMobile) {
+		workingDiv.style.fontSize = "125%";
+	}
 	// special case for a separator (line) entry
 	if (entry.description === "separator") {
 		workingDiv.innerHTML = "<hr>";
 	} else {
 		if (entry.accelerator) {
 			// Add description of the keyboard shortcut
-			workingDiv.innerHTML = "<p style='float: left;'>" + entry.description + "</p>";
-			// workingDiv.innerHTML += "<p style='float: right; padding-left: 5px;'> [" + entry.accelerator + "]</p>";
-			workingDiv.innerHTML += "<p style='float: right; padding-left: 5px;'>" + entry.accelerator + "</p>";
-			workingDiv.innerHTML += "<div style='clear: both;'></div>";
+			workingDiv.innerHTML = "<div style='float: left;font-size:100%;'>" + entry.description + "</div>";
+			workingDiv.innerHTML += "<div style='float: right; padding-left: 5px;font-size:100%;'>" +
+				entry.accelerator + "</div>";
+			workingDiv.innerHTML += "<div style='clear: both;font-size:100%;'></div>";
 		} else {
 			// or just plain text
 			workingDiv.innerHTML = entry.description;

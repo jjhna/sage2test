@@ -558,6 +558,8 @@ function UIBuilder(json_cfg, clientID) {
 			"Mouse and keyboard operations and shortcuts");
 		this.main.appendChild(helpDialog);
 
+		this.showRadialWallUI = this.json_cfg.ui.showRadialWallUI !== undefined ? this.json_cfg.ui.showRadialWallUI : false;
+
 		this.uiHidden = false;
 		this.showInterface();
 	};
@@ -1058,8 +1060,11 @@ function UIBuilder(json_cfg, clientID) {
 	*/
 	this.hideSagePointer = function(pointer_data) {
 		var pointerElem = document.getElementById(pointer_data.id);
-		pointerElem.style.display = "none";
-		this.pointerItems[pointerElem.id].isShown = false;
+		// making sure the element exists (it seems sometimes it's not)
+		if (pointerElem) {
+			pointerElem.style.display = "none";
+			this.pointerItems[pointerElem.id].isShown = false;
+		}
 	};
 
 	/**
@@ -1107,7 +1112,7 @@ function UIBuilder(json_cfg, clientID) {
 	*/
 	this.createRadialMenu = function(data) {
 		var menuElem = document.getElementById(data.id + "_menu");
-		if (!menuElem && this.radialMenus[data.id + "_menu"] === undefined) {
+		if (this.showRadialWallUI === true && !menuElem && this.radialMenus[data.id + "_menu"] === undefined) {
 			var radialMenuContentWindowDiv = document.createElement("div");
 
 			radialMenuContentWindowDiv.id = data.id + "_menuDiv";
@@ -1177,35 +1182,38 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Object} menu data
 	*/
 	this.updateRadialMenu = function(data) {
-		var menuElem = document.getElementById(data.id + "_menu");
+		if (this.showRadialWallUI === true) {
+			var menuElem = document.getElementById(data.id + "_menu");
 
-		if (menuElem !== null) {
-			var menu = this.radialMenus[menuElem.id];
-			menu.setState(data);
-			if (data.visible === false) {
-				menu.closeMenu();
-			} else {
+			if (menuElem !== null) {
+				var menu = this.radialMenus[menuElem.id];
 				menu.setState(data);
-
-				menuElem.style.display = "block";
-				menu.thumbnailScrollWindowElement.style.display = "block";
-				if (data.thumbnailWindowState  !== 'closed') {
-					menu.thumbnailWindowDiv.style.display = "block";
+				if (data.visible === false) {
+					menu.closeMenu();
 				} else {
-					menu.thumbnailWindowDiv.style.display = "none";
+					menu.setState(data);
+
+					menuElem.style.display = "block";
+					menu.thumbnailScrollWindowElement.style.display = "block";
+					if (data.thumbnailWindowState  !== 'closed') {
+						menu.thumbnailWindowDiv.style.display = "block";
+					} else {
+						menu.thumbnailWindowDiv.style.display = "none";
+					}
+					menu.redraw();
+					menu.visible = true;
+
+					var rect = menuElem.getBoundingClientRect();
+					menu.moveMenu({x: data.x, y: data.y, windowX: rect.left, windowY: rect.top},
+						{x: this.offsetX, y: this.offsetY});
+
+					menuElem.style.left = (data.x - this.offsetX - menu.radialMenuCenter.x).toString() + "px";
+					menuElem.style.top  = (data.y - this.offsetY - menu.radialMenuCenter.y).toString()  + "px";
 				}
-				menu.redraw();
-				menu.visible = true;
-
-				var rect = menuElem.getBoundingClientRect();
-				menu.moveMenu({x: data.x, y: data.y, windowX: rect.left, windowY: rect.top}, {x: this.offsetX, y: this.offsetY});
-
-				menuElem.style.left = (data.x - this.offsetX - menu.radialMenuCenter.x).toString() + "px";
-				menuElem.style.top  = (data.y - this.offsetY - menu.radialMenuCenter.y).toString()  + "px";
+			} else {
+				// Show was called on non-existant menu (display client was likely reset)
+				this.createRadialMenu(data);
 			}
-		} else {
-			// Show was called on non-existant menu (display client was likely reset)
-			this.createRadialMenu(data);
 		}
 	};
 
@@ -1216,17 +1224,18 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Object} menu data
 	*/
 	this.updateRadialMenuPosition = function(data) {
+		if (this.showRadialWallUI === true) {
+			var menuElem = document.getElementById(data.id + "_menu");
 
-		var menuElem = document.getElementById(data.id + "_menu");
+			if (menuElem !== null) {
+				var menu = this.radialMenus[menuElem.id];
 
-		if (menuElem !== null) {
-			var menu = this.radialMenus[menuElem.id];
+				var rect = menuElem.getBoundingClientRect();
+				menu.moveMenu({x: data.x, y: data.y, windowX: rect.left, windowY: rect.top}, {x: this.offsetX, y: this.offsetY});
 
-			var rect = menuElem.getBoundingClientRect();
-			menu.moveMenu({x: data.x, y: data.y, windowX: rect.left, windowY: rect.top}, {x: this.offsetX, y: this.offsetY});
-
-			menuElem.style.left = (data.x - this.offsetX - menu.radialMenuCenter.x).toString() + "px";
-			menuElem.style.top  = (data.y - this.offsetY - menu.radialMenuCenter.y).toString()  + "px";
+				menuElem.style.left = (data.x - this.offsetX - menu.radialMenuCenter.x).toString() + "px";
+				menuElem.style.top  = (data.y - this.offsetY - menu.radialMenuCenter.y).toString()  + "px";
+			}
 		}
 	};
 
@@ -1237,39 +1246,41 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Event} event
 	*/
 	this.radialMenuEvent = function(data) {
-		if (data.type === "stateChange") {
-			// Update the button state
-			var menuState = data.menuState;
-			for (var buttonName in menuState.buttonState) {
-				this.radialMenus[data.menuID + "_menu"].setRadialButtonState(
-					buttonName, menuState.buttonState[buttonName], menuState.color);
-			}
-
-			// State also contains new actions
-			if (data.menuState.action !== undefined) {
-				if (data.menuState.action.type === "contentWindow") {
-					this.radialMenus[data.menuID + "_menu"].setToggleMenu(data.menuState.action.window + "ThumbnailWindow");
-				} else if (data.menuState.action.type === "close") {
-					this.radialMenus[data.menuID + "_menu"].closeMenu();
-				} else if (data.menuState.action.type === "toggleSubRadial") {
-					this.radialMenus[data.menuID + "_menu"].toggleSubRadialMenu(data.menuState.action.window);
+		if (this.showRadialWallUI === true) {
+			if (data.type === "stateChange") {
+				// Update the button state
+				var menuState = data.menuState;
+				for (var buttonName in menuState.buttonState) {
+					this.radialMenus[data.menuID + "_menu"].setRadialButtonState(
+						buttonName, menuState.buttonState[buttonName], menuState.color);
 				}
-			}
-		} else {
-			for (var menuID in this.radialMenus) {
-				var menuElem = document.getElementById(menuID);
-				var menu     = this.radialMenus[menuID];
 
-				if (menuElem !== null) {
-					var rect = menuElem.getBoundingClientRect();
+				// State also contains new actions
+				if (data.menuState.action !== undefined) {
+					if (data.menuState.action.type === "contentWindow") {
+						this.radialMenus[data.menuID + "_menu"].setToggleMenu(data.menuState.action.window + "ThumbnailWindow");
+					} else if (data.menuState.action.type === "close") {
+						this.radialMenus[data.menuID + "_menu"].closeMenu();
+					} else if (data.menuState.action.type === "toggleSubRadial") {
+						this.radialMenus[data.menuID + "_menu"].toggleSubRadialMenu(data.menuState.action.window);
+					}
+				}
+			} else {
+				for (var menuID in this.radialMenus) {
+					var menuElem = document.getElementById(menuID);
+					var menu     = this.radialMenus[menuID];
 
-					var pointerX = data.x - rect.left - this.offsetX;
-					var pointerY = data.y - rect.top - this.offsetY;
+					if (menuElem !== null) {
+						var rect = menuElem.getBoundingClientRect();
 
-					if (menu.visible) {
-						menu.onEvent(data.type, {
-							x: pointerX, y: pointerY, windowX: rect.left, windowY: rect.top
-						}, data.id, data.data);
+						var pointerX = data.x - rect.left - this.offsetX;
+						var pointerY = data.y - rect.top - this.offsetY;
+
+						if (menu.visible) {
+							menu.onEvent(data.type, {
+								x: pointerX, y: pointerY, windowX: rect.left, windowY: rect.top
+							}, data.id, data.data);
+						}
 					}
 				}
 			}
@@ -1283,10 +1294,12 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Object} data
 	*/
 	this.updateRadialMenuDocs = function(data) {
-		var menuElem = document.getElementById(data.id + "_menu");
-		if (menuElem !== null) {
-			this.radialMenus[menuElem.id].updateFileList(data.fileList);
-			this.radialMenus[menuElem.id].redraw();
+		if (this.showRadialWallUI === true) {
+			var menuElem = document.getElementById(data.id + "_menu");
+			if (menuElem !== null) {
+				this.radialMenus[menuElem.id].updateFileList(data.fileList);
+				this.radialMenus[menuElem.id].redraw();
+			}
 		}
 	};
 
@@ -1297,10 +1310,12 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Object} data
 	*/
 	this.updateRadialMenuApps = function(data) {
-		var menuElem = document.getElementById(data.id + "_menu");
-		if (menuElem !== null) {
-			this.radialMenus[menuElem.id].updateAppFileList(data.fileList);
-			this.radialMenus[menuElem.id].redraw();
+		if (this.showRadialWallUI === true) {
+			var menuElem = document.getElementById(data.id + "_menu");
+			if (menuElem !== null) {
+				this.radialMenus[menuElem.id].updateAppFileList(data.fileList);
+				this.radialMenus[menuElem.id].redraw();
+			}
 		}
 	};
 

@@ -304,7 +304,7 @@ function initializeSage2Server() {
 
 	// Set default host origin for this server
 	if (config.rproxy_port === undefined) {
-		hostOrigin = "http://" + config.host + (config.port === 80 ? "" : ":" + config.port) + "/";
+		hostOrigin = "https://" + config.host + (config.secure_port === 443 ? "" : ":" + config.secure_port) + "/";
 	}
 
 	// Initialize sage2 item lists
@@ -2166,7 +2166,7 @@ function wsReceivedMediaBlockStreamFrame(wsio, data) {
 
 // Print message from remote applications
 function wsPrintDebugInfo(wsio, data) {
-	sageutils.log("Client", "Node " + data.node + " [" + data.app + "] " + data.message);
+	sageutils.log("Client", "client #" + data.node + " [" + data.app + "]", data.message);
 }
 
 function wsRequestVideoFrame(wsio, data) {
@@ -3855,13 +3855,13 @@ function wsCommand(wsio, data) {
 
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
-
+	let position = data.position || [0, 0];
 	wsLoadApplication(wsio, {
 		application: "/uploads/apps/Webview",
 		user: wsio.id,
 		// pass the url in the data object
 		data: data,
-		position: [0, 0]
+		position: position
 	});
 
 	// Check if the web-browser is connected
@@ -8134,8 +8134,23 @@ function shareApplicationWithRemoteSite(uniqueID, app, remote) {
 	}
 	SAGE2Items.applications.editButtonVisibilityOnItem(app.application.id, "syncButton", true);
 
-	remote.wsio.emit('addNewSharedElementFromRemoteServer',
-		{application: app.application, id: sharedId, remoteAppId: app.application.id});
+	var sharedElement = {
+		application: app.application,
+		id: sharedId,
+		remoteAppId: app.application.id
+	};
+
+	if ((app.application.foregroundItems !== null && app.application.foregroundItems !== undefined) ||
+			(app.application.backgroundItem !== null && app.application.backgroundItem !== undefined)) {
+		//Removing the cyclic references before sending app info to remote site
+		var appCopy = Object.assign({}, app.application);
+		appCopy.backgroundItem = null;
+		appCopy.foregroundItems = null;
+		sharedElement.application = appCopy;
+	}
+
+	remote.wsio.emit('addNewSharedElementFromRemoteServer', sharedElement);
+
 	broadcast('setAppSharingFlag', {id: app.application.id, sharing: true});
 
 	var eLogData = {
@@ -9163,7 +9178,7 @@ function deleteApplication(appId, portalId, wsio) {
 		performanceManager.removeDataReceiver(appId);
 	}
 
-	var stickingItems = stickyAppHandler.getFirstLevelStickingItems(app);
+	var stickingItems = stickyAppHandler.getFirstLevelStickingItemIDs(app);
 	stickyAppHandler.removeElement(app);
 
 	SAGE2Items.applications.removeItem(appId);
@@ -9180,7 +9195,7 @@ function deleteApplication(appId, portalId, wsio) {
 	if (stickingItems.length > 0) {
 		for (var s in stickingItems) {
 			// When background gets deleted, sticking items stop sticking
-			toggleStickyPin(stickingItems[s].id);
+			handleStickyItem(stickingItems[s].id);
 		}
 	} else {
 		// Refresh the pins on all the unpinned apps
@@ -10721,9 +10736,10 @@ function appFileSaveRequest(wsio, data) {
 				fileObject[0] = {
 					name: filename,
 					type: data.filePath.ext,
-					path: fullpath};
-				// Add the file to the asset library and open it
-				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", true);
+					path: fullpath
+				};
+				// Add the file to the asset library and not open it (false)
+				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", false);
 			}
 		} catch (err) {
 			sageutils.log('File', "error while saving to", fullpath + ":" + err);

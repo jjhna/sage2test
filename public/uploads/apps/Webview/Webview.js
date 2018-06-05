@@ -67,7 +67,8 @@ var Webview = SAGE2_App.extend({
 		this.element.disablewebsecurity = false;
 
 		// Set a session per webview, so not zoom sharing per origin
-		this.element.partition = data.id;
+		// commented out: API seems to have changed, done to late here
+		// this.element.partition = data.id;
 
 		// initial size
 		this.element.minwidth  = data.width;
@@ -208,6 +209,21 @@ var Webview = SAGE2_App.extend({
 			_this.SAGE2Sync(true);
 		});
 
+		// Capturing right-click context menu inside webview
+		this.element.addEventListener("context-menu", function(evt) {
+			let params = evt.params;
+			// if it's an image, open the link in a new webview
+			if (params.mediaType === "image" && params.hasImageContents) {
+				// calculate a position right next to the parent view
+				let pos = [_this.sage2_x + _this.sage2_width + 5, _this.sage2_y];
+				wsio.emit('openNewWebpage', {
+					id: _this.id,
+					url: params.srcURL,
+					position: pos
+				});
+			}
+		});
+
 		// Error loading a page
 		// Source: https://cs.chromium.org/chromium/src/net/base/net_error_list.h
 		//
@@ -342,13 +358,6 @@ var Webview = SAGE2_App.extend({
 				_this.handleCertificateError();
 			});
 		} else {
-
-			// content.on('certificate-error', function(event) {
-			// 	console.log('Webview>	certificate error:', event);
-			// 	_this.pre.innerHTML += 'Webview>	certificate error:' + event + '\n';
-			// 	_this.element.executeJavaScript(
-			// 		"document.body.innerHTML = '<h1>This webpage has invalid certificates and cannot be loaded</h1>'");
-			// });
 
 			content.on('certificate-error', function(event, url, error, certificate, callback) {
 				// This doesnt seem like a security risk yet
