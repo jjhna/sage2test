@@ -26,7 +26,7 @@ var Webview = SAGE2_App.extend({
 			this.layer.appendChild(this.pre);
 			this.console = false;
 			// Add certificate error handler, it needs electron reference
-			this.handleCertificateError();
+			// this.handleCertificateError();
 		} else {
 			// Create div into the DOM
 			this.SAGE2Init("div", data);
@@ -237,15 +237,21 @@ var Webview = SAGE2_App.extend({
 		// The server's response was insecure (e.g. there was a cert error).
 
 		this.element.addEventListener("did-fail-load", function(event) {
+			console.log('Webview> Did fail load', event);
 			// not loading anymore
 			_this.isLoading = false;
 			// Check the return code
 			if (event.errorCode ===   -3 ||
 				event.errorCode ===  -27 ||
-				event.errorCode === -501 ||
 				event.errorDescription === "OK") {
 				// it's a redirect (causes issues)
 				// _this.changeURL(event.validatedURL, true);
+			} else if (event.errorCode === -501) {
+				// Add the message to the console layer
+				_this.pre.innerHTML += 'Webview> certificate error:' + event + '\n';
+				_this.element.src = 'data:text/html;charset=utf-8,' +
+					'<h1>This webpage has invalid certificates and cannot be loaded</h1>';
+				_this.changeWebviewTitle();
 			} else {
 				// real error
 				_this.element.src = 'data:text/html;charset=utf-8,<h1>Invalid URL</h1>';
@@ -358,25 +364,45 @@ var Webview = SAGE2_App.extend({
 				_this.handleCertificateError();
 			});
 		} else {
+			// Moved to electron.js main app
 
-			content.on('certificate-error', function(event, url, error, certificate, callback) {
-				// This doesnt seem like a security risk yet
-				if (error === "net::ERR_CERTIFICATE_TRANSPARENCY_REQUIRED") {
-					console.log('Webview>certificate error1:', url, error, certificate);
-					// we ignore the certificate error
-					event.preventDefault();
-					callback(true);
-				} else {
-					// More troubling error
-					console.log('Webview>certificate error2:', url, error, certificate);
-					// Add the message to the console layer
-					_this.pre.innerHTML += 'Webview>certificate error:' + event + '\n';
-					_this.element.executeJavaScript(
-						"document.body.innerHTML = '<h1>This webpage has invalid certificates and cannot be loaded</h1>'");
-					// Denied
-					callback(false);
-				}
-			});
+			// content.on('certificate-error', function(event, url, error, certificate, callback) {
+			// 	console.log('HEHEHE');
+			// 	_this.pre.innerHTML += 'Webview>certificate error:' + event + '\n';
+			// 	_this.element.executeJavaScript(
+			// 		"document.body.innerHTML = '<h1>This webpage has invalid certificates and cannot be loaded</h1>'");
+			// });
+
+			// content.on('certificate-error', function(event, url, error, certificate, callback) {
+			// 	// This doesnt seem like a security risk yet
+			// 	if (error === "net::ERR_CERTIFICATE_TRANSPARENCY_REQUIRED") {
+			// 		console.log('Webview>certificate error1:', url, error, certificate);
+			// 		// we ignore the certificate error
+			// 		event.preventDefault();
+			// 		return callback(true);
+			// 	} else if (error === "net::ERR_CERT_COMMON_NAME_INVALID") {
+			// 		// self-signed certificate
+			// 		console.log('common name invalid', certificate, certificate.issuerName)
+			// 		// we ignore the certificate error
+			// 		event.preventDefault();
+			// 		return callback(true);
+			// 	} else if (error === "net::ERR_CERT_AUTHORITY_INVALID") {
+			// 		// self-signed certificate
+			// 		console.log('self-signed certificate', certificate, certificate.issuerName)
+			// 		// we ignore the certificate error
+			// 		event.preventDefault();
+			// 		return callback(true);
+			// 	} else {
+			// 		// More troubling error
+			// 		console.log('Webview>certificate error2:', url, error, certificate);
+			// 		// Add the message to the console layer
+			// 		_this.pre.innerHTML += 'Webview>certificate error:' + event + '\n';
+			// 		_this.element.executeJavaScript(
+			// 			"document.body.innerHTML = '<h1>This webpage has invalid certificates and cannot be loaded</h1>'");
+			// 		// Denied
+			// 		callback(false);
+			// 	}
+			// });
 
 			this.addedHandlerForCertificteError = true;
 		}
