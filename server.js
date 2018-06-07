@@ -2756,7 +2756,7 @@ function saveSession(filename) {
 
 		var iconImageData = "";
 		try {
-			iconImageData = new Buffer(fs.readFileSync(iconPath)).toString('base64');
+			iconImageData = Buffer.from(fs.readFileSync(iconPath)).toString('base64');
 		} catch (error) {
 			// error reading/converting icon image
 		}
