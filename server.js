@@ -306,7 +306,7 @@ function initializeSage2Server() {
 
 	// Set default host origin for this server
 	if (config.rproxy_port === undefined) {
-		hostOrigin = "http://" + config.host + (config.port === 80 ? "" : ":" + config.port) + "/";
+		hostOrigin = "https://" + config.host + (config.secure_port === 443 ? "" : ":" + config.secure_port) + "/";
 	}
 
 	// Initialize sage2 item lists
@@ -2772,7 +2772,7 @@ function saveSession(filename) {
 
 		var iconImageData = "";
 		try {
-			iconImageData = new Buffer(fs.readFileSync(iconPath)).toString('base64');
+			iconImageData = Buffer.from(fs.readFileSync(iconPath)).toString('base64');
 		} catch (error) {
 			// error reading/converting icon image
 		}
@@ -2848,6 +2848,7 @@ function createAppFromDescription(app, callback) {
 		appInstance.previous_width  = app.previous_width;
 		appInstance.previous_height = app.previous_height;
 		appInstance.maximized       = app.maximized;
+		appInstance.icon            = app.icon;
 		sageutils.mergeObjects(app.data, appInstance.data, ['doc_url', 'video_url', 'video_type', 'audio_url', 'audio_type']);
 
 		callback(appInstance, videohandle);
@@ -3871,13 +3872,13 @@ function wsCommand(wsio, data) {
 
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
-
+	let position = data.position || [0, 0];
 	wsLoadApplication(wsio, {
 		application: "/uploads/apps/Webview",
 		user: wsio.id,
 		// pass the url in the data object
 		data: data,
-		position: [0, 0]
+		position: position
 	});
 
 	// Check if the web-browser is connected
@@ -10752,9 +10753,10 @@ function appFileSaveRequest(wsio, data) {
 				fileObject[0] = {
 					name: filename,
 					type: data.filePath.ext,
-					path: fullpath};
-				// Add the file to the asset library and open it
-				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", true);
+					path: fullpath
+				};
+				// Add the file to the asset library and not open it (false)
+				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", false);
 			}
 		} catch (err) {
 			sageutils.log('File', "error while saving to", fullpath + ":" + err);
