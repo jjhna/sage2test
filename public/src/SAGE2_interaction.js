@@ -636,7 +636,8 @@ function SAGE2_interaction(wsio) {
 		}
 
 		var mediaVideo = document.getElementById('mediaVideo');
-		mediaVideo.src = window.URL.createObjectURL(this.mediaStream);
+		// mediaVideo.src = window.URL.createObjectURL(this.mediaStream);
+		mediaVideo.srcObject = this.mediaStream;
 		mediaVideo.play();
 	};
 
