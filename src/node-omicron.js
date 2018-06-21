@@ -1086,11 +1086,17 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			// Zoom start/down
 			if (eventType === 1) {
 				console.log("Touch zoom start - ID: " + sourceID);
+
+				// Note: This disables zoom gestures for app interaction
+				// and instead does window zoom
+				if (mode === "App") {
+					omicronManager.pointerChangeMode(address);
+				}
+
 				if (omicronManager.pointerState[sourceID].gesture !== "move") {
 					omicronManager.pointerScrollStart(address, posX, posY);
 					omicronManager.initZoomPos[sourceID] = {initX: posX, initY: posY};
 					omicronManager.pointerState[sourceID].gesture = "zoom";
-					//omicronManager.pointerChangeMode(address);
 				}
 			} else {
 				if (omicronManager.initZoomPos[sourceID] !== undefined &&
