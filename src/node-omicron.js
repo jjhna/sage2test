@@ -156,29 +156,20 @@ function OmicronManager(sysConfig) {
 	// Config: Gestures
 	this.enableGestures =  this.config.enableGestures === undefined ? true : this.config.enableGestures;
 
-	if (this.config.zoomGestureScale) {
-		this.touchZoomScale = this.config.zoomGestureScale;
-	}
+	this.touchZoomScale =  this.config.zoomGestureScale === undefined ? this.touchZoomScale : this.config.zoomGestureScale;
+	this.acceleratedDragScale =  this.config.acceleratedDragScale === undefined ?
+		this.acceleratedDragScale : this.config.acceleratedDragScale;
 
-	if (this.config.acceleratedDragScale) {
-		this.acceleratedDragScale = this.config.acceleratedDragScale;
-	}
-
-	if (this.config.enableDoubleClickMaximize !== undefined) {
-		this.enableDoubleClickMaximize = this.config.enableDoubleClickMaximize;
-	}
-	if (this.config.enableThreeFingerRightClick !== undefined) {
-		this.enableThreeFingerRightClick = this.config.enableThreeFingerRightClick;
-	}
-	if (this.config.enableTwoFingerWindowDrag !== undefined) {
-		this.enableTwoFingerWindowDrag = this.config.enableTwoFingerWindowDrag;
-	}
-	if (this.config.enableTwoFingerZoom !== undefined) {
-		this.enableTwoFingerZoom = this.config.enableTwoFingerZoom;
-	}
-	if (this.config.enableFiveFingerCloseApp !== undefined) {
-		this.enableFiveFingerCloseApp = this.config.enableFiveFingerCloseApp;
-	}
+	this.enableDoubleClickMaximize =  this.config.enableDoubleClickMaximize === undefined ?
+		this.enableDoubleClickMaximize : this.config.enableDoubleClickMaximize;
+	this.enableThreeFingerRightClick =  this.config.enableThreeFingerRightClick === undefined ?
+		this.enableThreeFingerRightClick : this.config.enableThreeFingerRightClick;
+	this.enableTwoFingerWindowDrag =  this.config.enableTwoFingerWindowDrag === undefined ?
+		this.enableTwoFingerWindowDrag : this.config.enableTwoFingerWindowDrag;
+	this.enableTwoFingerZoom =  this.config.enableTwoFingerZoom === undefined ?
+		this.enableTwoFingerZoom : this.config.enableTwoFingerZoom;
+	this.enableFiveFingerCloseApp =  this.config.enableFiveFingerCloseApp === undefined ?
+		this.enableFiveFingerCloseApp : this.config.enableFiveFingerCloseApp;
 
 	// Config: Omicron
 	if (this.config.host === undefined) {
@@ -953,9 +944,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	}
 
 	if (e.type === 4) { // EventType: MOVE
-		//if (omicronManager.sagePointers[address] === undefined) {
-		//	return;
-		//}
 
 		if (omicronManager.gestureDebug) {
 			//sageutils.log('Omicron', "Touch move at - (" + posX.toFixed(2) + "," + posY.toFixed(2) + ") initPos: ("
@@ -964,29 +952,10 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Update pointer position
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
-		omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
 
-		/*
-		if (timeSinceLastNonCritEvent > omicronManager.nonCriticalEventDelay) {
-			if (e.flags == 0 || e.flags == FLAG_SINGLE_TOUCH) { // Basic touch event, non-gesture
-				if (omicronManager.gestureDebug) {
-					console.log("Touch move at - (" + posX.toFixed(2) + "," + posY.toFixed(2) + ") initPos: ("
-					+ initX.toFixed(2) + "," + initY.toFixed(2) + ")");
-				}
-
-				distance = Math.sqrt(Math.pow(Math.abs(posX - initX), 2) + Math.pow(Math.abs(posY - initY), 2));
-				angle = Math.atan2(posY -  initY, posX - initX);
-
-				accelDistance = distance * omicronManager.acceleratedDragScale;
-				accelX = posX + accelDistance * Math.cos(angle);
-				accelY = posY + accelDistance * Math.sin(angle);
-
-				omicronManager.pointerPosition(address, { pointerX: accelX, pointerY: accelY });
-				omicronManager.pointerMove(address, accelX, accelY, { deltaX: 0, deltaY: 0, button: "left" });
-				omicronManager.lastNonCritEventTime = Date.now();
-			}
+		if (omicronManager.pointerState[sourceID].gesture == "move") {
+			omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
 		}
-		*/
 
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
 			// Get previous touchgroup list
@@ -995,7 +964,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				for (var childID of lastTouchGroupPoints.keys()) {
 					if (touchGroupChildrenIDs.has(childID) === false) {
 						sageutils.log('Omicron', "TouchGroup ", sourceID, " has removed touch id ", childID);
-						//lastTouchGroupPoints.set(childID, touchGroupChildrenIDs.get(childID));
+
 						omicronManager.hidePointer(address + "_" + childID);
 						omicronManager.touchList.delete(childID);
 					}
@@ -1006,8 +975,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 					if (lastTouchGroupPoints.has(childID) === false) {
 						omicronManager.touchList.set(childID, { pointerX: childX, pointerY: childY });
-						//sageutils.log('Omicron', "TouchGroup ", sourceID, " has new touch id ", childID);
-						//lastTouchGroupPoints.set(childID, touchGroupChildrenIDs.get(childID));
+
 						// Create the pointer
 						omicronManager.createSagePointer(address + "_" + childID);
 
@@ -1022,10 +990,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 							sourceType: pointerStyle
 						});
 
-						if (mode === "App") {
-							omicronManager.pointerChangeMode(address);
-						}
-
 						// Set the initial pointer position
 						omicronManager.pointerPosition(address + "_" + childID, { pointerX: childX, pointerY: childY });
 					} else {
@@ -1038,10 +1002,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 	} else if (e.type === 5) { // EventType: DOWN
 		omicronManager.touchList.set(sourceID, { pointerX: posX, pointerY: posY });
-
-		//if (omicronManager.sagePointers[address] !== undefined) {
-		//	return;
-		//}
 
 		if (omicronManager.gestureDebug) {
 			sageutils.log('Omicron',
@@ -1071,7 +1031,10 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
 
 		// Send 'click' event
-		omicronManager.pointerPress(address, posX, posY, { button: "left" });
+		if (e.flags === FLAG_SINGLE_TOUCH) {
+			omicronManager.pointerPress(address, posX, posY, { button: "left" });
+			console.log("Pointer click - ID: " + sourceID);
+		}
 
 		// Set touchgroup child only if multi/single touch event (not gestures)
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
@@ -1079,12 +1042,8 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		}
 	} else if (e.type === 6) { // EventType: UP
 		omicronManager.touchList.delete(sourceID);
-		//if (omicronManager.sagePointers[address] === undefined) {
-		//	return;
-		//}
 
 		if (omicronManager.gestureDebug) {
-			// console.log("Touch release");
 			sageutils.log('Omicron', "Touch up at - (" + posX.toFixed(2) + "," + posY.toFixed(2) + ") initPos: ("
 				+ initX.toFixed(2) + "," + initY.toFixed(2) + ") flags:" + e.flags);
 		}
@@ -1126,11 +1085,12 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 			// Zoom start/down
 			if (eventType === 1) {
-				// console.log("Touch zoom start");
+				console.log("Touch zoom start - ID: " + sourceID);
 				if (omicronManager.pointerState[sourceID].gesture !== "move") {
 					omicronManager.pointerScrollStart(address, posX, posY);
 					omicronManager.initZoomPos[sourceID] = {initX: posX, initY: posY};
 					omicronManager.pointerState[sourceID].gesture = "zoom";
+					//omicronManager.pointerChangeMode(address);
 				}
 			} else {
 				if (omicronManager.initZoomPos[sourceID] !== undefined &&
@@ -1144,23 +1104,28 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				// If two-finger move enabled and distance > minDistance, stop zooming and move
 				if (omicronManager.enableTwoFingerWindowDrag && distance > omicronManager.zoomToMoveGestureMinimumDistance) {
 					if (omicronManager.pointerState[sourceID].gesture === "zoom") {
+						console.log("Touch zoom switched to 2-finger move - ID: " + address);
+						// End zoom gesture
 						omicronManager.pointerScrollEnd(address, posX, posY);
 						omicronManager.pointerRelease(address, posX, posY, { button: "left" });
+
+						// Start drag gesture
 						omicronManager.createSagePointer(address);
 						omicronManager.pointerPress(address, posX, posY, { button: "left" });
 						omicronManager.pointerState[sourceID].gesture = "move";
 					}
 				} else {
-					// Zoom move
+					// Zoom gesture
 					var wheelDelta = -zoomDelta * omicronManager.touchZoomScale;
 					omicronManager.pointerScroll(address, { wheelDelta: wheelDelta });
+					console.log("Touch zoom - ID: " + sourceID);
 				}
 
 				if (omicronManager.gestureDebug) {
-					console.log("Touch zoom at - (" + posX.toFixed(2) + "," + posY.toFixed(2) + ") initPos: ("
-					+ initX.toFixed(2) + "," + initY.toFixed(2) + ")");
-					console.log("Touch zoom distance: " + distance);
-					console.log("Touch zoom state: " + omicronManager.pointerState[sourceID].gesture);
+					// console.log("Touch zoom at - (" + posX.toFixed(2) + "," + posY.toFixed(2) + ") initPos: ("
+					// + initX.toFixed(2) + "," + initY.toFixed(2) + ")");
+					// console.log("Touch zoom distance: " + distance);
+					// console.log("Touch zoom state: " + omicronManager.pointerState[sourceID].gesture);
 				}
 			}
 		}
