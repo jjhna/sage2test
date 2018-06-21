@@ -1627,7 +1627,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			_this.allTable.filter(function(obj) {
 				var val = false;
 				if (_this.allFiles[obj.id].exif.SAGE2user) {
-					val = _this.allFiles[obj.id].exif.SAGE2user.indexOf(interactor.pointerColor) >= 0;
+					val = _this.allFiles[obj.id].exif.SAGE2user.indexOf(interactor.pointerLabel) >= 0;
 				}
 				return val;
 			});
