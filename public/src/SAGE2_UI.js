@@ -11,7 +11,7 @@
 "use strict";
 
 /* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech */
-/* global removeAllChildren, SAGE2_copyToClipboard, parseBool */
+/* global removeAllChildren, SAGE2_copyToClipboard, parseBool, SimplePeer */
 
 /**
  * Web user interface
@@ -474,14 +474,14 @@ function showSAGE2Message(message, delay) {
 function setupListeners() {
 
 	wsio.on('webRTCSignal', function(data) {
-		console.log('webRTCSignal', data.id, interactor.uniqueID)
+		console.log('webRTCSignal', data.id, interactor.uniqueID);
 		if (data.id !== interactor.uniqueID) {
 			console.log('webrtc: got something for me');
 			if (peer) {
-				console.log('webrtc', 'sending signal')
+				console.log('webrtc', 'sending signal');
 				peer.signal(data.webrtc);
 			} else {
-				console.log('webrtc', 'NO PEER object')				
+				console.log('webrtc', 'NO PEER object');
 			}
 		}
 	});
@@ -1297,30 +1297,30 @@ function handleClick(element) {
 			});
 
 			peer.on('error', function (err) {
-				console.log('Peer> error', err)
-			})
+				console.log('Peer> error', err);
+			});
 
 			peer.on('signal', function (data) {
 				// console.log('SIGNAL', JSON.stringify(data));
 				console.log('Peer> SIGNAL', interactor.uniqueID);
 				wsio.emit("webRTCSignal", {id: interactor.uniqueID, webrtc: data});
-			})
+			});
 
 			peer.on('connect', function () {
 				console.log('Peer> CONNECT');
 				let val = Math.random();
-				console.log('Peer> sending', val);			
-				peer.send('whatever ' + val)
-			})
+				console.log('Peer> sending', val);
+				peer.send('whatever ' + val);
+			});
 
 			peer.on('data', function (data) {
-				console.log('Peer>', 'got data: ' + data)
+				console.log('Peer>', 'got data: ' + data);
 				// setTimeout(function() {
 				// 	let val = Math.random();
-				// 	console.log('Peer> sending', val);			
+				// 	console.log('Peer> sending', val);
 				// 	peer.send('whatever ' + val)
 				// }, 10000);
-			})
+			});
 		}, function(event) {
 			console.log("getUserMedia>", "no access to media capture", event);
 		});

@@ -287,7 +287,7 @@ function SAGE2_init() {
 		// });
 
 		// peer.on('connect', function () {
-		// 	var val = 	
+		// 	var val =
 		// 	console.log('Peer> CONNECT')
 		// 	// peer.send('whatever' + Math.random())
 		// });
@@ -295,7 +295,7 @@ function SAGE2_init() {
 		// peer.on('data', function (data) {
 		// 	console.log('Peer>', 'data: ' + data);
 		// 	let val = Math.random();
-		// 	console.log('Peer> sending', val);			
+		// 	console.log('Peer> sending', val);
 		// 	peer.send('whatever back' + val)
 		// });
 
@@ -312,14 +312,14 @@ function SAGE2_init() {
 
 
 		wsio.on('webRTCSignal', function(data) {
-			console.log('webRTCSignal', data.id)
+			console.log('webRTCSignal', data.id);
 			if (data.id !== clientID) {
-				console.log('webrtc: got something for me', data, peer.destroyed, peer)
+				console.log('webrtc: got something for me', data, peer.destroyed, peer);
 				if (!peer.destroyed) {
-					console.log('webrtc', 'setting signal')
+					console.log('webrtc', 'setting signal');
 					peer.signal(data.webrtc);
 				} else {
-					console.log('Peer has been destroyed')
+					console.log('Peer has been destroyed');
 				}
 			}
 		});
