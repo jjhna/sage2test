@@ -787,7 +787,7 @@ function closeWebSocketClient(wsio) {
 		for (key in remoteSharingSessions) {
 			remoteSharingSessions[key].wsio.emit('stopRemoteSagePointer', {id: wsio.id});
 		}
-	} else if (wsio.clientType === "standAloneApp"){
+	} else if (wsio.clientType === "standAloneApp") {
 		hidePointer(wsio.id);
 		delete sagePointers[wsio.id];
 		delete remoteInteraction[wsio.id];
@@ -1025,7 +1025,6 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 				id: wsio.id, portal: {host: config.host, port: config.port}
 			});
 		}
-		
 	}
 
 	var remote = findRemoteSiteByConnection(wsio);
@@ -1107,6 +1106,7 @@ function setupListeners(wsio) {
 
 	wsio.on('requestAvailableApplications',         wsRequestAvailableApplications);
 	wsio.on('requestStoredFiles',                   wsRequestStoredFiles);
+	wsio.on('requestAppAssociations',				wsRequestAppAssociations);
 	wsio.on('loadApplication',                      wsLoadApplication);
 	wsio.on('loadFileFromServer',                   wsLoadFileFromServer);
 	wsio.on('loadImageFromBuffer',                  wsLoadImageFromBuffer);
@@ -3538,7 +3538,7 @@ function wsLoadFileFromServer(wsio, data) {
 		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
 			application: {id: null, type: "session"}}, time: Date.now()});
 	} else {
-		appLoader.loadFileFromLocalStorage(data, function(appInstance, videohandle) {
+		var fileLoadCallBack = function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
 			var position = data.position || [0, 0];
 			if (position[0] > 1) {
@@ -3586,7 +3586,20 @@ function wsLoadFileFromServer(wsio, data) {
 			broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
 			addEventToUserLog(data.user, {type: "openFile", data:
 				{name: data.filename, application: {id: appInstance.id, type: appInstance.application}}, time: Date.now()});
-		});
+		};
+		var defaultApp = registry.getDefaultApp(data.filename);
+		if (defaultApp === data.application) {
+			appLoader.loadFileFromLocalStorage(data, fileLoadCallBack);
+		} else if (data.setDefault === true) {
+			// Change the default app for the file type
+			registry.setDefaultApp(data.filename, data.application);
+			appLoader.loadFileFromLocalStorage(data, fileLoadCallBack);
+			// Send the changed file associations
+			wsRequestAppAssociations(wsio);
+		} else {
+			//Open the file with app that is not default
+			appLoader.loadFileWithNonDefaultApplication(data, fileLoadCallBack);
+		}
 	}
 }
 
@@ -5107,6 +5120,52 @@ function getSavedFilesList() {
 
 	return list;
 }
+
+function wsRequestAppAssociations(wsio) {
+	var savedFiles  = getSavedFilesList();
+	var fileToTypeMap = {};
+	// Get the type for each saved file
+	for (var key in savedFiles) {
+		if (savedFiles.hasOwnProperty(key) === true) {
+			var list = savedFiles[key].map(function(d, i) {
+				return {
+					id: d.id,
+					type: registry.getMimeType(d.filename)
+				};
+			});
+			fileToTypeMap[key] = list;
+		}
+	}
+
+	var typeToAppMap = registry.getTypeToAppAssociations();
+
+	var allFileAssociations = {};
+	for (var category in fileToTypeMap) {
+		if (fileToTypeMap.hasOwnProperty(category) === true) {
+			var fileTypeList = fileToTypeMap[category];
+			fileTypeList.forEach(ft => {
+				var appList = [];
+				if (ft.type !== null) {
+					var type = ft.type.split('/');
+					if (typeToAppMap.hasOwnProperty(type[0]) === true) {
+						if (typeToAppMap[type[0]].hasOwnProperty(type[1]) === true) {
+							appList = typeToAppMap[type[0]][type[1]].applications;
+						}
+					}
+				}
+				allFileAssociations[ft.id] = appList.map(function(d) {
+					return {
+						label: d.split('/').slice(-1)[0],
+						app: d
+					};
+				});
+			});
+		}
+	}
+
+	wsio.emit('appAssociationsForStoredFiles', {allFileAssociations: allFileAssociations, overwrite: true});
+}
+
 
 function setupDisplayBackground() {
 	var tmpImg, imgExt;
@@ -11121,3 +11180,4 @@ function wsSetSagePointerToAppInteraction(wsio, data) {
 		broadcast('changeSagePointerMode', {id: sagePointers[wsio.id].id, mode: remoteInteraction[wsio.id].interactionMode});
 	}
 }
+

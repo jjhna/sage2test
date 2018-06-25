@@ -674,6 +674,8 @@ function setupListeners() {
 			// Update the filemanager with the new list
 			fileManager.updateFiles(data);
 		}
+		// Get app associations for stored files
+		wsio.emit('requestAppAssociations');
 	});
 
 	wsio.on('requestNextFrame', function(data) {
@@ -753,6 +755,9 @@ function setupListeners() {
 			});
 			link.dispatchEvent(event);
 		}
+	});
+	wsio.on('appAssociationsForStoredFiles', function(data) {
+		fileManager.updateAppAssociations(data);
 	});
 }
 

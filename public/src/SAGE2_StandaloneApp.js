@@ -72,11 +72,19 @@ var hasMouse;
 
 var standAloneApp = null;
 var appId = null;
-var wsioID = null;
+var browserID = null;
+var isBrowser = false;
 // Explicitely close web socket when web browser is closed
 window.onbeforeunload = function() {
-	if (wsio !== undefined) {
-		wsio.close();
+	if (wsio !== undefined && standAloneApp !== null) {
+		var app = standAloneApp.application;
+		if (app !== null) {
+			app.quit();
+			wsio.emit('updateApplicationState', {
+				id: app.id, state: app.state, date: Date.now()
+			});
+			wsio.close();
+		}
 	}
 };
 
@@ -91,7 +99,7 @@ window.onfocus = function() {
 			ui.changeSagePointerMode({id: standAloneApp.user.id, mode: 1});
 		}
 	}
-}
+};
 
 window.onblur = function() {
 	if (wsio !== undefined && standAloneApp !== null) {
@@ -102,7 +110,12 @@ window.onblur = function() {
 			ui.hideSagePointer(standAloneApp.user);
 		}
 	}
-}
+};
+
+window.onclose = function() {
+
+};
+
 /**
  * When the page loads, SAGE2 starts
  *
@@ -296,19 +309,32 @@ function mouseCheck(event) {
 	console.log("Detected as desktop device");
 
 	document.removeEventListener('mousemove', mouseCheck, false);
+
+	var eventHandlerRegisterer = null;
+
+	function registerHandlers() {
+		if (standAloneApp) {
+			console.log("Registered event handlers");
+			document.addEventListener('mouseup',   standAloneApp.pointerRelease.bind(standAloneApp),  false);
+			document.addEventListener('mousedown', standAloneApp.pointerPress.bind(standAloneApp), false);
+			document.addEventListener('click',     standAloneApp.pointerClick.bind(standAloneApp), false);
+			document.addEventListener('mousemove', standAloneApp.pointerMove.bind(standAloneApp), false);
+			document.addEventListener('wheel',     standAloneApp.pointerScroll.bind(standAloneApp), false);
+			if (eventHandlerRegisterer !== null) {
+				clearInterval(eventHandlerRegisterer);
+			}
+		} else if (eventHandlerRegisterer === null) {
+			eventHandlerRegisterer = setInterval(function() {
+				registerHandlers();
+			}, 1000);
+		}
+	}
+
+	registerHandlers();
+
 	/*document.addEventListener('mousedown',  pointerPress,    false);
 	document.addEventListener('click',      pointerClick,    false);
 	document.addEventListener('mouseup',    pointerRelease,  false);*/
-	if (standAloneApp) {
-		document.addEventListener('mouseup',   standAloneApp.pointerRelease.bind(standAloneApp),  false);
-		document.addEventListener('mousedown', standAloneApp.pointerPress.bind(standAloneApp), false);
-		document.addEventListener('click',     standAloneApp.pointerClick.bind(standAloneApp), false);
-		document.addEventListener('mousemove', standAloneApp.pointerMove.bind(standAloneApp), false);
-	} else {
-		setTimeout(function() {
-			document.addEventListener('mousemove', standAloneApp.pointerMove.bind(standAloneApp), false);
-		}, 1000);
-	}
 
 	/*document.addEventListener('wheel',      pointerScroll,   false);
 
@@ -330,7 +356,8 @@ function setupListeners() {
 		pointerDown = false;
 		pointerX    = 0;
 		pointerY    = 0;
-		wsioID = data.UID;
+		browserID = data.UID;
+		isBrowser = true;
 	});
 
 
@@ -377,7 +404,7 @@ function setupListeners() {
 
 		standAloneApp = new StandAloneApp(appId, wsio);
 		standAloneApp.setup(new UIBuilder(json_cfg, clientID));
-		standAloneApp.user.id = wsioID + "_pointer";
+		standAloneApp.user.id = browserID + "_pointer";
 		ui = standAloneApp.ui;
 		if (wsio !== undefined && standAloneApp !== null) {
 			var app = standAloneApp.application;
@@ -541,17 +568,19 @@ function setupListeners() {
 	});
 
 	wsio.on('animateCanvas', function(data) {
-		if (standAloneApp.application && data.id === standAloneApp.application.id) {
-			var date = new Date(data.date);
-			standAloneApp.application.refresh(date);
-			wsio.emit('finishedRenderingAppFrame', {id: data.id, fps: standAloneApp.application.maxFPS});
+		if (standAloneApp) {
+			if (standAloneApp.application && data.id === standAloneApp.application.id) {
+				var date = new Date(data.date);
+				standAloneApp.application.refresh(date);
+				wsio.emit('finishedRenderingAppFrame', {id: data.id, fps: standAloneApp.application.maxFPS});
+			}
 		}
 	});
 
 	wsio.on('eventInItem', function(event_data) {
 		var app = standAloneApp.application;
 		if (app !== null && event_data.id === app.id && app.standAloneAppEventSharing === true) {
-			app.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, date);
+			app.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, event_data.date);
 		}
 	});
 

@@ -496,7 +496,7 @@ AppLoader.prototype.loadPdfFromFile = function(file, mime_type, aUrl, external_u
 
 AppLoader.prototype.loadNoteFromFile = function(file, mime_type, aUrl, external_url, name, callback) {
 	// Find the app. Look it the file name in the registry. Get path, navigate to the path's instruction.json file.
-	var appName = registry.getDefaultApp(file);
+	var appName = registry.getDefaultApp(file, true);
 	var localPath = getSAGE2Path(appName);
 	var instructionsFile = path.join(localPath, "instructions.json");
 
@@ -522,7 +522,7 @@ AppLoader.prototype.loadNoteFromFile = function(file, mime_type, aUrl, external_
 
 AppLoader.prototype.loadDoodleFromFile = function(file, mime_type, aUrl, external_url, name, callback) {
 	// Find the app. Look it the file name in the registry. Get path, navigate to the path's instruction.json file.
-	var appName = registry.getDefaultApp(file);
+	var appName = registry.getDefaultApp(file, true);
 	var localPath = getSAGE2Path(appName);
 	var instructionsFile = path.join(localPath, "instructions.json");
 
@@ -566,7 +566,7 @@ AppLoader.prototype.loadDoodleFromFile = function(file, mime_type, aUrl, externa
 
 AppLoader.prototype.loadAppFromFileFromRegistry = function(file, mime_type, aUrl, external_url, name, callback) {
 	// Find the app!!
-	var appName = registry.getDefaultApp(file);
+	var appName = registry.getDefaultApp(file, true);
 	var localPath = getSAGE2Path(appName);
 	// not pretty, should be better (luc)
 	if (appName === 'Webview') {
@@ -679,6 +679,52 @@ AppLoader.prototype.loadZipAppFromFile = function(file, mime_type, aUrl, externa
 	});
 };
 
+
+AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, list) {
+	var zipFolder = path.join(path.dirname(file), name);
+
+	var unzipper = new Unzip(file);
+	unzipper.on('extract', function(log) {
+		list.forEach(item => {
+			var filePath = path.join(zipFolder, item);
+			exiftool.file(filePath, function(err2, data) {
+				if (err2) {
+					sageutils.log("Loader", "internal error", err2);
+				} else {
+					assets.addFile(data.SourceFile, data, function() {
+					});
+					assets.saveAssets();
+				}
+			});
+		});
+
+		// delete original zip file
+		fs.unlink(file, function(err) {
+			if (err) {
+				throw err;
+			}
+		});
+	});
+	unzipper.extract({
+		path: zipFolder,
+		filter: function(extractedFile) {
+			if (extractedFile.type === "SymbolicLink") {
+				return false;
+			}
+			if (extractedFile.filename === "__MACOSX") {
+				return false;
+			}
+			if (extractedFile.filename.substring(0, 1) === ".") {
+				return false;
+			}
+			if (extractedFile.parent.length >= 8 && extractedFile.parent.substring(0, 8) === "__MACOSX") {
+				return false;
+			}
+
+			return true;
+		}
+	});
+};
 AppLoader.prototype.loadUnityAppFromZip = function(appLoader, unityLoader, zipFolder, data, callback) {
 	var unityIndexHtml = path.join(zipFolder, "index.html");
 	sageutils.log('AppLoader', 'Unity index file', unityIndexHtml);
@@ -1024,7 +1070,7 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 	cleanFilename = cleanFilename.replace(/[$%^&()'`\\/]/g, '_');
 
 	// Check if there is a matching application
-	var app = registry.getDefaultApp(cleanFilename);
+	var app = registry.getDefaultApp(cleanFilename, true);
 	if (app === undefined || app === "") {
 		callback(null);
 		return;
@@ -1033,86 +1079,109 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 	var dir = registry.getDirectory(cleanFilename);
 	var _this = this;
 
-	if (!sageutils.folderExists(path.join(this.publicDir, dir))) {
-		fs.mkdirSync(path.join(this.publicDir, dir));
-	}
-
-	// Check if it is a web-capable image, otherwise convert it to PNG
-	if (mime_type.startsWith("image/")) {
-		if (mime_type != "image/jpeg" && mime_type != "image/png" && mime_type != "image/webp") {
-			sageutils.log("Loader", "converting image", cleanFilename);
-			// setting up a tmp filename
-			var tmpPath = path.join(this.publicDir, "tmp", path.basename(cleanFilename)) + ".png";
-			// converting anything to PNG
-			imageMagick(file.path).noProfile().bitdepth(8).flatten().setFormat("PNG").write(tmpPath, function(err, buffer) {
-				if (err) {
-					sageutils.log("Loader", "error processing image file", tmpPath);
-					return;
-				}
-				// done with the tmp file
-				fs.unlinkSync(file.path);
-				// call same funtion again with the new PNG file
-				return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, callback);
-			});
-			// done for now
-			return;
+	var processUploadedFile = function(directory, filelist) {
+		if (!sageutils.folderExists(path.join(this.publicDir, directory))) {
+			fs.mkdirSync(path.join(this.publicDir, directory));
 		}
-	}
 
-	// Use the defautl folder plus type as destination:
-	//    SAGE2_Media/pdf/ for instance
-	var localPath = path.join(this.publicDir, dir, cleanFilename);
-
-	// Filename exists, then add date
-	if (sageutils.fileExists(localPath)) {
-		// Add the date to filename
-		var filen  = cleanFilename;
-		var splits = filen.split('.');
-		var extension   = splits.pop();
-		var newfilename = splits.join('_') + "_" + Date.now() + '.' + extension;
-		localPath  = path.join(this.publicDir, dir, newfilename);
-	}
-
-	mv(file.path, localPath, function(err1) {
-		if (err1) {
-			throw err1;
+		// Check if it is a web-capable image, otherwise convert it to PNG
+		if (mime_type.startsWith("image/")) {
+			if (mime_type != "image/jpeg" && mime_type != "image/png" && mime_type != "image/webp") {
+				sageutils.log("Loader", "converting image", cleanFilename);
+				// setting up a tmp filename
+				var tmpPath = path.join(this.publicDir, "tmp", path.basename(cleanFilename)) + ".png";
+				// converting anything to PNG
+				imageMagick(file.path).noProfile().bitdepth(8).flatten().setFormat("PNG").write(tmpPath, function(err, buffer) {
+					if (err) {
+						sageutils.log("Loader", "error processing image file", tmpPath);
+						return;
+					}
+					// done with the tmp file
+					fs.unlinkSync(file.path);
+					// call same funtion again with the new PNG file
+					return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, callback);
+				});
+				// done for now
+				return;
+			}
 		}
-		if (app === "custom_app" && mime_type === "application/zip") {
-			// Compressed ZIP file, load directly
-			_this.loadApplication({
-				location: "file", path: localPath, url: "", external_url: "",
-				type: mime_type, name: cleanFilename, compressed: true}, function(appInstance, handle) {
-				callback(appInstance, handle);
-			});
-		} else {
-			// try to process all the files with exiftool
-			exiftool.file(localPath, function(err2, data) {
-				if (err2) {
-					sageutils.log("Loader", "internal error", err2);
-				} else {
-					assets.addFile(data.SourceFile, data, function() {
-						// get a valid URL for it
-						var aUrl = assets.getURL(data.SourceFile);
-						// calculate a complete URL with hostname
-						var external_url = url.resolve(_this.hostOrigin, aUrl);
-						// and load the application
-						_this.loadApplication({
-							location: "file", path: localPath, url: aUrl, external_url: external_url,
-							type: mime_type, name: cleanFilename, compressed: false}, function(appInstance, handle) {
-							callback(appInstance, handle);
-						});
+
+		// Use the defautl folder plus type as destination:
+		//    SAGE2_Media/pdf/ for instance
+		var localPath = path.join(this.publicDir, directory, cleanFilename);
+
+		// Filename exists, then add date
+		if (sageutils.fileExists(localPath)) {
+			// Add the date to filename
+			var filen  = cleanFilename;
+			var splits = filen.split('.');
+			var extension   = splits.pop();
+			var newfilename = splits.join('_') + "_" + Date.now() + '.' + extension;
+			localPath  = path.join(this.publicDir, directory, newfilename);
+		}
+
+		mv(file.path, localPath, function(err1) {
+			if (err1) {
+				throw err1;
+			}
+			if (app === "custom_app" && mime_type === "application/zip") {
+				if (!filelist) {
+					// Compressed ZIP file of app, load directly
+					_this.loadApplication({
+						location: "file", path: localPath, url: "", external_url: "",
+						type: mime_type, name: cleanFilename, compressed: true}, function(appInstance, handle) {
+						callback(appInstance, handle);
 					});
-					assets.saveAssets();
+				} else {
+					//Compressed ZIP data file, extract to SAGE2_Media/data/
+					var name = path.basename(cleanFilename, path.extname(cleanFilename));
+					_this.addUnzippedFolderToAssets(localPath, name, filelist);
 				}
-			});
-		}
-	});
+			} else {
+				// try to process all the files with exiftool
+				exiftool.file(localPath, function(err2, data) {
+					if (err2) {
+						sageutils.log("Loader", "internal error", err2);
+					} else {
+						assets.addFile(data.SourceFile, data, function() {
+							// get a valid URL for it
+							var aUrl = assets.getURL(data.SourceFile);
+							// calculate a complete URL with hostname
+							var external_url = url.resolve(_this.hostOrigin, aUrl);
+							// and load the application
+							_this.loadApplication({
+								location: "file", path: localPath, url: aUrl, external_url: external_url,
+								type: mime_type, name: cleanFilename, compressed: false}, function(appInstance, handle) {
+								callback(appInstance, handle);
+							});
+						});
+						assets.saveAssets();
+					}
+				});
+			}
+		});
+	}.bind(this);
+
+	if (mime_type === "application/zip") {
+		var unzipper = new Unzip(file.path);
+		unzipper.on('list', function (files) {
+			var instructionsFile = files.find(x => x === "instructions.json");
+			if (instructionsFile !== undefined && instructionsFile !== null) {
+				processUploadedFile(dir);
+			} else {
+				processUploadedFile("data", files);
+			}
+		});
+		unzipper.list();
+	} else {
+		processUploadedFile(dir);
+	}
 };
 
 AppLoader.prototype.loadApplication = function(appData, callback) {
 	var app;
 	if (appData.location === "file") {
-		app = registry.getDefaultAppFromMime(appData.type);
+		app = registry.getDefaultAppFromMime(appData.type, true);
 		if (app === "image_viewer") {
 			this.loadImageFromFile(appData.path, appData.type, appData.url, appData.external_url, appData.name,
 				function(appInstance) {
@@ -1169,7 +1238,7 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 				});
 		}
 	} else if (appData.location === "url") {
-		app = registry.getDefaultAppFromMime(appData.type);
+		app = registry.getDefaultAppFromMime(appData.type, true);
 
 		if (app === "image_viewer") {
 			this.loadImageFromURL(appData.url, appData.type, appData.name, appData.strictSSL, function(appInstance) {

@@ -48,6 +48,7 @@ var interactor;
 function FileManager(wsio, mydiv, uniqueID) {
 	this.allFiles = {};
 	this.allTable = null;
+	this.allFileAssociations = {};
 	this.tree = null;
 	this.main = null;
 	this.uniqueID = uniqueID;
@@ -1129,11 +1130,89 @@ function FileManager(wsio, mydiv, uniqueID) {
 
 	this.tree.closeAll();
 	this.tree.open("treeroot");
+	webix.ui({
+		view: "window",
+		id: "open_with_window",
+		head: "Choose Application..",
+		modal: true,
+		position: "center",
+		body: {
+			view: "form",
+			width: 400,
+			borderless: false,
+			elements: [
+				{
+					name: "appList",
+					view: "datatable",
+					id: "open_with_menu",
+					header: false,
+					scroll: 'y',
+					autoheight: true,
+					select: "row",
+					columns: [
+						{id: "title", sort: "string", fillspace: true}
+					],
+					data: [
+					]
+				}, {
+					margin: 5,
+					cols: [
+						{ view: "button", id: "setDefaultButton",
+							value: "Set as default and Open", type: "form", click: function() {
+								var context = ctx_menu.getContext();
+								var id = context.obj.getItem(context.id).id;
+								var openWithMenu = $$('open_with_menu');
+								var rowId = openWithMenu.getSelectedId() || openWithMenu.getFirstId();
+								var value = openWithMenu.getItem(rowId).title;
+								var appList = _this.allFileAssociations[id];
+								var app = appList.find(x => x.label === value).app;
+								wsio.emit('loadFileFromServer', {
+									application: app,
+									filename: id,
+									user: _this.uniqueID,
+									position: undefined,
+									setDefault: true
+								});
+								this.getTopParentView().hide();
+							}
+						}
+					]
+				}, {
+					margin: 5,
+					cols: [
+						{view: "button", value: "Cancel", click: function() {
+							this.getTopParentView().hide();
+						}},
+						{view: "button", value: "Open", type: "form", click: function() {
+							var context = ctx_menu.getContext();
+							var id = context.obj.getItem(context.id).id;
+							var openWithMenu = $$('open_with_menu');
+							var rowId = openWithMenu.getSelectedId() || openWithMenu.getFirstId();
+							var value = openWithMenu.getItem(rowId).title;
+							var appList = _this.allFileAssociations[id];
+							var app = appList.find(x => x.label === value).app;
+							wsio.emit('loadFileFromServer', {
+								application: app,
+								filename: id,
+								user: _this.uniqueID,
+								position: undefined,
+								setDefault: false
+							});
+							this.getTopParentView().hide();
+						}}
+					]
+				}
+			],
+			elementsConfig: {
+				labelPosition: "top"
+			}
+		}
+	});
 
 	var ctx_menu = webix.ui({
 		view: "contextmenu",
 		id: "cmenu",
-		data: ["Open", "Copy URL", "Open in Tab", "Download", { $template: "Separator" }, "Delete"],
+		data: ["Open", "Open with ...", "Copy URL", "Open in Tab", "Download", { $template: "Separator" }, "Delete"],
 		on: {
 			onMenuItemClick: function(id) {
 				var i;
@@ -1168,6 +1247,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 						_this.openItem(tid);
 					});
 
+				} else if (id === "Open with ...") {
+					_this.openItemWith(list.getItem(listId).id);
 				} else if (id === "Delete") {
 					var tbd = [];
 					var textTbd = "<ol style=\"list-style-position: inside;padding:10px;text-align:left;\">";
@@ -1223,6 +1304,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		// Reset
 		$$('cmenu').enableItem('Copy URL');
 		$$('cmenu').enableItem('Open in Tab');
+		$$('cmenu').enableItem('Open with ...');
 		$$('cmenu').enableItem('Download');
 		$$('cmenu').enableItem('Delete');
 		// Select
@@ -1457,6 +1539,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	this.openItem = function(tid, position) {
 		var appType = this.getApplicationFromId(tid);
 		// Opening an app
+		console.log(appType);
 		if (appType === "application/custom") {
 			wsio.emit('loadApplication', {
 				application: tid,
@@ -1486,7 +1569,40 @@ function FileManager(wsio, mydiv, uniqueID) {
 			});
 		}
 	};
+	this.openItemWith = function(tid) {
+		//_this.allFileAssociations[tid]
+		var filename = this.allFiles[tid].exif.FileName;
+		var setDefaultButton = $$('setDefaultButton');
+		if (_this.allFileAssociations[tid].length > 0) {
+			var openWithWindow = $$('open_with_window');
+			var openWithMenu = $$('open_with_menu');
+			openWithMenu.clearAll();
+			_this.allFileAssociations[tid].forEach(assoc => {
+				openWithMenu.data.add({
+					title: assoc.label
+				});
+			});
+			if (_this.allFileAssociations[tid].length === 1) {
+				setDefaultButton.disable();
+			} else {
+				setDefaultButton.enable();
+			}
+			//openWithWindow.head = "Choose app for " + filename;
+			openWithMenu.select(openWithMenu.getFirstId(), false);
+			openWithWindow.show();
 
+		} else {
+			var message = "No application available to open " + filename + ".";
+			webix.alert({
+				type: "alert-warning",
+				title: "SAGE2™",
+				width: "420px",
+				margin: 10,
+				ok: "OK",
+				text: message
+			});
+		}
+	};
 	this.getApplicationFromId = function(id) {
 		// default answer
 		var response = "application/custom";
@@ -1859,6 +1975,13 @@ function FileManager(wsio, mydiv, uniqueID) {
 			updateSearch(treeSelection.id);
 		}
 
+	};
+
+	this.updateAppAssociations = function(data) {
+		console.log(data);
+		if (data.overwrite === true) {
+			this.allFileAssociations = data.allFileAssociations;
+		}
 	};
 
 	function sortByDate1(a, b) {
