@@ -6,7 +6,7 @@ RUN     apt-get update && apt-get install -y \
 		curl \
 		bzip2
 RUN     add-apt-repository -y ppa:jonathonf/ffmpeg-3
-RUN     curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN     curl -sL https://deb.nodesource.com/setup_9.x | bash -
 RUN     apt-get update && apt-get install -y \
 		ffmpeg \
 		ghostscript \

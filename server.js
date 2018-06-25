@@ -121,7 +121,6 @@ var sharedApps         = {};
 var users              = null;
 var appLoader          = null;
 var mediaBlockSize     = 512;
-var pressingCTRL       = true;
 
 var fileBufferManager;
 var startTime;
@@ -156,6 +155,7 @@ program = commander
 	.option('-s, --session [name]',       'Load a session file (last session if omitted)')
 	.option('-t, --track-users [file]',   'enable user interaction tracking (specified file indicates users to track)')
 	.option('-p, --password <password>',  'Sets the password to connect to SAGE2 session')
+	.option('--no-monitoring',			  'Disables performance monitoring')
 	.parse(process.argv);
 
 // Logging or not
@@ -296,13 +296,16 @@ function initializeSage2Server() {
 	performanceManager = new PerformanceManager();
 	performanceManager.initializeConfiguration(config);
 	performanceManager.wrapDataTransferFunctions(WebsocketIO);
+	if (program.monitoring === false) {
+		performanceManager.setSamplingInterval('never');
+	}
 	imageMagick = gm.subClass(imageMagickOptions);
 	assets.initializeConfiguration(config);
 	assets.setupBinaries(imageMagickOptions, ffmpegOptions);
 
 	// Set default host origin for this server
 	if (config.rproxy_port === undefined) {
-		hostOrigin = "http://" + config.host + (config.port === 80 ? "" : ":" + config.port) + "/";
+		hostOrigin = "https://" + config.host + (config.secure_port === 443 ? "" : ":" + config.secure_port) + "/";
 	}
 
 	// Initialize sage2 item lists
@@ -2214,7 +2217,7 @@ function wsReceivedMediaBlockStreamFrame(wsio, data) {
 
 // Print message from remote applications
 function wsPrintDebugInfo(wsio, data) {
-	sageutils.log("Client", "Node " + data.node + " [" + data.app + "] " + data.message);
+	sageutils.log("Client", "client #" + data.node + " [" + data.app + "]", data.message);
 }
 
 function wsRequestVideoFrame(wsio, data) {
@@ -2803,7 +2806,7 @@ function saveSession(filename) {
 
 		var iconImageData = "";
 		try {
-			iconImageData = new Buffer(fs.readFileSync(iconPath)).toString('base64');
+			iconImageData = Buffer.from(fs.readFileSync(iconPath)).toString('base64');
 		} catch (error) {
 			// error reading/converting icon image
 		}
@@ -2879,11 +2882,15 @@ function createAppFromDescription(app, callback) {
 		appInstance.previous_width  = app.previous_width;
 		appInstance.previous_height = app.previous_height;
 		appInstance.maximized       = app.maximized;
+		appInstance.icon            = app.icon;
 		sageutils.mergeObjects(app.data, appInstance.data, ['doc_url', 'video_url', 'video_type', 'audio_url', 'audio_type']);
 
 		callback(appInstance, videohandle);
 	};
 
+	// Use sage2URL if it is available
+	app.url = app.sage2URL || app.url;
+	// Decode URL
 	var appURL = url.parse(app.url);
 
 	if (appURL.hostname === config.host) {
@@ -3912,13 +3919,13 @@ function wsCommand(wsio, data) {
 
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
-
+	let position = data.position || [0, 0];
 	wsLoadApplication(wsio, {
 		application: "/uploads/apps/Webview",
 		user: wsio.id,
 		// pass the url in the data object
 		data: data,
-		position: [0, 0]
+		position: position
 	});
 
 	// Check if the web-browser is connected
@@ -5381,6 +5388,9 @@ function uploadForm(req, res) {
 	// Limits the amount of memory all fields together (except files) can allocate in bytes.
 	//    set to 4MB.
 	form.maxFieldsSize = 4 * 1024 * 1024;
+	// Increase file limit to match client limit in SAGE2_interaction.js
+	// Default is 2MB https://github.com/felixge/node-formidable/commit/39f27f29b2824c21d0d9b8e85bcbb5fc0081beaf
+	form.maxFileSize = 1024 * 1024 * 1024;
 	form.type          = 'multipart';
 	form.multiples     = true;
 
@@ -5824,6 +5834,7 @@ function processInputCommand(line) {
 			sageutils.log('Console', 'update\t\trun a git update');
 			sageutils.log('Console', 'performance\tshow performance information');
 			sageutils.log('Console', 'perfsampling\tset performance metric sampling rate');
+			sageutils.log('Console', 'saveperfdata\tsave performance data to file');
 			sageutils.log('Console', 'hardware\tget an summary of the hardware running the server');
 			sageutils.log('Console', 'update\t\trun a git update');
 			sageutils.log('Console', 'version\tprint SAGE2 version');
@@ -6003,7 +6014,7 @@ function processInputCommand(line) {
 			if (command.length > 1) {
 				performanceManager.setSamplingInterval(command[1]);
 			} else {
-				sageutils.log("Command", "should be: perfsampling [slow|normal|often]");
+				sageutils.log("Command", "should be: perfsampling [slow|normal|often|never]");
 			}
 			break;
 		case 'performance':
@@ -6011,6 +6022,9 @@ function processInputCommand(line) {
 			break;
 		case 'hardware':
 			performanceManager.printServerHardware();
+			break;
+		case 'saveperfdata':
+			performanceManager.toggleDataSaveToFile();
 			break;
 		case 'exit':
 		case 'quit':
@@ -7147,17 +7161,6 @@ function pointerMove(uniqueID, pointerX, pointerY, data) {
 			uniqueID, pointerX, pointerY, 10, 10);
 	}
 
-	// Trick: press CTRL key while moving switches interaction mode
-	if (sagePointers[uniqueID] && remoteInteraction[uniqueID].CTRL && pressingCTRL) {
-		remoteInteraction[uniqueID].toggleModes();
-		broadcast('changeSagePointerMode', {id: sagePointers[uniqueID].id, mode: remoteInteraction[uniqueID].interactionMode});
-		pressingCTRL = false;
-	} else if (sagePointers[uniqueID] && !remoteInteraction[uniqueID].CTRL && !pressingCTRL) {
-		remoteInteraction[uniqueID].toggleModes();
-		broadcast('changeSagePointerMode', {id: sagePointers[uniqueID].id, mode: remoteInteraction[uniqueID].interactionMode});
-		pressingCTRL = true;
-	}
-
 	sagePointers[uniqueID].updatePointerPosition(data, config.totalWidth, config.totalHeight);
 	pointerX = sagePointers[uniqueID].left;
 	pointerY = sagePointers[uniqueID].top;
@@ -8241,8 +8244,23 @@ function shareApplicationWithRemoteSite(uniqueID, app, remote) {
 	}
 	SAGE2Items.applications.editButtonVisibilityOnItem(app.application.id, "syncButton", true);
 
-	remote.wsio.emit('addNewSharedElementFromRemoteServer',
-		{application: app.application, id: sharedId, remoteAppId: app.application.id});
+	var sharedElement = {
+		application: app.application,
+		id: sharedId,
+		remoteAppId: app.application.id
+	};
+
+	if ((app.application.foregroundItems !== null && app.application.foregroundItems !== undefined) ||
+			(app.application.backgroundItem !== null && app.application.backgroundItem !== undefined)) {
+		//Removing the cyclic references before sending app info to remote site
+		var appCopy = Object.assign({}, app.application);
+		appCopy.backgroundItem = null;
+		appCopy.foregroundItems = null;
+		sharedElement.application = appCopy;
+	}
+
+	remote.wsio.emit('addNewSharedElementFromRemoteServer', sharedElement);
+
 	broadcast('setAppSharingFlag', {id: app.application.id, sharing: true});
 
 	var eLogData = {
@@ -9270,7 +9288,7 @@ function deleteApplication(appId, portalId, wsio) {
 		performanceManager.removeDataReceiver(appId);
 	}
 
-	var stickingItems = stickyAppHandler.getFirstLevelStickingItems(app);
+	var stickingItems = stickyAppHandler.getFirstLevelStickingItemIDs(app);
 	stickyAppHandler.removeElement(app);
 
 	SAGE2Items.applications.removeItem(appId);
@@ -9287,7 +9305,7 @@ function deleteApplication(appId, portalId, wsio) {
 	if (stickingItems.length > 0) {
 		for (var s in stickingItems) {
 			// When background gets deleted, sticking items stop sticking
-			toggleStickyPin(stickingItems[s].id);
+			handleStickyItem(stickingItems[s].id);
 		}
 	} else {
 		// Refresh the pins on all the unpinned apps
@@ -10898,9 +10916,10 @@ function appFileSaveRequest(wsio, data) {
 				fileObject[0] = {
 					name: filename,
 					type: data.filePath.ext,
-					path: fullpath};
-				// Add the file to the asset library and open it
-				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", true);
+					path: fullpath
+				};
+				// Add the file to the asset library and not open it (false)
+				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", false);
 			}
 		} catch (err) {
 			sageutils.log('File', "error while saving to", fullpath + ":" + err);
