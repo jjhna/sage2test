@@ -348,46 +348,67 @@ SAGE2_speech.openVoiceHelpPage = function() {
  */
 SAGE2_speech.initMouseholdToStart = function() {
 	// On mouse down, if over canvas, set a timeout to check for listening
-	document.addEventListener("mousedown", function(e) {
-		if (!SAGE2_speech.isEnabled) {
-			// If speech recognition was disabled by user, don't
-			return;
-		}
-		// Reset the move
-		SAGE2_speech.mousePosition.dx = 0;
-		SAGE2_speech.mousePosition.dy = 0;
-		SAGE2_speech.mouseHoldTimeoutId = null;
-		// Only activate if over the sage2UICanvas
-		if (event.target.id === "sage2UICanvas"
-			|| document.getElementById("sage2pointerDialog").style.display === "block") {
-			SAGE2_speech.mouseHoldStartPos.x = e.clientX;
-			SAGE2_speech.mouseHoldStartPos.y = e.clientY;
-			// Clear out existing timeouts if they exist.
-			if (SAGE2_speech.mouseHoldTimeoutId) {
-				window.clearTimeout(SAGE2_speech.mouseHoldTimeoutId);
-				SAGE2_speech.mouseHoldTimeoutId = null;
-			}
-			SAGE2_speech.mouseIsDown = true;
-			// After timeout attempt speech recognition if valid
-			SAGE2_speech.mouseHoldTimeoutId = setTimeout(function() {
-				// Mouseup will set SAGE2_speech.mouseIsDown to false
-				if (SAGE2_speech.mouseIsDown) {
-					SAGE2_speech.mouseHoldTimeoutId = null;
-					SAGE2_speech.enableMouseholdToStart(e);
-				}
-			}, SAGE2_speech.mouseHoldTimeNeeded);
-		}
+	document.addEventListener("mousedown", SAGE2_speech.handlePossibleVoiceListeningStart);
+	// Add touch events for mobile
+	document.addEventListener("touchstart", function(e) {
+		e = e.changedTouches[0];
+		SAGE2_speech.handlePossibleVoiceListeningStart(e);
 	});
 	// On mouse up, if there is a timer waiting for speech recognition remove it
-	document.addEventListener("mouseup", function() {
-		SAGE2_speech.mouseIsDown = false;
+	document.addEventListener("mouseup", SAGE2_speech.handlePossibleVoiceListeningEnd);
+	// Or touch end
+	document.addEventListener("touchend", SAGE2_speech.handlePossibleVoiceListeningEnd);
+};
+
+/**
+ * Handler for beginning of a mouse or touch down. Starts a counter for activating voice.
+ *
+ * @method handlePossibleVoiceListeningStart
+ */
+SAGE2_speech.handlePossibleVoiceListeningStart = function(e) {
+	if (!SAGE2_speech.isEnabled) {
+		// If speech recognition was disabled by user, don't
+		return;
+	}
+	// Reset the move
+	SAGE2_speech.mousePosition.dx = 0;
+	SAGE2_speech.mousePosition.dy = 0;
+	SAGE2_speech.mouseHoldTimeoutId = null;
+	// Only activate if over the sage2UICanvas
+	if (event.target.id === "sage2UICanvas"
+		|| document.getElementById("sage2pointerDialog").style.display === "block") {
+		SAGE2_speech.mouseHoldStartPos.x = e.clientX;
+		SAGE2_speech.mouseHoldStartPos.y = e.clientY;
+		// Clear out existing timeouts if they exist.
 		if (SAGE2_speech.mouseHoldTimeoutId) {
 			window.clearTimeout(SAGE2_speech.mouseHoldTimeoutId);
 			SAGE2_speech.mouseHoldTimeoutId = null;
 		}
-		SAGE2_speech.mouseUpCancel = true;
-		SAGE2_speech.webkitSR.stop();
-	});
+		SAGE2_speech.mouseIsDown = true;
+		// After timeout attempt speech recognition if valid
+		SAGE2_speech.mouseHoldTimeoutId = setTimeout(function() {
+			// Mouseup will set SAGE2_speech.mouseIsDown to false
+			if (SAGE2_speech.mouseIsDown) {
+				SAGE2_speech.mouseHoldTimeoutId = null;
+				SAGE2_speech.enableMouseholdToStart(e);
+			}
+		}, SAGE2_speech.mouseHoldTimeNeeded);
+	}
+};
+
+/**
+ * Handler for beginning of a mouse or touch down. Starts a counter for activating voice.
+ *
+ * @method handlePossibleVoiceListeningEnd
+ */
+SAGE2_speech.handlePossibleVoiceListeningEnd = function(e) {
+	SAGE2_speech.mouseIsDown = false;
+	if (SAGE2_speech.mouseHoldTimeoutId) {
+		window.clearTimeout(SAGE2_speech.mouseHoldTimeoutId);
+		SAGE2_speech.mouseHoldTimeoutId = null;
+	}
+	SAGE2_speech.mouseUpCancel = true;
+	SAGE2_speech.webkitSR.stop();
 };
 
 /**
