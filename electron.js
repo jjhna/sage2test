@@ -96,6 +96,8 @@ var commander = require('commander');
 var si = require('systeminformation');
 // Get the version from the package file
 var version = require('./package.json').version;
+// Get platform and hostname
+var os = require('os');
 
 /**
  * Setup the command line argument parsing (commander module)
@@ -146,10 +148,9 @@ if (commander.plugins) {
 }
 
 // Reset the desktop scaling
-const os = require('os');
-if (os.platform() === "win32") {
-	app.commandLine.appendSwitch("force-device-scale-factor", "1");
-}
+//if (os.platform() === "win32") {
+app.commandLine.appendSwitch("force-device-scale-factor", "1");
+//}
 
 // Remove the limit on the number of connections per domain
 //  the usual value is around 6
