@@ -639,6 +639,10 @@ function SAGE2_interaction(wsio) {
 		// mediaVideo.src = window.URL.createObjectURL(this.mediaStream);
 		mediaVideo.srcObject = this.mediaStream;
 		mediaVideo.play();
+
+		if (SAGE2_webrtc_ui_tracker.enabled) {
+			SAGE2_webrtc_ui_tracker.streamSuccess(stream);
+		}
 	};
 
 	/**
