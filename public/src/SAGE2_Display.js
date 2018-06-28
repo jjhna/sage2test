@@ -308,6 +308,7 @@ function SAGE2_init() {
 function setupListeners() {
 	wsio.on('initialize', function(data) {
 		var startTime  = new Date(data.start);
+		wsio.UID = data.UID;
 
 		// Global initialization
 		SAGE2_initialize(startTime);
