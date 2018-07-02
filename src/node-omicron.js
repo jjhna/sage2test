@@ -256,6 +256,20 @@ function OmicronManager(sysConfig) {
 	// Touch Point/Gesture Tracking
 	this.touchList = new Map(); // All touch points
 	this.touchGroups = new Map(); // Touch groups and their child points
+
+	// Check for stuck touches
+	setInterval(function() {
+		var curTime = Date.now();
+		for (var tp of omicronManager.touchList.keys()) {
+			var data = omicronManager.touchList.get(tp);
+			var dt = curTime - data.timestamp;
+			if (dt > 1000) {
+				omicronManager.hidePointer(tp);
+				sageutils.log('Omicron', 'Removed stuck touch: ' + tp);
+				omicronManager.touchList.delete(tp);
+			}
+		}
+	}, 1500);
 }
 
 OmicronManager.prototype.openWebSocketClient = function(ws, req) {
@@ -950,6 +964,10 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			//+ initX.toFixed(2) + "," + initY.toFixed(2) + ")");
 		}
 
+		omicronManager.touchList.set(address, {
+			pointerX: posX, pointerY: posY, timestamp: omicronManager.curTime, address: address
+		});
+
 		// Update pointer position
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
 
@@ -966,7 +984,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 						sageutils.log('Omicron', "TouchGroup ", sourceID, " has removed touch id ", childID);
 
 						omicronManager.hidePointer(address + "_" + childID);
-						omicronManager.touchList.delete(childID);
+						omicronManager.touchList.delete(address + "_" + childID);
 					}
 				}
 				for (childID of touchGroupChildrenIDs.keys()) {
@@ -974,7 +992,9 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 					var childY = touchGroupChildrenIDs.get(childID).pointerY;
 
 					if (lastTouchGroupPoints.has(childID) === false) {
-						omicronManager.touchList.set(childID, { pointerX: childX, pointerY: childY });
+						omicronManager.touchList.set(address + "_" + childID, {
+							pointerX: childX, pointerY: childY, timestamp: omicronManager.curTime, id: childID, childID: true
+						});
 
 						// Create the pointer
 						omicronManager.createSagePointer(address + "_" + childID);
@@ -994,6 +1014,9 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 						omicronManager.pointerPosition(address + "_" + childID, { pointerX: childX, pointerY: childY });
 					} else {
 						omicronManager.pointerPosition(address + "_" + childID, { pointerX: childX, pointerY: childY });
+						omicronManager.touchList.set(address + "_" + childID, {
+							pointerX: childX, pointerY: childY, timestamp: omicronManager.curTime, id: childID, childID: true
+						});
 					}
 				}
 				omicronManager.touchGroups.set(sourceID, touchGroupChildrenIDs);
@@ -1001,7 +1024,9 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		}
 
 	} else if (e.type === 5) { // EventType: DOWN
-		omicronManager.touchList.set(sourceID, { pointerX: posX, pointerY: posY });
+		omicronManager.touchList.set(address, {
+			pointerX: posX, pointerY: posY, timestamp: omicronManager.curTime, id: sourceID
+		});
 
 		if (omicronManager.gestureDebug) {
 			sageutils.log('Omicron',
@@ -1041,7 +1066,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			omicronManager.touchGroups.set(sourceID, touchGroupChildrenIDs);
 		}
 	} else if (e.type === 6) { // EventType: UP
-		omicronManager.touchList.delete(sourceID);
+		omicronManager.touchList.delete(address);
 
 		if (omicronManager.gestureDebug) {
 			sageutils.log('Omicron', "Touch up at - (" + posX.toFixed(2) + "," + posY.toFixed(2) + ") initPos: ("
@@ -1061,7 +1086,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			if (lastTouchGroupPoints !== undefined) {
 				for (childID of lastTouchGroupPoints.keys()) {
 					omicronManager.hidePointer(address + "_" + childID);
-					omicronManager.touchList.delete(childID);
+					omicronManager.touchList.delete(address + "_" + childID);
 				}
 			}
 			omicronManager.touchGroups.delete(sourceID);
@@ -1138,13 +1163,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	} else {
 		console.log("\t UNKNOWN event type ", e.type, typeStrings[e.type]);
 	}
-
-	/*
-	console.log("TouchList:");
-	for (var tp of omicronManager.touchList.keys()) {
-		var data = omicronManager.touchList.get(tp);
-		console.log("[" + tp + "] (" + data.pointerX + ", " + data.pointerY + ")");
-	}*/
 };
 
 module.exports = OmicronManager;
