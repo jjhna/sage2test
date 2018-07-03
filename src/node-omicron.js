@@ -66,7 +66,8 @@ function OmicronManager(sysConfig) {
 	this.acceleratedDragScale = 0;
 
 	this.touchZoomScale = 520;
-
+	this.moveEventCounter = 0;
+	
 	// Mocap
 	this.enableMocap = false;
 
@@ -972,7 +973,13 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			posX = posX + distance * Math.cos(angle);
 			posY = posY + distance * Math.sin(angle);
 
-			omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
+			omicronManager.moveEventCounter++;
+
+			if (omicronManager.moveEventCounter > 100)
+			{
+				omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
+				omicronManager.moveEventCounter = 0;
+			}
 		}
 
 		omicronManager.touchList.set(address, {
