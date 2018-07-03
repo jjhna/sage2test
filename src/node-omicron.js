@@ -126,7 +126,7 @@ function OmicronManager(sysConfig) {
 		this.config.eventDebug = false;
 
 		this.config.zoomGestureScale = 2000;
-		this.config.acceleratedDragScale = 3;
+		this.config.acceleratedDragScale = 0;
 		this.config.gestureDebug = false;
 
 		this.config.msgPort = 28000;
@@ -914,14 +914,15 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		omicronManager.pointerState[sourceID] = {gesture: "", mode: mode};
 	}
 
-	// As of 2015/11/13 all touch gesture events touch have an init value
+	// As of 2018/7/3 all touch gesture events touch have an init value
 	// (zoomDelta moved to extraData index 4 instead of 2)
 	// ExtraDataFloats
 	// [0] width
 	// [1] height
 	// [2] initX
 	// [3] initY
-	// [4] touch count in group
+	// [4] Secondary event flag (or zoomDelta)
+	// [5] touch count in group
 	// [c] id of touch n
 	// [c+1] xPos of touch n
 	// [c+2] yPos of touch n
@@ -964,16 +965,22 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			//+ initX.toFixed(2) + "," + initY.toFixed(2) + ")");
 		}
 
+		if (omicronManager.pointerState[sourceID].gesture == "move" || mode == "Window") {
+			var angle = Math.atan2(posY - initY, posX - initX);
+			distance = Math.sqrt(Math.pow(Math.abs(posX - initX), 2) + Math.pow(Math.abs(posY - initY), 2));
+			distance *= omicronManager.acceleratedDragScale;
+			posX = posX + distance * Math.cos(angle);
+			posY = posY + distance * Math.sin(angle);
+
+			omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
+		}
+
 		omicronManager.touchList.set(address, {
 			pointerX: posX, pointerY: posY, timestamp: omicronManager.curTime, address: address
 		});
 
 		// Update pointer position
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
-
-		if (omicronManager.pointerState[sourceID].gesture == "move") {
-			omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
-		}
 
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
 			// Get previous touchgroup list
@@ -1025,7 +1032,8 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 	} else if (e.type === 5) { // EventType: DOWN
 		omicronManager.touchList.set(address, {
-			pointerX: posX, pointerY: posY, timestamp: omicronManager.curTime, id: sourceID
+			pointerX: posX, pointerY: posY, timestamp: omicronManager.curTime, id: sourceID,
+			initX: initX, initY: initY
 		});
 
 		if (omicronManager.gestureDebug) {
@@ -1058,7 +1066,9 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		// Send 'click' event
 		if (e.flags === FLAG_SINGLE_TOUCH) {
 			omicronManager.pointerPress(address, posX, posY, { button: "left" });
-			console.log("Pointer click - ID: " + sourceID);
+			if (omicronManager.gestureDebug) {
+				console.log("Pointer click - ID: " + sourceID);
+			}
 		}
 
 		// Set touchgroup child only if multi/single touch event (not gestures)
