@@ -1060,8 +1060,11 @@ function UIBuilder(json_cfg, clientID) {
 	*/
 	this.hideSagePointer = function(pointer_data) {
 		var pointerElem = document.getElementById(pointer_data.id);
-		pointerElem.style.display = "none";
-		this.pointerItems[pointerElem.id].isShown = false;
+		// making sure the element exists (it seems sometimes it's not)
+		if (pointerElem) {
+			pointerElem.style.display = "none";
+			this.pointerItems[pointerElem.id].isShown = false;
+		}
 	};
 
 	/**

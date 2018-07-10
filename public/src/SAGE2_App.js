@@ -786,7 +786,7 @@ var SAGE2_App = Class.extend({
 			_this.preDraw(date);
 			// measure actual frame rate
 			if (_this.sec >= 1.0) {
-				_this.fps       = this.frame_sec / this.sec;
+				_this.fps       = _this.frame_sec / _this.sec;
 				_this.frame_sec = 0;
 				_this.sec       = 0;
 			}
