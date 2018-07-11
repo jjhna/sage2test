@@ -12,6 +12,7 @@
 
 /* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech */
 /* global removeAllChildren, SAGE2_copyToClipboard, parseBool */
+/* global SAGE2_webrtc_ui_tracker */
 
 /**
  * Web user interface

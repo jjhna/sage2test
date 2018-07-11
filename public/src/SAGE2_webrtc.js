@@ -10,6 +10,8 @@
 
 "use strict";
 
+/* global interactor  */
+
 var SAGE2_webrtc_ui_tracker = {
 	debug: true,
 
@@ -35,14 +37,12 @@ var SAGE2_webrtc_ui_tracker = {
 		);
 	},
 
-
 	debugprint: function(message) {
-		if (SAGE2_webrtc_ui_tracker.debug)
+		if (SAGE2_webrtc_ui_tracker.debug) {
 			console.log("SAGE2_webrtc> DEBUG> " + message);
+		}
 	},
 };
-
-
 
 
 
@@ -66,30 +66,34 @@ class SAGE2WebrtcPeerConnection {
 	}
 
 	debugprint(message) {
-		if (this.debug)
+		if (this.debug) {
 			console.log("SAGE2_webrtc> DEBUG> " + message);
+		}
 	}
 
 	setupProperties(appId, streamerId, displayId) {
 		// For identification of clients
-		this.appId = appId // Actually id of sage2 app
+		this.appId = appId; // Actually id of sage2 app
 		this.streamerId = streamerId; // unique clientId
 		this.displayId = displayId; // unique displayId, identified by offer because SAGE2 doesn't distinguish displays beyond which viewport they access
-	
+
 		// Webrtc
 		this.offerOptions = {
 			offerToReceiveVideo: 1,
 			offerToReceiveAudio: 1
 		};
 		this.configForPeer = {
-			"iceServers": [
+			iceServers: [
 				// These stun servers from simplepeer.js
-				// { "urls": ["stun:stun.l.google.com:19302"] },
-				{urls:"stun:global.stun.twilio.com:3478?transport=udp"},
+				{ urls: "stun:stun.l.google.com:19302" },
+				// {urls:"stun:global.stun.twilio.com:3478?transport=udp"},
 			]
-		}
+		};
 
 		this.peer = new RTCPeerConnection(this.configForPeer); // a webkitRTCPeerConnection
+		this.peer.oniceconnectionstatechange = (e) => {
+			this.debugprint("ics state changed to " + this.peer.iceConnectionState);
+		};
 
 		// Standby data
 		this.iceCandidatesReadyToSend = [];
@@ -102,17 +106,17 @@ class SAGE2WebrtcPeerConnection {
 		this.myId = this.streamerId;
 		// On ice candidates
 		this.peer.onicecandidate = (event) => {
-			if (event.icecandidate) {
+			if (event.candidate) {
 				this.debugprint("Got ice candidate");
 				// Only if completed, then send
 				if (this.completedOfferAnswerResponse) {
-					this.sendMessage(JSON.stringify({ "ice": event.candidate }));
+					this.sendMessage(JSON.stringify({ ice: event.candidate }));
 				} else { // Otherwise store until ready to send
-					this.iceCandidatesReadyToSend.push({ "ice": event.candidate });
+					this.iceCandidatesReadyToSend.push({ ice: event.candidate });
 				}
 			}
 		};
-		
+
 		// Collect stream (screenshare) track and add it to the connection
 		stream.getTracks().forEach((track) => {
 			this.peer.addTrack(track, stream); // Add track from stream
@@ -122,9 +126,9 @@ class SAGE2WebrtcPeerConnection {
 		this.peer.createOffer((offer) => {
 			this.debugprint("Offer created");
 			this.peer.setLocalDescription(offer)
-			.then(() => {
-				this.sendMessage(JSON.stringify({ "sdp": this.peer.localDescription }));
-			})
+				.then(() => {
+					this.sendMessage(JSON.stringify({ sdp: this.peer.localDescription }));
+				});
 		}, (error) => {
 			console.log("SAGE2_webrtc> Error while creating offer");
 		}, this.offerOptions);
@@ -135,41 +139,47 @@ class SAGE2WebrtcPeerConnection {
 		// This is a display
 		this.myId = this.displayId;
 		this.streamElement = streamElement;
-		
+
 		// Handler for ice candidates
 		this.peer.onicecandidate = (event) => {
 			if (event.candidate) {
 				this.debugprint("Got ice candidate");
 				// Only send if completed connection
 				if (this.completedOfferAnswerResponse) {
-					this.sendMessage(JSON.stringify({ "ice": event.candidate }));
+					this.sendMessage(JSON.stringify({ ice: event.candidate }));
 				} else { // Otherwise store until ready to send
-					this.iceCandidatesReadyToSend.push({ "ice": event.candidate });
+					this.iceCandidatesReadyToSend.push({ ice: event.candidate });
 				}
 			}
-		}
+		};
 
 		// Handler for tracks
 		this.peer.ontrack = (event) => {
+			this.debugprint("ontrack event");
 			if (event.streams) {
 				this.debugprint("Got stream");
 				let track = event.streams[0];
-				if (track.active) {
+				if (track.active && !this.streamElement.srcObject) {
 					this.streamElement.srcObject = track;
-					console.log("Track:", track)
 				} else {
-					console.log("SAGE2_webrtc> discarding inactive track received");
+					console.log("SAGE2_webrtc> discarding track received");
 				}
 			}
-
-		}
+		};
+		this.peer.onaddstream = (event) => {
+			this.debugprint("onaddstream");
+			if (event.stream && event.stream.active && !this.streamElement.srcObject) {
+				this.debugprint("using stream from onaddstream");
+				this.streamElement.srcObject = event.stream;
+			}
+		};
 	}
 
 	// Sends to specific display, this.displayId
 	sendMessage(message) {
 		// Can't send without myId
 		if (!this.myId) {
-			this.debugprint(" ERROR sendMessage activated without proper destination the following are myId, streamerId, displayId");
+			this.debugprint("ERROR, sendMessage activated without one of the following: myId, streamerId, displayId");
 			this.debugprint(this.myId);
 			this.debugprint(this.streamerId);
 			this.debugprint(this.displayId);
@@ -203,7 +213,7 @@ class SAGE2WebrtcPeerConnection {
 				message: message,
 			});
 		} else {
-			this.debugprint(" ERROR sendMessage activated without proper destination the following are myId, streamerId, displayId");
+			this.debugprint("ERROR, sendMessage activated without one of the following: myId, streamerId, displayId");
 			this.debugprint(this.myId);
 			this.debugprint(this.streamerId);
 			this.debugprint(this.displayId);
@@ -213,30 +223,36 @@ class SAGE2WebrtcPeerConnection {
 	// This assumes the app properly figures out where it should go
 	readMessage(message) {
 		this.debugprint("Got message " + message);
-		let mConverted = JSON.parse(message);
+		let mConverted = message;
+		if (typeof message !== "object") {
+			mConverted = JSON.parse(message);
+		}
 		// Check if it was an ice message, if it was add it
 		if (mConverted.ice !== undefined) {
 			this.peer.addIceCandidate(mConverted.ice)
-			.catch(() => { console.log("ice candidate error")});
+				.catch(() => { console.log("SAGE2_webrtc> ice candidate error"); });
 		} else if (mConverted.sdp.type === "answer") {
 			// Answers are seen by the UI (streamer)
 			this.peer.setRemoteDescription(new RTCSessionDescription(mConverted.sdp))
-			.then(() => { this.sendStoredIceCandidates(); })
-			.catch(() => { console.log("answer handling error")});
+				.then(() => { this.sendStoredIceCandidates(); })
+				.catch(() => { console.log("SAGE2_webrtc> answer handling error"); });
 		} else if (mConverted.sdp.type === "offer") {
-			this.debugprint("got offer, going to make answer"); 
+			this.debugprint("got offer, going to make answer");
 			// Offers seen by displays
 			this.peer.setRemoteDescription(new RTCSessionDescription(mConverted.sdp))
-			.then(()=> { return this.peer.createAnswer();})
-			.then((answer) => {this.peer.setLocalDescription(answer); this.debugprint("Set local description, btw answer was:"); })
-			.then(() => {
-				this.debugprint("local description:", this.peer.localDescription); 
-				this.sendMessage(JSON.stringify({"sdp": this.peer.localDescription}));
-				this.debugprint("sent answer to UI"); 
-				this.sendStoredIceCandidates();
-				this.debugprint("sent stored ice candidates"); 
-			})
-			.catch(() => { console.log("offer handling error")});
+				.then(()=> { return this.peer.createAnswer(); })
+				.then((answer) => {
+					this.peer.setLocalDescription(answer);
+					this.debugprint("Set local description, btw answer was:");
+				})
+				.then(() => {
+					this.debugprint("local description:", this.peer.localDescription);
+					this.sendMessage(JSON.stringify({sdp: this.peer.localDescription}));
+					this.debugprint("sent answer to UI");
+					this.sendStoredIceCandidates();
+					this.debugprint("sent stored ice candidates");
+				})
+				.catch(() => { console.log("SAGE2_webrtc> offer handling error"); });
 		} else {
 			this.debugprint(" ERROR unknown message (not ice, answer or offer): " + message);
 		}

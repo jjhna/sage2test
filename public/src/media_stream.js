@@ -10,6 +10,8 @@
 
 "use strict";
 
+/* global SAGE2_webrtc_ui_tracker SAGE2WebrtcPeerConnection */
+
 /**
  * @module client
  * @submodule media_stream
@@ -176,7 +178,7 @@ var media_stream = SAGE2_App.extend({
 
 	// Add the visuals to the app, for now it covers the old stuff
 	webrtc_addParts: function() {
-		let vid = document.createElement("video"); 
+		let vid = document.createElement("video");
 		this.webrtcParts.videoElement = vid;
 		vid.style.position = "absolute";
 		vid.style.left = "0px";
@@ -208,7 +210,6 @@ var media_stream = SAGE2_App.extend({
 		if (responseObject.destinationId === wsio.UID) {
 			// Know it is for this display, but what kind of messsage?
 			console.log("webrtc_SignalMessageFromUi got response from UI:", responseObject);
-			let convertedMessage = JSON.parse(responseObject.message);
 
 			// If a peer has not yet been made, make it now
 			if (!this.webrtcParts.s2wpc) {

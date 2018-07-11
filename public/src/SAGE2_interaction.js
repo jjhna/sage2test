@@ -13,6 +13,7 @@
 /* global showSAGE2PointerOverlayNoMouse, hideSAGE2PointerOverlayNoMouse */
 /* global pointerClick, sagePointerDisabled, sagePointerEnabled */
 /* global viewOnlyMode, deleteCookie */
+/* global SAGE2_webrtc_ui_tracker */
 
 "use strict";
 
