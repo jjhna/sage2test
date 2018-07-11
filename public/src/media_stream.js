@@ -184,6 +184,8 @@ var media_stream = SAGE2_App.extend({
 		vid.style.left = "0px";
 		vid.style.top = "0px";
 		vid.autoplay = true;
+		vid.style.width = "100%";
+		vid.style.height = "100%";
 
 		this.element.parentNode.appendChild(vid);
 	},
@@ -191,9 +193,9 @@ var media_stream = SAGE2_App.extend({
 	// Request stream info from UI, give it the UID from wsio to uniquely identify display client
 	// The UID is used incase there are two display clients pointed at the same viewport
 	webrtc_askUIForStreamInfo: function() {
+		// Need to handshake with the source client
 		this.webrtcParts.streamerId = this.id.split("|")[0];
-		console.log("Attempting to send to " + this.webrtcParts.streamerId);
-
+		// Send to client
 		wsio.emit("sendDataToClient", {
 			clientDest: this.webrtcParts.streamerId,
 			func: "webrtc_SignalMessageFromDisplay",
@@ -208,9 +210,6 @@ var media_stream = SAGE2_App.extend({
 
 		// Could have only gotten here by knowing appId, check if for this display
 		if (responseObject.destinationId === wsio.UID) {
-			// Know it is for this display, but what kind of messsage?
-			console.log("webrtc_SignalMessageFromUi got response from UI:", responseObject);
-
 			// If a peer has not yet been made, make it now
 			if (!this.webrtcParts.s2wpc) {
 				this.webrtcParts.s2wpc = new SAGE2WebrtcPeerConnection(
@@ -221,7 +220,6 @@ var media_stream = SAGE2_App.extend({
 					this.webrtcParts.videoElement // Display has desintation video element
 				);
 			}
-
 			// Otherwise, let it get handled
 			this.webrtcParts.s2wpc.readMessage(responseObject.message);
 		}

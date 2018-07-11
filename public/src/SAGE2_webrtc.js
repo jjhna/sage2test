@@ -13,7 +13,7 @@
 /* global interactor  */
 
 var SAGE2_webrtc_ui_tracker = {
-	debug: true,
+	debug: false,
 
 	enabled: true,
 	stream: null,
@@ -52,7 +52,7 @@ var SAGE2_webrtc_ui_tracker = {
 class SAGE2WebrtcPeerConnection {
 	constructor(appId, streamerId, displayId, stream = null, streamElement = null) {
 		// Enable debug printing
-		this.debug = true;
+		this.debug = false;
 
 		// Setup properties of the connection
 		this.setupProperties(appId, streamerId, displayId);
@@ -153,24 +153,34 @@ class SAGE2WebrtcPeerConnection {
 			}
 		};
 
+		/*
+		Below are two handles for ontrack and onaddstream.
+		Both are necessary while clients can be both Chrome and Electron.
+
+		The older handler onaddstream is planned to be phased out. But Electron only handles onaddstream.
+		Their beta (v3) seems to work with onaddstream, but until then, the following two functions are necessary.
+		*/
+
 		// Handler for tracks
 		this.peer.ontrack = (event) => {
 			this.debugprint("ontrack event");
 			if (event.streams) {
-				this.debugprint("Got stream");
 				let track = event.streams[0];
 				if (track.active && !this.streamElement.srcObject) {
+					this.debugprint("using stream from ontrack");
 					this.streamElement.srcObject = track;
 				} else {
-					console.log("SAGE2_webrtc> discarding track received");
+					console.log("SAGE2_webrtc> discarding ontrack stream received");
 				}
 			}
 		};
 		this.peer.onaddstream = (event) => {
-			this.debugprint("onaddstream");
+			this.debugprint("onaddstream event");
 			if (event.stream && event.stream.active && !this.streamElement.srcObject) {
 				this.debugprint("using stream from onaddstream");
 				this.streamElement.srcObject = event.stream;
+			} else {
+				console.log("SAGE2_webrtc> discarding onaddstream stream received");
 			}
 		};
 	}
