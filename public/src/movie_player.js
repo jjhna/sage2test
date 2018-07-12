@@ -111,8 +111,10 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	* @param frameIdx {Number} change the current frame number
 	*/
 	setVideoFrame: function(frameIdx) {
-		this.state.frame = frameIdx;
-		this.SAGE2Sync(false);
+		if (!this.isUsingHtmlPlayer) {
+			this.state.frame = frameIdx;
+			this.SAGE2Sync(false);
+		}
 	},
 
 	/**
@@ -167,20 +169,19 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		var current  = formatHHMMSS(duration);
 
 		// modified to have (frame) [(Sending / Receiving Commands)]
-		if (this.shouldSendCommands) {
+		if (this.isUsingHtmlPlayer) {
+			duration = parseInt(1000 * this.videoElement.currentTime);
+			current = formatHHMMSS(duration);
+			let titleString = this.title + " - " + current + " / " + this.lengthString + " (HTML player mode)";
+			this.updateTitle(titleString);
+		} else if (this.shouldSendCommands) {
 			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")(Sending Commands)");
 		} else if (this.shouldReceiveCommands) {
 			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")(Receiving Commands)");
 		} else {
 			// Default mode: show current time and duration
 			let titleString = this.title + " - " + current + " / " + this.lengthString;
-			// Show that it is using HTML player instead of the standard block streaming
-			// TODO: should server side actions also stop?
-			if (this.isUsingHtmlPlayer) {
-				titleString += " (HTML player mode)";
-			}
 			this.updateTitle(titleString);
-			// var currentFrame = Math.floor(this.state.frame % this.state.framerate) + 1;
 		}
 	},
 
@@ -219,7 +220,20 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.state.paused = false;
 		} else {
 			if (isMaster) {
-				wsio.emit('pauseVideo', {id: this.div.id});
+				if (this.isUsingHtmlPlayer) {
+					// When pausing with the html player, time delay may be caused by lag by server to keep with with frame processing.
+					// Using this to force the server to the current video player time.
+					this.state.frame = parseInt(this.videoElement.currentTime * this.state.framerate);
+					wsio.emit('updateVideoTime', {
+						id: this.div.id,
+						timestamp: this.videoElement.currentTime,
+						play: false
+					});
+					// Ignore the next frame from server
+					this.videoElement.frameUpdateIgnoreCount++;
+				} else {
+					wsio.emit('pauseVideo', {id: this.div.id});
+				}
 
 				// if this is a sender, also send the command to the server holding variable
 				if (this.shouldSendCommands) {
@@ -288,6 +302,8 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	},
 
 	stopVideo: function() {
+		this.state.paused = true;
+		this.state.frame = 0;
 		if (isMaster) {
 			wsio.emit('stopVideo', {id: this.div.id});
 
@@ -305,7 +321,6 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 				});
 			}
 		}
-		this.state.paused = true;
 		// must change play-pause button (should show 'play' icon)
 		this.playPauseBtn.state = 0;
 		this.getFullContextMenuAndUpdate();
@@ -777,8 +792,11 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.canvas.style.height = "1px";
 		// Remove the draw calculations, this prevents some cases of flickering while updating.
 		this.draw = function() {};
+		// Ignore updates from server caused by delay.
+		this.videoElement.frameUpdateIgnoreCount = 0;
 
 		this.isUsingHtmlPlayer = true;
+		this.htmlSetSeekTime();
 	},
 
 	/**
