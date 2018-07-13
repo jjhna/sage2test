@@ -106,6 +106,10 @@ var SAGE2_App = Class.extend({
 		if (type === "div" || type === "webview") {
 			this.element.style.width  = data.width  + "px";
 			this.element.style.height = data.height + "px";
+			if (type === "webview") {
+				// Set a session per webview, so not zoom sharing per origin
+				this.element.partition = this.id;
+			}
 		} else {
 			this.element.width  = data.width;
 			this.element.height = data.height;
