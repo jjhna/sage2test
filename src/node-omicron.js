@@ -67,7 +67,8 @@ function OmicronManager(sysConfig) {
 
 	this.touchZoomScale = 520;
 	this.moveEventCounter = 0;
-	
+	this.moveEventLimit = 100; // if 100, sends 1/100 of move events received
+
 	// Mocap
 	this.enableMocap = false;
 
@@ -160,6 +161,7 @@ function OmicronManager(sysConfig) {
 	this.touchZoomScale =  this.config.zoomGestureScale === undefined ? this.touchZoomScale : this.config.zoomGestureScale;
 	this.acceleratedDragScale =  this.config.acceleratedDragScale === undefined ?
 		this.acceleratedDragScale : this.config.acceleratedDragScale;
+	this.moveEventLimit =  this.config.moveEventLimit === undefined ? this.moveEventLimit : this.config.moveEventLimit;
 
 	this.enableDoubleClickMaximize =  this.config.enableDoubleClickMaximize === undefined ?
 		this.enableDoubleClickMaximize : this.config.enableDoubleClickMaximize;
@@ -975,8 +977,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 			omicronManager.moveEventCounter++;
 
-			if (omicronManager.moveEventCounter > 100)
-			{
+			if (omicronManager.moveEventCounter > omicronManager.moveEventLimit) {
 				omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
 				omicronManager.moveEventCounter = 0;
 			}
@@ -1127,8 +1128,9 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 			// Zoom start/down
 			if (eventType === 1) {
-				console.log("Touch zoom start - ID: " + sourceID);
-
+				if (omicronManager.gestureDebug) {
+					console.log("Touch zoom start - ID: " + sourceID);
+				}
 				// Note: This disables zoom gestures for app interaction
 				// and instead does window zoom
 				if (mode === "App") {
@@ -1152,7 +1154,9 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				// If two-finger move enabled and distance > minDistance, stop zooming and move
 				if (omicronManager.enableTwoFingerWindowDrag && distance > omicronManager.zoomToMoveGestureMinimumDistance) {
 					if (omicronManager.pointerState[sourceID].gesture === "zoom") {
-						console.log("Touch zoom switched to 2-finger move - ID: " + address);
+						if (omicronManager.gestureDebug) {
+							console.log("Touch zoom switched to 2-finger move - ID: " + address);
+						}
 						// End zoom gesture
 						omicronManager.pointerScrollEnd(address, posX, posY);
 						omicronManager.pointerRelease(address, posX, posY, { button: "left" });
@@ -1166,7 +1170,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 					// Zoom gesture
 					var wheelDelta = -zoomDelta * omicronManager.touchZoomScale;
 					omicronManager.pointerScroll(address, { wheelDelta: wheelDelta });
-					console.log("Touch zoom - ID: " + sourceID);
+					// console.log("Touch zoom - ID: " + sourceID);
 				}
 
 				if (omicronManager.gestureDebug) {
