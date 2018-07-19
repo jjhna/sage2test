@@ -10340,6 +10340,8 @@ function wsStartWallScreenshot(wsio, data) {
 					clients[i].capableOfScreenshot = true;
 				}
 				clients[i].emit("sendServerWallScreenshot");
+			} else if (clients[i].clientType === "sageUI") {
+				clients[i].emit("warningMessage", "Taking a screenshot");
 			}
 		}
 	}
