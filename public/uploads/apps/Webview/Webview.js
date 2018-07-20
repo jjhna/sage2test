@@ -208,13 +208,20 @@ var Webview = SAGE2_App.extend({
 		// Capturing right-click context menu inside webview
 		this.element.addEventListener("context-menu", function(evt) {
 			let params = evt.params;
+			// calculate a position right next to the parent view
+			let pos = [_this.sage2_x + _this.sage2_width + 5, _this.sage2_y];
 			// if it's an image, open the link in a new webview
 			if (params.mediaType === "image" && params.hasImageContents) {
-				// calculate a position right next to the parent view
-				let pos = [_this.sage2_x + _this.sage2_width + 5, _this.sage2_y];
 				wsio.emit('openNewWebpage', {
 					id: _this.id,
 					url: params.srcURL,
+					position: pos
+				});
+			} else if (params.mediaType === "none" && params.linkURL) {
+				// It's a link with a URL
+				wsio.emit('openNewWebpage', {
+					id: _this.id,
+					url: params.linkURL,
 					position: pos
 				});
 			}
