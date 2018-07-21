@@ -53,7 +53,7 @@ function CoordinateCalculator() {
 /**
  * Calculate wand to screen intersection
  *
- * @method wandToScreenCoordinates
+ * @method wandToCAVE2ScreenCoordinates
  * @param x {Number} wand x
  * @param y {Number} wand x
  * @param z {Number} wand x
@@ -63,7 +63,7 @@ function CoordinateCalculator() {
  * @param rw {Number} ray w
  * @return {Object} screen coordinates .x and .y
  */
-CoordinateCalculator.prototype.wandToScreenCoordinates = function(x, y, z, rx, ry, rz, rw) {
+CoordinateCalculator.prototype.wandToCAVE2ScreenCoordinates = function(x, y, z, rx, ry, rz, rw) {
 	// Quaternion to Euler ////////////////////////
 	// Rotation matrix Q multiplied by reference vector (0,0,-1)
 	// 		| 1 - 2y^2 - 2z^2 , 2xy - 2zw, 2xz + 2yw	|		|0	|
@@ -116,7 +116,7 @@ CoordinateCalculator.prototype.wandToScreenCoordinates = function(x, y, z, rx, r
 			var x_pos = ox * t + x;
 			var y_pos = oy * t + y;
 			var z_pos = oz * t + z;
-			this.calculateScreenPos(x_pos, y_pos, z_pos);
+			this.calculateCAVE2ScreenPos(x_pos, y_pos, z_pos);
 		} else {
 			screenPos.x = -1;
 			screenPos.y = -1;
@@ -128,12 +128,12 @@ CoordinateCalculator.prototype.wandToScreenCoordinates = function(x, y, z, rx, r
 /**
  * Calculate screen coordinates
  *
- * @method calculateScreenPos
+ * @method calculateCAVE2ScreenPos
  * @param x {Number} wand x
  * @param y {Number} wand x
  * @param z {Number} wand x
  */
-CoordinateCalculator.prototype.calculateScreenPos = function(x, y, z) {
+CoordinateCalculator.prototype.calculateCAVE2ScreenPos = function(x, y, z) {
 	if (y > maxY) {
 		if (y < maxY + max_y_error) {
 			y = maxY;
