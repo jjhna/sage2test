@@ -674,10 +674,10 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 
 		// console.log("Wand " + sourceID + " Position: ("+e.posx+", "+e.posy+","+e.posz+")" );
 		// console.log("Wand Rotation: ("+e.orx+", "+e.ory+","+e.orz+","+e.orw+")" );
-		var screenPos = omicronManager.coordCalculator.wandToCAVE2ScreenCoordinates(
+		var screenPos = omicronManager.coordCalculator.wandToWallScreenCoordinates(
 			e.posx, e.posy, e.posz, e.orx, e.ory, e.orz, e.orw
 		);
-		// console.log("Screen pos: ("+screenPos.x+", "+screenPos.y+")" );
+		// console.log("Screen pos: (" + screenPos.x + ", " + screenPos.y+")" );
 
 		address = omicronManager.config.inputServerIP;
 
