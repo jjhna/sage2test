@@ -13,26 +13,32 @@
 			color: "rgba(255, 255, 255, 0.5)"
 		}
 	},
-    security: {
-        // Use SSL method TLS_1.2
-        secureProtocol: "TLSv1_2_method",
-        // Enable HPKP: HTTP Public Key Pinning Extension (needs pin1.sha256 and pin2.sha256 files)
-        enableHPKP: true,
-        // Enable CSP: Content-Security-Policy
-        enableCSP: true,
-        // Enable HSTS: HTTP Strict Transport Security - once HTTPS, always HTTPS
-        enableHSTS: true
-    },
+	security: {
+		// Use SSL method TLS_1.2
+		secureProtocol: "TLSv1_2_method",
+		// Enable CSP: Content-Security-Policy
+		enableCSP: true,
+		// Enable HSTS: HTTP Strict Transport Security - once HTTPS, always HTTPS
+		enableHSTS: true,
+		// Expect-CT allows a site to determine if they enforce their Certificate Transparency policy
+		enableExpectCertificateTransparency: true,
+		// Referrer Policy allows a site to control how much information the browser includes
+		//   with navigations away from a document
+		enableReferrerPolicy: true,
+		// Feature Policy allows to enable and disable certain web platform features
+		//  in local pages and those they embed
+		enableFeaturePolicy: true
+	},
 	audio: {
-        initialVolume: 8,
+		initialVolume: 8,
 	},
 	ui: {
 		clock: 12,
 		show_version: false,
 		show_url: true,
-        maxWindowWidth: 8192,
-        maxWindowHeight: 8192,
-        noDropShadow: true
+		maxWindowWidth: 8192,
+		maxWindowHeight: 8192,
+		noDropShadow: true
 	},
 	resolution: {
 		width: 1920,

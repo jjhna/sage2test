@@ -66,10 +66,6 @@ var Webview = SAGE2_App.extend({
 		// security or not: this seems to be an issue often on Windows
 		this.element.disablewebsecurity = false;
 
-		// Set a session per webview, so not zoom sharing per origin
-		// commented out: API seems to have changed, done to late here
-		// this.element.partition = data.id;
-
 		// initial size
 		this.element.minwidth  = data.width;
 		this.element.minheight = data.height;
@@ -212,13 +208,21 @@ var Webview = SAGE2_App.extend({
 		// Capturing right-click context menu inside webview
 		this.element.addEventListener("context-menu", function(evt) {
 			let params = evt.params;
+			// calculate a position right next to the parent view
+			let pos = [_this.sage2_x + _this.sage2_width + 5,
+				_this.sage2_y - _this.config.ui.titleBarHeight];
 			// if it's an image, open the link in a new webview
 			if (params.mediaType === "image" && params.hasImageContents) {
-				// calculate a position right next to the parent view
-				let pos = [_this.sage2_x + _this.sage2_width + 5, _this.sage2_y];
 				wsio.emit('openNewWebpage', {
 					id: _this.id,
 					url: params.srcURL,
+					position: pos
+				});
+			} else if (params.mediaType === "none" && params.linkURL) {
+				// It's a link with a URL
+				wsio.emit('openNewWebpage', {
+					id: _this.id,
+					url: params.linkURL,
 					position: pos
 				});
 			}
@@ -297,17 +301,24 @@ var Webview = SAGE2_App.extend({
 			// only accept http protocols
 			if (event.url.startsWith('http:') || event.url.startsWith('https:')) {
 				// Do not open a new view, just navigate to the new URL
-				_this.changeURL(event.url, true);
+				//_this.changeURL(event.url, true);
+				// calculate a position right next to the parent view
+				let pos = [_this.sage2_x + _this.sage2_width + 5,
+					_this.sage2_y - _this.config.ui.titleBarHeight];
 				// Request a new webview application
-				// wsio.emit('openNewWebpage', {
-				// 	// should be uniqueID, but no interactor object here
-				// 	id: this.id,
-				// 	// send the new URL
-				// 	url: event.url
-				// });
+				wsio.emit('openNewWebpage', {
+					// should be uniqueID, but no interactor object here
+					id: this.id,
+					// send the new URL
+					url: event.url,
+					// position to the left
+					position: pos
+				});
 			} else {
 				console.log('Webview>	Not a HTTP URL, not opening [', event.url, ']', event);
 			}
+			// clear the modifiers array (get sticky keys otherwise)
+			_this.modifiers = [];
 		});
 
 		// Adds the session cookie to the Webview's cookies
