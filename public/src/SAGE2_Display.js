@@ -1031,8 +1031,6 @@ function setupListeners() {
 	wsio.on('eventInItem', function(event_data) {
 		var app = applications[event_data.id];
 
-		// console.log(event_data, app, applications);
-
 		if (app) {
 			var date = new Date(event_data.date);
 			app.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, date);
@@ -1372,12 +1370,12 @@ function setupListeners() {
 
 	wsio.on('sendServerWallScreenshot', function(data) {
 		// first tell user that screenshot is happening, because screen will freeze
-		makingScreenshotDialog = ui.buildMessageBox('makingScreenshotDialog',
-			'Please wait, wall is taking a screenshot');
+		// makingScreenshotDialog = ui.buildMessageBox('makingScreenshotDialog',
+		// 	'Please wait, wall is taking a screenshot');
 		// Add to the DOM
-		ui.main.appendChild(makingScreenshotDialog);
+		// ui.main.appendChild(makingScreenshotDialog);
 		// Make the dialog visible
-		makingScreenshotDialog.style.display = "block";
+		// makingScreenshotDialog.style.display = "block";
 		// now do check and perform capture if can
 		if (!__SAGE2__.browser.isElectron) {
 			wsio.emit("wallScreenshotFromDisplay", {capable: false});
@@ -1402,7 +1400,7 @@ function setupListeners() {
 					imageData: imageData
 				});
 				// Close the dialog
-				deleteElement('makingScreenshotDialog');
+				// deleteElement('makingScreenshotDialog');
 			});
 		}
 	});

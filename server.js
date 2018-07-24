@@ -2210,10 +2210,6 @@ function wsUpdateAppState(wsio, data) {
 	if (wsio === masterDisplay && SAGE2Items.applications.list.hasOwnProperty(data.id)) {
 		var app = SAGE2Items.applications.list[data.id];
 
-		if (!app.data.pointersOverApp) {
-			// console.log("erase me, something removed the pointersOverApp property. Readding...");
-			// app.data.pointersOverApp = [];
-		}
 		sageutils.mergeObjects(data.localState, app.data, ['doc_url', 'video_url', 'video_type', 'audio_url', 'audio_type']);
 
 		if (data.updateRemote === true) {
@@ -10344,6 +10340,8 @@ function wsStartWallScreenshot(wsio, data) {
 					clients[i].capableOfScreenshot = true;
 				}
 				clients[i].emit("sendServerWallScreenshot");
+			} else if (clients[i].clientType === "sageUI") {
+				clients[i].emit("warningMessage", "Taking a screenshot");
 			}
 		}
 	}
