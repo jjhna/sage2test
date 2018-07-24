@@ -521,13 +521,13 @@ function FileManager(wsio, mydiv, uniqueID) {
 			}
 		},
 		performance_menu: {value: "Performance Console",
-			tooltip: "Opens a new page displaying performance monitoring data",
+			tooltip: "Opens a new page displaying current performance monitoring data",
 			callback: function (evt) {
 				window.open("admin/performance.html", '_blank');
 			}
 		},
 		performanceHistory_menu: {value: "Performance History",
-			tooltip: "Opens a new page to view historic performance monitoring data",
+			tooltip: "Opens a new page to view historical performance monitoring data",
 			callback: function (evt) {
 				window.open("admin/performanceHistory.html", '_blank');
 			}
@@ -1627,7 +1627,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			_this.allTable.filter(function(obj) {
 				var val = false;
 				if (_this.allFiles[obj.id].exif.SAGE2user) {
-					val = _this.allFiles[obj.id].exif.SAGE2user.indexOf(interactor.pointerColor) >= 0;
+					val = _this.allFiles[obj.id].exif.SAGE2user.indexOf(interactor.pointerLabel) >= 0;
 				}
 				return val;
 			});

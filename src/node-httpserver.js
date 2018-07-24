@@ -117,30 +117,6 @@ HttpServer.prototype.redirect = function(res, aurl) {
 	res.end();
 };
 
-var hpkpPin1 = (function() {
-	var pin;
-	return function() {
-		if (!pin) {
-			pin = fs.readFileSync(path.join("keys", "pin1.sha256"), {encoding: 'utf8'});
-			pin = pin.trim();
-			// console.log('PIN1', pin);
-		}
-		return pin;
-	};
-}());
-
-var hpkpPin2 = (function() {
-	var pin;
-	return function() {
-		if (!pin) {
-			pin = fs.readFileSync(path.join("keys", "pin2.sha256"), {encoding: 'utf8'});
-			pin = pin.trim();
-			// console.log('PIN2', pin);
-		}
-		return pin;
-	};
-}());
-
 /**
  * Build an HTTP header object
  *
@@ -192,8 +168,9 @@ HttpServer.prototype.buildHeader = function() {
 	// default-src 'none' -> default policy that blocks absolutely everything
 	if (cfg.security && sageutils.isTrue(cfg.security.enableCSP)) {
 		// Pretty open
-		header["Content-Security-Policy"] = "default-src 'none';" +
-			" plugin-types image/svg+xml;" +
+		header["Content-Security-Policy"] = "default-src 'self';" +
+			// application/browser-plugin is for vtc
+			" plugin-types image/svg+xml application/browser-plugin;" +
 			" object-src 'self';" +
 			" child-src 'self' blob:;" +
 			" connect-src *;" +
@@ -202,37 +179,41 @@ HttpServer.prototype.buildHeader = function() {
 			" img-src * data: blob:;" +
 			" media-src 'self' blob:;" +
 			" style-src 'self' 'unsafe-inline' fonts.googleapis.com;" +
-			" script-src * 'unsafe-eval';";
+			" script-src * 'unsafe-eval' 'unsafe-inline';";
 	}
-	// More secure
-	// header["Content-Security-Policy"] = "default-src 'none';" +
-	// 	" plugin-types image/svg+xml;" +
-	// 	" object-src 'self';" +
-	// 	" child-src 'self' blob:;" +
-	// 	" connect-src 'self' wss: ws: https://query.yahooapis.com https://data.cityofchicago.org https://lyra.evl.uic.edu:9000;" +
-	// 	" font-src 'self';" +
-	// 	" form-action 'self';" +
-	// 	// " img-src 'self' data: http://openweathermap.org a.tile.openstreetmap.org b.tile.openstreetmap.org " +
-	// 	// "c.tile.openstreetmap.org http://www.webglearth.com http://server.arcgisonline.com http://radar.weather.gov " +
-	// 	// "http://cdn.abclocal.go.com http://www.glerl.noaa.gov " +
-	// 	// "https://lyra.evl.uic.edu:9000 https://maps.gstatic.com https://maps.googleapis.com https://khms0.googleapis.com " +
-	// 	// "https://khms1.googleapis.com https://khms2.googleapis.com https://csi.gstatic.com;" +
-	// 	" img-src *;" +
-	// 	" media-src 'self';" +
-	// 	" style-src 'self' 'unsafe-inline';" +
-	// 	" script-src 'self' http://www.webglearth.com https://maps.googleapis.com 'unsafe-eval';";
 
+	// Expect-CT allows a site to determine if they enforce their Certificate Transparency policy
+	if (cfg.security && sageutils.isTrue(cfg.security.enableExpectCertificateTransparency)) {
+		// set to enforce, and valid for 1 hour
+		header["Expect-CT"] = "enforce; max-age:3600;";
+	}
 
-	// HTTP PUBLIC KEY PINNING (HPKP)
-	// Key pinning is a trust-on-first-use (TOFU) mechanism.
-	// The first time a browser connects to a host it lacks the the information necessary to perform
-	// "pin validation" so it will not be able to detect and thwart a MITM attack.
-	// This feature only allows detection of these kinds of attacks after the first connection.
-	if (cfg.security && sageutils.isTrue(cfg.security.enableHPKP)) {
-		// 30 days expirations
-		header["Public-Key-Pins"] = "pin-sha256=\"" + hpkpPin1() +
-			"\"; pin-sha256=\"" + hpkpPin2() +
-			"\"; max-age=2592000; includeSubDomains";
+	// Referrer Policy allows a site to control how much information the browser includes
+	//   with navigations away from a document. Only set here for same origin site
+	if (cfg.security && sageutils.isTrue(cfg.security.enableReferrerPolicy)) {
+		header["Referrer-Policy"] = "same-origin";
+	}
+
+	// Feature Policy allows to enable and disable certain web platform features
+	//  in local pages and those they embed
+	if (cfg.security && sageutils.isTrue(cfg.security.enableFeaturePolicy)) {
+		header["Feature-Policy"] = "" +
+			"accelerometer 'none'" +
+			"; ambient-light-sensor 'none'" +
+			"; autoplay *" +
+			"; camera *" +
+			"; encrypted-media 'none'" +
+			"; fullscreen 'none'" +
+			"; geolocation *" +
+			"; gyroscope 'none'" +
+			"; magnetometer 'none'" +
+			"; microphone *" +
+			"; midi 'none'" +
+			"; payment 'none'" +
+			// "; picture-in-picture 'none'" +
+			"; speaker *" +
+			"; usb 'self'" +
+			"; vr 'self'";
 	}
 
 	return header;

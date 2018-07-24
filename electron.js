@@ -96,6 +96,8 @@ var commander = require('commander');
 var si = require('systeminformation');
 // Get the version from the package file
 var version = require('./package.json').version;
+// Get platform and hostname
+var os = require('os');
 
 /**
  * Setup the command line argument parsing (commander module)
@@ -146,10 +148,9 @@ if (commander.plugins) {
 }
 
 // Reset the desktop scaling
-const os = require('os');
-if (os.platform() === "win32") {
-	app.commandLine.appendSwitch("force-device-scale-factor", "1");
-}
+//if (os.platform() === "win32") {
+app.commandLine.appendSwitch("force-device-scale-factor", "1");
+//}
 
 // Remove the limit on the number of connections per domain
 //  the usual value is around 6
@@ -386,6 +387,18 @@ function createWindow() {
 		// ev.preventDefault();
 	});
 
+	var partitionNumber = 0;
+	mainWindow.webContents.on('will-attach-webview', function(event, webPreferences, params) {
+		// New webview going to be added
+		// Each partition has a distinct context, ie partition
+		params.partition = 'partition_' + partitionNumber;
+		partitionNumber = partitionNumber + 1;
+	});
+
+	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {
+		// New webview added and completed
+	});
+
 	ipcMain.on('getPerformanceData', function() {
 		var perfData = {};
 		var mem = process.getSystemMemoryInfo();
@@ -415,6 +428,38 @@ function createWindow() {
 		});
 	});
 }
+
+/**
+ * Dealing with certificate issues
+ * used to be done in Webview app but seems to work better here now
+ */
+app.on('certificate-error', function(event, webContent, url, error, certificate, callback) {
+	// This doesnt seem like a security risk yet
+	if (error === "net::ERR_CERTIFICATE_TRANSPARENCY_REQUIRED") {
+		// console.log('Webview> certificate error ERR_CERTIFICATE_TRANSPARENCY_REQUIRED', url);
+		// we ignore the certificate error
+		event.preventDefault();
+		callback(true);
+	} else if (error === "net::ERR_CERT_COMMON_NAME_INVALID") {
+		// self-signed certificate
+		// console.log('Webview> certificate error ERR_CERT_COMMON_NAME_INVALID', url)
+		// we ignore the certificate error
+		event.preventDefault();
+		callback(true);
+	} else if (error === "net::ERR_CERT_AUTHORITY_INVALID") {
+		// self-signed certificate
+		// console.log('Webview> certificate error ERR_CERT_AUTHORITY_INVALID', url)
+		// we ignore the certificate error
+		event.preventDefault();
+		callback(true);
+	} else {
+		// More troubling error
+		console.log('Webview> certificate error', error, url);
+		// Denied
+		callback(false);
+	}
+});
+
 
 /**
  * This method will be called when Electron has finished
