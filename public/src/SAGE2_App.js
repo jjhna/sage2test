@@ -106,6 +106,10 @@ var SAGE2_App = Class.extend({
 		if (type === "div" || type === "webview") {
 			this.element.style.width  = data.width  + "px";
 			this.element.style.height = data.height + "px";
+			if (type === "webview") {
+				// Set a session per webview, so not zoom sharing per origin
+				this.element.partition = this.id;
+			}
 		} else {
 			this.element.width  = data.width;
 			this.element.height = data.height;
@@ -786,7 +790,7 @@ var SAGE2_App = Class.extend({
 			_this.preDraw(date);
 			// measure actual frame rate
 			if (_this.sec >= 1.0) {
-				_this.fps       = this.frame_sec / this.sec;
+				_this.fps       = _this.frame_sec / _this.sec;
 				_this.frame_sec = 0;
 				_this.sec       = 0;
 			}
