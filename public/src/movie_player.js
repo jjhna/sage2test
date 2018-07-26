@@ -29,6 +29,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	* @param data {Object} contains initialization values (id, width, height, ...)
 	*/
 	init: function(data) {
+
 		this.blockStreamInit(data);
 
 		this.firstLoad();
@@ -40,6 +41,11 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		// command variables
 		this.shouldSendCommands = false;
 		this.shouldReceiveCommands = false;
+
+		// Determine if should use HTML player mode
+		if (this.isOnlyDisplay() && this.isFileTypeSupportedByHtmlPlayer(this.state.video_url)) {
+			this.makeHtmlPlayer(this.state.video_url);
+		}
 	},
 
 	/**
@@ -105,8 +111,10 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	* @param frameIdx {Number} change the current frame number
 	*/
 	setVideoFrame: function(frameIdx) {
-		this.state.frame = frameIdx;
-		this.SAGE2Sync(false);
+		if (!this.isUsingHtmlPlayer) {
+			this.state.frame = frameIdx;
+			this.SAGE2Sync(false);
+		}
 	},
 
 	/**
@@ -139,6 +147,11 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	* @param date {Date} time from the server
 	*/
 	load: function(date) {
+		if (this.isUsingHtmlPlayer) {
+			this.htmlSetSeekTime();
+			this.htmlSetLoopStatus();
+			this.htmlSetPlayPauseStatus();
+		}
 	},
 
 	/**
@@ -156,14 +169,19 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		var current  = formatHHMMSS(duration);
 
 		// modified to have (frame) [(Sending / Receiving Commands)]
-		if (this.shouldSendCommands) {
+		if (this.isUsingHtmlPlayer) {
+			duration = parseInt(1000 * this.videoElement.currentTime);
+			current = formatHHMMSS(duration);
+			let titleString = this.title + " - " + current + " / " + this.lengthString + " (HTML player mode)";
+			this.updateTitle(titleString);
+		} else if (this.shouldSendCommands) {
 			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")(Sending Commands)");
 		} else if (this.shouldReceiveCommands) {
 			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")(Receiving Commands)");
 		} else {
 			// Default mode: show current time and duration
-			this.updateTitle(this.title + " - " + current + " / " + this.lengthString);
-			// var currentFrame = Math.floor(this.state.frame % this.state.framerate) + 1;
+			let titleString = this.title + " - " + current + " / " + this.lengthString;
+			this.updateTitle(titleString);
 		}
 	},
 
@@ -202,7 +220,20 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.state.paused = false;
 		} else {
 			if (isMaster) {
-				wsio.emit('pauseVideo', {id: this.div.id});
+				if (this.isUsingHtmlPlayer) {
+					// When pausing with the html player, time delay may be caused by lag by server to keep with with frame processing.
+					// Using this to force the server to the current video player time.
+					this.state.frame = parseInt(this.videoElement.currentTime * this.state.framerate);
+					wsio.emit('updateVideoTime', {
+						id: this.div.id,
+						timestamp: this.videoElement.currentTime,
+						play: false
+					});
+					// Ignore the next frame from server
+					this.videoElement.frameUpdateIgnoreCount++;
+				} else {
+					wsio.emit('pauseVideo', {id: this.div.id});
+				}
 
 				// if this is a sender, also send the command to the server holding variable
 				if (this.shouldSendCommands) {
@@ -223,6 +254,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.refresh(date);
 		this.playPauseBtn.state = (this.state.paused) ? 0 : 1;
 		this.getFullContextMenuAndUpdate();
+		this.htmlSetPlayPauseStatus();
 	},
 
 	/**
@@ -266,9 +298,12 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		}
 		this.loopBtn.state = (this.state.looped) ? 0 : 1;
 		this.getFullContextMenuAndUpdate();
+		this.htmlSetLoopStatus();
 	},
 
 	stopVideo: function() {
+		this.state.paused = true;
+		this.state.frame = 0;
 		if (isMaster) {
 			wsio.emit('stopVideo', {id: this.div.id});
 
@@ -286,10 +321,10 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 				});
 			}
 		}
-		this.state.paused = true;
 		// must change play-pause button (should show 'play' icon)
 		this.playPauseBtn.state = 0;
 		this.getFullContextMenuAndUpdate();
+		this.htmlStop();
 	},
 
 	/**
@@ -393,8 +428,6 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			entries.push(entry);
 		}
 
-
-
 		entry = {};
 		entry.description = "separator";
 		entries.push(entry);
@@ -430,7 +463,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	},
 
 	/**
-	* Calls togglePlayPause passing the given time.
+	* Calls toggleMute passing the given time.
 	*
 	* @method contextToggleMute
 	* @param responseObject {Object} contains response from entry selection
@@ -636,6 +669,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 					switch (data.action) {
 						case "sliderLock":
 							if (this.state.paused === false) {
+								this.htmlSetPlayPauseStatus();
 								if (isMaster) {
 									wsio.emit('pauseVideo', {id: this.div.id});
 								}
@@ -646,6 +680,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 						case "sliderUpdate":
 							break;
 						case "sliderRelease":
+							this.htmlSetSeekTime();
 							if (isMaster) {
 								wsio.emit('updateVideoTime', {
 									id: this.div.id,
@@ -674,5 +709,178 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			}
 			this.refresh(date);
 		}
+	},
+
+	/**
+	* Checks the configuration to see if there are multiple displays.
+	* If there is only one display listed, or if there is an entry that covers all, then will return true.
+	*
+	* @method isOnlyDisplay
+	* @return {bool} If config shows only one display.
+	*/
+	isOnlyDisplay() {
+		let totalDisplays = ui.json_cfg.layout.columns * ui.json_cfg.layout.rows;
+		let displayClientList = ui.json_cfg.displays;
+		let currentDisplay, w, h;
+		for (let i = 0; i < displayClientList.length; i++) {
+			currentDisplay = displayClientList[i];
+			w = currentDisplay.width;
+			h = currentDisplay.height;
+			// If w and h have values
+			if (w && h) {
+				if (totalDisplays == (w * h)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	},
+
+	/**
+	* Checks the file extension to see if it is supported by the HTML player.
+	* Based on https://developer.mozilla.org/en-US/docs/Web/HTML/Supported_media_formats
+	* Special check for .mov, needed additional exif data from the server.
+	*
+	* @method isFileTypeSupportedByHtmlPlayer
+	* @param file {string} URL path of hte file to be played.
+	* @return {bool} True if supported. Otherwise false.
+	*/
+	isFileTypeSupportedByHtmlPlayer: function(file) {
+		let supportedTypes = ["webm", "ogg", "mp4", "mov"]; // flac
+		let ext = file.lastIndexOf(".");
+		if (ext > -1) {
+			ext = file.substring(ext + 1);
+			ext = ext.trim().toLowerCase();
+			for (let i = 0; i < supportedTypes.length; i++) {
+				if (ext === supportedTypes[i]) {
+					// mov is a container. If contents aren't H.264, probably can't decode.
+					if ((ext === "mov") && (this.state.CompressorName !== "H.264")) {
+						// Clear out state to reduce workload
+						this.state.exif = {};
+						continue;
+					}
+					return true;
+				}
+			}
+		}
+		return false;
+	},
+
+	/**
+	* Creates video and source. Then appends to the application.
+	* HTML player is currently muted by default so sound should come from audioManager.
+	*
+	* @method makeHtmlPlayer
+	* @param url {string} URL path of hte file to be played.
+	*/
+	makeHtmlPlayer: function(url) {
+		// Create elements
+		this.videoElement = document.createElement("video");
+		this.videoElement.style.width = "100%";
+		this.videoElement.style.height = "100%";
+		this.sourceElement = document.createElement("source");
+		this.sourceElement.src = url;
+		// Keep the HTML player muted, let the sound come through the audioManager.
+		this.videoElement.muted = true;
+		// Add Them
+		this.videoElement.appendChild(this.sourceElement);
+		this.element.appendChild(this.videoElement);
+
+		// Hide default. This doesn't remove them.
+		this.canvas.style.display = "none";
+		this.canvas.style.width = "1px";
+		this.canvas.style.height = "1px";
+		// Remove the draw calculations, this prevents some cases of flickering while updating.
+		this.draw = function() {};
+		// Ignore updates from server caused by delay.
+		this.videoElement.frameUpdateIgnoreCount = 0;
+
+		this.isUsingHtmlPlayer = true;
+		this.htmlSetSeekTime();
+	},
+
+	/**
+	* Sets the play and pause status of the HTML player.
+	*
+	* @method htmlSetPlayPauseStatus
+	*/
+	htmlSetPlayPauseStatus: function() {
+		if (!this.isUsingHtmlPlayer) {
+			return;
+		}
+		this.htmlSetSeekTime();
+		if (this.state.paused === true) {
+			this.videoElement.pause();
+		} else {
+			this.videoElement.play();
+		}
+		// requestAnimationFrame(() => { this.htmlTimeCheckers(); });
+	},
+
+	/**
+	* Using this to figure out if the server or the player is time-wise wrong.
+	*
+	* @method htmlTimeCheckers
+	*/
+	htmlTimeCheckers: function() {
+		if (!this.timeCheckStart) {
+			this.timeCheckStart = Date.now();
+		}
+
+		// 5 seconds later
+		if (Date.now() >= this.timeCheckStart + 5000) {
+			console.log("state frame:" + this.state.frame + "(" + (this.state.frame / this.state.framerate) + ")");
+			console.log("video frame:" + this.videoElement.currentTime);
+			this.togglePlayPause(new Date(Date.now()));
+			this.timeCheckStart = false;
+			console.log("stopping");
+		} else {
+			requestAnimationFrame(() => {
+				this.htmlTimeCheckers();
+			});
+		}
+	},
+
+	/**
+	* Sets the loop status of the HTML player
+	*
+	* @method htmlSetLoopStatus
+	*/
+	htmlSetLoopStatus: function() {
+		if (!this.isUsingHtmlPlayer) {
+			return;
+		}
+		if (this.state.looped === false) {
+			this.videoElement.removeAttribute("loop");
+		} else {
+			this.videoElement.setAttribute("loop", "");
+		}
+	},
+
+	/**
+	* Stops the HTML player by pausing and seeking to 0.
+	*
+	* @method htmlStop
+	*/
+	htmlStop: function() {
+		if (!this.isUsingHtmlPlayer) {
+			return;
+		}
+		// This pauses and sets HTML player to beginning
+		this.videoElement.pause();
+		this.videoElement.currentTime = 0;
+	},
+
+	/**
+	* This seek will reset to the state value of frame position calculation for current time.
+	*
+	* @method htmlSetSeekTime
+	*/
+	htmlSetSeekTime: function() {
+		if (!this.isUsingHtmlPlayer) {
+			return;
+		}
+		let time = this.state.frame / this.state.framerate;
+		this.videoElement.currentTime = time;
 	}
 });

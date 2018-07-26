@@ -4554,8 +4554,6 @@ function wsUpdateApplicationState(wsio, data) {
 		if (modified === true) {
 			// update video demuxer based on state
 			if (app.application === "movie_player") {
-				console.log("received state from remote site:", data.state);
-
 				SAGE2Items.renderSync[app.id].loop = app.data.looped;
 
 				var ts = app.data.frame / app.data.framerate;
