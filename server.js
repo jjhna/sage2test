@@ -3897,6 +3897,11 @@ function wsPauseVideo(wsio, data) {
 	SAGE2Items.renderSync[data.id].decoder.pause(function() {
 		broadcast('videoPaused', {id: data.id});
 	});
+
+	// Necessary since the above broadcast has cases when the callback doesn't trigger. This is ok to send multiples.
+	if (data.audioPause) {
+		broadcast('videoPaused', {id: data.id});
+	}
 }
 
 function wsStopVideo(wsio, data) {
