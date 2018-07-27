@@ -174,6 +174,11 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			current = formatHHMMSS(duration);
 			let titleString = this.title + " - " + current + " / " + this.lengthString + " (HTML player mode)";
 			this.updateTitle(titleString);
+			if (this.lastDrawnHtmlPlayerTime != this.videoElement.currentTime) {
+				// prevents getting state stuck when moving the widget slider
+				this.lastDrawnHtmlPlayerTime = this.videoElement.currentTime;
+				this.state.frame = this.videoElement.currentTime * this.state.framerate;
+			}
 		} else if (this.shouldSendCommands) {
 			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")(Sending Commands)");
 		} else if (this.shouldReceiveCommands) {
@@ -221,6 +226,8 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		} else {
 			if (isMaster) {
 				if (this.isUsingHtmlPlayer) {
+					// On the server, the handler for this packet issues a pause action that doesn't consistently send out pauseVideo values.
+					wsio.emit('pauseVideo', {id: this.div.id, audioPause: true});
 					// When pausing with the html player, time delay may be caused by lag by server to keep with with frame processing.
 					// Using this to force the server to the current video player time.
 					this.state.frame = parseInt(this.videoElement.currentTime * this.state.framerate);
@@ -669,7 +676,8 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 					switch (data.action) {
 						case "sliderLock":
 							if (this.state.paused === false) {
-								this.htmlSetPlayPauseStatus();
+								this.state.playAfterSeek = true;
+								this.htmlSetPlayPauseStatus("pause");
 								if (isMaster) {
 									wsio.emit('pauseVideo', {id: this.div.id});
 								}
@@ -681,6 +689,9 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 							break;
 						case "sliderRelease":
 							this.htmlSetSeekTime();
+							if (this.state.playAfterSeek) {
+								this.videoElement.play();
+							}
 							if (isMaster) {
 								wsio.emit('updateVideoTime', {
 									id: this.div.id,
@@ -804,12 +815,12 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	*
 	* @method htmlSetPlayPauseStatus
 	*/
-	htmlSetPlayPauseStatus: function() {
+	htmlSetPlayPauseStatus: function(paused) {
 		if (!this.isUsingHtmlPlayer) {
 			return;
 		}
 		this.htmlSetSeekTime();
-		if (this.state.paused === true) {
+		if ((paused) || this.state.paused === true) {
 			this.videoElement.pause();
 		} else {
 			this.videoElement.play();
