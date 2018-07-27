@@ -3,7 +3,7 @@
 	"icon": "quickNote.png",
 	"width": 300,
 	"height": 134,
-	"animation": false,
+	"animation": true,
 	"sticky": true,
 	"dependencies": [
 	],

@@ -15,6 +15,7 @@ var quickNote = SAGE2_App.extend({
 		this.SAGE2Init("div", data);
 
 		this.resizeEvents = "continuous"; // "onfinish";
+		this.maxFPS = 10; // Used for the pointer thing. necessary because of overflow hidden
 
 		this.element.id = "div" + data.id;
 		this.element.style.background = "lightyellow";
@@ -271,6 +272,13 @@ var quickNote = SAGE2_App.extend({
 
 	draw: function(date) {
 		// left intentionally blank
+		if (this.hasLoadedTopLeftPointer && this.pointerIcon) {
+			// if the line and app exist, then redraw
+			this.pointerIcon.attr({
+				x: this.sage2_x,
+				y: this.sage2_y - ui.titleBarHeight * 5,
+			});
+		}
 	},
 
 	resize: function(date) {
@@ -320,6 +328,14 @@ var quickNote = SAGE2_App.extend({
 	getContextEntries: function() {
 		var entries = [];
 		var entry;
+
+		entry = {};
+		entry.description = "Add pointer";
+		entry.callback    = "addTopLeftPointerToWall";
+		entry.parameters  = {};
+		entries.push(entry);
+
+		entries.push({description: "separator"});
 
 		entry = {};
 		entry.description = "Edit Note";
@@ -448,6 +464,65 @@ var quickNote = SAGE2_App.extend({
 		}
 		this.getFullContextMenuAndUpdate();
 	},
+
+
+	addTopLeftPointerToWall: function() {
+
+		if (this.hasLoadedTopLeftPointer) {
+			return;
+		}
+		this.hasLoadedTopLeftPointer = true;
+
+		var _this = this;
+		Snap.load("images/SAGE2 Pointer Arrow.svg", function(f) {
+			_this.pointerIcon = f.select("svg");
+			_this.pointerIcon.attr({
+				id: "quickNotePointerIcon",
+				x: _this.sage2_x - ui.titleBarHeight * 10,
+				y: _this.sage2_y - ui.titleBarHeight * 10,
+				width: ui.titleBarHeight * 10,
+				height: ui.titleBarHeight * 10,
+				preserveAspectRatio: "xMinYMin meet"
+			});
+			// add the loaded element into the SVG graph
+			svgBackgroundForWidgetConnectors.append(_this.pointerIcon);
+			// mark it as loaded
+			_this.hasLoadedTopLeftPointer = true;
+		});
+
+
+		this.snap = new Snap(100, 100);
+		let title = document.getElementById(this.id + "_title");
+		document.getElementById(this.id + "_title").appendChild(this.snap.node);
+		document.getElementById(this.id + "_title").style.overflow = "visible";
+		document.getElementById(this.id + "_title").style.zIndez = -1;
+		this.snap.node.style.position = "absolute";
+		this.snap.node.style.top = "-100px";
+
+		Snap.load("images/SAGE2 Pointer Arrow.svg", function(f) {
+			_this.pointerIconForLocalSnap = f.select("svg");
+			_this.pointerIconForLocalSnap.attr({
+				id: "quickNotePointerIcon",
+				x: 0,
+				y: 0,
+				width: 100,
+				height: 100,
+				preserveAspectRatio: "xMinYMin meet"
+			});
+			// add the loaded element into the SVG graph
+			_this.snap.append(_this.pointerIconForLocalSnap);
+			// mark it as loaded
+			_this.hasLoadedTopLeftPointer = true;
+		});
+
+	},
+
+
+
+
+
+
+
 
 	quit: function() {
 		// no additional calls needed.
