@@ -212,6 +212,11 @@ CoordinateCalculator.prototype.calculateCAVE2ScreenPos = function(x, y, z) {
  * @return {Object} screen coordinates .x and .y
  */
 CoordinateCalculator.prototype.wandToWallScreenCoordinates = function(x, y, z, rx, ry, rz, rw) {
+	z *= -1;
+	rx *= -1;
+	ry *= -1;
+
+	/*
 	// Quaternion to Euler ////////////////////////
 	// Rotation matrix Q multiplied by reference vector (0,0,-1)
 	// 		| 1 - 2y^2 - 2z^2 , 2xy - 2zw, 2xz + 2yw	|		|0	|
@@ -232,6 +237,7 @@ CoordinateCalculator.prototype.wandToWallScreenCoordinates = function(x, y, z, r
 	}
 	// QuaternionToEuler ends ///////////////////
 
+	// https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 	// Roll
 	var sinr = 2.0 * (rw * rx + ry * rz);
 	var cosr = 1.0 - 2.0 * (rx * rx + ry * ry);
@@ -253,15 +259,53 @@ CoordinateCalculator.prototype.wandToWallScreenCoordinates = function(x, y, z, r
 	var siny = 2.0 * (rw * rz + rx * ry);
 	var cosy = 1.0 - 2.0 * (ry * ry + rz * rz);
 	eulerAngles.z = Math.atan2(siny, cosy);
+	*/
 
-	eulerAngles.x *= -1;
-	eulerAngles.y *= -1;
+	// http://schteppe.github.io/cannon.js/docs/files/src_math_Quaternion.js.html
+	var heading, attitude, bank;
+	var test = rx * ry + rz * rw;
+	if (test > 0.499) { // singularity at north pole
+		heading = 2 * Math.atan2(rx, rw);
+		attitude = Math.PI / 2;
+		bank = 0;
+	}
+	if (test < -0.499) { // singularity at south pole
+		heading = -2 * Math.atan2(rx, rw);
+		attitude = -Math.PI / 2;
+		bank = 0;
+	}
+	if (isNaN(heading)) {
+		var sqx = rx * rx;
+		var sqy = ry * ry;
+		var sqz = rz * rz;
+		heading = Math.atan2(2 * ry * rw - 2 * rx * rz, 1 - 2 * sqy - 2 * sqz); // Heading
+		attitude = Math.asin(2 * test); // attitude
+		bank = Math.atan2(2 * rx * rw - 2 * ry * rz, 1 - 2 * sqx - 2 * sqz); // bank
+	}
 
+	eulerAngles.z = attitude;
+	eulerAngles.y = heading;
+	eulerAngles.x = bank;
+
+	/* // Convert to degrees and map 0-360 (debugging)
 	eulerAngles.x *= 180.0 / Math.PI;
 	eulerAngles.y *= 180.0 / Math.PI;
 	eulerAngles.z *= 180.0 / Math.PI;
 
-	//console.log("wandEuler (" + eulerAngles.x + ", " + eulerAngles.y + ", " + eulerAngles.z + ")" );
+	if (eulerAngles.x < 0) {
+		eulerAngles.x = 360 + eulerAngles.x;
+	}
+	if (eulerAngles.y < 0) {
+		eulerAngles.y = 360 + eulerAngles.y;
+	}
+	if (eulerAngles.z < 0) {
+		eulerAngles.z = 360 + eulerAngles.z;
+	}
+	*/
+
+	// console.log("wandRot (" + rx + ", " + ry + ", " + rz + ", " + rw + ")" );
+	// console.log("wandEuler (" + eulerAngles.x + ", " + eulerAngles.y + ", " + eulerAngles.z + ")" );
+	// console.log("wandPos (" + x + ", " + y + ", " + z + ")" );
 
 	// Orientation is vertical
 	if (eulerAngles.x === 0 && eulerAngles.z === 0) {

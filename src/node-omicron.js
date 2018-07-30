@@ -677,7 +677,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		var screenPos = omicronManager.coordCalculator.wandToWallScreenCoordinates(
 			e.posx, e.posy, e.posz, e.orx, e.ory, e.orz, e.orw
 		);
-		// console.log("Screen pos: (" + screenPos.x + ", " + screenPos.y+")" );
+		// console.log("Screen pos: (" + screenPos.x + ", " + screenPos.y + ")" );
 
 		address = omicronManager.config.inputServerIP;
 
