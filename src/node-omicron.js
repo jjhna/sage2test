@@ -102,6 +102,9 @@ function OmicronManager(sysConfig) {
 
 	this.coordCalculator = new CoordinateCalculator(this.config);
 
+	this.lastNonCritEventTime = Date.now();
+	this.nonCriticalEventDelay =  this.config.nonCriticalEventDelay === undefined ? 10 : this.config.nonCriticalEventDelay;
+	
 	var serverHost = sysConfig.host;
 
 	// Used to determine the initial position of a zoom gesture
@@ -643,8 +646,8 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		//
 		// Wand Button Flags
 		// var button1 = 1;
-		// var button2 = 2; // Circle
-		// var button3 = 4; // Cross
+		var button2 = 2; // Circle
+		var button3 = 4; // Cross
 		// var specialButton1 = 8;
 		// var specialButton2 = 16;
 		// var specialButton3 = 32;
@@ -652,27 +655,27 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		var button5 = 128; // L1
 		var button6 = 256; // L3
 		var button7 = 512; // L2
-		// var buttonUp = 1024;
-		// var buttonDown = 2048;
-		// var buttonLeft = 4096;
-		// var buttonRight = 8192;
+		var buttonUp = 1024;
+		var buttonDown = 2048;
+		var buttonLeft = 4096;
+		var buttonRight = 8192;
 		// var button8 = 32768;
 		// var button9 = 65536;
 
 		// Wand SAGE2 command mapping
-		// var clickDragButton = button3;
-		// var menuButton      = button2;
+		var clickDragButton = button3;
+		var menuButton      = button2;
 		var showHideButton  = button5;
-		// var scaleUpButton   = buttonUp;
-		// var scaleDownButton = buttonDown;
-		// var maximizeButton  = button5;
-		// var previousButton  = buttonLeft;
-		// var nextButton      = buttonRight;
-		// var playButton      = button2;
+		var scaleUpButton   = buttonUp;
+		var scaleDownButton = buttonDown;
+		var maximizeButton  = button5;
+		var previousButton  = buttonLeft;
+		var nextButton      = buttonRight;
+		var playButton      = button2;
 		var movePointerHold	= button7;
 		var pointerModeButton	= button6;
 
-		var wandID = "Wand: " + address + "-" + sourceID;
+		var wandID = address;
 		var updateWandPosition = (e.flags & movePointerHold) === movePointerHold;
 
 		if (omicronManager.wandState[wandID] === undefined) {
@@ -737,7 +740,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 				omicronManager.lastPosX = posX;
 				omicronManager.lastPosY = posY;
 
-				omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
+				//omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
 			} else {
 				posX = omicronManager.lastPosX;
 				posY = omicronManager.lastPosY;
@@ -747,8 +750,81 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 				omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
 				omicronManager.lastNonCritEventTime = Date.now();
 			}
+			
+			omicronManager.wandState[wandID].posX = posX;
+			omicronManager.wandState[wandID].posY = posY;
+		} else {
+			if (omicronManager.wandState[wandID].posX !== undefined) {
+				posX = omicronManager.wandState[wandID].posX;
+				posY = omicronManager.wandState[wandID].posY;
+			}
 		}
+		
+		// Select / Left Click
+		if ((e.flags & clickDragButton) === clickDragButton &&
+			(lastButtonState & clickDragButton) === 0) {
 
+			omicronManager.pointerPress(wandID, posX, posY, { button: "left" });
+		} else if ((e.flags & clickDragButton) === clickDragButton &&
+			(lastButtonState & clickDragButton) === clickDragButton) {
+
+				// Left Drag
+				if (timeSinceLastNonCritEvent >= omicronManager.nonCriticalEventDelay) {
+					omicronManager.pointerMove(wandID, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
+					omicronManager.lastNonCritEventTime = Date.now();
+				}
+		} else if ((e.flags & clickDragButton) === 0 &&
+			(lastButtonState & clickDragButton) === clickDragButton) {
+
+			// Left Release
+			omicronManager.pointerRelease(wandID, posX, posY, { button: "left" });
+		}
+		
+		// Play / P
+		if ((e.flags & playButton) === playButton &&
+			(lastButtonState & playButton) === 0) {
+
+			omicronManager.keyDown(wandID, posX, posY, { code: 80 });
+		} else if ((e.flags & playButton) === 0 &&
+			(lastButtonState & playButton) === playButton) {
+
+			omicronManager.keyUp(wandID, posX, posY, { code: 80 });
+		}
+		
+		// Previous / Left Arrow
+		if ((e.flags & previousButton) === previousButton &&
+			(lastButtonState & previousButton) === 0) {
+
+			omicronManager.keyDown(wandID, posX, posY, { code: 37 });
+		} else if ((e.flags & previousButton) === 0 &&
+			(lastButtonState & previousButton) === previousButton) {
+
+			omicronManager.keyUp(wandID, posX, posY, { code: 37 });
+		}
+		
+		
+		// Next / Right Arrow
+		if ((e.flags & nextButton) === nextButton &&
+			(lastButtonState & nextButton) === 0) {
+
+			omicronManager.keyDown(wandID, posX, posY, { code: 39 });
+		} else if ((e.flags & nextButton) === 0 &&
+			(lastButtonState & nextButton) === nextButton) {
+
+			omicronManager.keyUp(wandID, posX, posY, { code: 39 });
+		}
+		
+		// Menu / Right Click
+		if ((e.flags & menuButton) === menuButton &&
+			(lastButtonState & menuButton) === 0) {
+
+			omicronManager.pointerPress(wandID, posX, posY, { button: "right" });
+		} else if ((e.flags & menuButton) === 0 &&
+			(lastButtonState & menuButton) === menuButton) {
+
+			omicronManager.pointerRelease(wandID, posX, posY, { button: "right" });
+		}
+		
 		// Update button state
 		omicronManager.wandState[wandID].buttonState = e.flags;
 		if (e.flags !== 0) {
