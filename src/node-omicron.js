@@ -81,6 +81,7 @@ function OmicronManager(sysConfig) {
 	this.wandYFilter = null;
 
 	this.lastWandFlags     = 0;
+	this.wandState = {};
 
 	// 1 euro filtering
 	var freq = 120;
@@ -389,9 +390,6 @@ OmicronManager.prototype.setCallbacks = function(
 	this.kinectInput 				 = kinectInputCB;
 	this.pointerChangeMode = omi_pointerChangeModeCB;
 	this.remoteInteraction = remoteInteractionCB;
-
-	this.createSagePointer(this.config.inputServerIP);
-
 	// sageutils.log('Omicron', "Server callbacks set");
 };
 
@@ -645,107 +643,141 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		//
 		// Wand Button Flags
 		// var button1 = 1;
-		var button2 = 2; // Circle
-		var button3 = 4; // Cross
+		// var button2 = 2; // Circle
+		// var button3 = 4; // Cross
 		// var specialButton1 = 8;
 		// var specialButton2 = 16;
 		// var specialButton3 = 32;
 		// var button4 = 64;
 		var button5 = 128; // L1
-		// var button6 = 256; // L3
+		var button6 = 256; // L3
 		var button7 = 512; // L2
-		var buttonUp = 1024;
-		var buttonDown = 2048;
-		var buttonLeft = 4096;
-		var buttonRight = 8192;
+		// var buttonUp = 1024;
+		// var buttonDown = 2048;
+		// var buttonLeft = 4096;
+		// var buttonRight = 8192;
 		// var button8 = 32768;
 		// var button9 = 65536;
 
 		// Wand SAGE2 command mapping
-		var clickDragButton = button3;
-		var menuButton      = button2;
-		var showHideButton  = button7;
-		var scaleUpButton   = buttonUp;
-		var scaleDownButton = buttonDown;
-		var maximizeButton  = button5;
-		var previousButton  = buttonLeft;
-		var nextButton      = buttonRight;
-		var playButton      = button2;
+		// var clickDragButton = button3;
+		// var menuButton      = button2;
+		var showHideButton  = button5;
+		// var scaleUpButton   = buttonUp;
+		// var scaleDownButton = buttonDown;
+		// var maximizeButton  = button5;
+		// var previousButton  = buttonLeft;
+		// var nextButton      = buttonRight;
+		// var playButton      = button2;
+		var movePointerHold	= button7;
+		var pointerModeButton	= button6;
 
-		// console.log("Wand " + sourceID + " Position: ("+e.posx+", "+e.posy+","+e.posz+")" );
-		// console.log("Wand Rotation: ("+e.orx+", "+e.ory+","+e.orz+","+e.orw+")" );
+		var wandID = "Wand: " + address + "-" + sourceID;
+		var updateWandPosition = (e.flags & movePointerHold) === movePointerHold;
+
+		if (omicronManager.wandState[wandID] === undefined) {
+			sageutils.log('Omicron', "New Wand Pointer " + sourceID);
+
+			omicronManager.createSagePointer(wandID);
+
+			omicronManager.wandState[wandID] = { visible: false, buttonState: 0 };
+
+			if (omicronManager.wandState[wandID].visible === true) {
+				omicronManager.showPointer(wandID, {
+					label: wandID, color: omicronManager.wandColor
+				});
+			}
+		}
+
 		var screenPos = omicronManager.coordCalculator.wandToWallScreenCoordinates(
 			e.posx, e.posy, e.posz, e.orx, e.ory, e.orz, e.orw
 		);
-		// console.log("Screen pos: (" + screenPos.x + ", " + screenPos.y + ")" );
 
-		address = omicronManager.config.inputServerIP;
-
-		// if( omicronManager.showPointerToggle === false )
-		// return;
 		var timeSinceLastNonCritEvent = Date.now() - omicronManager.lastNonCritEventTime;
+		var lastButtonState = omicronManager.wandState[wandID].buttonState;
 
-		if (omicronManager.showPointerToggle && screenPos.x !== -1 && screenPos.y !== -1) {
-			var timestamp = e.timestamp / 1000;
-			posX = screenPos.x;
-			posY = screenPos.y;
+		// Show/Hide Pointer
+		if ((e.flags & showHideButton) === showHideButton &&
+			(lastButtonState & showHideButton) === 0) {
 
-			// 1euro filter
-			posX = omicronManager.wandXFilter.filter(screenPos.x, timestamp);
-			posY = omicronManager.wandYFilter.filter(screenPos.y, timestamp);
-
-			posX *= omicronManager.totalWidth;
-			posY *= omicronManager.totalHeight;
-
-			omicronManager.lastPosX = posX;
-			omicronManager.lastPosY = posY;
-
-			if (omicronManager.pointerOffscreen && omicronManager.showPointerToggle) {
-				omicronManager.showPointer(omicronManager.config.inputServerIP, {
-					label: omicronManager.wandLabel + " " + sourceID, color: omicronManager.wandColor
+			if (omicronManager.wandState[wandID].visible === true) {
+				omicronManager.hidePointer(wandID);
+				omicronManager.wandState[wandID].visible = false;
+			} else {
+				omicronManager.showPointer(wandID, {
+					label: wandID, color: omicronManager.wandColor
 				});
-				omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
-				omicronManager.pointerOffscreen = false;
-			}
-		} else {
-			posX = omicronManager.lastPosX;
-			posY = omicronManager.lastPosY;
-			if (!omicronManager.pointerOffscreen && omicronManager.showPointerToggle) {
-				omicronManager.hidePointer(omicronManager.config.inputServerIP);
-				omicronManager.pointerOffscreen = true;
+				omicronManager.wandState[wandID].visible = true;
+
+				// Set initial wand position
+				updateWandPosition = true;
 			}
 		}
 
-		if (timeSinceLastNonCritEvent >= omicronManager.nonCriticalEventDelay) {
-			omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
-			omicronManager.lastNonCritEventTime = Date.now();
+		// Toggle pointer mode
+		if ((e.flags & pointerModeButton) === pointerModeButton &&
+			(lastButtonState & pointerModeButton) === 0) {
+
+			omicronManager.pointerChangeMode(wandID);
 		}
 
+		if (updateWandPosition) {
+			if (screenPos.x !== -1 && screenPos.y !== -1) {
+				var timestamp = e.timestamp / 1000;
+				posX = screenPos.x;
+				posY = screenPos.y;
+
+				// 1euro filter
+				posX = omicronManager.wandXFilter.filter(screenPos.x, timestamp);
+				posY = omicronManager.wandYFilter.filter(screenPos.y, timestamp);
+
+				posX *= omicronManager.totalWidth;
+				posY *= omicronManager.totalHeight;
+
+				omicronManager.lastPosX = posX;
+				omicronManager.lastPosY = posY;
+
+				omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
+			} else {
+				posX = omicronManager.lastPosX;
+				posY = omicronManager.lastPosY;
+			}
+
+			if (timeSinceLastNonCritEvent >= omicronManager.nonCriticalEventDelay) {
+				omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
+				omicronManager.lastNonCritEventTime = Date.now();
+			}
+		}
+
+		// Update button state
+		omicronManager.wandState[wandID].buttonState = e.flags;
 		if (e.flags !== 0) {
-			// console.log("Wand flags: " + e.flags + " " + (omicronManager.lastWandFlags & playButton) );
+
+
+			/*
 			if ((e.flags & clickDragButton) === clickDragButton && omicronManager.showPointerToggle) {
 				if (omicronManager.lastWandFlags === 0) {
 					// Wand Click
-					omicronManager.pointerPress(address, posX, posY, { button: "left" });
+					omicronManager.pointerPress(wandID, posX, posY, { button: "left" });
 				} else {
 					// Wand Drag
 					if (timeSinceLastNonCritEvent >= omicronManager.nonCriticalEventDelay) {
-						omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
-						omicronManager.pointerMove(address, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
+						omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
+						omicronManager.pointerMove(wandID, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
 
 						omicronManager.lastNonCritEventTime = Date.now();
 					}
 				}
 			} else if (omicronManager.lastWandFlags === 0 && (e.flags & menuButton) === menuButton &&
 						omicronManager.showPointerToggle) {
-				omicronManager.pointerPress(address, posX, posY, { button: "right" });
+				omicronManager.pointerPress(wandID, posX, posY, { button: "right" });
 			} else if (omicronManager.lastWandFlags === 0 && (e.flags & showHideButton) === showHideButton) {
 				if (!omicronManager.showPointerToggle) {
 					omicronManager.showPointerToggle = true;
-					omicronManager.showPointer(omicronManager.config.inputServerIP, {
+					omicronManager.showPointer(wandID, {
 						label:  omicronManager.wandLabel + " " + sourceID, color: omicronManager.wandColor
 					});
-					omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
+					omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
 				} else {
 					omicronManager.showPointerToggle = false;
 					// hidePointer( omicronManager.config.inputServerIP );
@@ -753,38 +785,41 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 			} else if (omicronManager.lastWandFlags === 0 &&
 					(e.flags & scaleUpButton) === scaleUpButton &&
 					omicronManager.showPointerToggle) {
-				omicronManager.pointerScrollStart(address, posX, posY);
+				omicronManager.pointerScrollStart(wandID, posX, posY);
 
 				// Casting the parameters to correct type
 				omicronManager.pointerScroll(address, { wheelDelta: parseInt(-omicronManager.wandScaleDelta, 10) });
 			} else if (omicronManager.lastWandFlags === 0 &&
 						(e.flags & scaleDownButton) === scaleDownButton &&
 						omicronManager.showPointerToggle) {
-				omicronManager.pointerScrollStart(address, posX, posY);
+				omicronManager.pointerScrollStart(wandID, posX, posY);
 
 				// Casting the parameters to correct type
-				omicronManager.pointerScroll(address, { wheelDelta: parseInt(omicronManager.wandScaleDelta, 10) });
+				omicronManager.pointerScroll(wandID, { wheelDelta: parseInt(omicronManager.wandScaleDelta, 10) });
 			} else if (omicronManager.lastWandFlags === 0 &&
 					(e.flags & maximizeButton) === maximizeButton &&
 					omicronManager.showPointerToggle) {
-				omicronManager.pointerDblClick(address, posX, posY);
+				omicronManager.pointerDblClick(wandID, posX, posY);
 			} else if ((omicronManager.lastWandFlags & previousButton) === 0 &&
 					(e.flags & previousButton) === previousButton) {
-				omicronManager.keyDown(address, posX, posY, { code: 37 });
+				omicronManager.keyDown(wandID, posX, posY, { code: 37 });
 			} else if ((omicronManager.lastWandFlags & nextButton) === 0 &&
 					(e.flags & nextButton) === nextButton) {
-				omicronManager.keyDown(address, posX, posY, { code: 39 });
+				omicronManager.keyDown(wandID, posX, posY, { code: 39 });
 			} else if ((omicronManager.lastWandFlags & playButton) === 0  &&
 					(e.flags & playButton) === playButton) {
-				omicronManager.keyPress(address, posX, posY, { code: 32 });
+				omicronManager.keyPress(wandID, posX, posY, { code: 32 });
 			}
 
 			omicronManager.lastWandFlags = e.flags;
+			*/
 		} else if (omicronManager.lastWandFlags !== 0) {
+
+			/*
 			// TODO: Add a smarter way of detecting press, drag, release from button flags
 			if ((omicronManager.lastWandFlags & clickDragButton) === clickDragButton) {
 				// console.log("wandPointer release");
-				omicronManager.pointerRelease(address, posX, posY, { button: "left" });
+				omicronManager.pointerRelease(wandID, posX, posY, { button: "left" });
 
 				omicronManager.lastWandFlags = 0;
 			} else if ((omicronManager.lastWandFlags & showHideButton) === showHideButton) {
@@ -797,14 +832,15 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 				omicronManager.lastWandFlags = 0;
 			} else if ((omicronManager.lastWandFlags & previousButton) === previousButton) {
 				omicronManager.lastWandFlags = 0;
-				omicronManager.keyUp(address, posX, posY, { code: 37 });
+				omicronManager.keyUp(wandID, posX, posY, { code: 37 });
 			} else if ((omicronManager.lastWandFlags & nextButton) === nextButton) {
 				omicronManager.lastWandFlags = 0;
-				omicronManager.keyUp(address, posX, posY, { code: 39 });
+				omicronManager.keyUp(wandID, posX, posY, { code: 39 });
 			} else if ((omicronManager.lastWandFlags & playButton) === playButton) {
 				omicronManager.lastWandFlags = 0;
-				omicronManager.keyUp(address, posX, posY, { code: 32 });
+				omicronManager.keyUp(wandID, posX, posY, { code: 32 });
 			}
+			*/
 		}
 	} // ServiceTypeWand ends ///////////////////////////////////////////
 };
