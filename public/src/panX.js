@@ -21,11 +21,12 @@ class panX extends AudioWorkletProcessor {
 
     for (let channel = 0; channel < input.length; ++channel) {
       let rangePerSpeaker = 1.0 / input.length;
-      let speaker = Math.floor(panParam[0] / rangePerSpeaker);
+      let speaker = Math.floor(panParam[0] * 16);
       let nextSpeaker = speaker + 1;
       if (nextSpeaker == input.length) {
         nextSpeaker = -1;
       }
+      //console.log("nextSpeaker: " + nextSpeaker);
 
       let pan = panParam[0] % rangePerSpeaker;
       pan = pan / rangePerSpeaker;
@@ -44,7 +45,7 @@ class panX extends AudioWorkletProcessor {
       else {
         pan = 0;
       }
-
+      
       //write to 128 sample buffer:
       for (let i = 0; i < inputChannel.length; ++i) {
         outputChannel[i] = inputChannel[i] * pan;

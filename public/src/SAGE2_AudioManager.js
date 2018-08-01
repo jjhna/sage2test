@@ -399,6 +399,7 @@ function setupListeners() {
 			// Calculate center of the application window
 			var halfTotalWidth = totalWidth / 2;
 			var centerX = data.elemLeft + data.elemWidth / 2 - halfTotalWidth;
+			//console.log("centerX" + centerX);
 			if (centerX < -totalWidth) {
 				centerX = -totalWidth;
 			}
@@ -407,10 +408,12 @@ function setupListeners() {
 			}
 			// Update the panner position
 			var panX = centerX / totalWidth;
+			var speaker = (halfTotalWidth / totalWidth) + panX;
+			//console.log("speaker" + speaker);
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
 			var panParameter = audioPannerNodes[data.elemId].parameters.get('panAudioParam');
-			panParameter.setTargetAtTime(panX, audioCtx.currentTime, .015);
+			panParameter.setTargetAtTime(speaker, audioCtx.currentTime, .015);
 
 		}
 	});
@@ -420,6 +423,7 @@ function setupListeners() {
 			// Calculate center of the application window
 			var halfTotalWidth = totalWidth / 2;
 			var centerX = data.elemLeft + data.elemWidth / 2 - halfTotalWidth;
+			//console.log("centerX" + centerX);
 			if (centerX < -totalWidth) {
 				centerX = -totalWidth;
 			}
@@ -428,10 +432,12 @@ function setupListeners() {
 			}
 			// Update the panner position
 			var panX = centerX / totalWidth;
+			var speaker = (halfTotalWidth / totalWidth) + panX;
+			//console.log("speaker" + speaker);
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
 			var panParameter = audioPannerNodes[data.elemId].parameters.get('panAudioParam');
-			panParameter.setTargetAtTime(panX, audioCtx.currentTime, .015);
+			panParameter.setTargetAtTime(speaker, audioCtx.currentTime, .015);
 		}
 	});
 
@@ -567,13 +573,13 @@ function setupListeners() {
  * @param event {Event} event data
  */
 function handleSoundJSLoad(event) {
-	if (event.id === "startup") {
-		// Play the startup jingle at load
-		var instance = createjs.Sound.play(event.src);
-		// Set the volume
-		instance.volume = initialVolume / 10;
-	}
-	console.log('SoundJS> asset loaded', event.id);
+	// if (event.id === "startup") {
+	// 	// Play the startup jingle at load
+	// 	var instance = createjs.Sound.play(event.src);
+	// 	// Set the volume
+	// 	instance.volume = initialVolume / 10;
+	// }
+	// console.log('SoundJS> asset loaded', event.id);
 }
 
 
