@@ -52,7 +52,7 @@ var imageMagick;                                 // derived from graphicsmagick
 var WebsocketIO   = require('websocketio');      // creates WebSocket server and clients
 var chalk         = require('chalk');            // used for colorizing the console output
 var commander     = require('commander');        // parsing command-line arguments
-var JSZip		  = require("jszip");			 // used for creating zip files
+var JSZip         = require("jszip");            // used for creating zip files
 
 // custom node modules
 var sageutils           = require('./src/node-utils');            // provides the current version number
@@ -10167,7 +10167,6 @@ function wsZipFolderForDownload(wsio, data) {
 	var filename = data.filename.replace(mediaFolders.user.url, mediaFolders.user.path);
 	folderPath = path.normalize(folderPath);
 	filename = path.normalize(filename);
-	//sageutils.log(folderName);
 
 	// utility function, return Promise
 	function getFile(filename) {
