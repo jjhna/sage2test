@@ -3595,7 +3595,7 @@ function wsLoadFileFromServer(wsio, data) {
 			appLoader.loadFileFromLocalStorage(data, fileLoadCallBack);
 		} else if (data.setDefault === true) {
 			// Change the default app for the file type
-			registry.setDefaultApp(data.filename, data.application);
+			registry.setDefaultApp(data.filename, data.application, true);
 			appLoader.loadFileFromLocalStorage(data, fileLoadCallBack);
 			// Send the changed file associations
 			wsRequestAppAssociations(wsio);

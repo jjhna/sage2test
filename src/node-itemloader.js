@@ -1197,10 +1197,21 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, openCompressed, c
 	}
 };
 
+AppLoader.prototype.loadFileWithNonDefaultApplication = function(data, callback) {
+	var mime_type;
+	var localPath = getSAGE2Path(data.filename);
+	var defaultApp = registry.getDefaultApp(localPath);
+	registry.setDefaultApp(data.filename, data.application);
+	this.loadFileFromLocalStorage({filename: data.filename}, function(appInstance, handle) {
+		callback(appInstance, handle);
+		registry.setDefaultApp(data.filename, defaultApp);
+	})
+}
+
 AppLoader.prototype.loadApplication = function(appData, callback) {
 	var app;
 	if (appData.location === "file") {
-		app = registry.getDefaultAppFromMime(appData.type, true);
+		app = appData.app || registry.getDefaultAppFromMime(appData.type, true);
 		if (app === "image_viewer") {
 			this.loadImageFromFile(appData.path, appData.type, appData.url, appData.external_url, appData.name,
 				function(appInstance) {

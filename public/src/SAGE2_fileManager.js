@@ -2039,68 +2039,89 @@ function FileManager(wsio, mydiv, uniqueID) {
 		}
 	}
 
+	function loadFolder(item) {
+		if (item) {
+			if (item.sage2URL) {
+				var contents = _this.allTable.find(function(obj) {
+					// trying to match the base URL
+					return _this.allFiles[obj.id].sage2URL.lastIndexOf(item.sage2URL, 0) === 0;
+				});
+				contents.map(function(folderItem) {
+					_this.openItem(folderItem.id);
+				})
+			}
+		}
+	}
+
 	var tmenu = webix.ui({
 		view: "contextmenu",
 		id: "tmenu",
-		data: ["New folder", { $template: "Separator" }, "Refresh"],
+		data: ["New folder", { $template: "Separator" }, "Refresh", "Open"],
 		on: {
 			onMenuItemClick: function(id) {
 				var context = this.getContext();
 				var list    = context.obj;
 				var listId  = context.id;
 
-				if (id === "New folder") {
-					webix.ui({
-						view: "window",
-						id: "folder_form",
-						position: "center",
-						modal: true,
-						zIndex: 9999,
-						head: "New folder in " + list.getItem(listId).sage2URL,
-						body: {
-							view: "form",
-							width: 400,
-							borderless: false,
-							elements: [
-								{
-									view: "text", id: "folder_name", label: "Folder name", name: "folder"
-								},
-								{
-									margin: 5, cols: [
-										{
-											view: "button", value: "Cancel", click: function() {
-												this.getTopParentView().hide();
+				switch(id) {
+					case "New folder": 
+						webix.ui({
+							view: "window",
+							id: "folder_form",
+							position: "center",
+							modal: true,
+							zIndex: 9999,
+							head: "New folder in " + list.getItem(listId).sage2URL,
+							body: {
+								view: "form",
+								width: 400,
+								borderless: false,
+								elements: [
+									{
+										view: "text", id: "folder_name", label: "Folder name", name: "folder"
+									},
+									{
+										margin: 5, cols: [
+											{
+												view: "button", value: "Cancel", click: function() {
+													this.getTopParentView().hide();
+												}
+											},
+											{
+												view: "button", value: "Create", type: "form", click: function() {
+													createFolder(list.getItem(listId), this.getFormView().getValues());
+													this.getTopParentView().hide();
+												}
 											}
-										},
-										{
-											view: "button", value: "Create", type: "form", click: function() {
-												createFolder(list.getItem(listId), this.getFormView().getValues());
-												this.getTopParentView().hide();
-											}
-										}
-									]
+										]
+									}
+								],
+								elementsConfig: {
+									labelPosition: "top"
 								}
-							],
-							elementsConfig: {
-								labelPosition: "top"
 							}
-						}
-					}).show();
-					// Attach handlers for keyboard
-					$$("folder_name").attachEvent("onKeyPress", function(code, e) {
-						// ESC closes
-						if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-							this.getTopParentView().hide();
-							return false;
-						}
-						// ENTER activates
-						if (code === 13 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-							createFolder(list.getItem(listId), this.getFormView().getValues());
-							this.getTopParentView().hide();
-							return false;
-						}
-					});
-					$$('folder_name').focus();
+						}).show();
+						// Attach handlers for keyboard
+						$$("folder_name").attachEvent("onKeyPress", function(code, e) {
+							// ESC closes
+							if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+								this.getTopParentView().hide();
+								return false;
+							}
+							// ENTER activates
+							if (code === 13 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+								createFolder(list.getItem(listId), this.getFormView().getValues());
+								this.getTopParentView().hide();
+								return false;
+							}
+						});
+						$$('folder_name').focus();
+						break;
+					case "Open":
+						loadFolder(list.getItem(listId));
+						break;
+					case "Refresh":
+						break;
 				}
 			}
 		}

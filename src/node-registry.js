@@ -248,7 +248,7 @@ RegistryManager.prototype.getDirectory = function(file, warn) {
 	return dir;
 };
 
-RegistryManager.prototype.setDefaultApp = function(file, app) {
+RegistryManager.prototype.setDefaultApp = function(file, app, warn) {
 	var apps = [];
 	var type = '/' + mime.getType(file);
 	// Check if the entry exists
@@ -257,13 +257,15 @@ RegistryManager.prototype.setDefaultApp = function(file, app) {
 		var appIdx = apps.findIndex(x => x === app);
 		if (appIdx < -1) {
 			sageutils.log("Registry", "Unknown app", app);
-		} else if (appIdx === 0) {
-			sageutils.log("Registry", "Default app set for", type);
+		} else if (appIdx === 0 && warn === true) {
+			sageutils.log("Registry", app, "set as default app for", type);
 		} else {
 			apps.splice(appIdx, 1);
 			apps.splice(0, 0, app);
 			this.push(type + '/applications', apps, true);
-			sageutils.log("Registry", "Default app set for", type);
+			if (warn === true) {
+				sageutils.log("Registry", app, "set as default app for", type);	
+			}
 		}
 	} catch (error) {
 		// Entry does not exist.
