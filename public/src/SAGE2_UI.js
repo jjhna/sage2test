@@ -510,6 +510,12 @@ function setupListeners() {
 		showSAGE2Message(data);
 	});
 
+	// Open a popup on message sent from server
+	wsio.on('warningMessage', function(data) {
+		// Show a message for 1.2 seconds
+		showSAGE2Message(data, 1.2);
+	});
+
 	wsio.on('setupDisplayConfiguration', function(config) {
 		displayUI = new SAGE2DisplayUI();
 		displayUI.init(config, wsio);
