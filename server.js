@@ -3897,6 +3897,11 @@ function wsPauseVideo(wsio, data) {
 	SAGE2Items.renderSync[data.id].decoder.pause(function() {
 		broadcast('videoPaused', {id: data.id});
 	});
+
+	// Necessary since the above broadcast has cases when the callback doesn't trigger. This is ok to send multiples.
+	if (data.audioPause) {
+		broadcast('videoPaused', {id: data.id});
+	}
 }
 
 function wsStopVideo(wsio, data) {
@@ -4554,8 +4559,6 @@ function wsUpdateApplicationState(wsio, data) {
 		if (modified === true) {
 			// update video demuxer based on state
 			if (app.application === "movie_player") {
-				console.log("received state from remote site:", data.state);
-
 				SAGE2Items.renderSync[app.id].loop = app.data.looped;
 
 				var ts = app.data.frame / app.data.framerate;
@@ -5277,7 +5280,7 @@ function uploadForm(req, res) {
 	form.maxFieldsSize = 4 * 1024 * 1024;
 	// Increase file limit to match client limit in SAGE2_interaction.js
 	// Default is 2MB https://github.com/felixge/node-formidable/commit/39f27f29b2824c21d0d9b8e85bcbb5fc0081beaf
-	form.maxFileSize = 1024 * 1024 * 1024;
+	form.maxFileSize = 20 * (1024 * 1024 * 1024); // 20GB to match the client side upload
 	form.type          = 'multipart';
 	form.multiples     = true;
 
