@@ -573,13 +573,13 @@ function setupListeners() {
  * @param event {Event} event data
  */
 function handleSoundJSLoad(event) {
-	// if (event.id === "startup") {
-	// 	// Play the startup jingle at load
-	// 	var instance = createjs.Sound.play(event.src);
-	// 	// Set the volume
-	// 	instance.volume = initialVolume / 10;
-	// }
-	// console.log('SoundJS> asset loaded', event.id);
+	if (event.id === "startup") {
+		// Play the startup jingle at load
+		var instance = createjs.Sound.play(event.src);
+		// Set the volume
+		instance.volume = initialVolume / 10;
+	}
+	console.log('SoundJS> asset loaded', event.id);
 }
 
 
