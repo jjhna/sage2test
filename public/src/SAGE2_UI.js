@@ -981,11 +981,30 @@ function fileDrop(event) {
 	// trigger file upload
 	var x = event.layerX / event.target.clientWidth;
 	var y = event.layerY / event.target.clientHeight;
-	if (event.dataTransfer.files.length > 0) {
+	var filesForUpload = event.dataTransfer.files;
+	if (filesForUpload.length > 0) {
+		var hasZip = checkForZipFiles(filesForUpload);
+		if (hasZip === true) {
+			//displayUI.uploadPercent = 0;
+			//interactor.uploadFiles(event.dataTransfer.files, false, x, y);	
+			webix.confirm({
+				title: "Zip file upload!",
+				text: "Do you want the contents of the zip files being uploaded to be loaded on the display?",
+				ok: "Yes",
+				cancel: "No",
+				width: "75%",
+				callback: function(result) {
+					displayUI.uploadPercent = 0;
+					interactor.uploadFiles(filesForUpload, result, x, y);	
+				}
+			});
+		} else {
+			displayUI.uploadPercent = 0;
+			interactor.uploadFiles(filesForUpload, false, x, y);	
+		}
 		// upload a file
 		// displayUI.fileUpload = true;
-		displayUI.uploadPercent = 0;
-		interactor.uploadFiles(event.dataTransfer.files, x, y);
+		
 	} else {
 		// URLs and text and ...
 		if (event.dataTransfer.types) {
@@ -1129,9 +1148,40 @@ function fileUploadFromUI() {
 	var thefile = document.getElementById('filenameForUpload');
 	displayUI.fileUpload = true;
 	displayUI.uploadPercent = 0;
-	interactor.uploadFiles(thefile.files, 0, 0);
+	var hasZip = checkForZipFiles(thefile.files);
+	if (hasZip === true) {
+		webix.confirm({
+			title: "Zip file upload!",
+			text: "Do you want the contents of the zip files being uploaded to be loaded on the display?",
+			ok: "Yes",
+			cancel: "No",
+			callback: function(result) {
+				interactor.uploadFiles(thefile.files, result, 0, 0);	
+			}
+		});
+	} else {
+		interactor.uploadFiles(thefile.files, false, 0, 0);	
+	}
 }
 
+/**
+ * Check if files being uploaded are zip files
+ * 
+ * @method checkForZipFiles
+ */
+
+ function checkForZipFiles(files) {
+ 	var hasZipFiles = false;
+ 	for (var i = 0; i < files.length; i++) {
+ 		var file = files[i];
+ 		// Check the type for zip file
+ 		if (file.type.indexOf("compressed") > -1) {
+ 			hasZipFiles = true;
+ 			break;
+ 		}
+ 	}
+ 	return hasZipFiles;
+ }
 
 /**
  * Handler for mouse press

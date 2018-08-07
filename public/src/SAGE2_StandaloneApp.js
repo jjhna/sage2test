@@ -320,6 +320,7 @@ function mouseCheck(event) {
 			document.addEventListener('click',     standAloneApp.pointerClick.bind(standAloneApp), false);
 			document.addEventListener('mousemove', standAloneApp.pointerMove.bind(standAloneApp), false);
 			document.addEventListener('wheel',     standAloneApp.pointerScroll.bind(standAloneApp), false);
+			//document.addEventListener('dblclick',  standAloneApp.pointerDblClick.bind(standAloneApp), false);
 			if (eventHandlerRegisterer !== null) {
 				clearInterval(eventHandlerRegisterer);
 			}
@@ -331,16 +332,6 @@ function mouseCheck(event) {
 	}
 
 	registerHandlers();
-
-	/*document.addEventListener('mousedown',  pointerPress,    false);
-	document.addEventListener('click',      pointerClick,    false);
-	document.addEventListener('mouseup',    pointerRelease,  false);*/
-
-	/*document.addEventListener('wheel',      pointerScroll,   false);
-
-	document.addEventListener('dblclick',   pointerDblClick, false);*/
-
-
 }
 
 
@@ -352,7 +343,6 @@ function setupListeners() {
 		// Global initialization
 		SAGE2_initialize(startTime);
 
-		//interactor.setInteractionId(data.UID);
 		pointerDown = false;
 		pointerX    = 0;
 		pointerY    = 0;

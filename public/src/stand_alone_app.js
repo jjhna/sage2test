@@ -152,7 +152,6 @@ function StandAloneApp(id, wsio) {
 		this.ui.resizePointers(newratio);
 		this.computeWindowFit();
 		var translate = "translate(" + Math.round(this.appLeft) + "px, " + Math.round(this.appTop) + "px)";
-		//console.log(this.appScale, this.mainWidth, this.appWidth);
 
 		this.appParentDiv.style.webkitTransform = translate;
 		this.appParentDiv.style.mozTransform    = translate;
@@ -184,9 +183,7 @@ function StandAloneApp(id, wsio) {
 			this.appScale = this.mainHeight / h;
 			this.appWidth = Math.round(w * this.appScale);
 			this.appHeight = Math.round(this.mainHeight);
-			//console.log(">>>>>>>>>>>");
 		} else {
-			//console.log("<<<<<<<<<<<");
 			this.appScale = this.mainWidth / w;
 			this.appWidth = Math.round(this.mainWidth);
 			this.appHeight = Math.round(h * this.appScale);
@@ -512,14 +509,9 @@ function StandAloneApp(id, wsio) {
 		var inside = false;
 		var x = event.clientX;
 		var y = event.clientY;
-		// var pointer_data = {
-		// 	id: this.user.id + "_pointer"
-		// };
 		if (x > this.appLeft && x < (this.appLeft + this.appWidth) &&
 			y > this.appTop && y < (this.appTop + this.appHeight)) {
 			inside = true;
-			// pointer_data.left = event.x;
-			// pointer_data.top = event.y;
 		}
 		if (inside) {
 			var btn = (event.button === 0) ? "left" : (event.button === 1) ? "middle" : "right";

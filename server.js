@@ -5384,7 +5384,7 @@ function uploadForm(req, res) {
 	// User information
 	var ptrName  = "";
 	var ptrColor = "";
-
+	var openCompressed = false;
 	// Limits the amount of memory all fields together (except files) can allocate in bytes.
 	//    set to 4MB.
 	form.maxFieldsSize = 4 * 1024 * 1024;
@@ -5436,6 +5436,10 @@ function uploadForm(req, res) {
 		if (field === 'open') {
 			openAfter = (value === "true");
 		}
+
+		if (field === "openCompressed") {
+			openCompressed = (value === "true");
+		}
 	});
 
 	form.parse(req, function(err, fields, files) {
@@ -5468,15 +5472,15 @@ function uploadForm(req, res) {
 
 	form.on('end', function() {
 		// saves files in appropriate directory and broadcasts the items to the displays
-		manageUploadedFiles(this.openedFiles, position, ptrName, ptrColor, openAfter);
+		manageUploadedFiles(this.openedFiles, position, ptrName, ptrColor, openAfter, openCompressed);
 	});
 }
 
-function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
+function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter, openCompressed) {
 	var fileKeys = Object.keys(files);
 	fileKeys.forEach(function(key) {
 		var file = files[key];
-		appLoader.manageAndLoadUploadedFile(file, function(appInstance, videohandle) {
+		appLoader.manageAndLoadUploadedFile(file, openCompressed, function(appInstance, videohandle) {
 
 			if (appInstance === null) {
 				sageutils.log("Upload", 'unrecognized file type:', file.name, file.type);
