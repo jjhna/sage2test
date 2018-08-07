@@ -257,6 +257,7 @@ function setupListeners() {
 			vid.startPaused   = data.data.paused;
 			vid.controls      = false;
 			vid.style.display = "none";
+			vid.crossOrigin   = "anonymous";
 			vid.addEventListener('canplaythrough', function() {
 				// Video is loaded and can be played
 				if (vid.firstPlay && vid.sessionTime) {
@@ -501,6 +502,12 @@ function setupListeners() {
 				vid.sessionTime = data.timestamp;
 			} else {
 				vid.currentTime = data.timestamp;
+			}
+
+			if (data.play) {
+				vid.play();
+			} else {
+				vid.pause();
 			}
 		}
 	});
