@@ -6,7 +6,7 @@
 //
 // See full text, terms and conditions in the LICENSE.txt included file
 //
-// Copyright (c) 2014-15
+// Copyright (c) 2018
 
 /* global ignoreFields, hostAlias */
 /* global SAGE2RemoteSitePointer */

@@ -6,7 +6,7 @@
 //
 // See full text, terms and conditions in the LICENSE.txt included file
 //
-// Copyright (c) 2014
+// Copyright (c) 2018
 
 /* global Pointer, dataSharingPortals, createDrawingElement, RadialMenu, d3 */
 

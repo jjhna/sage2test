@@ -181,7 +181,6 @@ RegistryManager.prototype.getDefaultApp = function(file, warn) {
 RegistryManager.prototype.getDefaultAppFromMime = function(type, warn) {
 	var defaultApp = "";
 	try {
-		//defaultApp = this.db.getData('/' + type + '/default');
 		defaultApp = this.db.getData('/' + type + '/applications[0]');
 	} catch (error) {
 		if (type === "text/plain") {

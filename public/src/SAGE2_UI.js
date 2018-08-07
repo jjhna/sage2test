@@ -740,7 +740,6 @@ function setupListeners() {
 	});
 	wsio.on('zipFolderPathForDownload', function(data) {
 		var url = data.filename;
-		console.log(url);
 		if (url) {
 			// Download the file
 			var link = document.createElement('a');
@@ -757,7 +756,7 @@ function setupListeners() {
 				cancelable: true
 			});
 			link.addEventListener('click', function(event) {
-				//wsio.emit('deleteDownloadedZip', data);
+				// wsio.emit('deleteDownloadedZip', data);
 			});
 			link.dispatchEvent(event);
 		}
@@ -994,8 +993,8 @@ function fileDrop(event) {
 			// displayUI.uploadPercent = 0;
 			// interactor.uploadFiles(event.dataTransfer.files, false, x, y);
 			webix.confirm({
-				title: "Zip file upload!",
-				text: "Do you want the contents of the zip files being uploaded to be loaded on the display?",
+				title: "Zip file upload",
+				text: "Do you want the zip content be loaded on the display?",
 				ok: "Yes",
 				cancel: "No",
 				width: "75%",

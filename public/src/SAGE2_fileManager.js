@@ -1139,7 +1139,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	webix.ui({
 		view: "window",
 		id: "open_with_window",
-		head: "Choose Application..",
+		head: "Open With...",
 		modal: true,
 		position: "center",
 		body: {
@@ -1218,7 +1218,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	var ctx_menu = webix.ui({
 		view: "contextmenu",
 		id: "cmenu",
-		data: ["Open", "Open with ...", "Copy URL", "Open in Tab", "Download", { $template: "Separator" }, "Delete"],
+		data: ["Open", "Open With...", "Copy URL", "Open in Tab", "Download", { $template: "Separator" }, "Delete"],
 		on: {
 			onMenuItemClick: function(id) {
 				var i;
@@ -1253,7 +1253,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 						_this.openItem(tid);
 					});
 
-				} else if (id === "Open with ...") {
+				} else if (id === "Open With...") {
 					_this.openItemWith(list.getItem(listId).id);
 				} else if (id === "Delete") {
 					var tbd = [];
@@ -1310,7 +1310,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		// Reset
 		$$('cmenu').enableItem('Copy URL');
 		$$('cmenu').enableItem('Open in Tab');
-		$$('cmenu').enableItem('Open with ...');
+		$$('cmenu').enableItem('Open With...');
 		$$('cmenu').enableItem('Download');
 		$$('cmenu').enableItem('Delete');
 		// Select
@@ -1545,7 +1545,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 	this.openItem = function(tid, position) {
 		var appType = this.getApplicationFromId(tid);
 		// Opening an app
-		console.log(appType);
 		if (appType === "application/custom") {
 			wsio.emit('loadApplication', {
 				application: tid,
@@ -1593,7 +1592,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 			} else {
 				setDefaultButton.enable();
 			}
-			//openWithWindow.head = "Choose app for " + filename;
 			openWithMenu.select(openWithMenu.getFirstId(), false);
 			openWithWindow.show();
 
@@ -1985,7 +1983,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 	};
 
 	this.updateAppAssociations = function(data) {
-		console.log(data);
 		if (data.overwrite === true) {
 			this.allFileAssociations = data.allFileAssociations;
 		}

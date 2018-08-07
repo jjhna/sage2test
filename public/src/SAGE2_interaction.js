@@ -324,8 +324,8 @@ function SAGE2_interaction(wsio) {
 
 		// Clear the upload array
 		this.array_xhr.length = 0;
-		showCompressed = (showCompressed === true); // Limiting the values to true / false
-		console.log("showCompressed", showCompressed);
+		// Converting value to boolean
+		showCompressed = (showCompressed === true);
 		for (var i = 0; i < files.length; i++) {
 			if (files[i].size <= this.maxUploadSize) {
 				var formdata = new FormData();
