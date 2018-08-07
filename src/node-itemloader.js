@@ -712,7 +712,7 @@ AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, list, openC
 					}
 				});
 			});
-			
+
 		});
 
 		// delete original zip file
@@ -1198,15 +1198,14 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, openCompressed, c
 };
 
 AppLoader.prototype.loadFileWithNonDefaultApplication = function(data, callback) {
-	var mime_type;
 	var localPath = getSAGE2Path(data.filename);
 	var defaultApp = registry.getDefaultApp(localPath);
 	registry.setDefaultApp(data.filename, data.application);
 	this.loadFileFromLocalStorage({filename: data.filename}, function(appInstance, handle) {
 		callback(appInstance, handle);
 		registry.setDefaultApp(data.filename, defaultApp);
-	})
-}
+	});
+};
 
 AppLoader.prototype.loadApplication = function(appData, callback) {
 	var app;

@@ -2048,7 +2048,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				});
 				contents.map(function(folderItem) {
 					_this.openItem(folderItem.id);
-				})
+				});
 			}
 		}
 	}
@@ -2063,8 +2063,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 				var list    = context.obj;
 				var listId  = context.id;
 
-				switch(id) {
-					case "New folder": 
+				switch (id) {
+					case "New folder":
 						webix.ui({
 							view: "window",
 							id: "folder_form",

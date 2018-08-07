@@ -10702,13 +10702,15 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 					// output folder
 					path: currentPath,
 					// filename
-					name: fname}],
-					// position and size
+					name: fname
+				}],
+				// position and size
 				[0, 0, config.totalWidth / 4],
 				// username and color
 				"screenshot", "#B4B4B4",
 				// to be opened afterward
-				true);
+				true
+				);
 				// Delete the temporary files
 				sageutils.deleteFiles(path.join(mainFolder.path, "tmp", "wallScreenshot_*"));
 			}

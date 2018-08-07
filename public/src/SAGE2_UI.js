@@ -991,8 +991,8 @@ function fileDrop(event) {
 	if (filesForUpload.length > 0) {
 		var hasZip = checkForZipFiles(filesForUpload);
 		if (hasZip === true) {
-			//displayUI.uploadPercent = 0;
-			//interactor.uploadFiles(event.dataTransfer.files, false, x, y);	
+			// displayUI.uploadPercent = 0;
+			// interactor.uploadFiles(event.dataTransfer.files, false, x, y);
 			webix.confirm({
 				title: "Zip file upload!",
 				text: "Do you want the contents of the zip files being uploaded to be loaded on the display?",
@@ -1001,16 +1001,15 @@ function fileDrop(event) {
 				width: "75%",
 				callback: function(result) {
 					displayUI.uploadPercent = 0;
-					interactor.uploadFiles(filesForUpload, result, x, y);	
+					interactor.uploadFiles(filesForUpload, result, x, y);
 				}
 			});
 		} else {
 			displayUI.uploadPercent = 0;
-			interactor.uploadFiles(filesForUpload, false, x, y);	
+			interactor.uploadFiles(filesForUpload, false, x, y);
 		}
 		// upload a file
 		// displayUI.fileUpload = true;
-		
 	} else {
 		// URLs and text and ...
 		if (event.dataTransfer.types) {
@@ -1162,32 +1161,32 @@ function fileUploadFromUI() {
 			ok: "Yes",
 			cancel: "No",
 			callback: function(result) {
-				interactor.uploadFiles(thefile.files, result, 0, 0);	
+				interactor.uploadFiles(thefile.files, result, 0, 0);
 			}
 		});
 	} else {
-		interactor.uploadFiles(thefile.files, false, 0, 0);	
+		interactor.uploadFiles(thefile.files, false, 0, 0);
 	}
 }
 
 /**
  * Check if files being uploaded are zip files
- * 
+ *
  * @method checkForZipFiles
  */
 
- function checkForZipFiles(files) {
- 	var hasZipFiles = false;
- 	for (var i = 0; i < files.length; i++) {
- 		var file = files[i];
- 		// Check the type for zip file
- 		if (file.type.indexOf("compressed") > -1) {
- 			hasZipFiles = true;
- 			break;
- 		}
- 	}
- 	return hasZipFiles;
- }
+function checkForZipFiles(files) {
+	var hasZipFiles = false;
+	for (var i = 0; i < files.length; i++) {
+		var file = files[i];
+		// Check the type for zip file
+		if (file.type.indexOf("compressed") > -1) {
+			hasZipFiles = true;
+			break;
+		}
+	}
+	return hasZipFiles;
+}
 
 /**
  * Handler for mouse press

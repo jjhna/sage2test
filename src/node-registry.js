@@ -264,7 +264,7 @@ RegistryManager.prototype.setDefaultApp = function(file, app, warn) {
 			apps.splice(0, 0, app);
 			this.push(type + '/applications', apps, true);
 			if (warn === true) {
-				sageutils.log("Registry", app, "set as default app for", type);	
+				sageutils.log("Registry", app, "set as default app for", type);
 			}
 		}
 	} catch (error) {
