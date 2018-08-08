@@ -15,7 +15,6 @@ var quickNote = SAGE2_App.extend({
 		this.SAGE2Init("div", data);
 
 		this.resizeEvents = "continuous"; // "onfinish";
-		this.maxFPS = 10; // Used for the pointer thing. necessary because of overflow hidden
 
 		this.element.id = "div" + data.id;
 		this.element.style.background = "lightyellow";
@@ -271,14 +270,6 @@ var quickNote = SAGE2_App.extend({
 	},
 
 	draw: function(date) {
-		// left intentionally blank
-		if (this.hasLoadedTopLeftPointer && this.pointerIcon) {
-			// if the line and app exist, then redraw
-			this.pointerIcon.attr({
-				x: this.sage2_x,
-				y: this.sage2_y - ui.titleBarHeight * 5,
-			});
-		}
 	},
 
 	resize: function(date) {
@@ -330,10 +321,42 @@ var quickNote = SAGE2_App.extend({
 		var entry;
 
 		entry = {};
-		entry.description = "Add pointer";
-		entry.callback    = "addTopLeftPointerToWall";
-		entry.parameters  = {};
+		entry.description = "Switch To Roboto";
+		entry.callback    = "switchFont";
+		entry.parameters  = {
+			family: "'Roboto', sans-serif"
+		};
 		entries.push(entry);
+		entry = {};
+		entry.description = "Switch To Oxygen Mono";
+		entry.callback    = "switchFont";
+		entry.parameters  = {
+			family: "Oxygen Mono"
+		};
+		entries.push(entry);
+		entry = {};
+		entry.description = "Switch To Standard";
+		entry.callback    = "switchFont";
+		entry.parameters  = {
+			family: "Courier New, Consolas, Menlo, monospace"
+		};
+		entries.push(entry);
+
+		entries.push({description: "separator"});
+
+		if (!this.isShowingArrow) {
+			entry = {};
+			entry.description = "Show arrow";
+			entry.callback    = "addTopLeftArrowToWall";
+			entry.parameters  = {};
+			entries.push(entry);
+		} else {
+			entry = {};
+			entry.description = "Hide arrow";
+			entry.callback    = "hideTopLeftArrow";
+			entry.parameters  = {};
+			entries.push(entry);
+		}
 
 		entries.push({description: "separator"});
 
@@ -357,45 +380,45 @@ var quickNote = SAGE2_App.extend({
 		entries.push({description: "separator"});
 
 		entry = {};
-		entry.description = "Blue";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightblue"};
-		entry.entryColor  = "lightblue";
-		entries.push(entry);
-
-		entry = {};
-		entry.description = "Yellow";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightyellow"};
-		entry.entryColor  = "lightyellow";
-		entries.push(entry);
-
-		entry = {};
-		entry.description = "Pink";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightpink"};
-		entry.entryColor  = "lightpink";
-		entries.push(entry);
-
-		entry = {};
-		entry.description = "Green";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightgreen"};
-		entry.entryColor  = "lightgreen";
-		entries.push(entry);
-
-		entry = {};
-		entry.description = "White";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "white"};
-		entry.entryColor  = "white";
-		entries.push(entry);
-
-		entry = {};
-		entry.description = "Orange";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightsalmon"};
-		entry.entryColor  = "lightsalmon";
+		entry.description = "Set Color";
+		entry.children = [
+			{
+				description: "Blue",
+				callback: "setColor",
+				parameters: { color: "lightblue"},
+				entryColor: "lightblue"
+			},
+			{
+				description: "Yellow",
+				callback: "setColor",
+				parameters: { color: "lightyellow"},
+				entryColor: "lightyellow"
+			},
+			{
+				description: "Pink",
+				callback: "setColor",
+				parameters: { color: "lightpink"},
+				entryColor: "lightpink"
+			},
+			{
+				description: "Green",
+				callback: "setColor",
+				parameters: { color: "lightgreen"},
+				entryColor: "lightgreen"
+			},
+			{
+				description: "White",
+				callback: "setColor",
+				parameters: { color: "white"},
+				entryColor: "white"
+			},
+			{
+				description: "Orange",
+				callback: "setColor",
+				parameters: { color: "lightsalmon"},
+				entryColor: "lightsalmon"
+			}
+		];
 		entries.push(entry);
 
 		entries.push({description: "separator"});
@@ -406,7 +429,7 @@ var quickNote = SAGE2_App.extend({
 			callback: "adjustFontSize",
 			parameters: {
 				modifier: "increase"
-			},
+			}
 		});
 		entries.push({
 			description: "Decrease font size",
@@ -414,7 +437,7 @@ var quickNote = SAGE2_App.extend({
 			callback: "adjustFontSize",
 			parameters: {
 				modifier: "decrease"
-			},
+			}
 		});
 		entry = {
 			description: "Set static font size:",
@@ -423,7 +446,7 @@ var quickNote = SAGE2_App.extend({
 			inputFieldSize: 5,
 			parameters: {
 				modifier: "static"
-			},
+			}
 		};
 		if (this.useStaticFontSize) {
 			entry.value = this.startingFontSize;
@@ -443,6 +466,10 @@ var quickNote = SAGE2_App.extend({
 		});
 
 		return entries;
+	},
+
+	switchFont: function(responseObject) {
+		this.element.style.fontFamily = responseObject.family;
 	},
 
 	adjustFontSize: function(responseObject) {
@@ -466,55 +493,41 @@ var quickNote = SAGE2_App.extend({
 	},
 
 
-	addTopLeftPointerToWall: function() {
+	addTopLeftArrowToWall: function() {
 
-		if (this.hasLoadedTopLeftPointer) {
+		if (this.hasLoadedTopLeftArrow) {
+			if (!this.isShowingArrow) {
+				this.arrow.style.display = "block";
+				this.isShowingArrow = true;
+				this.getFullContextMenuAndUpdate();
+			}
 			return;
 		}
-		this.hasLoadedTopLeftPointer = true;
+		this.hasLoadedTopLeftArrow = true;
+		this.isShowingArrow = true;
 
-		var _this = this;
-		Snap.load("images/SAGE2 Pointer Arrow.svg", function(f) {
-			_this.pointerIcon = f.select("svg");
-			_this.pointerIcon.attr({
-				id: "quickNotePointerIcon",
-				x: _this.sage2_x - ui.titleBarHeight * 10,
-				y: _this.sage2_y - ui.titleBarHeight * 10,
-				width: ui.titleBarHeight * 10,
-				height: ui.titleBarHeight * 10,
-				preserveAspectRatio: "xMinYMin meet"
-			});
-			// add the loaded element into the SVG graph
-			svgBackgroundForWidgetConnectors.append(_this.pointerIcon);
-			// mark it as loaded
-			_this.hasLoadedTopLeftPointer = true;
-		});
+		let arrow = document.createElement("img");
+		arrow.style.position = "absolute";
+		arrow.style.top = "0px"; // keep aligned to top of window
+		// need to calculate size
+		arrow.style.height = ui.titleBarHeight * 2 + "px";
+		arrow.style.left = ui.titleBarHeight * -2 + "px"; // move it outside of the title bar
+		arrow.src = "images/quickNote_leftArrow.svg";
 
+		let titlebar = document.getElementById(this.id + "_title");
+		titlebar.appendChild(arrow);
+		titlebar.style.overflow = "visible";
 
-		this.snap = new Snap(100, 100);
-		let title = document.getElementById(this.id + "_title");
-		document.getElementById(this.id + "_title").appendChild(this.snap.node);
-		document.getElementById(this.id + "_title").style.overflow = "visible";
-		document.getElementById(this.id + "_title").style.zIndez = -1;
-		this.snap.node.style.position = "absolute";
-		this.snap.node.style.top = "-100px";
+		this.arrow = arrow;
+		this.getFullContextMenuAndUpdate();
+	},
 
-		Snap.load("images/SAGE2 Pointer Arrow.svg", function(f) {
-			_this.pointerIconForLocalSnap = f.select("svg");
-			_this.pointerIconForLocalSnap.attr({
-				id: "quickNotePointerIcon",
-				x: 0,
-				y: 0,
-				width: 100,
-				height: 100,
-				preserveAspectRatio: "xMinYMin meet"
-			});
-			// add the loaded element into the SVG graph
-			_this.snap.append(_this.pointerIconForLocalSnap);
-			// mark it as loaded
-			_this.hasLoadedTopLeftPointer = true;
-		});
-
+	hideTopLeftArrow: function () {
+		if (this.arrow) {
+			this.arrow.style.display = "none";
+			this.isShowingArrow = false;
+		}
+		this.getFullContextMenuAndUpdate();
 	},
 
 
