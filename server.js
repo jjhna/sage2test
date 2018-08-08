@@ -10527,7 +10527,7 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 					path: currentPath,
 					// filename
 					name: fname}],
-					// position and size
+				// position and size
 				[0, 0, config.totalWidth / 4],
 				// username and color
 				"screenshot", "#B4B4B4",
