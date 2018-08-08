@@ -8121,6 +8121,17 @@ function pointerReleaseOnStaticUI(uniqueID, pointerX, pointerY, obj) {
  * @param  {Object} remote - Remote site. Usually: remoteSites[data.parameters.remoteSiteIndex]
  */
 function shareApplicationWithRemoteSite(uniqueID, app, remote) {
+	// Stop the video when it is shared to ensure synchronized state
+	if (app.application.application === "movie_player") {
+		// Stop on the server
+		wsStopVideo(null, {id: app.application.id});
+		wsUpdateVideoTime(null, {id: app.application.id, timestamp: 0, play: false}); // for remote
+		// Stop on the display
+		app.application.data.paused = true;
+		app.application.data.frame = 0;
+		broadcast('loadApplicationState', {id: app.application.id, state: app.application.data, date: Date.now()});
+	}
+
 	var sharedId = app.application.id + "_" + config.host + ":" + config.secure_port + "+" + remote.wsio.id;
 	if (sharedApps[app.application.id] === undefined) {
 		sharedApps[app.application.id] = [{wsio: remote.wsio, sharedId: sharedId}];

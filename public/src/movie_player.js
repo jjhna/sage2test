@@ -151,6 +151,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.htmlSetSeekTime();
 			this.htmlSetLoopStatus();
 			this.htmlSetPlayPauseStatus();
+			this.getFullContextMenuAndUpdate();
 		}
 	},
 
@@ -174,6 +175,11 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			current = formatHHMMSS(duration);
 			let titleString = this.title + " - " + current + " / " + this.lengthString + " (HTML player mode)";
 			this.updateTitle(titleString);
+			if (this.lastDrawnHtmlPlayerTime != this.videoElement.currentTime) {
+				// prevents getting state stuck when moving the widget slider
+				this.lastDrawnHtmlPlayerTime = this.videoElement.currentTime;
+				this.state.frame = this.videoElement.currentTime * this.state.framerate;
+			}
 		} else if (this.shouldSendCommands) {
 			this.updateTitle(this.title + " - " + current + "(f:" + this.state.frame + ")(Sending Commands)");
 		} else if (this.shouldReceiveCommands) {
@@ -221,6 +227,8 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		} else {
 			if (isMaster) {
 				if (this.isUsingHtmlPlayer) {
+					// On the server, the handler for this packet issues a pause action that doesn't consistently send out pauseVideo values.
+					wsio.emit('pauseVideo', {id: this.div.id, audioPause: true});
 					// When pausing with the html player, time delay may be caused by lag by server to keep with with frame processing.
 					// Using this to force the server to the current video player time.
 					this.state.frame = parseInt(this.videoElement.currentTime * this.state.framerate);
@@ -305,7 +313,18 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.state.paused = true;
 		this.state.frame = 0;
 		if (isMaster) {
-			wsio.emit('stopVideo', {id: this.div.id});
+			// wsio.emit('stopVideo', {id: this.div.id});
+
+			// On the server, the handler for this packet issues a pause action that doesn't consistently send out pauseVideo values.
+			wsio.emit('pauseVideo', {id: this.div.id, audioPause: true});
+			// When pausing with the html player, time delay may be caused by lag by server to keep with with frame processing.
+			// Using this to force the server to the current video player time.
+			this.state.frame = 0;
+			wsio.emit('updateVideoTime', {
+				id: this.div.id,
+				timestamp: 0,
+				play: false
+			});
 
 			// if this is a sender, also send the command to the server holding variable
 			if (this.shouldSendCommands) {
@@ -322,6 +341,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			}
 		}
 		// must change play-pause button (should show 'play' icon)
+		this.SAGE2Sync(true);
 		this.playPauseBtn.state = 0;
 		this.getFullContextMenuAndUpdate();
 		this.htmlStop();
@@ -669,7 +689,8 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 					switch (data.action) {
 						case "sliderLock":
 							if (this.state.paused === false) {
-								this.htmlSetPlayPauseStatus();
+								this.state.playAfterSeek = true;
+								this.htmlSetPlayPauseStatus("pause");
 								if (isMaster) {
 									wsio.emit('pauseVideo', {id: this.div.id});
 								}
@@ -681,6 +702,9 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 							break;
 						case "sliderRelease":
 							this.htmlSetSeekTime();
+							if (this.state.playAfterSeek) {
+								this.videoElement.play();
+							}
 							if (isMaster) {
 								wsio.emit('updateVideoTime', {
 									id: this.div.id,
@@ -804,12 +828,12 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	*
 	* @method htmlSetPlayPauseStatus
 	*/
-	htmlSetPlayPauseStatus: function() {
+	htmlSetPlayPauseStatus: function(paused) {
 		if (!this.isUsingHtmlPlayer) {
 			return;
 		}
 		this.htmlSetSeekTime();
-		if (this.state.paused === true) {
+		if ((paused) || this.state.paused === true) {
 			this.videoElement.pause();
 		} else {
 			this.videoElement.play();
