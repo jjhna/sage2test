@@ -976,7 +976,6 @@ function fileDrop(event) {
 	if (event.preventDefault) {
 		event.preventDefault();
 	}
-
 	// Update the UI
 	var sage2UI = document.getElementById('sage2UICanvas');
 	sage2UI.style.borderStyle = "solid";
@@ -3273,7 +3272,6 @@ function addMenuEntry(menuDiv, entry, id, app) {
 		});
 		workingDiv.addEventListener('mousedown', function(e) {
 			e.stopPropagation();
-			// console.log("Button Clicked", this.callback, this.parameters, this.app);
 		});
 		// highlighting effect on mouseover
 		workingDiv.addEventListener('mouseover', function () {

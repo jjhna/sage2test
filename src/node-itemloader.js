@@ -681,7 +681,7 @@ AppLoader.prototype.loadZipAppFromFile = function(file, mime_type, aUrl, externa
 	});
 };
 
-AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, list, openCompressed, callback) {
+AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, openCompressed, callback) {
 	var _this = this;
 	var zipFolder = path.join(path.dirname(file), name);
 
@@ -713,7 +713,11 @@ AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, list, openC
 						} else {
 							assets.addFile(data.SourceFile, data, function() {
 								if (openCompressed === true) {
+									// Open the file onto the wall
 									_this.loadFileFromLocalStorage({filename: cleanFilePath}, callback);
+								} else {
+									// Fake the callback
+									callback({file: cleanFilePath});
 								}
 							});
 							assets.saveAssets();

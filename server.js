@@ -5435,8 +5435,8 @@ function uploadForm(req, res) {
 		if (field === 'open') {
 			openAfter = (value === "true");
 		}
-
-		if (field === "openCompressed") {
+		// Load the content of the zip file onto the wall
+		if (field === 'openCompressed') {
 			openCompressed = (value === "true");
 		}
 	});
@@ -5530,7 +5530,6 @@ function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter, open
 				}
 				handleNewApplication(appInstance, videohandle);
 			}
-
 			// send the update file list
 			broadcast('storedFileList', getSavedFilesList());
 		});

@@ -333,7 +333,7 @@ function SAGE2_interaction(wsio) {
 				formdata.append("dropX", dropX);
 				formdata.append("dropY", dropY);
 				formdata.append("open",  true);
-				formdata.append("openCompressed",  showCompressed);
+				formdata.append("openCompressed", showCompressed);
 				formdata.append("SAGE2_ptrName",  userSettings.SAGE2_ptrName);
 				formdata.append("SAGE2_ptrColor", userSettings.SAGE2_ptrColor);
 
