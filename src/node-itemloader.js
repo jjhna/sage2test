@@ -35,7 +35,7 @@ var assets       = require('../src/node-assets');          // asset management
 var sageutils    = require('../src/node-utils');           // provides utility functions
 var registry     = require('../src/node-registry');        // Registry Manager
 var jsonfile     = require('jsonfile');
-var cheerio     = require('cheerio');
+var cheerio      = require('cheerio');
 
 var imageMagick;
 
@@ -681,37 +681,46 @@ AppLoader.prototype.loadZipAppFromFile = function(file, mime_type, aUrl, externa
 	});
 };
 
-
 AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, list, openCompressed, callback) {
+	var _this = this;
 	var zipFolder = path.join(path.dirname(file), name);
 
+	// Unzipping the archive
 	var unzipper = new Unzip(file);
-	var _this = this;
-	unzipper.on('extract', function(log) {
-		list.forEach(item => {
-			var filePath = path.join(zipFolder, item);
-			var cleanFilename = sanitize(item, "_");
-			// Clean up further the file names
-			cleanFilename = cleanFilename.replace(/[$%^&()'`\\/]/g, '_');
-			var cleanFilePath = path.join(zipFolder, cleanFilename);
-			mv(filePath, cleanFilePath, function(err1) {
-				if (err1) {
-					throw err1;
-				}
-				exiftool.file(cleanFilePath, function(err2, data) {
-					if (err2) {
-						sageutils.log("Loader", "internal error", err2);
-					} else {
-						assets.addFile(data.SourceFile, data, function() {
-							if (openCompressed === true) {
-								_this.loadFileFromLocalStorage({filename: cleanFilePath}, callback);
-							}
-						});
-						assets.saveAssets();
 
+	// Getting the list of filenames extracted, after being filtered
+	unzipper.on('extract', function(extractedFiles) {
+		// processing all the good files
+		extractedFiles.forEach(element => {
+			// making sure it is a file
+			if (element.deflated) {
+				// computing a new file name
+				let item = element.deflated;
+				var filePath = path.join(zipFolder, item);
+				var cleanFilename = sanitize(item, {replacement: "_"});
+				// Clean up further the file names
+				cleanFilename = cleanFilename.replace(/[$%^&()'`\\/]/g, '_');
+				var cleanFilePath = path.join(zipFolder, cleanFilename);
+				// Move the file to the right folder
+				mv(filePath, cleanFilePath, function(err1) {
+					if (err1) {
+						throw err1;
 					}
+					// Analyze the metadata
+					exiftool.file(cleanFilePath, function(err2, data) {
+						if (err2) {
+							sageutils.log("Loader", "internal error", err2);
+						} else {
+							assets.addFile(data.SourceFile, data, function() {
+								if (openCompressed === true) {
+									_this.loadFileFromLocalStorage({filename: cleanFilePath}, callback);
+								}
+							});
+							assets.saveAssets();
+						}
+					});
 				});
-			});
+			}
 
 		});
 
@@ -722,9 +731,15 @@ AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, list, openC
 			}
 		});
 	});
+
+	sageutils.log('AppLoader', 'Extracting', zipFolder);
+
 	unzipper.extract({
+		// specify the filename
 		path: zipFolder,
+		// filter out the unwanted files
 		filter: function(extractedFile) {
+			// Mostly ignoring Macos extra files
 			if (extractedFile.type === "SymbolicLink") {
 				return false;
 			}
@@ -737,11 +752,11 @@ AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, list, openC
 			if (extractedFile.parent.length >= 8 && extractedFile.parent.substring(0, 8) === "__MACOSX") {
 				return false;
 			}
-
 			return true;
 		}
 	});
 };
+
 AppLoader.prototype.loadUnityAppFromZip = function(appLoader, unityLoader, zipFolder, data, callback) {
 	var unityIndexHtml = path.join(zipFolder, "index.html");
 	sageutils.log('AppLoader', 'Unity index file', unityIndexHtml);
@@ -1084,7 +1099,7 @@ AppLoader.prototype.loadFileFromLocalStorage = function(file, callback) {
 
 AppLoader.prototype.manageAndLoadUploadedFile = function(file, openCompressed, callback) {
 	// sanitize filename by remove odd charaters
-	var cleanFilename = sanitize(file.name, "_");
+	var cleanFilename = sanitize(file.name, {replacement: "_"});
 	// Clean up further the file names
 	cleanFilename = cleanFilename.replace(/[$%^&()'`\\/]/g, '_');
 
@@ -1152,9 +1167,9 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, openCompressed, c
 						callback(appInstance, handle);
 					});
 				} else {
-					//Compressed ZIP data file, extract to SAGE2_Media/data/
+					// Compressed ZIP data file, extract to SAGE2_Media/data/
 					var name = path.basename(cleanFilename, path.extname(cleanFilename));
-					_this.addUnzippedFolderToAssets(localPath, name, filelist, openCompressed, callback);
+					_this.addUnzippedFolderToAssets(localPath, name, openCompressed, callback);
 				}
 			} else {
 				// try to process all the files with exiftool
@@ -1188,7 +1203,7 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, openCompressed, c
 			if (instructionsFile !== undefined && instructionsFile !== null) {
 				processUploadedFile(dir);
 			} else {
-				processUploadedFile("collections", files);
+				processUploadedFile("collections", true);
 			}
 		});
 		unzipper.list();

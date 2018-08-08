@@ -1109,7 +1109,7 @@ function setupListeners(wsio) {
 
 	wsio.on('requestAvailableApplications',         wsRequestAvailableApplications);
 	wsio.on('requestStoredFiles',                   wsRequestStoredFiles);
-	wsio.on('requestAppAssociations',				wsRequestAppAssociations);
+	wsio.on('requestAppAssociations',               wsRequestAppAssociations);
 	wsio.on('loadApplication',                      wsLoadApplication);
 	wsio.on('loadFileFromServer',                   wsLoadFileFromServer);
 	wsio.on('loadImageFromBuffer',                  wsLoadImageFromBuffer);
@@ -1196,10 +1196,10 @@ function setupListeners(wsio) {
 	wsio.on('openRadialMenuFromControl',            wsOpenRadialMenuFromControl);
 	wsio.on('recordInnerGeometryForWidget',			wsRecordInnerGeometryForWidget);
 
-	wsio.on('requestNewTitle',						wsRequestNewTitle);
-	wsio.on('requestFileBuffer',					wsRequestFileBuffer);
-	wsio.on('closeFileBuffer',						wsCloseFileBuffer);
-	wsio.on('updateFileBufferCursorPosition', 		wsUpdateFileBufferCursorPosition);
+	wsio.on('requestNewTitle',                      wsRequestNewTitle);
+	wsio.on('requestFileBuffer',                    wsRequestFileBuffer);
+	wsio.on('closeFileBuffer',                      wsCloseFileBuffer);
+	wsio.on('updateFileBufferCursorPosition',       wsUpdateFileBufferCursorPosition);
 
 	wsio.on('createAppClone',                       wsCreateAppClone);
 
@@ -1209,8 +1209,8 @@ function setupListeners(wsio) {
 	wsio.on('createFolder',                         wsCreateFolder);
 
 	// Jupyper messages
-	wsio.on('startJupyterSharing',					wsStartJupyterSharing);
-	wsio.on('updateJupyterSharing',					wsUpdateJupyterSharing);
+	wsio.on('startJupyterSharing',                  wsStartJupyterSharing);
+	wsio.on('updateJupyterSharing',                 wsUpdateJupyterSharing);
 
 	// message passing between clients
 	wsio.on('requestAppContextMenu',				wsRequestAppContextMenu);
@@ -11205,4 +11205,3 @@ function wsSetSagePointerToAppInteraction(wsio, data) {
 		broadcast('changeSagePointerMode', {id: sagePointers[wsio.id].id, mode: remoteInteraction[wsio.id].interactionMode});
 	}
 }
-
