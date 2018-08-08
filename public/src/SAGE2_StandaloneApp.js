@@ -70,10 +70,13 @@ var touchStartX;
 var touchStartY;
 var hasMouse;
 
+// Distinction between display client and standalone browser
+// for a single application
 var standAloneApp = null;
 var appId = null;
 var browserID = null;
 var isBrowser = false;
+
 // Explicitely close web socket when web browser is closed
 window.onbeforeunload = function() {
 	if (wsio !== undefined && standAloneApp !== null) {
@@ -346,8 +349,9 @@ function setupListeners() {
 		pointerDown = false;
 		pointerX    = 0;
 		pointerY    = 0;
-		browserID = data.UID;
-		isBrowser = true;
+		browserID   = data.UID;
+		// Set a flag specifiying that we are a standlone app
+		isBrowser   = true;
 	});
 
 
