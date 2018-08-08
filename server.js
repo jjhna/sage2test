@@ -1087,6 +1087,7 @@ function setupListeners(wsio) {
 	wsio.on('clearDisplay',                         wsClearDisplay);
 	wsio.on('deleteAllApplications',                wsDeleteAllApplications);
 	wsio.on('tileApplications',                     wsTileApplications);
+	wsio.on('appWindowCreated',						wsAppWindowCreated);
 
 	// Radial menu should have its own message section? Just appended here for now.
 	wsio.on('radialMenuClick',                      wsRadialMenuClick);
@@ -1339,6 +1340,8 @@ function initializeExistingApps(wsio) {
 		// does this cause issues?
 		var appCopy = Object.assign({}, SAGE2Items.applications.list[key]);
 		delete appCopy.partition;
+		delete appCopy.backgroundItem;
+		delete appCopy.foregroundItems;
 
 		wsio.emit('createAppWindow', appCopy);
 		if (SAGE2Items.renderSync.hasOwnProperty(key)) {
@@ -1350,7 +1353,6 @@ function initializeExistingApps(wsio) {
 			//   (especially true for slow update apps, like the clock)
 			broadcast('animateCanvas', {id: SAGE2Items.applications.list[key].id, date: Date.now()});
 		}
-		handleStickyItem(key);
 	}
 	for (key in SAGE2Items.portals.list) {
 		broadcast('initializeDataSharingSession', SAGE2Items.portals.list[key]);
@@ -1402,6 +1404,11 @@ function initializeRemoteServerInfo(wsio) {
 	}
 }
 
+function wsAppWindowCreated(wsio, data) {
+	if (SAGE2Items.applications.list.hasOwnProperty(data.id) === true) {
+		handleStickyItem(data.id);
+	}
+}
 // **************  Drawing Functions *****************
 
 // The functions just call their associated method in the drawing manager
