@@ -675,11 +675,11 @@ function setupListeners() {
 		var longest = Math.max(longestImageName, longestVideoName, longestPdfName, longestSessionName);
 		document.getElementById('fileListElems').style.width = (longest + 60).toString() + "px";
 
-		// showDialog('mediaBrowserDialog');
 		if (fileManager) {
 			// Update the filemanager with the new list
 			fileManager.updateFiles(data);
 		}
+
 		// Get app associations for stored files
 		wsio.emit('requestAppAssociations');
 	});
@@ -1179,7 +1179,9 @@ function checkForZipFiles(files) {
 	for (var i = 0; i < files.length; i++) {
 		var file = files[i];
 		// Check the type for zip file
-		if (file.type.indexOf("compressed") > -1) {
+		// for Windows and Macos file types
+		if (file.type.indexOf("compressed") > -1 ||
+			file.type.indexOf("application/zip") > -1) {
 			hasZipFiles = true;
 			break;
 		}
