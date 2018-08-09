@@ -1595,7 +1595,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 			}
 			openWithMenu.select(openWithMenu.getFirstId(), false);
 			openWithWindow.show();
-
 		} else {
 			var filename = this.allFiles[tid].exif.FileName;
 			var message = "No application available to open " + filename + ".";
@@ -1622,16 +1621,16 @@ function FileManager(wsio, mydiv, uniqueID) {
 				response = "load_session";
 			} else if (elt.exif.MIMEType.indexOf('sage2/url') >= 0) {
 				response = "sage2/url";
-			} else if (elt.sage2Type) {
-				// if we set a SAGE2 type, use it
-				response = "application/custom";
+			} else if (elt.exif.MIMEType.indexOf('video') >= 0) {
+				response = "movie_player";
 			} else if (elt.exif.MIMEType.indexOf('image') >= 0) {
 				response = "image_viewer";
 			} else if (elt.exif.MIMEType.indexOf('pdf') >= 0) {
 				response = "pdf_viewer";
-			} else if (elt.exif.MIMEType.indexOf('video') >= 0) {
-				response = "movie_player";
 			}
+			// } else if (elt.sage2Type) {
+			// 	// if we set a SAGE2 type, use it
+			// 	response = "application/custom";
 		}
 		// send the result
 		return response;
