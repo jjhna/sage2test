@@ -998,7 +998,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 		var thumbURL = _this.allFiles[elt.id].exif.SAGE2thumbnail;
 		// if it's a URL, try to get the  favico of the site
 		if (_this.allFiles[elt.id].exif.MIMEType === "sage2/url") {
-			thumbURL = "https://icons.better-idea.org/icon?size=48..128..256&url=" +
+			// this service seems dead
+			// thumbURL = "https://icons.better-idea.org/icon?size=48..128..256&url=" +
+			thumbURL = "https://i.olsh.me/icon?size=48..128..256&url=" +
 				_this.allFiles[elt.id].sage2URL;
 		}
 		thumb.data = {image: thumbURL, session: sessionType};
@@ -1574,9 +1576,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 			});
 		}
 	};
+
 	this.openItemWith = function(tid) {
-		//_this.allFileAssociations[tid]
-		var filename = this.allFiles[tid].exif.FileName;
 		var setDefaultButton = $$('setDefaultButton');
 		if (_this.allFileAssociations[tid].length > 0) {
 			var openWithWindow = $$('open_with_window');
@@ -1596,6 +1597,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			openWithWindow.show();
 
 		} else {
+			var filename = this.allFiles[tid].exif.FileName;
 			var message = "No application available to open " + filename + ".";
 			webix.alert({
 				type: "alert-warning",
@@ -1607,6 +1609,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			});
 		}
 	};
+
 	this.getApplicationFromId = function(id) {
 		// default answer
 		var response = "application/custom";
@@ -1614,16 +1617,20 @@ function FileManager(wsio, mydiv, uniqueID) {
 		var elt = this.allFiles[id];
 		// if found
 		if (elt) {
-			if (elt.exif.MIMEType.indexOf('image') >= 0) {
+			// Order important here (not the best situation)
+			if (elt.exif.MIMEType.indexOf('sage2/session') >= 0) {
+				response = "load_session";
+			} else if (elt.exif.MIMEType.indexOf('sage2/url') >= 0) {
+				response = "sage2/url";
+			} else if (elt.sage2Type) {
+				// if we set a SAGE2 type, use it
+				response = "application/custom";
+			} else if (elt.exif.MIMEType.indexOf('image') >= 0) {
 				response = "image_viewer";
 			} else if (elt.exif.MIMEType.indexOf('pdf') >= 0) {
 				response = "pdf_viewer";
 			} else if (elt.exif.MIMEType.indexOf('video') >= 0) {
 				response = "movie_player";
-			} else if (elt.exif.MIMEType.indexOf('sage2/session') >= 0) {
-				response = "load_session";
-			} else if (elt.exif.MIMEType.indexOf('sage2/url') >= 0) {
-				response = "sage2/url";
 			}
 		}
 		// send the result
