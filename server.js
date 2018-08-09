@@ -1119,6 +1119,7 @@ function setupListeners(wsio) {
 	wsio.on('clearDisplay',                         wsClearDisplay);
 	wsio.on('deleteAllApplications',                wsDeleteAllApplications);
 	wsio.on('tileApplications',                     wsTileApplications);
+	wsio.on('appWindowCreated',						wsAppWindowCreated);
 
 	// Radial menu should have its own message section? Just appended here for now.
 	wsio.on('radialMenuClick',                      wsRadialMenuClick);
@@ -1375,6 +1376,9 @@ function initializeExistingApps(wsio, appID) {
 	if (appID !== undefined && appID !== null) {
 		appCopy = Object.assign({}, SAGE2Items.applications.list[appID]);
 		delete appCopy.partition;
+		delete appCopy.backgroundItem;
+		delete appCopy.foregroundItems;
+
 		wsio.emit('createAppWindow', appCopy);
 		if (SAGE2Items.renderSync.hasOwnProperty(appID)) {
 			SAGE2Items.renderSync[appID].clients[wsio.id] = {wsio: wsio, readyForNextFrame: false, blocklist: []};
@@ -1399,7 +1403,6 @@ function initializeExistingApps(wsio, appID) {
 				//   (especially true for slow update apps, like the clock)
 				broadcast('animateCanvas', {id: SAGE2Items.applications.list[key].id, date: Date.now()});
 			}
-			handleStickyItem(key);
 		}
 		for (key in SAGE2Items.portals.list) {
 			broadcast('initializeDataSharingSession', SAGE2Items.portals.list[key]);
@@ -1408,7 +1411,6 @@ function initializeExistingApps(wsio, appID) {
 		var newOrder = interactMgr.getObjectZIndexList("applications", ["portals"]);
 		wsio.emit('updateItemOrder', newOrder);
 	}
-
 }
 
 function initializeExistingPartitions(wsio) {
@@ -1453,6 +1455,11 @@ function initializeRemoteServerInfo(wsio) {
 	}
 }
 
+function wsAppWindowCreated(wsio, data) {
+	if (SAGE2Items.applications.list.hasOwnProperty(data.id) === true) {
+		handleStickyItem(data.id);
+	}
+}
 // **************  Drawing Functions *****************
 
 // The functions just call their associated method in the drawing manager

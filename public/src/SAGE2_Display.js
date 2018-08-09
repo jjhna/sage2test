@@ -624,6 +624,7 @@ function setupListeners() {
 
 	wsio.on('createAppWindow', function(data) {
 		createAppWindow(data, ui.main.id, ui.titleBarHeight, ui.titleTextSize, ui.offsetX, ui.offsetY);
+		wsio.emit('appWindowCreated', {id: data.id});
 	});
 
 
