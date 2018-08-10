@@ -104,7 +104,7 @@ function OmicronManager(sysConfig) {
 
 	this.lastNonCritEventTime = Date.now();
 	this.nonCriticalEventDelay =  this.config.nonCriticalEventDelay === undefined ? 10 : this.config.nonCriticalEventDelay;
-	
+
 	var serverHost = sysConfig.host;
 
 	// Used to determine the initial position of a zoom gesture
@@ -668,7 +668,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		var showHideButton  = button5;
 		var scaleUpButton   = buttonUp;
 		var scaleDownButton = buttonDown;
-		var maximizeButton  = button5;
+		// var maximizeButton  = button5;
 		var previousButton  = buttonLeft;
 		var nextButton      = buttonRight;
 		var playButton      = button2;
@@ -750,16 +750,17 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 				omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
 				omicronManager.lastNonCritEventTime = Date.now();
 			}
-			
+
 			omicronManager.wandState[wandID].posX = posX;
 			omicronManager.wandState[wandID].posY = posY;
 		} else {
+			// If pointer not moving, use last pointer position, instead of current wand position
 			if (omicronManager.wandState[wandID].posX !== undefined) {
 				posX = omicronManager.wandState[wandID].posX;
 				posY = omicronManager.wandState[wandID].posY;
 			}
 		}
-		
+
 		// Select / Left Click
 		if ((e.flags & clickDragButton) === clickDragButton &&
 			(lastButtonState & clickDragButton) === 0) {
@@ -768,18 +769,18 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		} else if ((e.flags & clickDragButton) === clickDragButton &&
 			(lastButtonState & clickDragButton) === clickDragButton) {
 
-				// Left Drag
-				if (timeSinceLastNonCritEvent >= omicronManager.nonCriticalEventDelay) {
-					omicronManager.pointerMove(wandID, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
-					omicronManager.lastNonCritEventTime = Date.now();
-				}
+			// Left Drag
+			if (timeSinceLastNonCritEvent >= omicronManager.nonCriticalEventDelay) {
+				omicronManager.pointerMove(wandID, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
+				omicronManager.lastNonCritEventTime = Date.now();
+			}
 		} else if ((e.flags & clickDragButton) === 0 &&
 			(lastButtonState & clickDragButton) === clickDragButton) {
 
 			// Left Release
 			omicronManager.pointerRelease(wandID, posX, posY, { button: "left" });
 		}
-		
+
 		// Play / P
 		if ((e.flags & playButton) === playButton &&
 			(lastButtonState & playButton) === 0) {
@@ -790,7 +791,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 
 			omicronManager.keyUp(wandID, posX, posY, { code: 80 });
 		}
-		
+
 		// Previous / Left Arrow
 		if ((e.flags & previousButton) === previousButton &&
 			(lastButtonState & previousButton) === 0) {
@@ -801,8 +802,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 
 			omicronManager.keyUp(wandID, posX, posY, { code: 37 });
 		}
-		
-		
+
 		// Next / Right Arrow
 		if ((e.flags & nextButton) === nextButton &&
 			(lastButtonState & nextButton) === 0) {
@@ -813,7 +813,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 
 			omicronManager.keyUp(wandID, posX, posY, { code: 39 });
 		}
-		
+
 		// Menu / Right Click
 		if ((e.flags & menuButton) === menuButton &&
 			(lastButtonState & menuButton) === 0) {
@@ -824,7 +824,29 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 
 			omicronManager.pointerRelease(wandID, posX, posY, { button: "right" });
 		}
-		
+
+		// ? / Up Arrow
+		if ((e.flags & scaleUpButton) === scaleUpButton &&
+			(lastButtonState & scaleUpButton) === 0) {
+
+			omicronManager.keyDown(wandID, posX, posY, { code: 38 });
+		} else if ((e.flags & scaleUpButton) === 0 &&
+			(lastButtonState & scaleUpButton) === scaleUpButton) {
+
+			omicronManager.keyUp(wandID, posX, posY, { code: 38 });
+		}
+
+		// ? / Down Arrow
+		if ((e.flags & scaleDownButton) === scaleDownButton &&
+			(lastButtonState & scaleDownButton) === 0) {
+
+			omicronManager.keyDown(wandID, posX, posY, { code: 40 });
+		} else if ((e.flags & scaleDownButton) === 0 &&
+			(lastButtonState & scaleDownButton) === scaleDownButton) {
+
+			omicronManager.keyUp(wandID, posX, posY, { code: 40 });
+		}
+
 		// Update button state
 		omicronManager.wandState[wandID].buttonState = e.flags;
 		if (e.flags !== 0) {
