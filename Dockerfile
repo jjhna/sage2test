@@ -1,12 +1,12 @@
 FROM    ubuntu:16.04
 MAINTAINER	EVL avatar <evl.avatar@gmail.com>
 RUN     apt-get update && apt-get install -y \
-		software-properties-common \
+		software-properties-common build-essential \
 		git \
 		curl \
 		bzip2
 RUN     add-apt-repository -y ppa:jonathonf/ffmpeg-3
-RUN     curl -sL https://deb.nodesource.com/setup_9.x | bash -
+RUN     curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN     apt-get update && apt-get install -y \
 		ffmpeg \
 		ghostscript \
