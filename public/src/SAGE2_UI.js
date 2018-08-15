@@ -1155,7 +1155,7 @@ function fileUploadFromUI() {
 	if (hasZip === true) {
 		webix.confirm({
 			title: "Zip file upload!",
-			text: "Do you want the contents of the zip files being uploaded to be loaded on the display?",
+			text: "Do you want the zip content be loaded on the display?",
 			ok: "Yes",
 			cancel: "No",
 			callback: function(result) {
