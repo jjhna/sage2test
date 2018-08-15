@@ -1566,11 +1566,17 @@ function FileManager(wsio, mydiv, uniqueID) {
 				user: _this.uniqueID,
 				position: position
 			});
-		} else {
-			// Opening a file
+		} else if (appType === "movie_player") {
 			wsio.emit('loadFileFromServer', {
 				application: appType,
 				filename: tid,
+				user: _this.uniqueID,
+				position: position
+			});
+		} else {
+			// Opening a file
+			wsio.emit('loadApplication', {
+				application: tid,
 				user: _this.uniqueID,
 				position: position
 			});
@@ -1618,7 +1624,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		if (elt) {
 			// Order important here (not the best situation)
 			if (elt.exif.MIMEType.indexOf('sage2/session') >= 0) {
-				response = "load_session";
+				response = "sage2/session";
 			} else if (elt.exif.MIMEType.indexOf('sage2/url') >= 0) {
 				response = "sage2/url";
 			} else if (elt.exif.MIMEType.indexOf('video') >= 0) {
