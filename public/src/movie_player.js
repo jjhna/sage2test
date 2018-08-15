@@ -164,7 +164,15 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	postDraw: function(date) {
 		this.prevDate = date;
 		this.frame++;
+		this.updateTitleInformation();
+	},
 
+	/**
+	 * Update the tile bar of the video
+	 *
+	 * @method     updateTitleInformation
+	 */
+	updateTitleInformation: function() {
 		// new code: put current time in title bar
 		var duration = parseInt(1000 * (this.state.frame / this.state.framerate), 10);
 		var current  = formatHHMMSS(duration);
@@ -173,7 +181,15 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.isUsingHtmlPlayer) {
 			duration = parseInt(1000 * this.videoElement.currentTime);
 			current = formatHHMMSS(duration);
-			let titleString = this.title + " - " + current + " / " + this.lengthString + " (HTML player mode)";
+			let titleString = this.title + " - " + current + " / " + this.lengthString + " (HTML mode)";
+			if (this.state.looped) {
+				// Add a unicode character in the title
+				titleString += " &#8634;";
+			}
+			if (this.state.muted) {
+				// Add a unicode character in the title
+				titleString += " &#128263;";
+			}
 			this.updateTitle(titleString);
 			if (this.lastDrawnHtmlPlayerTime != this.videoElement.currentTime) {
 				// prevents getting state stuck when moving the widget slider
@@ -284,6 +300,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.state.muted = true;
 		}
 		this.muteBtn.state = (this.state.muted) ? 0 : 1;
+		this.updateTitleInformation();
 	},
 
 	/**
@@ -307,6 +324,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.loopBtn.state = (this.state.looped) ? 0 : 1;
 		this.getFullContextMenuAndUpdate();
 		this.htmlSetLoopStatus();
+		this.updateTitleInformation();
 	},
 
 	stopVideo: function() {
