@@ -2059,7 +2059,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	var tmenu = webix.ui({
 		view: "contextmenu",
 		id: "tmenu",
-		data: ["New folder", { $template: "Separator" }, "Refresh", "Open"],
+		data: ["New folder", "Open All Files", { $template: "Separator" }, "Refresh"],
 		on: {
 			onMenuItemClick: function(id) {
 				var context = this.getContext();
@@ -2120,7 +2120,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 						});
 						$$('folder_name').focus();
 						break;
-					case "Open":
+					case "Open All Files":
 						loadFolder(list.getItem(listId));
 						break;
 					case "Refresh":
