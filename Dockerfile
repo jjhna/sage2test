@@ -9,6 +9,8 @@ RUN     add-apt-repository -y ppa:jonathonf/ffmpeg-3
 RUN     curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN     apt-get update && apt-get install -y \
 		ffmpeg \
+		libavcodec-dev libavutil-dev libswresample-dev \
+		libavformat-dev libswscale-dev \
 		ghostscript \
 		libnss3-tools \
 		libimage-exiftool-perl \
