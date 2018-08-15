@@ -56,7 +56,7 @@ function SAGE2_interaction(wsio) {
 	this.deltaX = 0;
 	this.deltaY = 0;
 	// Send frequency (frames per second)
-	this.sendFrequency = 30;
+	this.sendFrequency = 35;
 	// Timeout for when scrolling ends
 	this.scrollTimeId = null;
 
@@ -264,7 +264,7 @@ function SAGE2_interaction(wsio) {
 	* @param dropX {Number} drop location X
 	* @param dropY {Number} drop location Y
 	*/
-	this.uploadFiles = function(files, dropX, dropY) {
+	this.uploadFiles = function(files, showCompressed, dropX, dropY) {
 		var _this = this;
 		var loaded = {};
 		var filesFinished = 0;
@@ -324,15 +324,15 @@ function SAGE2_interaction(wsio) {
 
 		// Clear the upload array
 		this.array_xhr.length = 0;
-
+		// Converting value to boolean
+		showCompressed = (showCompressed === true);
 		for (var i = 0; i < files.length; i++) {
 			if (files[i].size <= this.maxUploadSize) {
 				var formdata = new FormData();
 				formdata.append("file" + i.toString(), files[i]);
 				formdata.append("dropX", dropX);
 				formdata.append("dropY", dropY);
-				formdata.append("open",  true);
-
+				formdata.append("open",  showCompressed);
 				formdata.append("SAGE2_ptrName",  userSettings.SAGE2_ptrName);
 				formdata.append("SAGE2_ptrColor", userSettings.SAGE2_ptrColor);
 

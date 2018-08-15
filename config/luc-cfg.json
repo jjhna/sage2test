@@ -1,5 +1,5 @@
 {
-	"host": "airluc.evl.uic.edu",
+	"host": "luc.evl.uic.edu",
 	"port": 9090,
 	"index_port": 9292,
 	"background": {
@@ -34,38 +34,10 @@
 	],
 	"remote_sites": [
 		{
-			"name": "IceWallTM",
-			"host": "thor.evl.uic.edu",
-			"port": 7070,
-			"secure": true
-		},
-		{
-			"name": "Cyber-Commons",
-			"host": "iridium.evl.uic.edu",
-			"port": 443,
-			"secure": true
-		},
-		{
-			"name": "CAVE2",
-			"host": "lyra.evl.uic.edu",
-			"port": 443,
+			"name": "Luc s office",
+			"host": "traoumad.evl.uic.edu",
+                        "port": 443,
 			"secure": true
 		}
-	],
-        // list of extra folders for assets and apps
-        //  sage2 and home directory are default
-        folders: [
-                {
-                        name: "another",
-                        url: "/another",
-                        path: "/Users/luc/Desktop/another/",
-                        upload: false
-                },
-                {
-                        name: "another1",
-                        url: "/another1",
-                        path: "/Users/luc/Desktop/another1/",
-                        upload: false
-                }
-        ]
+	]
 }

@@ -35,7 +35,7 @@ var assets       = require('../src/node-assets');          // asset management
 var sageutils    = require('../src/node-utils');           // provides utility functions
 var registry     = require('../src/node-registry');        // Registry Manager
 var jsonfile     = require('jsonfile');
-var cheerio     = require('cheerio');
+var cheerio      = require('cheerio');
 
 var imageMagick;
 
@@ -498,7 +498,7 @@ AppLoader.prototype.loadPdfFromFile = function(file, mime_type, aUrl, external_u
 
 AppLoader.prototype.loadNoteFromFile = function(file, mime_type, aUrl, external_url, name, callback) {
 	// Find the app. Look it the file name in the registry. Get path, navigate to the path's instruction.json file.
-	var appName = registry.getDefaultApp(file);
+	var appName = registry.getDefaultApp(file, true);
 	var localPath = getSAGE2Path(appName);
 	var instructionsFile = path.join(localPath, "instructions.json");
 
@@ -524,7 +524,7 @@ AppLoader.prototype.loadNoteFromFile = function(file, mime_type, aUrl, external_
 
 AppLoader.prototype.loadDoodleFromFile = function(file, mime_type, aUrl, external_url, name, callback) {
 	// Find the app. Look it the file name in the registry. Get path, navigate to the path's instruction.json file.
-	var appName = registry.getDefaultApp(file);
+	var appName = registry.getDefaultApp(file, true);
 	var localPath = getSAGE2Path(appName);
 	var instructionsFile = path.join(localPath, "instructions.json");
 
@@ -568,7 +568,7 @@ AppLoader.prototype.loadDoodleFromFile = function(file, mime_type, aUrl, externa
 
 AppLoader.prototype.loadAppFromFileFromRegistry = function(file, mime_type, aUrl, external_url, name, callback) {
 	// Find the app!!
-	var appName = registry.getDefaultApp(file);
+	var appName = registry.getDefaultApp(file, true);
 	var localPath = getSAGE2Path(appName);
 	// not pretty, should be better (luc)
 	if (appName === 'Webview') {
@@ -676,6 +676,90 @@ AppLoader.prototype.loadZipAppFromFile = function(file, mime_type, aUrl, externa
 				return false;
 			}
 
+			return true;
+		}
+	});
+};
+
+AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, callback) {
+	var _this = this;
+	var zipFolder = path.join(path.dirname(file), name);
+
+	// Unzipping the archive
+	var unzipper = new Unzip(file);
+
+	// Getting the list of filenames extracted, after being filtered
+	unzipper.on('extract', function(extractedFiles) {
+		// processing all the good files
+		extractedFiles.forEach(element => {
+			// making sure it is a file
+			if (element.deflated) {
+				// computing a new file name
+				let item = element.deflated;
+				var filePath = path.join(zipFolder, item);
+				var cleanFilename = sanitize(item, {replacement: "_"});
+				// Clean up further the file names
+				cleanFilename = cleanFilename.replace(/[$%^&()'`\\/]/g, '_');
+				var cleanFilePath = path.join(zipFolder, cleanFilename);
+				var mime_type = registry.getMimeType(cleanFilename);
+				// Move the file to the right folder
+				mv(filePath, cleanFilePath, function(err1) {
+					if (err1) {
+						throw err1;
+					}
+					// Analyze the metadata
+					exiftool.file(cleanFilePath, function(err2, data) {
+						if (err2) {
+							sageutils.log("Loader", "internal error", err2);
+						} else {
+							assets.addFile(data.SourceFile, data, function() {
+								// get a valid URL for it
+								var aUrl = assets.getURL(data.SourceFile);
+								// calculate a complete URL with hostname
+								var external_url = url.resolve(_this.hostOrigin, aUrl);
+								// and load the application
+								_this.loadApplication({
+									location: "file", path: cleanFilePath, url: aUrl, external_url: external_url,
+									type: mime_type, name: cleanFilename, compressed: false}, function(appInstance, handle) {
+									callback(appInstance, handle);
+								});
+							});
+							assets.saveAssets();
+						}
+					});
+				});
+			}
+
+		});
+
+		// delete original zip file
+		fs.unlink(file, function(err) {
+			if (err) {
+				throw err;
+			}
+		});
+	});
+
+	sageutils.log('AppLoader', 'Extracting', zipFolder);
+
+	unzipper.extract({
+		// specify the filename
+		path: zipFolder,
+		// filter out the unwanted files
+		filter: function(extractedFile) {
+			// Mostly ignoring Macos extra files
+			if (extractedFile.type === "SymbolicLink") {
+				return false;
+			}
+			if (extractedFile.filename === "__MACOSX") {
+				return false;
+			}
+			if (extractedFile.filename.substring(0, 1) === ".") {
+				return false;
+			}
+			if (extractedFile.parent.length >= 8 && extractedFile.parent.substring(0, 8) === "__MACOSX") {
+				return false;
+			}
 			return true;
 		}
 	});
@@ -1023,12 +1107,12 @@ AppLoader.prototype.loadFileFromLocalStorage = function(file, callback) {
 
 AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 	// sanitize filename by remove odd charaters
-	var cleanFilename = sanitize(file.name, "_");
+	var cleanFilename = sanitize(file.name, {replacement: "_"});
 	// Clean up further the file names
 	cleanFilename = cleanFilename.replace(/[$%^&()'`\\/]/g, '_');
 
 	// Check if there is a matching application
-	var app = registry.getDefaultApp(cleanFilename);
+	var app = registry.getDefaultApp(cleanFilename, true);
 	if (app === undefined || app === "") {
 		callback(null);
 		return;
@@ -1037,86 +1121,119 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 	var dir = registry.getDirectory(cleanFilename);
 	var _this = this;
 
-	if (!sageutils.folderExists(path.join(this.publicDir, dir))) {
-		fs.mkdirSync(path.join(this.publicDir, dir));
-	}
-
-	// Check if it is a web-capable image, otherwise convert it to PNG
-	if (mime_type.startsWith("image/")) {
-		if (mime_type != "image/jpeg" && mime_type != "image/png" && mime_type != "image/webp") {
-			sageutils.log("Loader", "converting image", cleanFilename);
-			// setting up a tmp filename
-			var tmpPath = path.join(this.publicDir, "tmp", path.basename(cleanFilename)) + ".png";
-			// converting anything to PNG
-			imageMagick(file.path).noProfile().bitdepth(8).flatten().setFormat("PNG").write(tmpPath, function(err, buffer) {
-				if (err) {
-					sageutils.log("Loader", "error processing image file", tmpPath);
-					return;
-				}
-				// done with the tmp file
-				fs.unlinkSync(file.path);
-				// call same funtion again with the new PNG file
-				return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, callback);
-			});
-			// done for now
-			return;
+	var processUploadedFile = function(directory, filelist) {
+		if (!sageutils.folderExists(path.join(this.publicDir, directory))) {
+			fs.mkdirSync(path.join(this.publicDir, directory));
 		}
-	}
 
-	// Use the defautl folder plus type as destination:
-	//    SAGE2_Media/pdf/ for instance
-	var localPath = path.join(this.publicDir, dir, cleanFilename);
-
-	// Filename exists, then add date
-	if (sageutils.fileExists(localPath)) {
-		// Add the date to filename
-		var filen  = cleanFilename;
-		var splits = filen.split('.');
-		var extension   = splits.pop();
-		var newfilename = splits.join('_') + "_" + Date.now() + '.' + extension;
-		localPath  = path.join(this.publicDir, dir, newfilename);
-	}
-
-	mv(file.path, localPath, function(err1) {
-		if (err1) {
-			throw err1;
+		// Check if it is a web-capable image, otherwise convert it to PNG
+		if (mime_type.startsWith("image/")) {
+			if (mime_type != "image/jpeg" && mime_type != "image/png" && mime_type != "image/webp") {
+				sageutils.log("Loader", "converting image", cleanFilename);
+				// setting up a tmp filename
+				var tmpPath = path.join(this.publicDir, "tmp", path.basename(cleanFilename)) + ".png";
+				// converting anything to PNG
+				imageMagick(file.path).noProfile().bitdepth(8).flatten().setFormat("PNG").write(tmpPath, function(err, buffer) {
+					if (err) {
+						sageutils.log("Loader", "error processing image file", tmpPath);
+						return;
+					}
+					// done with the tmp file
+					fs.unlinkSync(file.path);
+					// call same funtion again with the new PNG file
+					return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, false, callback);
+				});
+				// done for now
+				return;
+			}
 		}
-		if (app === "custom_app" && mime_type === "application/zip") {
-			// Compressed ZIP file, load directly
-			_this.loadApplication({
-				location: "file", path: localPath, url: "", external_url: "",
-				type: mime_type, name: cleanFilename, compressed: true}, function(appInstance, handle) {
-				callback(appInstance, handle);
-			});
-		} else {
-			// try to process all the files with exiftool
-			exiftool.file(localPath, function(err2, data) {
-				if (err2) {
-					sageutils.log("Loader", "internal error", err2);
-				} else {
-					assets.addFile(data.SourceFile, data, function() {
-						// get a valid URL for it
-						var aUrl = assets.getURL(data.SourceFile);
-						// calculate a complete URL with hostname
-						var external_url = url.resolve(_this.hostOrigin, aUrl);
-						// and load the application
-						_this.loadApplication({
-							location: "file", path: localPath, url: aUrl, external_url: external_url,
-							type: mime_type, name: cleanFilename, compressed: false}, function(appInstance, handle) {
-							callback(appInstance, handle);
-						});
+
+		// Use the defautl folder plus type as destination:
+		//    SAGE2_Media/pdf/ for instance
+		var localPath = path.join(this.publicDir, directory, cleanFilename);
+
+		// Filename exists, then add date
+		if (sageutils.fileExists(localPath)) {
+			// Add the date to filename
+			var filen  = cleanFilename;
+			var splits = filen.split('.');
+			var extension   = splits.pop();
+			var newfilename = splits.join('_') + "_" + Date.now() + '.' + extension;
+			localPath  = path.join(this.publicDir, directory, newfilename);
+		}
+
+		mv(file.path, localPath, function(err1) {
+			if (err1) {
+				throw err1;
+			}
+			if (app === "custom_app" && mime_type === "application/zip") {
+				if (!filelist) {
+					// Compressed ZIP file of app, load directly
+					_this.loadApplication({
+						location: "file", path: localPath, url: "", external_url: "",
+						type: mime_type, name: cleanFilename, compressed: true}, function(appInstance, handle) {
+						callback(appInstance, handle);
 					});
-					assets.saveAssets();
+				} else {
+					// Compressed ZIP data file, extract to SAGE2_Media/data/
+					var name = path.basename(cleanFilename, path.extname(cleanFilename));
+					_this.addUnzippedFolderToAssets(localPath, name, callback);
 				}
-			});
-		}
+			} else {
+				// try to process all the files with exiftool
+				exiftool.file(localPath, function(err2, data) {
+					if (err2) {
+						sageutils.log("Loader", "internal error", err2);
+					} else {
+						assets.addFile(data.SourceFile, data, function() {
+							// get a valid URL for it
+							var aUrl = assets.getURL(data.SourceFile);
+							// calculate a complete URL with hostname
+							var external_url = url.resolve(_this.hostOrigin, aUrl);
+							// and load the application
+							_this.loadApplication({
+								location: "file", path: localPath, url: aUrl, external_url: external_url,
+								type: mime_type, name: cleanFilename, compressed: false}, function(appInstance, handle) {
+								callback(appInstance, handle);
+							});
+						});
+						assets.saveAssets();
+					}
+				});
+			}
+		});
+	}.bind(this);
+
+	if (mime_type === "application/zip") {
+		var unzipper = new Unzip(file.path);
+		unzipper.on('list', function (files) {
+			var instructionsFile = files.find(x => x.endsWith("instructions.json"));
+			if (instructionsFile !== undefined && instructionsFile !== null) {
+				processUploadedFile(dir);
+			} else {
+				processUploadedFile("collections", true);
+			}
+		});
+		unzipper.list();
+	} else {
+		processUploadedFile(dir);
+	}
+};
+
+AppLoader.prototype.loadFileWithNonDefaultApplication = function(data, callback) {
+	var localPath = getSAGE2Path(data.filename);
+	var defaultApp = registry.getDefaultApp(localPath);
+	registry.setDefaultApp(data.filename, data.application);
+	this.loadFileFromLocalStorage({filename: data.filename}, function(appInstance, handle) {
+		callback(appInstance, handle);
+		registry.setDefaultApp(data.filename, defaultApp);
 	});
 };
 
 AppLoader.prototype.loadApplication = function(appData, callback) {
 	var app;
 	if (appData.location === "file") {
-		app = registry.getDefaultAppFromMime(appData.type);
+		app = appData.app || registry.getDefaultAppFromMime(appData.type, true);
 		if (app === "image_viewer") {
 			this.loadImageFromFile(appData.path, appData.type, appData.url, appData.external_url, appData.name,
 				function(appInstance) {
@@ -1173,7 +1290,7 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 				});
 		}
 	} else if (appData.location === "url") {
-		app = registry.getDefaultAppFromMime(appData.type);
+		app = registry.getDefaultAppFromMime(appData.type, true);
 
 		if (app === "image_viewer") {
 			this.loadImageFromURL(appData.url, appData.type, appData.name, appData.strictSSL, function(appInstance) {
