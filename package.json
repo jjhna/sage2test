@@ -77,7 +77,8 @@
 		"systeminformation": "latest",
 		"ws": "^3.3.1",
 		"ytdl-core": "latest",
-		"jszip": "latest"
+		"jszip": "latest",
+		"clipboardy": "latest"
 	},
 	"optionalDependencies": {
 		"node-demux": "https://github.com/renambot-uic/node-demux.git"

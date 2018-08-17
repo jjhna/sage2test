@@ -53,6 +53,7 @@ var WebsocketIO   = require('websocketio');      // creates WebSocket server and
 var chalk         = require('chalk');            // used for colorizing the console output
 var commander     = require('commander');        // parsing command-line arguments
 var JSZip         = require("jszip");            // used for creating zip files
+var clipboardy    = require('clipboardy');       // access the clipboard to add the UI url
 
 // custom node modules
 var sageutils           = require('./src/node-utils');            // provides the current version number
@@ -5710,9 +5711,14 @@ setTimeout(function() {
 sage2ServerS.on('listening', function(e) {
 	// Success
 	sageutils.log("SAGE2", chalk.bold("Serving Securely:"));
-	sageutils.log("SAGE2", "- Web UI:\t " + chalk.cyan.bold.underline("https://" +
-		config.host + ":" + config.secure_port));
-	sageutils.log("SAGE2", "- Web console:\t " + chalk.cyan.bold.underline("https://" + config.host +
+	var uiURL = "https://" + config.host + ":" + config.secure_port;
+	// URL of the UI
+	sageutils.log("SAGE2", "- Web UI:\t" + chalk.cyan.bold.underline(uiURL));
+	// Add it to the system clipboard
+	clipboardy.writeSync(uiURL);
+	sageutils.log("SAGE2", "\t" + chalk.yellow.bold("Copied address to clipboard!"));
+	// URL of the web console
+	sageutils.log("SAGE2", "- Web console:\t" + chalk.cyan.bold.underline("https://" + config.host +
 		":" + config.secure_port + "/admin/console.html"));
 });
 
