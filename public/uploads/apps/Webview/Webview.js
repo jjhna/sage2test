@@ -216,14 +216,18 @@ var Webview = SAGE2_App.extend({
 				wsio.emit('openNewWebpage', {
 					id: _this.id,
 					url: params.srcURL,
-					position: pos
+					position: pos,
+					// inherits the window size
+					dimensions: [_this.sage2_width, _this.sage2_height]
 				});
 			} else if (params.mediaType === "none" && params.linkURL) {
 				// It's a link with a URL
 				wsio.emit('openNewWebpage', {
 					id: _this.id,
 					url: params.linkURL,
-					position: pos
+					position: pos,
+					// inherits the window size
+					dimensions: [_this.sage2_width, _this.sage2_height]
 				});
 			}
 		});
@@ -312,7 +316,9 @@ var Webview = SAGE2_App.extend({
 					// send the new URL
 					url: event.url,
 					// position to the left
-					position: pos
+					position: pos,
+					// inherits the window size
+					dimensions: [_this.sage2_width, _this.sage2_height]
 				});
 			} else {
 				console.log('Webview>	Not a HTTP URL, not opening [', event.url, ']', event);
