@@ -1004,7 +1004,7 @@ function fileDrop(event) {
 			});
 		} else {
 			displayUI.uploadPercent = 0;
-			interactor.uploadFiles(filesForUpload, false, x, y);
+			interactor.uploadFiles(filesForUpload, true, x, y);
 		}
 		// upload a file
 		// displayUI.fileUpload = true;
@@ -1163,7 +1163,7 @@ function fileUploadFromUI() {
 			}
 		});
 	} else {
-		interactor.uploadFiles(thefile.files, false, 0, 0);
+		interactor.uploadFiles(thefile.files, true, 0, 0);
 	}
 }
 
