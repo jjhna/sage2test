@@ -49,9 +49,8 @@ install:
   - copy ffmpeg-3.2.4-win64-shared\bin\*.dll bin\
   - copy ffmpeg-3.2.4-win64-shared\bin\*.exe bin\
   - rmdir /Q /S ffmpeg-3.2.4-win64-shared
-#  - curl -LsSO http://www.sno.phy.queensu.ca/~phil/exiftool/exiftool-10.25.zip
-  - curl -LsSO https://bitbucket.org/sage2/binaries/downloads/exiftool-10.49.zip
-  - 7z x exiftool-10.49.zip > nul
+  - curl -LsSO https://bitbucket.org/sage2/binaries/downloads/exiftool-11.10.zip
+  - 7z x exiftool-11.10.zip > nul
   - move exiftool(-k).exe bin\exiftool.exe
   - move bin\sage2.bat sage2.bat
   - move bin\sabi.bat sabi.bat
