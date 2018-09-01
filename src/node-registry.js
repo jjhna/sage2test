@@ -23,7 +23,7 @@ var fs          = require('fs');
 var path        = require('path');
 
 var json5       = require('json5');
-var JsonDB      = require('node-json-db');
+var JsonDB      = require('node-json-db').JsonDB;
 var mime        = require('mime');
 
 var sageutils   = require('../src/node-utils');  // for fileExists function
