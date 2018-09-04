@@ -111,8 +111,11 @@ function OmicronManager(sysConfig) {
 	// If the distance from the initial position exceeds threshold,
 	// zoom becomes a drag
 	this.initZoomPos = {};
-	this.zoomToMoveGestureMinimumDistance = this.config.zoomToMoveGestureMinimumDistance === undefined
-		? 100 : this.config.zoomToMoveGestureMinimumDistance;
+	if (this.config && this.config.zoomToMoveGestureMinimumDistance) {
+		this.zoomToMoveGestureMinimumDistance = this.config.zoomToMoveGestureMinimumDistance;
+	} else {
+		this.zoomToMoveGestureMinimumDistance = 100;
+	}
 
 	// Used to track changes in the pointer state (like a zoom becoming a move)
 	this.pointerState = {};
