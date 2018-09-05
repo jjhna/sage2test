@@ -64,6 +64,7 @@ SAGE2DisplayUI.prototype.init = function(config, wsio) {
 
 	var applicationsDiv = document.getElementById('applicationsDiv');
 	var logo = document.createElement('img');
+	logo.alt = 'watermark';
 	logo.style.opacity  = 0.4;
 	logo.style.position = "absolute";
 	logo.style.left     = "50%";
