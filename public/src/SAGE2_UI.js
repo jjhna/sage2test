@@ -1163,7 +1163,7 @@ function fileUploadFromUI() {
 			}
 		});
 	} else {
-		interactor.uploadFiles(thefile.files, false, 0, 0);
+		interactor.uploadFiles(thefile.files, true, 0, 0);
 	}
 }
 

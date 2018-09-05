@@ -1108,16 +1108,24 @@ function FileManager(wsio, mydiv, uniqueID) {
 	webix.ui({
 		id: "uploadAPI",
 		view: "uploader",
-		upload: "/upload",  // POST url
-		formData: {
-			open: false // do not open after upload
+		upload: "/upload",  // HTTP POST url
+		formData: function() {
+			// Data added during the upload POST call
+			return {
+				open: false,    // do not open after upload
+				SAGE2_ptrName:  interactor.pointerLabel,
+				SAGE2_ptrColor: interactor.pointerColor
+			};
 		},
 		on: {
 			onFileUpload: function(item) {
-				console.log('uploaded file', item.name);
+				console.log('Uploader> uploaded file', item.name);
+			},
+			onBeforeFileAdd: function(item) {
+				console.log('Uploader> adding file', item.name);
 			},
 			onUploadComplete: function(item) {
-				console.log('upload complete');
+				console.log('Uploader> upload complete');
 				var d = $$("uploadlist");
 				d.data.each(function(obj) {
 					// if all good, remove from list
@@ -1128,7 +1136,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				});
 			},
 			onFileUploadError: function(item) {
-				console.log('onFileUploadError', item);
+				console.log('Uploader> onFileUploadError', item);
 			}
 		},
 		link: "uploadlist",

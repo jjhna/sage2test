@@ -806,7 +806,10 @@ function UIBuilder(json_cfg, clientID) {
 			watermark.style.cursor = "none";
 		}
 		if (this.json_cfg.background.watermark.color) {
+			// change color of all the path elements
 			this.changeSVGColor(watermark, "path", null, this.json_cfg.background.watermark.color);
+			// change color of all the rect elements
+			this.changeSVGColor(watermark, "rect", null, this.json_cfg.background.watermark.color);
 		}
 
 		watermark.style.opacity  = 0.4;
