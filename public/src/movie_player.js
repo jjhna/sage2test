@@ -151,6 +151,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.htmlSetSeekTime();
 			this.htmlSetLoopStatus();
 			this.htmlSetPlayPauseStatus();
+			this.getFullContextMenuAndUpdate();
 		}
 	},
 
@@ -163,7 +164,15 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	postDraw: function(date) {
 		this.prevDate = date;
 		this.frame++;
+		this.updateTitleInformation();
+	},
 
+	/**
+	 * Update the tile bar of the video
+	 *
+	 * @method     updateTitleInformation
+	 */
+	updateTitleInformation: function() {
 		// new code: put current time in title bar
 		var duration = parseInt(1000 * (this.state.frame / this.state.framerate), 10);
 		var current  = formatHHMMSS(duration);
@@ -172,7 +181,15 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.isUsingHtmlPlayer) {
 			duration = parseInt(1000 * this.videoElement.currentTime);
 			current = formatHHMMSS(duration);
-			let titleString = this.title + " - " + current + " / " + this.lengthString + " (HTML player mode)";
+			let titleString = this.title + " - " + current + " / " + this.lengthString + " (HTML mode)";
+			if (this.state.looped) {
+				// Add a unicode character in the title
+				titleString += " &#8634;";
+			}
+			if (this.state.muted) {
+				// Add a unicode character in the title
+				titleString += " &#128263;";
+			}
 			this.updateTitle(titleString);
 			if (this.lastDrawnHtmlPlayerTime != this.videoElement.currentTime) {
 				// prevents getting state stuck when moving the widget slider
@@ -283,6 +300,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			this.state.muted = true;
 		}
 		this.muteBtn.state = (this.state.muted) ? 0 : 1;
+		this.updateTitleInformation();
 	},
 
 	/**
@@ -306,13 +324,25 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.loopBtn.state = (this.state.looped) ? 0 : 1;
 		this.getFullContextMenuAndUpdate();
 		this.htmlSetLoopStatus();
+		this.updateTitleInformation();
 	},
 
 	stopVideo: function() {
 		this.state.paused = true;
 		this.state.frame = 0;
 		if (isMaster) {
-			wsio.emit('stopVideo', {id: this.div.id});
+			// wsio.emit('stopVideo', {id: this.div.id});
+
+			// On the server, the handler for this packet issues a pause action that doesn't consistently send out pauseVideo values.
+			wsio.emit('pauseVideo', {id: this.div.id, audioPause: true});
+			// When pausing with the html player, time delay may be caused by lag by server to keep with with frame processing.
+			// Using this to force the server to the current video player time.
+			this.state.frame = 0;
+			wsio.emit('updateVideoTime', {
+				id: this.div.id,
+				timestamp: 0,
+				play: false
+			});
 
 			// if this is a sender, also send the command to the server holding variable
 			if (this.shouldSendCommands) {
@@ -329,6 +359,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 			}
 		}
 		// must change play-pause button (should show 'play' icon)
+		this.SAGE2Sync(true);
 		this.playPauseBtn.state = 0;
 		this.getFullContextMenuAndUpdate();
 		this.htmlStop();

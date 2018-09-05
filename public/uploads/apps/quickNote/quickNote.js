@@ -54,7 +54,8 @@ var quickNote = SAGE2_App.extend({
 			this.parseDataFromServer(data.state.contentsOfNoteFile);
 		} else if (this.state.contentsOfNoteFile) {
 			this.parseDataFromServer(this.state.contentsOfNoteFile);
-		} else if (data.customLaunchParams) { // if it was passed additional init values
+		} else if (data.customLaunchParams) {
+			// if it was passed additional init values
 			data.customLaunchParams.serverDate = new Date(Date.now());
 			_this.setMessage(data.customLaunchParams);
 		}
@@ -65,7 +66,6 @@ var quickNote = SAGE2_App.extend({
 	1st: creator and timestamp
 	2nd: color for note
 	3rd: content for note
-
 	*/
 	parseDataFromServer: function(fileContentsFromServer) {
 		var fileData  = {};
@@ -111,7 +111,8 @@ var quickNote = SAGE2_App.extend({
 					pieces += words[i];
 					words[i] = pieces; // put back into location
 				}
-			} // if there was word modification to shrink into view, then need to rejoin
+			}
+			// if there was word modification to shrink into view, then need to rejoin
 			if (hasModifiedWord) {
 				msgParams.clientInput = words.join(" ");
 			}
@@ -148,8 +149,10 @@ var quickNote = SAGE2_App.extend({
 				&& msgParams.serverDate !== undefined
 				&& msgParams.serverDate !== null) {
 				this.state.creationTime = new Date(msgParams.serverDate);
-				// build the title string.
-				var titleString = msgParams.clientName + "-QN-" + this.state.creationTime.getFullYear();
+				// Remove the unicode charaters from client name because used in the file name
+				var cleanName = msgParams.clientName.replace(/[^\x20-\x7F]/g, "").trim();
+				// build the title string
+				var titleString = cleanName + "-QN-" + this.state.creationTime.getFullYear();
 				if (this.state.creationTime.getMonth() < 9) {
 					titleString += "0";
 				}
@@ -324,7 +327,7 @@ var quickNote = SAGE2_App.extend({
 		entry.description = "Edit Note";
 		entry.callback    = "SAGE2_editQuickNote";
 		entry.parameters  = {
-			currentContent: this.state.clientInput,
+			currentContent:     this.state.clientInput,
 			currentColorChoice: this.state.colorChoice
 		};
 		entries.push(entry);
@@ -501,16 +504,5 @@ var quickNote = SAGE2_App.extend({
 		}
 		this.getFullContextMenuAndUpdate();
 	},
-
-
-
-
-
-
-
-
-	quit: function() {
-		// no additional calls needed.
-	}
 
 });

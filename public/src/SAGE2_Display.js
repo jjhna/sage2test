@@ -64,6 +64,10 @@ var uiTimerDelay;
 // Global variables for screenshot functionality
 var makingScreenshotDialog = null;
 
+// Distinction between display client and standalone browser
+// for a single application
+var isBrowser = false;
+
 // Explicitely close web socket when web browser is closed
 window.onbeforeunload = function() {
 	if (wsio !== undefined) {
@@ -620,6 +624,7 @@ function setupListeners() {
 
 	wsio.on('createAppWindow', function(data) {
 		createAppWindow(data, ui.main.id, ui.titleBarHeight, ui.titleTextSize, ui.offsetX, ui.offsetY);
+		wsio.emit('appWindowCreated', {id: data.id});
 	});
 
 
