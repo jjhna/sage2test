@@ -20,7 +20,7 @@ var quickNote = SAGE2_App.extend({
 		this.element.style.background = "lightyellow";
 		this.element.style.fontSize   = ui.titleTextSize + "px";
 		// Using SAGE2 default font
-		this.element.style.fontFamily = "Courier New, Consolas, Menlo, monospace";
+		this.element.style.fontFamily = "Oxygen Mono";
 		// Default starting attributes
 		this.backgroundChoice = "lightyellow";
 
@@ -321,24 +321,11 @@ var quickNote = SAGE2_App.extend({
 		var entry;
 
 		entry = {};
-		entry.description = "Switch To Roboto";
-		entry.callback    = "switchFont";
+		entry.description = "Edit Note";
+		entry.callback    = "SAGE2_editQuickNote";
 		entry.parameters  = {
-			family: "'Roboto', sans-serif"
-		};
-		entries.push(entry);
-		entry = {};
-		entry.description = "Switch To Oxygen Mono";
-		entry.callback    = "switchFont";
-		entry.parameters  = {
-			family: "Oxygen Mono"
-		};
-		entries.push(entry);
-		entry = {};
-		entry.description = "Switch To Standard";
-		entry.callback    = "switchFont";
-		entry.parameters  = {
-			family: "Courier New, Consolas, Menlo, monospace"
+			currentContent: this.state.clientInput,
+			currentColorChoice: this.state.colorChoice
 		};
 		entries.push(entry);
 
@@ -357,17 +344,6 @@ var quickNote = SAGE2_App.extend({
 			entry.parameters  = {};
 			entries.push(entry);
 		}
-
-		entries.push({description: "separator"});
-
-		entry = {};
-		entry.description = "Edit Note";
-		entry.callback    = "SAGE2_editQuickNote";
-		entry.parameters  = {
-			currentContent: this.state.clientInput,
-			currentColorChoice: this.state.colorChoice
-		};
-		entries.push(entry);
 
 		entries.push({description: "separator"});
 
@@ -466,10 +442,6 @@ var quickNote = SAGE2_App.extend({
 		});
 
 		return entries;
-	},
-
-	switchFont: function(responseObject) {
-		this.element.style.fontFamily = responseObject.family;
 	},
 
 	adjustFontSize: function(responseObject) {
