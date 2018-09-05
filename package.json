@@ -78,6 +78,7 @@
 		"ws": "^3.3.1",
 		"ytdl-core": "latest",
 		"jszip": "latest",
+		"url-regex": "latest",
 		"clipboardy": "latest"
 	},
 	"optionalDependencies": {
