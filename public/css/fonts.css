@@ -53,3 +53,15 @@
 		local('/lib/webix/fonts/fontawesome-webfont'),
 		url(/lib/webix/fonts/fontawesome-webfont.woff)  format('woff');
 }
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  src:
+    local('Oxygen Mono'),
+    local('OxygenMono-Regular'),
+    url(OxygenMono-Regular.woff2) format("woff2"),
+    url(OxygenMono-Regular.woff)  format("woff"),
+    url(https://fonts.gstatic.com/s/oxygenmono/v5/h0GsssGg9FxgDgCjLeAd7hjYx-s.ttf) format('truetype');
+}
