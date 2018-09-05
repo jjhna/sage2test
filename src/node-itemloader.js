@@ -595,6 +595,8 @@ AppLoader.prototype.loadAppFromFileFromRegistry = function(file, mime_type, aUrl
 };
 
 AppLoader.prototype.loadAppFromFile = function(file, mime_type, aUrl, external_url, name, data, callback) {
+console.log('loadAppFromFile', file, mime_type, aUrl, external_url, name, data);
+
 	var _this = this;
 	var zipFolder = file;
 
@@ -609,6 +611,7 @@ AppLoader.prototype.loadAppFromFile = function(file, mime_type, aUrl, external_u
 
 		_this.scaleAppToFitDisplay(appInstance);
 		appInstance.file = file;
+		console.log('TOTO', appInstance)
 		callback(appInstance);
 	});
 };
@@ -961,6 +964,8 @@ AppLoader.prototype.loadApplicationFromRemoteServer = function(application, call
 };
 
 AppLoader.prototype.loadFileFromWebURL = function(file, callback) {
+	console.log('loadFileFromWebURL', file);
+
 	// Add the URL in the asset DB
 	var appIcon = path.resolve('public', 'images', 'link_256.png');
 	var urlName = file.url;
@@ -977,6 +982,8 @@ AppLoader.prototype.loadFileFromWebURL = function(file, callback) {
 	// used in case of dragging an image or PDF for instance from the web
 	var mime_type = file.type;
 	var filename = decodeURI(file.url.substring(file.url.lastIndexOf("/") + 1));
+
+console.log('loadApplication', {location: "url", url: file.url, type: mime_type, name: filename, strictSSL: false});
 
 	// Load the app
 	this.loadApplication({location: "url", url: file.url, type: mime_type, name: filename, strictSSL: false},
@@ -1126,6 +1133,8 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 			fs.mkdirSync(path.join(this.publicDir, directory));
 		}
 
+		console.log('MIME', mime_type);
+
 		// Check if it is a web-capable image, otherwise convert it to PNG
 		if (mime_type.startsWith("image/")) {
 			if (mime_type != "image/jpeg" && mime_type != "image/png" && mime_type != "image/webp") {
@@ -1141,12 +1150,35 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 					// done with the tmp file
 					fs.unlinkSync(file.path);
 					// call same funtion again with the new PNG file
-					return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, false, callback);
+					return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, callback);
 				});
 				// done for now
 				return;
 			}
+		} else if (mime_type === "application/url") {
+			sageutils.log("Loader", "processing URL file", file.path, cleanFilename);
+			const normalizeURL = require('normalizeurl');
+			const urlRegex = require('url-regex');
+			fs.readFile(file.path, 'utf8', function(err, fileContent) {
+				if (!err) {
+					console.log('Got data', fileContent);
+					const urls = fileContent.match(urlRegex({exact: false, strict: true})) || [];
+					for (const url of urls) {
+						if (url != "http://www.apple.com/DTDs/PropertyList-1.0.dtd") {
+							let clean_url = normalizeURL(url);
+							console.log('Found>', clean_url);
+							return _this.loadApplication({
+								location: "url", url: clean_url,
+								type: "application/url", compressed: false
+							}, callback);
+						}
+					}
+				}
+			});
+		} else if (mime_type === "application/webloc") {
+			sageutils.log("Loader", "processing WebLoc file", cleanFilename);
 		}
+
 
 		// Use the defautl folder plus type as destination:
 		//    SAGE2_Media/pdf/ for instance
@@ -1291,7 +1323,7 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 		}
 	} else if (appData.location === "url") {
 		app = registry.getDefaultAppFromMime(appData.type, true);
-
+console.log('HERE', app)
 		if (app === "image_viewer") {
 			this.loadImageFromURL(appData.url, appData.type, appData.name, appData.strictSSL, function(appInstance) {
 				callback(appInstance, null);
@@ -1312,6 +1344,7 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 				callback(appInstance, null);
 			});
 		} else if (app === "Webview") {
+console.log('APPPPP', appData, app);
 			// Special case to load URLs in the webview app
 			var webpath = getSAGE2Path('/uploads/apps/Webview');
 			// Set the URL
@@ -1319,7 +1352,8 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 			// Set the path of the app
 			appData.url  = this.hostOrigin + '/uploads/apps/Webview';
 			// Load the webview
-			this.loadAppFromFile(webpath, appData.type, appData.url, appData.url, "", appData.data,
+			this.loadAppFromFile(webpath, "application/custom", '/uploads/apps/Webview', appData.url,
+				'/uploads/apps/Webview', appData.data,
 				function(appInstance) {
 					callback(appInstance, null);
 				});
