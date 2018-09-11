@@ -758,7 +758,7 @@ function setupListeners() {
 	wsio.on('editorReceiveSnippetsExport', function(data) {
 		snippetEditor.receiveProjectExport(data);
 	});
-	
+
 	wsio.on('zipFolderPathForDownload', function(data) {
 		var url = data.filename;
 		if (url) {

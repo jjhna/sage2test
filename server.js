@@ -982,7 +982,7 @@ function wsAddClient(wsio, data) {
 		// handle sageUI initialization
 		snippetsManager.sageUIClientConnect(wsio);
 	}
-	
+
 	// If it is a stand alone app page, create the app window
 	if (wsio.clientType === "standAloneApp") {
 		initializeExistingApps(wsio, data.app);
