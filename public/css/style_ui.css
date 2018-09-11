@@ -52,6 +52,9 @@ h2 {
 #mainUI {
     margin: 0;
     overflow: hidden;
+
+    /* disable user selection on iOS */
+    -webkit-user-select: none;
 }
 
 #displayUIDiv {
@@ -1320,8 +1323,6 @@ The z-index is very important.
 .contextMenuEntry:hover>.contextSubMenu {
     display: block;
 }
-
-
 
 /* ====================================== */
 /* ====== Code Snippets UI Styling ====== */

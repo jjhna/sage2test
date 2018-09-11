@@ -52,6 +52,7 @@ var imageMagick;                                 // derived from graphicsmagick
 var WebsocketIO   = require('websocketio');      // creates WebSocket server and clients
 var chalk         = require('chalk');            // used for colorizing the console output
 var commander     = require('commander');        // parsing command-line arguments
+var JSZip         = require("jszip");            // used for creating zip files
 
 // custom node modules
 var sageutils           = require('./src/node-utils');            // provides the current version number
@@ -313,7 +314,7 @@ function initializeSage2Server() {
 
 	// Set default host origin for this server
 	if (config.rproxy_port === undefined) {
-		hostOrigin = "https://" + config.host + (config.port === 80 ? "" : ":" + config.port) + "/";
+		hostOrigin = "https://" + config.host + (config.secure_port === 443 ? "" : ":" + config.secure_port) + "/";
 	}
 
 	// Initialize sage2 item lists
@@ -807,6 +808,24 @@ function closeWebSocketClient(wsio) {
 		for (key in remoteSharingSessions) {
 			remoteSharingSessions[key].wsio.emit('stopRemoteSagePointer', {id: wsio.id});
 		}
+	} else if (wsio.clientType === "standAloneApp") {
+		hidePointer(wsio.id);
+		delete sagePointers[wsio.id];
+		delete remoteInteraction[wsio.id];
+		for (key in remoteSharingSessions) {
+			remoteSharingSessions[key].wsio.emit('stopRemoteSagePointer', {id: wsio.id});
+		}
+		for (key in SAGE2Items.renderSync) {
+			if (SAGE2Items.renderSync.hasOwnProperty(key)) {
+				// If the application had an animation timer, clear it
+				if (SAGE2Items.renderSync[key].clients[wsio.id] &&
+					SAGE2Items.renderSync[key].clients[wsio.id].animateTimer) {
+					clearTimeout(SAGE2Items.renderSync[key].clients[wsio.id].animateTimer);
+				}
+				// Remove the object from the list
+				delete SAGE2Items.renderSync[key].clients[wsio.id];
+			}
+		}
 	} else if (wsio.clientType === "display") {
 		for (key in SAGE2Items.renderSync) {
 			if (SAGE2Items.renderSync.hasOwnProperty(key)) {
@@ -963,6 +982,11 @@ function wsAddClient(wsio, data) {
 		// handle sageUI initialization
 		snippetsManager.sageUIClientConnect(wsio);
 	}
+	
+	// If it is a stand alone app page, create the app window
+	if (wsio.clientType === "standAloneApp") {
+		initializeExistingApps(wsio, data.app);
+	}
 
 	try {
 		// For debugging connections and slow down. Creates varibles apps can request for.
@@ -985,7 +1009,7 @@ function wsAddClient(wsio, data) {
  */
 function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 	setupListeners(wsio);
-
+	var key;
 	wsio.emit('initialize', {UID: wsio.id, time: Date.now(), start: startTime});
 	if (wsio === masterDisplay) {
 		wsio.emit('setAsMasterDisplay');
@@ -1017,7 +1041,6 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 		initializeExistingAppsAudio(wsio);
 	} else if (wsio.clientType === "sageUI") {
 		createSagePointer(wsio.id);
-		var key;
 		for (key in remoteSharingSessions) {
 			remoteSharingSessions[key].wsio.emit('createRemoteSagePointer', {
 				id: wsio.id, portal: {host: config.host, port: config.port}
@@ -1025,6 +1048,14 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 		}
 		initializeExistingAppsPositionSizeTypeOnly(wsio);
 		initializeExistingPartitionsUI(wsio);
+	} else if (wsio.clientType === "standAloneApp") {
+		initializeExistingSagePointers(wsio);
+		createSagePointer(wsio.id);
+		for (key in remoteSharingSessions) {
+			remoteSharingSessions[key].wsio.emit('createRemoteSagePointer', {
+				id: wsio.id, portal: {host: config.host, port: config.port}
+			});
+		}
 	}
 
 	var remote = findRemoteSiteByConnection(wsio);
@@ -1106,6 +1137,7 @@ function setupListeners(wsio) {
 
 	wsio.on('requestAvailableApplications',         wsRequestAvailableApplications);
 	wsio.on('requestStoredFiles',                   wsRequestStoredFiles);
+	wsio.on('requestAppAssociations',               wsRequestAppAssociations);
 	wsio.on('loadApplication',                      wsLoadApplication);
 	wsio.on('loadFileFromServer',                   wsLoadFileFromServer);
 	wsio.on('loadImageFromBuffer',                  wsLoadImageFromBuffer);
@@ -1115,6 +1147,7 @@ function setupListeners(wsio) {
 	wsio.on('clearDisplay',                         wsClearDisplay);
 	wsio.on('deleteAllApplications',                wsDeleteAllApplications);
 	wsio.on('tileApplications',                     wsTileApplications);
+	wsio.on('appWindowCreated',						wsAppWindowCreated);
 
 	// Radial menu should have its own message section? Just appended here for now.
 	wsio.on('radialMenuClick',                      wsRadialMenuClick);
@@ -1192,10 +1225,10 @@ function setupListeners(wsio) {
 	wsio.on('openRadialMenuFromControl',            wsOpenRadialMenuFromControl);
 	wsio.on('recordInnerGeometryForWidget',			wsRecordInnerGeometryForWidget);
 
-	wsio.on('requestNewTitle',						wsRequestNewTitle);
-	wsio.on('requestFileBuffer',					wsRequestFileBuffer);
-	wsio.on('closeFileBuffer',						wsCloseFileBuffer);
-	wsio.on('updateFileBufferCursorPosition', 		wsUpdateFileBufferCursorPosition);
+	wsio.on('requestNewTitle',                      wsRequestNewTitle);
+	wsio.on('requestFileBuffer',                    wsRequestFileBuffer);
+	wsio.on('closeFileBuffer',                      wsCloseFileBuffer);
+	wsio.on('updateFileBufferCursorPosition',       wsUpdateFileBufferCursorPosition);
 
 	wsio.on('createAppClone',                       wsCreateAppClone);
 
@@ -1205,13 +1238,15 @@ function setupListeners(wsio) {
 	wsio.on('createFolder',                         wsCreateFolder);
 
 	// Jupyper messages
-	wsio.on('startJupyterSharing',					wsStartJupyterSharing);
-	wsio.on('updateJupyterSharing',					wsUpdateJupyterSharing);
+	wsio.on('startJupyterSharing',                  wsStartJupyterSharing);
+	wsio.on('updateJupyterSharing',                 wsUpdateJupyterSharing);
 
 	// message passing between clients
 	wsio.on('requestAppContextMenu',				wsRequestAppContextMenu);
 	wsio.on('appContextMenuContents',				wsAppContextMenuContents);
 	wsio.on('callFunctionOnApp',					wsCallFunctionOnApp);
+	wsio.on('zipFolderForDownload',					wsZipFolderForDownload);
+	wsio.on('deleteDownloadedZip',					wsDeleteDownloadedZip);
 	// generic message passing for data requests or for specific communications.
 	wsio.on('launchAppWithValues',					wsLaunchAppWithValues);
 	wsio.on('sendDataToClient',						wsSendDataToClient);
@@ -1248,6 +1283,10 @@ function setupListeners(wsio) {
 	// message from performance page
 	wsio.on('requestClientUpdate',					wsRequestClientUpdate);
 
+	// message from stand alone app
+	wsio.on('setSagePointerToAppInteraction', 		wsSetSagePointerToAppInteraction);
+
+
 	// == SAGE2_CodeSnippets messages ==
 	// - Display to Server
 	wsio.on('snippetSaveIntoServer', wsSnippetSaveIntoServer);
@@ -1262,7 +1301,6 @@ function setupListeners(wsio) {
 	wsio.on("snippetsStateUpdated", wsSnippetsStateUpdated);
 	wsio.on("snippetSendCodeOnLoad", wsSnippetSendCodeOnLoad);
 	wsio.on("snippetsSendProjectExport", wsSnippetsSendProjectExport);
-
 }
 
 /**
@@ -1376,32 +1414,47 @@ function initializeExistingWallUI(wsio) {
 	}
 }
 
-function initializeExistingApps(wsio) {
+function initializeExistingApps(wsio, appID) {
 	var key;
-	for (key in SAGE2Items.applications.list) {
-		// remove partition value from application while sending wsio message (circular structure)
-		// does this cause issues?
-		var appCopy = Object.assign({}, SAGE2Items.applications.list[key]);
+	var appCopy;
+	if (appID !== undefined && appID !== null) {
+		appCopy = Object.assign({}, SAGE2Items.applications.list[appID]);
 		delete appCopy.partition;
+		delete appCopy.backgroundItem;
+		delete appCopy.foregroundItems;
 
 		wsio.emit('createAppWindow', appCopy);
-		if (SAGE2Items.renderSync.hasOwnProperty(key)) {
-			SAGE2Items.renderSync[key].clients[wsio.id] = {wsio: wsio, readyForNextFrame: false, blocklist: []};
-			calculateValidBlocks(SAGE2Items.applications.list[key], mediaBlockSize, SAGE2Items.renderSync[key]);
-
-			// Need to reset the animation loop
-			//   a new client could come while other clients were done rendering
-			//   (especially true for slow update apps, like the clock)
-			broadcast('animateCanvas', {id: SAGE2Items.applications.list[key].id, date: Date.now()});
+		if (SAGE2Items.renderSync.hasOwnProperty(appID)) {
+			SAGE2Items.renderSync[appID].clients[wsio.id] = {wsio: wsio, readyForNextFrame: false, blocklist: []};
+			calculateValidBlocks(SAGE2Items.applications.list[appID], mediaBlockSize, SAGE2Items.renderSync[appID]);
+			broadcast('animateCanvas', {id: SAGE2Items.applications.list[appID].id, date: Date.now()});
 		}
-		handleStickyItem(key);
-	}
-	for (key in SAGE2Items.portals.list) {
-		broadcast('initializeDataSharingSession', SAGE2Items.portals.list[key]);
-	}
+		broadcast('initializeDataSharingSession', SAGE2Items.portals.list[appID]);
+	} else {
+		for (key in SAGE2Items.applications.list) {
+			// remove partition value from application while sending wsio message (circular structure)
+			// does this cause issues?
+			appCopy = Object.assign({}, SAGE2Items.applications.list[key]);
+			delete appCopy.partition;
 
-	var newOrder = interactMgr.getObjectZIndexList("applications", ["portals"]);
-	wsio.emit('updateItemOrder', newOrder);
+			wsio.emit('createAppWindow', appCopy);
+			if (SAGE2Items.renderSync.hasOwnProperty(key)) {
+				SAGE2Items.renderSync[key].clients[wsio.id] = {wsio: wsio, readyForNextFrame: false, blocklist: []};
+				calculateValidBlocks(SAGE2Items.applications.list[key], mediaBlockSize, SAGE2Items.renderSync[key]);
+
+				// Need to reset the animation loop
+				//   a new client could come while other clients were done rendering
+				//   (especially true for slow update apps, like the clock)
+				broadcast('animateCanvas', {id: SAGE2Items.applications.list[key].id, date: Date.now()});
+			}
+		}
+		for (key in SAGE2Items.portals.list) {
+			broadcast('initializeDataSharingSession', SAGE2Items.portals.list[key]);
+		}
+
+		var newOrder = interactMgr.getObjectZIndexList("applications", ["portals"]);
+		wsio.emit('updateItemOrder', newOrder);
+	}
 }
 
 function initializeExistingPartitions(wsio) {
@@ -1446,6 +1499,11 @@ function initializeRemoteServerInfo(wsio) {
 	}
 }
 
+function wsAppWindowCreated(wsio, data) {
+	if (SAGE2Items.applications.list.hasOwnProperty(data.id) === true) {
+		handleStickyItem(data.id);
+	}
+}
 // **************  Drawing Functions *****************
 
 // The functions just call their associated method in the drawing manager
@@ -2254,12 +2312,7 @@ function wsUpdateAppState(wsio, data) {
 	if (wsio === masterDisplay && SAGE2Items.applications.list.hasOwnProperty(data.id)) {
 		var app = SAGE2Items.applications.list[data.id];
 
-		if (!app.data.pointersOverApp) {
-			// console.log("erase me, something removed the pointersOverApp property. Readding...");
-			// app.data.pointersOverApp = [];
-		}
 		sageutils.mergeObjects(data.localState, app.data, ['doc_url', 'video_url', 'video_type', 'audio_url', 'audio_type']);
-
 		if (data.updateRemote === true) {
 			var ts;
 			var portal = findApplicationPortal(app);
@@ -2807,7 +2860,7 @@ function saveSession(filename) {
 
 		var iconImageData = "";
 		try {
-			iconImageData = new Buffer(fs.readFileSync(iconPath)).toString('base64');
+			iconImageData = Buffer.from(fs.readFileSync(iconPath)).toString('base64');
 		} catch (error) {
 			// error reading/converting icon image
 		}
@@ -2883,6 +2936,7 @@ function createAppFromDescription(app, callback) {
 		appInstance.previous_width  = app.previous_width;
 		appInstance.previous_height = app.previous_height;
 		appInstance.maximized       = app.maximized;
+		appInstance.icon            = app.icon;
 		sageutils.mergeObjects(app.data, appInstance.data, ['doc_url', 'video_url', 'video_type', 'audio_url', 'audio_type']);
 
 		callback(appInstance, videohandle);
@@ -3566,7 +3620,7 @@ function wsLoadFileFromServer(wsio, data) {
 		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
 			application: {id: null, type: "snippet"}}, time: Date.now()});
 	} else {
-		appLoader.loadFileFromLocalStorage(data, function(appInstance, videohandle) {
+		var fileLoadCallBack = function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
 			var position = data.position || [0, 0];
 			if (position[0] > 1) {
@@ -3614,7 +3668,20 @@ function wsLoadFileFromServer(wsio, data) {
 			broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
 			addEventToUserLog(data.user, {type: "openFile", data:
 				{name: data.filename, application: {id: appInstance.id, type: appInstance.application}}, time: Date.now()});
-		});
+		};
+		var defaultApp = registry.getDefaultApp(data.filename);
+		if (defaultApp === data.application) {
+			appLoader.loadFileFromLocalStorage(data, fileLoadCallBack);
+		} else if (data.setDefault === true) {
+			// Change the default app for the file type
+			registry.setDefaultApp(data.filename, data.application, true);
+			appLoader.loadFileFromLocalStorage(data, fileLoadCallBack);
+			// Send the changed file associations
+			wsRequestAppAssociations(wsio);
+		} else {
+			//Open the file with app that is not default
+			appLoader.loadFileWithNonDefaultApplication(data, fileLoadCallBack);
+		}
 	}
 }
 
@@ -3972,6 +4039,11 @@ function wsPauseVideo(wsio, data) {
 	SAGE2Items.renderSync[data.id].decoder.pause(function() {
 		broadcast('videoPaused', {id: data.id});
 	});
+
+	// Necessary since the above broadcast has cases when the callback doesn't trigger. This is ok to send multiples.
+	if (data.audioPause) {
+		broadcast('videoPaused', {id: data.id});
+	}
 }
 
 function wsStopVideo(wsio, data) {
@@ -4629,8 +4701,6 @@ function wsUpdateApplicationState(wsio, data) {
 		if (modified === true) {
 			// update video demuxer based on state
 			if (app.application === "movie_player") {
-				console.log("received state from remote site:", data.state);
-
 				SAGE2Items.renderSync[app.id].loop = app.data.looped;
 
 				var ts = app.data.frame / app.data.framerate;
@@ -5136,6 +5206,52 @@ function getSavedFilesList() {
 	return list;
 }
 
+function wsRequestAppAssociations(wsio) {
+	var savedFiles  = getSavedFilesList();
+	var fileToTypeMap = {};
+	// Get the type for each saved file
+	for (var key in savedFiles) {
+		if (savedFiles.hasOwnProperty(key) === true) {
+			var list = savedFiles[key].map(function(d, i) {
+				return {
+					id: d.id,
+					type: registry.getMimeType(d.filename)
+				};
+			});
+			fileToTypeMap[key] = list;
+		}
+	}
+
+	var typeToAppMap = registry.getTypeToAppAssociations();
+
+	var allFileAssociations = {};
+	for (var category in fileToTypeMap) {
+		if (fileToTypeMap.hasOwnProperty(category) === true) {
+			var fileTypeList = fileToTypeMap[category];
+			fileTypeList.forEach(ft => {
+				var appList = [];
+				if (ft.type !== null) {
+					var type = ft.type.split('/');
+					if (typeToAppMap.hasOwnProperty(type[0]) === true) {
+						if (typeToAppMap[type[0]].hasOwnProperty(type[1]) === true) {
+							appList = typeToAppMap[type[0]][type[1]].applications;
+						}
+					}
+				}
+				allFileAssociations[ft.id] = appList.map(function(d) {
+					return {
+						label: d.split('/').slice(-1)[0],
+						app: d
+					};
+				});
+			});
+		}
+	}
+
+	wsio.emit('appAssociationsForStoredFiles', {allFileAssociations: allFileAssociations, overwrite: true});
+}
+
+
 function setupDisplayBackground() {
 	var tmpImg, imgExt;
 
@@ -5346,13 +5462,12 @@ function uploadForm(req, res) {
 	// User information
 	var ptrName  = "";
 	var ptrColor = "";
-
 	// Limits the amount of memory all fields together (except files) can allocate in bytes.
 	//    set to 4MB.
 	form.maxFieldsSize = 4 * 1024 * 1024;
 	// Increase file limit to match client limit in SAGE2_interaction.js
 	// Default is 2MB https://github.com/felixge/node-formidable/commit/39f27f29b2824c21d0d9b8e85bcbb5fc0081beaf
-	form.maxFileSize = 1024 * 1024 * 1024;
+	form.maxFileSize = 20 * (1024 * 1024 * 1024); // 20GB to match the client side upload
 	form.type          = 'multipart';
 	form.multiples     = true;
 
@@ -5498,7 +5613,6 @@ function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
 				}
 				handleNewApplication(appInstance, videohandle);
 			}
-
 			// send the update file list
 			broadcast('storedFileList', getSavedFilesList());
 		});
@@ -8207,6 +8321,17 @@ function pointerReleaseOnStaticUI(uniqueID, pointerX, pointerY, obj) {
  * @param  {Object} remote - Remote site. Usually: remoteSites[data.parameters.remoteSiteIndex]
  */
 function shareApplicationWithRemoteSite(uniqueID, app, remote) {
+	// Stop the video when it is shared to ensure synchronized state
+	if (app.application.application === "movie_player") {
+		// Stop on the server
+		wsStopVideo(null, {id: app.application.id});
+		wsUpdateVideoTime(null, {id: app.application.id, timestamp: 0, play: false}); // for remote
+		// Stop on the display
+		app.application.data.paused = true;
+		app.application.data.frame = 0;
+		broadcast('loadApplicationState', {id: app.application.id, state: app.application.data, date: Date.now()});
+	}
+
 	var sharedId = app.application.id + "_" + config.host + ":" + config.secure_port + "+" + remote.wsio.id;
 	if (sharedApps[app.application.id] === undefined) {
 		sharedApps[app.application.id] = [{wsio: remote.wsio, sharedId: sharedId}];
@@ -10101,6 +10226,75 @@ function wsCallFunctionOnApp(wsio, data) {
 
 }
 
+function wsZipFolderForDownload(wsio, data) {
+	// make Promise version of fs.readdir()
+	function readdirAsync(dirname) {
+		return new Promise(function(resolve, reject) {
+			fs.readdir(dirname, function(err, filenames) {
+				if (err) {
+					reject(err);
+				} else {
+					resolve(filenames);
+				}
+			});
+		});
+	}
+
+	// make Promise version of fs.readFile()
+	function readFileAsync(filename) {
+		return new Promise(function(resolve, reject) {
+			fs.readFile(filename, function(err, fileContent) {
+				if (err) {
+					reject(err);
+				} else {
+					var shortName = filename.substring(filename.lastIndexOf(path.sep) + 1, filename.length);
+					resolve({filename: shortName, content: fileContent});
+				}
+			});
+		});
+	}
+
+
+	var zip = new JSZip();
+	var folderPath = data.folder.replace(mediaFolders.user.url, mediaFolders.user.path);
+	var filename = data.filename.replace(mediaFolders.user.url, mediaFolders.user.path);
+	folderPath = path.normalize(folderPath);
+	filename = path.normalize(filename);
+
+	// utility function, return Promise
+	function getFile(filename) {
+		return readFileAsync(path.join(folderPath, filename));
+	}
+
+	readdirAsync(folderPath).then(function (filenames) {
+		return Promise.all(filenames.map(getFile));
+	}).then(function(files) {
+		files.forEach(file => {
+			zip.file(file.filename, file.content);
+		});
+		zip.generateAsync({type: 'nodebuffer'}).then(function(content) {
+			fs.writeFile(filename, content, function(err) {
+				if (err) {
+					sageutils.log("wsZipFolderForDownload", "Cannot create zip file", data.fileName + '.zip');
+				} else {
+					wsio.emit('zipFolderPathForDownload', {filename: data.filename,
+						filePath: filename });
+				}
+			});
+		});
+	});
+}
+
+function wsDeleteDownloadedZip(wsio, data) {
+	var fullpath = path.resolve(data.filePath);
+	fs.unlink(fullpath, function(err) {
+		if (err) {
+			sageutils.log("wsDeleteDownloadedZip", "Could not delete zipfile", data.filePath, err);
+			return;
+		}
+	});
+}
+
 /**
  * Will launch app with specified name and call the given function after.
  * The function doesn't need to be called to give the parameters.
@@ -10424,6 +10618,8 @@ function wsStartWallScreenshot(wsio, data) {
 					clients[i].capableOfScreenshot = true;
 				}
 				clients[i].emit("sendServerWallScreenshot");
+			} else if (clients[i].clientType === "sageUI") {
+				clients[i].emit("warningMessage", "Taking a screenshot");
 			}
 		}
 	}
@@ -10598,13 +10794,15 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 					// output folder
 					path: currentPath,
 					// filename
-					name: fname}],
-					// position and size
+					name: fname
+				}],
+				// position and size
 				[0, 0, config.totalWidth / 4],
 				// username and color
 				"screenshot", "#B4B4B4",
 				// to be opened afterward
-				true);
+				true
+				);
 				// Delete the temporary files
 				sageutils.deleteFiles(path.join(mainFolder.path, "tmp", "wallScreenshot_*"));
 			}
@@ -10817,9 +11015,10 @@ function appFileSaveRequest(wsio, data) {
 				fileObject[0] = {
 					name: filename,
 					type: data.filePath.ext,
-					path: fullpath};
-				// Add the file to the asset library and open it
-				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", true);
+					path: fullpath
+				};
+				// Add the file to the asset library and not open it (false)
+				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", false);
 			}
 		} catch (err) {
 			sageutils.log('File', "error while saving to", fullpath + ":" + err);
@@ -11327,3 +11526,14 @@ function wsSnippetsSendProjectExport(wsio, data) {
 	}
 }
 
+/**
+ * Set sage pointer mode to app interaction
+ *
+ */
+
+function wsSetSagePointerToAppInteraction(wsio, data) {
+	if (remoteInteraction[wsio.id].windowManagementMode()) {
+		remoteInteraction[wsio.id].toggleModes();
+		broadcast('changeSagePointerMode', {id: sagePointers[wsio.id].id, mode: remoteInteraction[wsio.id].interactionMode});
+	}
+}

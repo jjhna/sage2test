@@ -8,10 +8,10 @@
 	index_port: 9292,
 	background: {
 		color: "#333333",
-		//watermark: {
-		//	svg: "images/EVL-LAVA.svg",
-		//	color: "rgba(255, 255, 255, 0.5)"
-		//},
+		watermark: {
+			svg: "images/EVL-LAVA.svg",
+			color: "rgba(255, 255, 255, 0.5)"
+		},
 		image: {
 			url: "user/images/background/kamping_4k.jpg",
 			style: "tile"
@@ -43,10 +43,10 @@
 		viewing_distance: 0.71	// in meters
 	},
 	resolution: {
-		width: 3840,
-		height: 2160
-		//width: 2560,
-		//height: 1600
+		//width: 3840,
+		//height: 2160
+		width: 2560,
+		height: 1600
 		//width: 1366,
 		//height: 768
 	},
@@ -65,24 +65,22 @@
 	],
 	remote_sites: [
 		{
-			name: "Cyber-Commons",
+			name: "EVL Upstairs",
 			host: "inferno.evl.uic.edu",
 			port: 443,
 			secure: true,
-			password: "evl123"
 		},
 		{
-			name: "IceWall",
-			host: "thor.evl.uic.edu",
+			name: "Continuum Wall",
+			host: "bigpipe.evl.uic.edu",
 			port: 443,
-			secure: true
+			secure: true,
 		},
 		{
 			name: "CAVE2",
 			host: "lyra.evl.uic.edu",
 			port: 443,
 			secure: true,
-			password: "evl123"
 		},
 		{
 			name: "CAVE2-Wall",
@@ -98,7 +96,7 @@
 		
 		omicron: // enable omicron input module
 		{
-			enable: false,
+			enable: true,
 			
 			// Port SAGE will listen on for a oinputserver connection
 			msgPort: 28000,
@@ -114,15 +112,19 @@
 			enableMocap: false,
 			enableWand: false,
 			
-			style: "Touch", // Display as "Touch" or "Pointer"
-			interactionMode: "App", // "Window" or "App"
-
+			style: "Pointer", // Display as "Touch" or "Pointer"
+			interactionMode: "Window", // "Window" or "App"
+			touchOffset: [ 0, -20 ],
+			
 			// Touch gestures
+			enableGestures: true,
+			gestureDebug: false,
+			
 			enableTwoFingerZoom: true,
 			zoomGestureScale: 2000,
 			enableTwoFingerWindowDrag: false,
-			acceleratedDragScale: 3,
-			gestureDebug: false,			
+			
+			acceleratedDragScale: 0,
 		}
 		
 	},

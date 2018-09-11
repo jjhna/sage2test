@@ -806,7 +806,10 @@ function UIBuilder(json_cfg, clientID) {
 			watermark.style.cursor = "none";
 		}
 		if (this.json_cfg.background.watermark.color) {
+			// change color of all the path elements
 			this.changeSVGColor(watermark, "path", null, this.json_cfg.background.watermark.color);
+			// change color of all the rect elements
+			this.changeSVGColor(watermark, "rect", null, this.json_cfg.background.watermark.color);
 		}
 
 		watermark.style.opacity  = 0.4;
@@ -1060,8 +1063,11 @@ function UIBuilder(json_cfg, clientID) {
 	*/
 	this.hideSagePointer = function(pointer_data) {
 		var pointerElem = document.getElementById(pointer_data.id);
-		pointerElem.style.display = "none";
-		this.pointerItems[pointerElem.id].isShown = false;
+		// making sure the element exists (it seems sometimes it's not)
+		if (pointerElem) {
+			pointerElem.style.display = "none";
+			this.pointerItems[pointerElem.id].isShown = false;
+		}
 	};
 
 	/**
@@ -1531,5 +1537,32 @@ function UIBuilder(json_cfg, clientID) {
 			}
 			this.uiHidden = false;
 		}
+	};
+
+	this.buildStandAlone = function() {
+		this.offsetX = 0;
+		this.offsetY = 0;
+		this.width   = this.json_cfg.totalWidth;
+		this.height  = this.json_cfg.totalHeight;
+		this.titleBarHeight = this.json_cfg.ui.titleBarHeight;
+		this.titleTextSize  = this.json_cfg.ui.titleTextSize;
+		this.pointerWidth   = this.json_cfg.ui.pointerSize * 3;
+		this.pointerHeight  = this.json_cfg.ui.pointerSize;
+		this.widgetControlSize = this.json_cfg.ui.widgetControlSize;
+		this.pointerOffsetX = Math.round(0.27917 * this.pointerHeight);
+		this.pointerOffsetY = Math.round(0.24614 * this.pointerHeight);
+	};
+
+	//Called when the browser of standalone app resizes
+	this.resizePointers = function(newScale) {
+		// Rescale the box around the pointers
+		for (var key in this.pointerItems) {
+			var ptr = this.pointerItems[key];
+			ptr.updateBox(this.scale);
+		}
+	};
+
+	this.isPointerShown = function(id) {
+		return this.pointerItems[id].isShown;
 	};
 }

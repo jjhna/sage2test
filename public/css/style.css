@@ -336,6 +336,13 @@ body {
   content: "\f110";
 }
 
+.a-canvas.a-grab-cursor:hover{
+	cursor:none !important
+}
+.a-canvas.a-grab-cursor:active,.a-grabbing{
+	cursor:none !important
+}
+
 .snippetAncestry {
 	position: absolute;
 	background: rgb(217,217,217);

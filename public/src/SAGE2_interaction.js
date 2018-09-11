@@ -56,7 +56,7 @@ function SAGE2_interaction(wsio) {
 	this.deltaX = 0;
 	this.deltaY = 0;
 	// Send frequency (frames per second)
-	this.sendFrequency = 30;
+	this.sendFrequency = 35;
 	// Timeout for when scrolling ends
 	this.scrollTimeId = null;
 
@@ -264,7 +264,7 @@ function SAGE2_interaction(wsio) {
 	* @param dropX {Number} drop location X
 	* @param dropY {Number} drop location Y
 	*/
-	this.uploadFiles = function(files, dropX, dropY) {
+	this.uploadFiles = function(files, showCompressed, dropX, dropY) {
 		var _this = this;
 		var loaded = {};
 		var filesFinished = 0;
@@ -324,15 +324,15 @@ function SAGE2_interaction(wsio) {
 
 		// Clear the upload array
 		this.array_xhr.length = 0;
-
+		// Converting value to boolean
+		showCompressed = (showCompressed === true);
 		for (var i = 0; i < files.length; i++) {
 			if (files[i].size <= this.maxUploadSize) {
 				var formdata = new FormData();
 				formdata.append("file" + i.toString(), files[i]);
 				formdata.append("dropX", dropX);
 				formdata.append("dropY", dropY);
-				formdata.append("open",  true);
-
+				formdata.append("open",  showCompressed);
 				formdata.append("SAGE2_ptrName",  userSettings.SAGE2_ptrName);
 				formdata.append("SAGE2_ptrColor", userSettings.SAGE2_ptrColor);
 
@@ -528,6 +528,13 @@ function SAGE2_interaction(wsio) {
 			if (__SAGE2__.browser.isChrome === true && this.chromeDesktopCaptureEnabled === true) {
 				// post message to start chrome screen share
 				window.postMessage('SAGE2_capture_desktop', '*');
+			} else if (__SAGE2__.browser.isFirefox === true) {
+				// attempt to start firefox screen share
+				//   can replace 'screen' with 'window' (but need user choice ahead of time)
+				showDialog('ffShareScreenDialog');
+			} else if (__SAGE2__.browser.isEdge17 === true) {
+				// attempt to start Ms Edge screen share
+				this.captureDesktop();
 			} else if (__SAGE2__.browser.isChrome === true && this.chromeDesktopCaptureEnabled !== true) {
 
 				/* eslint-disable max-len */
@@ -552,10 +559,6 @@ function SAGE2_interaction(wsio) {
 
 				/* eslint-enable max-len */
 
-			} else if (__SAGE2__.browser.isFirefox === true) {
-				// attempt to start firefox screen share
-				//   can replace 'screen' with 'window' (but need user choice ahead of time)
-				showDialog('ffShareScreenDialog');
 			} else {
 				showSAGE2Message("Screen capture not supported in this browser.<br> Google Chrome is preferred.");
 			}
@@ -589,6 +592,7 @@ function SAGE2_interaction(wsio) {
 	* @param data {Object} data
 	*/
 	this.captureDesktop = function(data) {
+		var _this = this;
 		if (__SAGE2__.browser.isChrome === true) {
 			var constraints = {
 				chromeMediaSource: 'desktop',
@@ -599,6 +603,14 @@ function SAGE2_interaction(wsio) {
 			};
 			navigator.getUserMedia({video: {mandatory: constraints, optional: []}, audio: false},
 				this.streamSuccess, this.streamFail);
+		} else if (__SAGE2__.browser.isEdge17 === true) {
+			// navigator.getDisplayMedia(,this.streamSuccess, this.streamFail);
+			navigator.getDisplayMedia({video: true}).then(function (stream) {
+				_this.streamSuccessMethod(stream);
+			}).catch(function (err) {
+				_this.streamFailMethod(err);
+			});
+
 		} else if (__SAGE2__.browser.isFirefox === true) {
 			navigator.getUserMedia({video: {mediaSource: data}, audio: false},
 				this.streamSuccess, this.streamFail);
@@ -624,7 +636,8 @@ function SAGE2_interaction(wsio) {
 		}
 
 		var mediaVideo = document.getElementById('mediaVideo');
-		mediaVideo.src = window.URL.createObjectURL(this.mediaStream);
+		// mediaVideo.src = window.URL.createObjectURL(this.mediaStream);
+		mediaVideo.srcObject = this.mediaStream;
 		mediaVideo.play();
 	};
 
@@ -635,7 +648,7 @@ function SAGE2_interaction(wsio) {
 	* @param event {Object} error event
 	*/
 	this.streamFailMethod = function(event) {
-		console.log("no access to media capture");
+		console.log("no access to media capture:", event);
 
 		if (__SAGE2__.browser.isChrome === true) {
 			showSAGE2Message('Screen capture failed.<br> Make sure to install and enable the Chrome SAGE2 extension.<br>' +

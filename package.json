@@ -76,7 +76,8 @@
 		"electron-squirrel-startup": "latest",
 		"systeminformation": "latest",
 		"ws": "^3.3.1",
-		"ytdl-core": "latest"
+		"ytdl-core": "latest",
+		"jszip": "latest"
 	},
 	"optionalDependencies": {
 		"node-demux": "git+https://github.com/renambot-uic/node-demux.git"
@@ -91,7 +92,6 @@
 		"nodemon": "latest",
 		"kthxbai": "latest",
 		"mocha": "latest",
-		"mocha-jshint": "latest",
 		"istanbul": "latest",
 		"coveralls": "latest"
 	},
