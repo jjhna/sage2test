@@ -4065,6 +4065,16 @@ function wsAddNewElementFromRemoteServer(wsio, data) {
 function wsAddNewSharedElementFromRemoteServer(wsio, data) {
 	var i;
 
+	// This section prevent duplicating apps shared to this server. Return if the app is already open.
+	if (SAGE2Items.applications.list.hasOwnProperty(data.id)) {
+		return;
+	} else {
+		let streamId = wsio.remoteAddress.address + ":" + wsio.remoteAddress.port + "|" + data.id;
+		if (SAGE2Items.applications.list.hasOwnProperty(streamId)) {
+			return;
+		}
+	}
+
 	appLoader.loadApplicationFromRemoteServer(data.application, function(appInstance, videohandle) {
 		sageutils.log("Remote App", appInstance.title + " (" + appInstance.application + ")");
 
