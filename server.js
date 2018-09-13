@@ -6763,6 +6763,10 @@ function releaseSlider(uniqueID) {
 
 function pointerPressOnApplication(uniqueID, pointerX, pointerY, data, obj, localPt, portalId) {
 	var im = findInteractableManager(obj.data.id);
+	// If there is no application at the point, nothing can be done
+	if (!im) {
+		return;
+	}
 	im.moveObjectToFront(obj.id, "applications", ["portals"]);
 	var app = SAGE2Items.applications.list[obj.id];
 	var stickyList = stickyAppHandler.getStickingItems(app);
@@ -10032,7 +10036,9 @@ function fillContextMenuWithShareSites(contextMenu, appId) {
  * @param  {Array} data.entries - Array of objects describing the entries.
  */
 function wsAppContextMenuContents(wsio, data) {
-	SAGE2Items.applications.list[data.app].contextMenu = data.entries;
+	if (SAGE2Items.applications.list.hasOwnProperty(data.app)) {
+		SAGE2Items.applications.list[data.app].contextMenu = data.entries;
+	}
 }
 
 /**
