@@ -1031,8 +1031,9 @@ function UIBuilder(json_cfg, clientID) {
 	* @param pointer_data {Object} pointer information
 	*/
 	this.showSagePointer = function(pointer_data) {
-		var pointerElem = document.getElementById(pointer_data.id);
-		var translate;
+		// Get the DOM element from the data structure
+		let pointerElem = this.pointerItems[pointer_data.id].div;
+		let translate;
 		if (pointer_data.portal !== undefined && pointer_data.portal !== null) {
 			var left = pointer_data.left * dataSharingPortals[pointer_data.portal].scaleX;
 			var top = pointer_data.top * dataSharingPortals[pointer_data.portal].scaleY;
@@ -1062,7 +1063,8 @@ function UIBuilder(json_cfg, clientID) {
 	* @param pointer_data {Object} pointer information
 	*/
 	this.hideSagePointer = function(pointer_data) {
-		var pointerElem = document.getElementById(pointer_data.id);
+		// Get the DOM element from the data structure
+		let pointerElem = this.pointerItems[pointer_data.id].div;
 		// making sure the element exists (it seems sometimes it's not)
 		if (pointerElem) {
 			pointerElem.style.display = "none";
@@ -1078,9 +1080,9 @@ function UIBuilder(json_cfg, clientID) {
 	*/
 	this.updateSagePointerPosition = function(pointer_data) {
 		if (this.pointerItems[pointer_data.id].isShown) {
-			var pointerElem = document.getElementById(pointer_data.id);
-
-			var translate;
+			// Get the DOM element from the data structure
+			let pointerElem = this.pointerItems[pointer_data.id].div;
+			let translate;
 			if (pointer_data.portal !== undefined && pointer_data.portal !== null) {
 				var left = pointer_data.left * dataSharingPortals[pointer_data.portal].scaleX;
 				var top = pointer_data.top * dataSharingPortals[pointer_data.portal].scaleY;
@@ -1088,11 +1090,8 @@ function UIBuilder(json_cfg, clientID) {
 			} else {
 				translate = "translate(" + pointer_data.left + "px," + pointer_data.top + "px)";
 			}
-
-			requestAnimationFrame(function() {
-				pointerElem.style.webkitTransform = translate;
-				pointerElem.style.mozTransform    = translate;
-				pointerElem.style.transform       = translate;
+			requestAnimationFrame(function(ts) {
+				pointerElem.style.transform = translate;
 			});
 		}
 	};
@@ -1503,7 +1502,6 @@ function UIBuilder(json_cfg, clientID) {
 	* @method showInterface
 	*/
 	this.showInterface = function() {
-		var i;
 		if (this.uiHidden) {
 			// Show the top bar
 			this.upperBar.style.display = 'block';
@@ -1517,22 +1515,22 @@ function UIBuilder(json_cfg, clientID) {
 			}
 			// Show the apps top bar
 			var applist = document.getElementsByClassName("windowTitle");
-			for (i = 0; i < applist.length; i++) {
+			for (let i = 0; i < applist.length; i++) {
 				applist[i].style.display = 'block';
 			}
 			// Show the apps border
 			var itemlist = document.getElementsByClassName("windowItem");
-			for (i = 0; i < itemlist.length; i++) {
+			for (let i = 0; i < itemlist.length; i++) {
 				itemlist[i].classList.toggle("windowItemNoBorder");
 			}
 			// Show the partitions top bar
 			var ptnlist = document.getElementsByClassName("partitionTitle");
-			for (i = 0; i < ptnlist.length; i++) {
+			for (let i = 0; i < ptnlist.length; i++) {
 				ptnlist[i].style.display = 'block';
 			}
 			// Show the partitions background area
 			var ptntitlelist = document.getElementsByClassName("partitionArea");
-			for (i = 0; i < ptntitlelist.length; i++) {
+			for (let i = 0; i < ptntitlelist.length; i++) {
 				ptntitlelist[i].style.display = 'block';
 			}
 			this.uiHidden = false;
