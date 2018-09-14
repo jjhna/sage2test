@@ -158,6 +158,11 @@ program = commander
 	.option('--no-monitoring',			  'Disables performance monitoring')
 	.parse(process.argv);
 
+// Set the title of the console to SAGE2 (used to kill it later)
+if (platform === "Windows") {
+	process.title = "SAGE2";
+}
+
 // Logging or not
 if (program.logfile) {
 	// Use default name or one specified on command line

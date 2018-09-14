@@ -14,6 +14,10 @@
 
 "use strict";
 
+var os   = require('os');
+var fs   = require('fs');
+var path = require('path');
+
 // module to retrieve hardware, system and OS information
 var sysInfo = require('systeminformation');
 // pretty formating a la sprintf
@@ -21,10 +25,6 @@ var sprint  = require('sprint');
 
 // SAGE2 module: for log function
 var sageutils = require('../src/node-utils');
-
-var os = require('os');
-var fs = require('fs');
-var path = require('path');
 
 /**
   * @class PerformanceManager
@@ -102,10 +102,18 @@ function PerformanceManager() {
 		data.servername = this.config.name || "";
 		data.serverhost = this.config.host;
 		this.performanceMetrics.staticInformation = data;
+		// Set the title of the console to SAGE2 (used to kill it later)
+		if (os.platform() === "win32") {
+			process.title = "SAGE2";
+		}
 		// fix on some system with no memory layout
 		if (data.memLayout.length === 0) {
 			sysInfo.mem(function(mem) {
 				this.performanceMetrics.staticInformation.memLayout[0] = {size: mem.total};
+				// Set the title of the console to SAGE2 (used to kill it later)
+				if (os.platform() === "win32") {
+					process.title = "SAGE2";
+				}
 			}.bind(this));
 		}
 	}.bind(this));
