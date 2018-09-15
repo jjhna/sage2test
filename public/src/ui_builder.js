@@ -108,9 +108,7 @@ function UIBuilder(json_cfg, clientID) {
 			} else {
 				newratio = document.documentElement.clientHeight / wallHeight;
 			}
-			this.bg.style.webkitTransform = "scale(" + (newratio) + ")";
-			this.bg.style.mozTransform    = "scale(" + (newratio) + ")";
-			this.bg.style.transform       = "scale(" + (newratio) + ")";
+			this.bg.style.transform = "scale(" + (newratio) + ")";
 
 			this.main.style.width  = wallWidth  + "px";
 			this.main.style.height = wallHeight + "px";
@@ -125,9 +123,7 @@ function UIBuilder(json_cfg, clientID) {
 					} else {
 						newr = document.documentElement.clientHeight / wallHeight;
 					}
-					_this.bg.style.webkitTransform = "scale(" + (newr) + ")";
-					_this.bg.style.mozTransform    = "scale(" + (newr) + ")";
-					_this.bg.style.transform       = "scale(" + (newr) + ")";
+					_this.bg.style.transform = "scale(" + (newr) + ")";
 					_this.scale = newr;
 					// Rescale the box around the pointers
 					for (var key in _this.pointerItems) {
@@ -140,8 +136,6 @@ function UIBuilder(json_cfg, clientID) {
 				// keycode: f
 				if (event.keyCode === 70) {
 					if (_this.ratio === "fit") {
-						_this.bg.style.webkitTransform = "scale(1)";
-						_this.bg.style.mozTransform = "scale(1)";
 						_this.bg.style.transform = "scale(1)";
 						_this.ratio = "full";
 						_this.scale = 1;
@@ -153,9 +147,7 @@ function UIBuilder(json_cfg, clientID) {
 							newr = document.documentElement.clientHeight / wallHeight;
 						}
 						_this.scale = newr;
-						_this.bg.style.webkitTransform = "scale(" + _this.scale + ")";
-						_this.bg.style.mozTransform    = "scale(" + _this.scale + ")";
-						_this.bg.style.transform       = "scale(" + _this.scale + ")";
+						_this.bg.style.transform = "scale(" + _this.scale + ")";
 						_this.ratio = "fit";
 					}
 					// Rescale the box around the pointers
@@ -358,8 +350,6 @@ function UIBuilder(json_cfg, clientID) {
 		this.clock.style.left       = (-this.offsetX + this.titleBarHeight).toString() + "px";
 		// center vertically: position top 50% and then translate by -50%
 		this.clock.style.top        = "50%";
-		this.clock.style.webkitTransform  = "translateY(-50%)";
-		this.clock.style.mozTransform  = "translateY(-50%)";
 		this.clock.style.transform  = "translateY(-50%)";
 
 		machine.style.position   = "absolute";
@@ -368,8 +358,6 @@ function UIBuilder(json_cfg, clientID) {
 		machine.style.color      = textColor;
 		machine.style.left       = (-this.offsetX + (6 * this.titleBarHeight)).toString() + "px";
 		machine.style.top        = "50%";
-		machine.style.webkitTransform  = "translateY(-50%)";
-		machine.style.mozTransform  = "translateY(-50%)";
 		machine.style.transform  = "translateY(-50%)";
 
 		var rightOffset = this.offsetX - (this.json_cfg.totalWidth - this.width);
@@ -384,8 +372,6 @@ function UIBuilder(json_cfg, clientID) {
 			version.style.right  = ((6 * this.titleBarHeight) + rightOffset).toString() + "px";
 		}
 		version.style.top = "50%";
-		version.style.webkitTransform = "translateY(-50%)";
-		version.style.mozTransform = "translateY(-50%)";
 		version.style.transform = "translateY(-50%)";
 
 		// Load the logo (shown top left corner)
@@ -776,9 +762,7 @@ function UIBuilder(json_cfg, clientID) {
 
 		// Center the logo
 		logo.style.top = "50%";
-		logo.style.webkitTransform  = "translateY(-50%)";
-		logo.style.mozTransform     = "translateY(-50%)";
-		logo.style.transform        = "translateY(-50%)";
+		logo.style.transform = "translateY(-50%)";
 	};
 
 	/**
@@ -1043,9 +1027,7 @@ function UIBuilder(json_cfg, clientID) {
 		}
 
 		pointerElem.style.display = "block";
-		pointerElem.style.webkitTransform = translate;
-		pointerElem.style.mozTransform    = translate;
-		pointerElem.style.transform       = translate;
+		pointerElem.style.transform = translate;
 
 		this.pointerItems[pointerElem.id].setLabel(pointer_data.label);
 		this.pointerItems[pointerElem.id].setColor(pointer_data.color);

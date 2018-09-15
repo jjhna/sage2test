@@ -777,8 +777,10 @@ function setupListeners() {
 			var translate = "translate(" + position_data.elemLeft + "px," + position_data.elemTop + "px)";
 			var selectedElemTitle = document.getElementById(position_data.elemId + "_title");
 			var selectedElem = document.getElementById(position_data.elemId);
-			selectedElemTitle.style.transform = translate;
-			selectedElem.style.transform = translate;
+			requestAnimationFrame(function(ts) {
+				selectedElemTitle.style.transform = translate;
+				selectedElem.style.transform = translate;
+			});
 		}
 
 		var app = applications[position_data.elemId];
@@ -893,8 +895,10 @@ function setupListeners() {
 		if (position_data.elemAnimate) {
 			moveItemWithAnimation(position_data);
 		} else {
-			selectedElemTitle.style.transform = translate;
-			selectedElem.style.transform      = translate;
+			requestAnimationFrame(function(ts) {
+				selectedElemTitle.style.transform = translate;
+				selectedElem.style.transform      = translate;
+			});
 		}
 
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
