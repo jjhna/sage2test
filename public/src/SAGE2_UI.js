@@ -820,8 +820,6 @@ function resizeMenuUI(ratio) {
 			menuScale = freeWidth / 840;
 		}
 
-		menuUI.style.webkitTransform = "scale(" + menuScale + ")";
-		menuUI.style.mozTransform = "scale(" + menuScale + ")";
 		menuUI.style.transform = "scale(" + menuScale + ")";
 		menuContainer.style.height = parseInt(86 * menuScale, 10) + "px";
 
@@ -1313,9 +1311,7 @@ function mouseCheck(event) {
 
 	var uiButtonImg = getCSSProperty("style_ui.css", "#menuUI tr td:hover img");
 	if (uiButtonImg !== null) {
-		uiButtonImg.style.webkitTransform = "scale(1.2)";
-		uiButtonImg.style.mozTransform    = "scale(1.2)";
-		uiButtonImg.style.transform       = "scale(1.2)";
+		uiButtonImg.style.transform = "scale(1.2)";
 	}
 	// Display/hide the labels under the UI buttons
 	// var uiButtonP = getCSSProperty("style_ui.css", "#menuUI tr td p");
@@ -1974,9 +1970,6 @@ function pointerDblClick(event) {
 function handleDblClick(element) {
 	if (element.id === "sage2UICanvas") {
 		displayUI.pointerDblClick();
-		if (event.preventDefault) {
-			event.preventDefault();
-		}
 	} else if (element.id.length > 14 && element.id.substring(0, 14) === "available_app_") {
 		loadSelectedApplication();
 		hideDialog('appLauncherDialog');
