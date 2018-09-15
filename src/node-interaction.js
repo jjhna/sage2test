@@ -213,9 +213,12 @@ Interaction.prototype.moveSelectedItem = function(pointerX, pointerY) {
 	}
 
 	return {
-		elemId: this.selectedMoveItem.id, elemLeft: this.selectedMoveItem.left,
-		elemTop: this.selectedMoveItem.top, elemWidth: this.selectedMoveItem.width,
-		elemHeight: this.selectedMoveItem.height, date: new Date()
+		elemId: this.selectedMoveItem.id,
+		elemLeft:   Math.round(this.selectedMoveItem.left),
+		elemTop:    Math.round(this.selectedMoveItem.top),
+		elemWidth:  Math.round(this.selectedMoveItem.width),
+		elemHeight: Math.round(this.selectedMoveItem.height),
+		date: new Date()
 	};
 };
 
@@ -232,10 +235,14 @@ Interaction.prototype.moveSelectedControl = function(pointerX, pointerY) {
 	this.selectedMoveControl.top  = pointerY + this.selectOffsetY;
 
 	return {
-		elemId: this.selectedMoveControl.id, appId: this.selectedMoveControl.appId,
-		elemLeft: this.selectedMoveControl.left, elemTop: this.selectedMoveControl.top,
-		elemWidth: this.selectedMoveControl.width, elemHeight: this.selectedMoveControl.height,
-		elemBarHeight: this.selectedMoveControl.barHeight, hasSideBar: this.selectedMoveControl.hasSideBar,
+		elemId: this.selectedMoveControl.id,
+		appId: this.selectedMoveControl.appId,
+		elemLeft: this.selectedMoveControl.left,
+		elemTop: this.selectedMoveControl.top,
+		elemWidth: this.selectedMoveControl.width,
+		elemHeight: this.selectedMoveControl.height,
+		elemBarHeight: this.selectedMoveControl.barHeight,
+		hasSideBar: this.selectedMoveControl.hasSideBar,
 		date: Date.now()
 	};
 };
@@ -346,9 +353,12 @@ Interaction.prototype.scrollSelectedItem = function(scale) {
 	this.selectedScrollItem.maximized = false;
 
 	return {
-		elemId: this.selectedScrollItem.id, elemLeft: this.selectedScrollItem.left,
-		elemTop: this.selectedScrollItem.top, elemWidth: this.selectedScrollItem.width,
-		elemHeight: this.selectedScrollItem.height, date: new Date()
+		elemId: this.selectedScrollItem.id,
+		elemLeft:   Math.round(this.selectedScrollItem.left),
+		elemTop:    Math.round(this.selectedScrollItem.top),
+		elemWidth:  Math.round(this.selectedScrollItem.width),
+		elemHeight: Math.round(this.selectedMoveItem.height),
+		date: new Date()
 	};
 };
 
@@ -452,7 +462,6 @@ Interaction.prototype.resizeSelectedItem = function(pointerX, pointerY) {
 	this.selectedResizeItem.height = iHeight;
 	this.selectedResizeItem.maximized = false;
 
-
 	// if it is a partition enforce minimum size constraints
 	if (this.selectedResizeItem.partitionList) {
 		// enforce min width
@@ -469,9 +478,12 @@ Interaction.prototype.resizeSelectedItem = function(pointerX, pointerY) {
 	}
 
 	return {
-		elemId: this.selectedResizeItem.id, elemLeft: this.selectedResizeItem.left,
-		elemTop: this.selectedResizeItem.top, elemWidth: this.selectedResizeItem.width,
-		elemHeight: this.selectedResizeItem.height, date: new Date()
+		elemId: this.selectedResizeItem.id,
+		elemLeft:   Math.round(this.selectedResizeItem.left),
+		elemTop:    Math.round(this.selectedResizeItem.top),
+		elemWidth:  Math.round(this.selectedResizeItem.width),
+		elemHeight: Math.round(this.selectedResizeItem.height),
+		date: new Date()
 	};
 };
 
@@ -590,8 +602,12 @@ Interaction.prototype.maximizeSelectedItem = function(item, centered) {
 		item.maximized = true;
 
 		return {
-			elemId: item.id, elemLeft: item.left, elemTop: item.top,
-			elemWidth: item.width, elemHeight: item.height, date: new Date()
+			elemId: item.id,
+			elemLeft:   Math.round(item.left),
+			elemTop:    Math.round(item.top),
+			elemWidth:  Math.round(item.width),
+			elemHeight: Math.round(item.height),
+			date: new Date()
 		};
 	}
 };
@@ -623,8 +639,12 @@ Interaction.prototype.maximizeFullSelectedItem = function(item) {
 	item.maximized = true;
 
 	return {
-		elemId: item.id, elemLeft: item.left, elemTop: item.top,
-		elemWidth: item.width, elemHeight: item.height, date: new Date()
+		elemId: item.id,
+		elemLeft:   Math.round(item.left),
+		elemTop:    Math.round(item.top),
+		elemWidth:  Math.round(item.width),
+		elemHeight: Math.round(item.height),
+		date: new Date()
 	};
 };
 
@@ -658,8 +678,12 @@ Interaction.prototype.restoreSelectedItem = function(item) {
 	item.maximized = false;
 
 	return {
-		elemId: item.id, elemLeft: item.left, elemTop: item.top,
-		elemWidth: item.width, elemHeight: item.height, date: new Date()
+		elemId: item.id,
+		elemLeft:   Math.round(item.left),
+		elemTop:    Math.round(item.top),
+		elemWidth:  Math.round(item.width),
+		elemHeight: Math.round(item.height),
+		date: new Date()
 	};
 };
 
