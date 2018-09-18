@@ -3865,15 +3865,26 @@ function wsAddNewWebElement(wsio, data) {
 
 		// Get the drop position and convert it to wall coordinates
 		var position = data.position || [0, 0];
-		position[0] = Math.round(position[0] * config.totalWidth);
-		position[1] = Math.round(position[1] * config.totalHeight);
 
-		// Use the position from the drop location
-		if (position[0] !== 0 || position[1] !== 0) {
+		if (position[0] > 1) {
+			// value in pixels, used as origin
+			appInstance.left = position[0];
+		} else {
+			// value in percent
+			position[0] = Math.round(position[0] * config.totalWidth);
+			// Use the position as center of drop location
 			appInstance.left = position[0] - appInstance.width / 2;
 			if (appInstance.left < 0) {
 				appInstance.left = 0;
 			}
+		}
+		if (position[1] > 1) {
+			// value in pixels, used as origin
+			appInstance.top = position[1];
+		} else {
+			// value in percent
+			position[1] = Math.round(position[1] * config.totalHeight);
+			// Use the position as center of drop location
 			appInstance.top  = position[1] - appInstance.height / 2;
 			if (appInstance.top < 0) {
 				appInstance.top = 0;
@@ -3927,13 +3938,17 @@ function wsCommand(wsio, data) {
 
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
-	let position = data.position || [0, 0];
+	// use the window position if specified
+	let position   = data.position || [0, 0];
+	// use the window size if specified
+	let dimensions = data.dimensions || null;
 	wsLoadApplication(wsio, {
 		application: "/uploads/apps/Webview",
 		user: wsio.id,
 		// pass the url in the data object
 		data: data,
-		position: position
+		position: position,
+		dimensions: dimensions
 	});
 
 	// Check if the web-browser is connected
