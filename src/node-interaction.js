@@ -357,7 +357,7 @@ Interaction.prototype.scrollSelectedItem = function(scale) {
 		elemLeft:   Math.round(this.selectedScrollItem.left),
 		elemTop:    Math.round(this.selectedScrollItem.top),
 		elemWidth:  Math.round(this.selectedScrollItem.width),
-		elemHeight: Math.round(this.selectedMoveItem.height),
+		elemHeight: Math.round(this.selectedScrollItem.height),
 		date: new Date()
 	};
 };
