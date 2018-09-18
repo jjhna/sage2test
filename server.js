@@ -159,6 +159,11 @@ program = commander
 	.option('--no-monitoring',			  'Disables performance monitoring')
 	.parse(process.argv);
 
+// Set the title of the console to SAGE2 (used to kill it later)
+if (platform === "Windows") {
+	process.title = "SAGE2";
+}
+
 // Logging or not
 if (program.logfile) {
 	// Use default name or one specified on command line
@@ -4070,6 +4075,16 @@ function wsAddNewElementFromRemoteServer(wsio, data) {
 function wsAddNewSharedElementFromRemoteServer(wsio, data) {
 	var i;
 
+	// This section prevent duplicating apps shared to this server. Return if the app is already open.
+	if (SAGE2Items.applications.list.hasOwnProperty(data.id)) {
+		return;
+	} else {
+		let streamId = wsio.remoteAddress.address + ":" + wsio.remoteAddress.port + "|" + data.id;
+		if (SAGE2Items.applications.list.hasOwnProperty(streamId)) {
+			return;
+		}
+	}
+
 	appLoader.loadApplicationFromRemoteServer(data.application, function(appInstance, videohandle) {
 		sageutils.log("Remote App", appInstance.title + " (" + appInstance.application + ")");
 
@@ -6763,6 +6778,10 @@ function releaseSlider(uniqueID) {
 
 function pointerPressOnApplication(uniqueID, pointerX, pointerY, data, obj, localPt, portalId) {
 	var im = findInteractableManager(obj.data.id);
+	// If there is no application at the point, nothing can be done
+	if (!im) {
+		return;
+	}
 	im.moveObjectToFront(obj.id, "applications", ["portals"]);
 	var app = SAGE2Items.applications.list[obj.id];
 	var stickyList = stickyAppHandler.getStickingItems(app);
@@ -10032,7 +10051,9 @@ function fillContextMenuWithShareSites(contextMenu, appId) {
  * @param  {Array} data.entries - Array of objects describing the entries.
  */
 function wsAppContextMenuContents(wsio, data) {
-	SAGE2Items.applications.list[data.app].contextMenu = data.entries;
+	if (SAGE2Items.applications.list.hasOwnProperty(data.app)) {
+		SAGE2Items.applications.list[data.app].contextMenu = data.entries;
+	}
 }
 
 /**
