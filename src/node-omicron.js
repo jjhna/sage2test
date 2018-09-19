@@ -103,7 +103,7 @@ function OmicronManager(sysConfig) {
 	this.coordCalculator = new CoordinateCalculator(this.config);
 
 	this.lastNonCritEventTime = Date.now();
-	this.nonCriticalEventDelay =  this.config.nonCriticalEventDelay === undefined ? 10 : this.config.nonCriticalEventDelay;
+	this.nonCriticalEventDelay = 10;
 
 	var serverHost = sysConfig.host;
 
@@ -144,6 +144,9 @@ function OmicronManager(sysConfig) {
 	if (this.config.enable === false) {
 		return;
 	}
+
+	this.nonCriticalEventDelay = this.config.nonCriticalEventDelay === undefined
+		? this.nonCriticalEventDelay : this.config.nonCriticalEventDelay;
 
 	// Config: Touch
 	this.enableTouch = this.config.enableTouch === undefined ? true : this.config.enableTouch;
