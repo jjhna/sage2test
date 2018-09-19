@@ -6060,6 +6060,24 @@ function processInputCommand(line) {
 		case 'saveperfdata':
 			performanceManager.toggleDataSaveToFile();
 			break;
+		case 'enabletouch':
+			omicronManager.setTouchEnabled(true);
+			break;
+		case 'disabletouch':
+			omicronManager.setTouchEnabled(false);
+			break;
+		case 'enablemocap':
+			omicronManager.setMocapEnabled(true);
+			break;
+		case 'disablemocap':
+			omicronManager.setMocapEnabled(false);
+			break;
+		case 'enablewand':
+			omicronManager.setWandEnabled(true);
+			break;
+		case 'disablewand':
+			omicronManager.setWandEnabled(false);
+			break;
 		case 'exit':
 		case 'quit':
 		case 'bye': {

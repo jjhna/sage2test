@@ -181,6 +181,9 @@ function OmicronManager(sysConfig) {
 	this.enableFiveFingerCloseApp =  this.config.enableFiveFingerCloseApp === undefined ?
 		this.enableFiveFingerCloseApp : this.config.enableFiveFingerCloseApp;
 
+	this.enableStuckTouchDetection = this.config.enableStuckTouchDetection === undefined ?
+		true : this.config.enableStuckTouchDetection;
+
 	// Config: Omicron
 	if (this.config.host === undefined) {
 		sageutils.log('Omicron', 'Using web server hostname:', sysConfig.host);
@@ -269,18 +272,31 @@ function OmicronManager(sysConfig) {
 
 	// Check for stuck touches
 	setInterval(function() {
-		var curTime = Date.now();
-		for (var tp of omicronManager.touchList.keys()) {
-			var data = omicronManager.touchList.get(tp);
-			var dt = curTime - data.timestamp;
-			if (dt > 1000) {
-				omicronManager.hidePointer(tp);
-				sageutils.log('Omicron', 'Removed stuck touch: ' + tp);
-				omicronManager.touchList.delete(tp);
+		if (this.enableStuckTouchDetection === true) {
+			var curTime = Date.now();
+			for (var tp of omicronManager.touchList.keys()) {
+				var data = omicronManager.touchList.get(tp);
+				var dt = curTime - data.timestamp;
+				if (dt > 1000) {
+					omicronManager.hidePointer(tp);
+					sageutils.log('Omicron', 'Removed stuck touch: ' + tp);
+					omicronManager.touchList.delete(tp);
+				}
 			}
 		}
 	}, 1500);
 }
+
+OmicronManager.prototype.setTouchEnabled = function(val) {
+	omicronManager.enableTouch = val;
+};
+
+OmicronManager.prototype.setMocapEnabled = function(val) {
+	omicronManager.enableMocap = val;
+};
+OmicronManager.prototype.setWandEnabled = function(val) {
+	omicronManager.enableWand = val;
+};
 
 OmicronManager.prototype.openWebSocketClient = function(ws, req) {
 	sageutils.log('Omicron', 'WebSocket Client connected: ' + req.connection.remoteAddress);
@@ -674,7 +690,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		// var maximizeButton  = button5;
 		var previousButton  = buttonLeft;
 		var nextButton      = buttonRight;
-		var playButton      = button2;
+		var playButton      = buttonRight;
 		var movePointerHold	= button7;
 		var pointerModeButton	= button6;
 
@@ -1237,6 +1253,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		// Remove from touchgroup list only if multi/single touch event (not gestures)
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
 
+			/*
 			lastTouchGroupPoints = omicronManager.touchGroups.get(sourceID);
 			if (lastTouchGroupPoints !== undefined) {
 				for (childID of lastTouchGroupPoints.keys()) {
@@ -1245,6 +1262,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				}
 			}
 			omicronManager.touchGroups.delete(sourceID);
+			*/
 		}
 	} else if (e.type === 15 && omicronManager.enableTwoFingerZoom) {
 		// zoom
