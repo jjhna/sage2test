@@ -213,9 +213,19 @@ var Webview = SAGE2_App.extend({
 				_this.sage2_y - _this.config.ui.titleBarHeight];
 			// if it's an image, open the link in a new webview
 			if (params.mediaType === "image" && params.hasImageContents) {
-				wsio.emit('openNewWebpage', {
-					id: _this.id,
+				// Open the image viewer
+				wsio.emit('addNewWebElement', {
 					url: params.srcURL,
+					type: "image/jpeg",
+					id: _this.id,
+					position: pos
+				});
+			} else if (params.linkURL && params.linkURL.endsWith('.pdf')) {
+				// Open the PDF viewer
+				wsio.emit('addNewWebElement', {
+					url: params.linkURL,
+					type: "application/pdf",
+					id: _this.id,
 					position: pos
 				});
 			} else if (params.mediaType === "none" && params.linkURL) {
@@ -223,7 +233,9 @@ var Webview = SAGE2_App.extend({
 				wsio.emit('openNewWebpage', {
 					id: _this.id,
 					url: params.linkURL,
-					position: pos
+					position: pos,
+					// inherits the window size
+					dimensions: [_this.sage2_width, _this.sage2_height]
 				});
 			}
 		});
@@ -301,19 +313,30 @@ var Webview = SAGE2_App.extend({
 			// only accept http protocols
 			if (event.url.startsWith('http:') || event.url.startsWith('https:')) {
 				// Do not open a new view, just navigate to the new URL
-				//_this.changeURL(event.url, true);
+				// _this.changeURL(event.url, true);
 				// calculate a position right next to the parent view
 				let pos = [_this.sage2_x + _this.sage2_width + 5,
 					_this.sage2_y - _this.config.ui.titleBarHeight];
-				// Request a new webview application
-				wsio.emit('openNewWebpage', {
-					// should be uniqueID, but no interactor object here
-					id: this.id,
-					// send the new URL
-					url: event.url,
-					// position to the left
-					position: pos
-				});
+				// Check if it's a PDF
+				if (event.url && event.url.endsWith('.pdf')) {
+					// Open the PDF viewer
+					wsio.emit('addNewWebElement', {
+						url: event.url,
+						type: "application/pdf",
+						id: this.id,
+						position: pos
+					});
+				} else {
+					// Request a new webview application
+					wsio.emit('openNewWebpage', {
+						// should be uniqueID, but no interactor object here
+						id: this.id,
+						// send the new URL
+						url: event.url,
+						// position to the left
+						position: pos
+					});
+				}
 			} else {
 				console.log('Webview>	Not a HTTP URL, not opening [', event.url, ']', event);
 			}
@@ -668,6 +691,20 @@ var Webview = SAGE2_App.extend({
 		}
 	},
 
+	goToYoutubeContainingPage: function() {
+		// From https://www.youtube.com/embed/HASHVALUE?autoplay=0
+		// to https://www.youtube.com/watch?v=HASHVALUE
+		try {
+			let current = this.state.url;
+			current = current.substring(current.indexOf("embed") + 6); // Take from after 'embed/'
+			current = current.substring(0, current.indexOf("?")); // should be just the hash
+			current = "https://www.youtube.com/watch?v=" + current;
+			this.changeURL(current, true); // true: update remote sites if activated
+		} catch (e) {
+			// console.log("The URL was not as expected:" + this.state.url);
+		}
+	},
+
 	startPresentation: function(act) {
 		var _this = this;
 		if (this.contentType === "google_slides") {
@@ -754,6 +791,14 @@ var Webview = SAGE2_App.extend({
 			entry.callback = "muteUnmute";
 			entry.parameters = {};
 			entries.push(entry);
+
+			if (this.contentType === "youtube") {
+				entry = {};
+				entry.description = "View original YouTube page";
+				entry.callback = "goToYoutubeContainingPage";
+				entry.parameters = {};
+				entries.push(entry);
+			}
 
 		} else if (this.contentType === "google_slides") {
 			entry = {};
