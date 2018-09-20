@@ -19,7 +19,7 @@ var quickNote = SAGE2_App.extend({
 		this.element.id = "div" + data.id;
 		this.element.style.background = "lightyellow";
 		this.element.style.fontSize   = ui.titleTextSize + "px";
-		// Using SAGE2 default font
+		// Using SAGE2 default mono font
 		this.element.style.fontFamily = "Oxygen Mono";
 		// Default starting attributes
 		this.backgroundChoice = "lightyellow";
@@ -85,7 +85,9 @@ var quickNote = SAGE2_App.extend({
 		// First clean the input, if there is i nput
 		if (msgParams.clientInput) {
 			this.state.clientInput = msgParams.clientInput; // keep original
-			let words = msgParams.clientInput.split(" "); // separate out words
+			let words = msgParams.clientInput; // make temp copy
+			words = words.replace(/\n/g, " "); // make new lines equivalent to spaces
+			words = words.split(" "); // separate out words
 			let hasModifiedWord = false;
 			// determine the number of lines needed
 			let lines = msgParams.clientInput.split("\n");

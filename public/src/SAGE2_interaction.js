@@ -49,14 +49,6 @@ function SAGE2_interaction(wsio) {
 	this.maxUploadSize = 20 * (1024 * 1024 * 1024); // 20GB just as a precaution
 	this.array_xhr     = [];
 
-	// Event filtering for mouseMove
-	this.now = Date.now();
-	this.cnt = 0;
-	// accumultor for delta motion of the mouse
-	this.deltaX = 0;
-	this.deltaY = 0;
-	// Send frequency (frames per second)
-	this.sendFrequency = 35;
 	// Timeout for when scrolling ends
 	this.scrollTimeId = null;
 
@@ -848,31 +840,14 @@ function SAGE2_interaction(wsio) {
 		var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
 		var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-		// Event filtering
-		var now  = Date.now();
-		// time difference since last event
-		var diff = now - this.now;
-		// count the events
-		this.cnt++;
-		if (diff >= (1000 / this.sendFrequency)) {
-			// Calculate the offset
-			// increase the speed for touch devices
-			var scale = (hasMouse ? this.sensitivity : 3 * this.sensitivity);
-			var px  = this.deltaX * scale;
-			var py  = this.deltaY * scale;
-			// Send the event
-			this.wsio.emit('pointerMove', {dx: Math.round(px), dy: Math.round(py)});
-			// Reset the accumulators
-			this.deltaX = 0;
-			this.deltaY = 0;
-			// Reset the time and count
-			this.now = now;
-			this.cnt = 0;
-		} else {
-			// if it's not time, just accumulate
-			this.deltaX += movementX;
-			this.deltaY += movementY;
-		}
+		// Calculate the offset
+		// increase the speed for touch devices
+		var scale = (hasMouse ? this.sensitivity : 3 * this.sensitivity);
+		var px  = movementX * scale;
+		var py  = movementY * scale;
+		// Send the event
+		this.wsio.emit('pointerMove', {dx: Math.round(px), dy: Math.round(py)});
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -887,6 +862,7 @@ function SAGE2_interaction(wsio) {
 	this.pointerReleaseMethod = function(event) {
 		var btn = (event.button === 0) ? "left" : (event.button === 1) ? "middle" : "right";
 		this.wsio.emit('pointerRelease', {button: btn});
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -900,6 +876,7 @@ function SAGE2_interaction(wsio) {
 	*/
 	this.pointerDblClickMethod = function(event) {
 		this.wsio.emit('pointerDblClick');
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -924,6 +901,7 @@ function SAGE2_interaction(wsio) {
 			_this.wsio.emit('pointerScrollEnd');
 			_this.scrollTimeId = null;
 		}, 500);
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
