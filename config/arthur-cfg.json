@@ -69,21 +69,18 @@
 			host: "inferno.evl.uic.edu",
 			port: 443,
 			secure: true,
-			password: "evl123"
 		},
 		{
-			name: "Continuum",
+			name: "Continuum Wall",
 			host: "bigpipe.evl.uic.edu",
 			port: 443,
 			secure: true,
-			password: "evl123"
 		},
 		{
 			name: "CAVE2",
 			host: "lyra.evl.uic.edu",
 			port: 443,
 			secure: true,
-			password: "evl123"
 		},
 		{
 			name: "CAVE2-Wall",
@@ -109,22 +106,25 @@
 			inputServerIP: "127.0.0.1",
 			dataPort: 30015,
 			
-			eventDebug: true,
+			eventDebug: false,
 			
 			enableTouch: true,
 			enableMocap: false,
 			enableWand: false,
 			
-			style: "Touch", // Display as "Touch" or "Pointer"
+			style: "Pointer", // Display as "Touch" or "Pointer"
 			interactionMode: "Window", // "Window" or "App"
 			touchOffset: [ 0, -20 ],
 			
 			// Touch gestures
-			enableTwoFingerZoom: false,
+			enableGestures: true,
+			gestureDebug: false,
+			
+			enableTwoFingerZoom: true,
 			zoomGestureScale: 2000,
-			enableTwoFingerWindowDrag: true,
-			acceleratedDragScale: 3,
-			gestureDebug: false,			
+			enableTwoFingerWindowDrag: false,
+			
+			acceleratedDragScale: 0,
 		}
 		
 	},

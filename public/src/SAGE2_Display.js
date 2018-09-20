@@ -64,6 +64,10 @@ var uiTimerDelay;
 // Global variables for screenshot functionality
 var makingScreenshotDialog = null;
 
+// Distinction between display client and standalone browser
+// for a single application
+var isBrowser = false;
+
 // Explicitely close web socket when web browser is closed
 window.onbeforeunload = function() {
 	if (wsio !== undefined) {
@@ -232,7 +236,9 @@ function removeStoredFileListEventHandler(callback) {
 function resetIdle() {
 	if (uiTimer) {
 		clearTimeout(uiTimer);
-		ui.showInterface();
+		if (ui.uiHidden) {
+			ui.showInterface();
+		}
 		uiTimer = setTimeout(function() {
 			ui.hideInterface();
 		}, uiTimerDelay * 1000);
@@ -620,6 +626,7 @@ function setupListeners() {
 
 	wsio.on('createAppWindow', function(data) {
 		createAppWindow(data, ui.main.id, ui.titleBarHeight, ui.titleTextSize, ui.offsetX, ui.offsetY);
+		wsio.emit('appWindowCreated', {id: data.id});
 	});
 
 
@@ -769,16 +776,12 @@ function setupListeners() {
 		} else {
 			var translate = "translate(" + position_data.elemLeft + "px," + position_data.elemTop + "px)";
 			var selectedElemTitle = document.getElementById(position_data.elemId + "_title");
-			selectedElemTitle.style.webkitTransform = translate;
-			selectedElemTitle.style.mozTransform    = translate;
-			selectedElemTitle.style.transform       = translate;
-
 			var selectedElem = document.getElementById(position_data.elemId);
-			selectedElem.style.webkitTransform = translate;
-			selectedElem.style.mozTransform    = translate;
-			selectedElem.style.transform       = translate;
+			requestAnimationFrame(function(ts) {
+				selectedElemTitle.style.transform = translate;
+				selectedElem.style.transform = translate;
+			});
 		}
-
 
 		var app = applications[position_data.elemId];
 		if (app !== undefined) {
@@ -892,14 +895,10 @@ function setupListeners() {
 		if (position_data.elemAnimate) {
 			moveItemWithAnimation(position_data);
 		} else {
-			selectedElemTitle.style.webkitTransform = translate;
-			selectedElemTitle.style.mozTransform    = translate;
-			selectedElemTitle.style.transform       = translate;
-
-			selectedElem.style.webkitTransform = translate;
-			selectedElem.style.mozTransform    = translate;
-			selectedElem.style.transform       = translate;
-
+			requestAnimationFrame(function(ts) {
+				selectedElemTitle.style.transform = translate;
+				selectedElem.style.transform      = translate;
+			});
 		}
 
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
@@ -1029,8 +1028,6 @@ function setupListeners() {
 
 	wsio.on('eventInItem', function(event_data) {
 		var app = applications[event_data.id];
-
-		// console.log(event_data, app, applications);
 
 		if (app) {
 			var date = new Date(event_data.date);
@@ -1371,12 +1368,12 @@ function setupListeners() {
 
 	wsio.on('sendServerWallScreenshot', function(data) {
 		// first tell user that screenshot is happening, because screen will freeze
-		makingScreenshotDialog = ui.buildMessageBox('makingScreenshotDialog',
-			'Please wait, wall is taking a screenshot');
+		// makingScreenshotDialog = ui.buildMessageBox('makingScreenshotDialog',
+		// 	'Please wait, wall is taking a screenshot');
 		// Add to the DOM
-		ui.main.appendChild(makingScreenshotDialog);
+		// ui.main.appendChild(makingScreenshotDialog);
 		// Make the dialog visible
-		makingScreenshotDialog.style.display = "block";
+		// makingScreenshotDialog.style.display = "block";
 		// now do check and perform capture if can
 		if (!__SAGE2__.browser.isElectron) {
 			wsio.emit("wallScreenshotFromDisplay", {capable: false});
@@ -1401,7 +1398,7 @@ function setupListeners() {
 					imageData: imageData
 				});
 				// Close the dialog
-				deleteElement('makingScreenshotDialog');
+				// deleteElement('makingScreenshotDialog');
 			});
 		}
 	});
@@ -1473,9 +1470,7 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	windowTitle.style.height = titleBarHeight.toString() + "px";
 	windowTitle.style.left   = (-offsetX).toString() + "px";
 	windowTitle.style.top    = (-offsetY).toString() + "px";
-	windowTitle.style.webkitTransform = translate;
-	windowTitle.style.mozTransform    = translate;
-	windowTitle.style.transform       = translate;
+	windowTitle.style.transform = translate;
 	windowTitle.style.zIndex = itemCount.toString();
 	if (ui.noDropShadow === true) {
 		windowTitle.style.boxShadow = "none";
@@ -1550,14 +1545,12 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 	var windowItem = document.createElement("div");
 	windowItem.id = data.id;
-	windowItem.className      = "windowItem";
-	windowItem.style.left     = (-offsetX).toString() + "px";
-	windowItem.style.top      = (titleBarHeight - offsetY).toString() + "px";
-	windowItem.style.webkitTransform = translate;
-	windowItem.style.mozTransform    = translate;
-	windowItem.style.transform       = translate;
-	windowItem.style.overflow = "hidden";
-	windowItem.style.zIndex   = (itemCount + 1).toString();
+	windowItem.className       = "windowItem";
+	windowItem.style.left      = (-offsetX).toString() + "px";
+	windowItem.style.top       = (titleBarHeight - offsetY).toString() + "px";
+	windowItem.style.transform = translate;
+	windowItem.style.overflow  = "hidden";
+	windowItem.style.zIndex    = (itemCount + 1).toString();
 	if (ui.noDropShadow === true) {
 		windowItem.style.boxShadow = "none";
 	}
@@ -1580,8 +1573,6 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	windowStateContatiner.style.position = "absolute";
 	windowStateContatiner.style.top = "0px";
 	windowStateContatiner.style.left = "0px";
-	windowStateContatiner.style.webkitTransform = "translate(0px,0px)";
-	windowStateContatiner.style.mozTransform = "translate(0px,0px)";
 	windowStateContatiner.style.transform = "translate(0px,0px)";
 	windowState.appendChild(windowStateContatiner);
 	windowItem.appendChild(windowState);

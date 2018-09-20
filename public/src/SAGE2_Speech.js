@@ -514,6 +514,8 @@ SAGE2_speech.listeningVisualInit = function () {
 		c.style.width = SAGE2_speech.listentingInfo.imageWidth + "px";
 		c.style.height = SAGE2_speech.listentingInfo.imageHeight + "px";
 		c.src = "images/speech-ear" + i + ".png";
+		// add a alt description for audit testing
+		c.alt = "speech ear " + i;
 		c.style.position = "absolute";
 		if (i > 0) {
 			c.style.display = "none";

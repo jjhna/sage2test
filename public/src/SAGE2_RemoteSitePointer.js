@@ -106,7 +106,13 @@ var SAGE2RemoteSitePointer = {
 	*/
 	checkIfAppNeedsUpdate: function(app) {
 		for (let i = 0; i < app.state.pointersOverApp.length; i++) {
-			this.updateRemotePointer(app.state.pointersOverApp[i], app);
+			// There are considtions where apps can receive the exact same identification as a previously opened app, for example screen share
+			// This try catch is necessary to prevent accessing a state value, which doesn't yet exist on the reopened app
+			try {
+				this.updateRemotePointer(app.state.pointersOverApp[i], app);
+			} catch (e) {
+				this.updateRemotePointer(app.state.pointersOverApp[i], app, "forceRemake");
+			}
 		}
 	},
 
@@ -118,7 +124,7 @@ var SAGE2RemoteSitePointer = {
 	* @param pointer_data {Object} contains information about user: color, id, label, positionInPercent, lastUpdate
 	* @param app {Object} app which called this function
 	*/
-	updateRemotePointer: function(pointer_data, app) {
+	updateRemotePointer: function(pointer_data, app, forceRemake = false) {
 		var localHostName = document.getElementById("machine").textContent;
 		if (localHostName === pointer_data.server) {
 			return;
@@ -129,6 +135,12 @@ var SAGE2RemoteSitePointer = {
 			if (this.allRemotePointers[i].id === pointer_data.id) {
 				found = i;
 			}
+		}
+		// Must force a remake after screen share eats pointers
+		if ((found > -1) && forceRemake) {
+			this.allRemotePointers.splice(found, 1);
+			delete ui.pointerItems[pointer_data.id];
+			found = -1;
 		}
 		var pointer;
 		// if it doesn't exist, create it
