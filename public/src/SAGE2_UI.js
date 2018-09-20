@@ -676,11 +676,13 @@ function setupListeners() {
 		var longest = Math.max(longestImageName, longestVideoName, longestPdfName, longestSessionName);
 		document.getElementById('fileListElems').style.width = (longest + 60).toString() + "px";
 
-		// showDialog('mediaBrowserDialog');
 		if (fileManager) {
 			// Update the filemanager with the new list
 			fileManager.updateFiles(data);
 		}
+
+		// Get app associations for stored files
+		wsio.emit('requestAppAssociations');
 	});
 
 	wsio.on('requestNextFrame', function(data) {
@@ -750,6 +752,32 @@ function setupListeners() {
 		// SAGE2_speech.failSound.play();
 		SAGE2_speech.textToSpeech(data.message);
 	});
+	wsio.on('zipFolderPathForDownload', function(data) {
+		var url = data.filename;
+		if (url) {
+			// Download the file
+			var link = document.createElement('a');
+			link.href = url;
+			if (link.download !== undefined) {
+				// Set HTML5 download attribute. This will prevent file from opening if supported.
+				var fileName = url.substring(url.lastIndexOf('/') + 1, url.length);
+				link.download = fileName;
+			}
+			// Dispatching click event
+			var event = new MouseEvent('click', {
+				view: window,
+				bubbles: true,
+				cancelable: true
+			});
+			link.addEventListener('click', function(event) {
+				// wsio.emit('deleteDownloadedZip', data);
+			});
+			link.dispatchEvent(event);
+		}
+	});
+	wsio.on('appAssociationsForStoredFiles', function(data) {
+		fileManager.updateAppAssociations(data);
+	});
 }
 
 /**
@@ -806,8 +834,6 @@ function resizeMenuUI(ratio) {
 			menuScale = freeWidth / 840;
 		}
 
-		menuUI.style.webkitTransform = "scale(" + menuScale + ")";
-		menuUI.style.mozTransform = "scale(" + menuScale + ")";
 		menuUI.style.transform = "scale(" + menuScale + ")";
 		menuContainer.style.height = parseInt(86 * menuScale, 10) + "px";
 
@@ -962,7 +988,6 @@ function fileDrop(event) {
 	if (event.preventDefault) {
 		event.preventDefault();
 	}
-
 	// Update the UI
 	var sage2UI = document.getElementById('sage2UICanvas');
 	sage2UI.style.borderStyle = "solid";
@@ -972,11 +997,29 @@ function fileDrop(event) {
 	// trigger file upload
 	var x = event.layerX / event.target.clientWidth;
 	var y = event.layerY / event.target.clientHeight;
-	if (event.dataTransfer.files.length > 0) {
+	var filesForUpload = event.dataTransfer.files;
+	if (filesForUpload.length > 0) {
+		var hasZip = checkForZipFiles(filesForUpload);
+		if (hasZip === true) {
+			// displayUI.uploadPercent = 0;
+			// interactor.uploadFiles(event.dataTransfer.files, false, x, y);
+			webix.confirm({
+				title: "Zip file upload",
+				text: "Do you want the zip content be loaded on the display?",
+				ok: "Yes",
+				cancel: "No",
+				width: "75%",
+				callback: function(result) {
+					displayUI.uploadPercent = 0;
+					interactor.uploadFiles(filesForUpload, result, x, y);
+				}
+			});
+		} else {
+			displayUI.uploadPercent = 0;
+			interactor.uploadFiles(filesForUpload, true, x, y);
+		}
 		// upload a file
 		// displayUI.fileUpload = true;
-		displayUI.uploadPercent = 0;
-		interactor.uploadFiles(event.dataTransfer.files, x, y);
 	} else {
 		// URLs and text and ...
 		if (event.dataTransfer.types) {
@@ -1120,9 +1163,42 @@ function fileUploadFromUI() {
 	var thefile = document.getElementById('filenameForUpload');
 	displayUI.fileUpload = true;
 	displayUI.uploadPercent = 0;
-	interactor.uploadFiles(thefile.files, 0, 0);
+	var hasZip = checkForZipFiles(thefile.files);
+	if (hasZip === true) {
+		webix.confirm({
+			title: "Zip file upload!",
+			text: "Do you want the zip content be loaded on the display?",
+			ok: "Yes",
+			cancel: "No",
+			callback: function(result) {
+				interactor.uploadFiles(thefile.files, result, 0, 0);
+			}
+		});
+	} else {
+		interactor.uploadFiles(thefile.files, true, 0, 0);
+	}
 }
 
+/**
+ * Check if files being uploaded are zip files
+ *
+ * @method checkForZipFiles
+ */
+
+function checkForZipFiles(files) {
+	var hasZipFiles = false;
+	for (var i = 0; i < files.length; i++) {
+		var file = files[i];
+		// Check the type for zip file
+		// for Windows and Macos file types
+		if (file.type.indexOf("compressed") > -1 ||
+			file.type.indexOf("application/zip") > -1) {
+			hasZipFiles = true;
+			break;
+		}
+	}
+	return hasZipFiles;
+}
 
 /**
  * Handler for mouse press
@@ -1249,9 +1325,7 @@ function mouseCheck(event) {
 
 	var uiButtonImg = getCSSProperty("style_ui.css", "#menuUI tr td:hover img");
 	if (uiButtonImg !== null) {
-		uiButtonImg.style.webkitTransform = "scale(1.2)";
-		uiButtonImg.style.mozTransform    = "scale(1.2)";
-		uiButtonImg.style.transform       = "scale(1.2)";
+		uiButtonImg.style.transform = "scale(1.2)";
 	}
 	// Display/hide the labels under the UI buttons
 	// var uiButtonP = getCSSProperty("style_ui.css", "#menuUI tr td p");
@@ -1910,9 +1984,6 @@ function pointerDblClick(event) {
 function handleDblClick(element) {
 	if (element.id === "sage2UICanvas") {
 		displayUI.pointerDblClick();
-		if (event.preventDefault) {
-			event.preventDefault();
-		}
 	} else if (element.id.length > 14 && element.id.substring(0, 14) === "available_app_") {
 		loadSelectedApplication();
 		hideDialog('appLauncherDialog');
@@ -2580,13 +2651,14 @@ function setAppContextMenuEntries(data) {
 	removeAllChildren('appContextMenu');
 	// for each entry
 	var i;
+	var url;
 	for (i = 0; i < entriesToAdd.length; i++) {
 		// if func is defined add buttonEffect
 		if (entriesToAdd[i].callback !== undefined && entriesToAdd[i].callback !== null) {
 			entriesToAdd[i].buttonEffect = function() {
 				if (this.callback === "SAGE2_download") {
 					// special case: want to download the file
-					var url = this.parameters.url;
+					url = this.parameters.url;
 					console.log('Download>	content', url);
 					if (url) {
 						// Download the file
@@ -2605,6 +2677,20 @@ function setAppContextMenuEntries(data) {
 							link.dispatchEvent(me);
 						}
 					}
+				} else if (this.callback === "SAGE2_zipDownload") {
+					url = this.parameters.url;
+					console.log('Download>	content', url);
+					if (url) {
+						data = {};
+						data.app = this.app;
+						data.folder = url.substring(0, url.lastIndexOf('/'));
+						data.filename = url.substring(0, url.lastIndexOf('.')) + '.zip';
+						wsio.emit('zipFolderForDownload', data);
+					}
+				} else if (this.callback === "SAGE2_standAloneApp") {
+					url = 'sage2StandAloneApp.html?appID=' + this.app;
+					var appWin = window.open(url, '_blank');
+					appWin.focus();
 				} else if (this.callback === "SAGE2_editQuickNote") {
 					// special case: reopen the QuickNote editor, but with a "save" button instead of "create"
 					var sendButton = document.getElementById('uiNoteMakerSendButton');
@@ -2646,7 +2732,7 @@ function setAppContextMenuEntries(data) {
 						this.parameters.clientInput = inputField.value;
 					}
 					// create data to send, then emit
-					var data = {};
+					data = {};
 					data.app = this.app;
 					data.func = this.callback;
 					data.parameters = this.parameters;
@@ -3193,7 +3279,6 @@ function addMenuEntry(menuDiv, entry, id, app) {
 		});
 		workingDiv.addEventListener('mousedown', function(e) {
 			e.stopPropagation();
-			// console.log("Button Clicked", this.callback, this.parameters, this.app);
 		});
 		// highlighting effect on mouseover
 		workingDiv.addEventListener('mouseover', function () {

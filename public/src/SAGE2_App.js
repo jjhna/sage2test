@@ -10,7 +10,7 @@
 
 
 /* global ignoreFields, SAGE2WidgetControl, SAGE2PointerToNativeMouseEvent, SAGE2RemoteSitePointer */
-/* global addStoredFileListEventHandler, removeStoredFileListEventHandler */
+/* global addStoredFileListEventHandler, removeStoredFileListEventHandler, isBrowser */
 
 /**
  * @module client
@@ -562,6 +562,10 @@ var SAGE2_App = Class.extend({
 				localState: this.state,
 				remoteState: syncedState,
 				updateRemote: updateRemote
+			});
+		} else if (isBrowser) {
+			wsio.emit('updateApplicationState', {
+				id: this.id, state: this.state, date: Date.now()
 			});
 		}
 	},
