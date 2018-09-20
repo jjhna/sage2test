@@ -691,6 +691,20 @@ var Webview = SAGE2_App.extend({
 		}
 	},
 
+	goToYoutubeContainingPage: function() {
+		// From https://www.youtube.com/embed/HASHVALUE?autoplay=0
+		// to https://www.youtube.com/watch?v=HASHVALUE
+		try {
+			let current = this.state.url;
+			current = current.substring(current.indexOf("embed") + 6); // Take from after 'embed/'
+			current = current.substring(0, current.indexOf("?")); // should be just the hash
+			current = "https://www.youtube.com/watch?v=" + current;
+			this.changeURL(current, true); // true: update remote sites if activated
+		} catch (e) {
+			// console.log("The URL was not as expected:" + this.state.url);
+		}
+	},
+
 	startPresentation: function(act) {
 		var _this = this;
 		if (this.contentType === "google_slides") {
@@ -777,6 +791,14 @@ var Webview = SAGE2_App.extend({
 			entry.callback = "muteUnmute";
 			entry.parameters = {};
 			entries.push(entry);
+
+			if (this.contentType === "youtube") {
+				entry = {};
+				entry.description = "View original YouTube page";
+				entry.callback = "goToYoutubeContainingPage";
+				entry.parameters = {};
+				entries.push(entry);
+			}
 
 		} else if (this.contentType === "google_slides") {
 			entry = {};
