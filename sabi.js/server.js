@@ -115,7 +115,7 @@ var scriptExecutionFunction		= require('./src/script').Script;
 var commandExecutionFunction	= require('./src/script').Command;
 var spawn = require('child_process').spawn;
 
-var currentSabiVersion = "20180919";
+var currentSabiVersion = "20180921";
 var detectedSabiVersion = "00000000";
 
 /*
