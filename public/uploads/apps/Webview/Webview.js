@@ -93,11 +93,15 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
 			}
 			this.contentType = "youtube";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.startsWith('https://youtu.be')) {
 			// youtube short URL (used in sharing)
 			video_id = view_url.split('/').pop();
 			view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
 			this.contentType = "youtube";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.indexOf('vimeo') >= 0) {
 			// Search for the Vimeo ID
 			var m = view_url.match(/^.+vimeo.com\/(.*\/)?([^#?]*)/);
@@ -106,6 +110,8 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://player.vimeo.com/video/' + vimeo_id;
 			}
 			this.contentType = "vimeo";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.endsWith('.ipynb')) {
 			// ipython notebook file are link to nbviewer.jupyter.org online
 			var host = this.config.host + ':' + this.config.port;
@@ -124,18 +130,24 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://player.twitch.tv/?!autoplay&video=v' + twitch_id;
 			}
 			this.contentType = "twitch";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.includes(this.config.host) && view_url.includes("/user/apps")) {
 			// Locally hosted WebViews are assumed to be Unity applications
 			// Move to more dedicated url later? //users/apps/unity ?
 			this.contentType = "unity";
 		} else if (view_url.indexOf('docs.google.com/presentation') >= 0) {
 			this.contentType = "google_slides";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.indexOf('appear.in') >= 0) {
 			if (!view_url.endsWith('?widescreen')) {
 				// to enable non-cropped mode, in widescreen
 				view_url += '?widescreen';
 			}
 			this.contentType = "appearin";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.endsWith('.pptx')) {
 			// try to handle Office file. Starting with PPTX
 			let localurl = view_url;
@@ -146,6 +158,8 @@ var Webview = SAGE2_App.extend({
 			view_url += encodeURIComponent('http://' + host + localurl);
 			view_url += "&wdAr=1.7777777777777777";
 			this.contentType = "msoffice";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		}
 
 		// Store the zoom level, when in desktop emulation
