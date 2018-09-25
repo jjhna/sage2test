@@ -1340,6 +1340,7 @@ function handleClick(element) {
 	// Menu Buttons
 	if (element.id === "sage2pointer"        || element.id === "sage2pointerContainer" || element.id === "sage2pointerLabel") {
 		interactor.startSAGE2Pointer(element.id);
+		displayUI.pointerMove(pointerX, pointerY);
 	} else if (element.id === "sharescreen"  || element.id === "sharescreenContainer"  || element.id === "sharescreenLabel") {
 		interactor.requestToStartScreenShare();
 	} else if (element.id === "applauncher"  || element.id === "applauncherContainer"  || element.id === "applauncherLabel") {
@@ -2390,7 +2391,6 @@ function keyPress(event) {
 	// or process the event
 	if (event.keyCode === 32) {
 		interactor.startSAGE2Pointer("sage2pointer");
-		displayUI.pointerMove(pointerX, pointerY);
 	} else if (displayUI.keyPress(pointerX, pointerY, parseInt(event.charCode, 10))) {
 		event.preventDefault();
 	}
