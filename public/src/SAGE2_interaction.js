@@ -13,6 +13,7 @@
 /* global showSAGE2PointerOverlayNoMouse, hideSAGE2PointerOverlayNoMouse */
 /* global pointerClick, sagePointerDisabled, sagePointerEnabled */
 /* global viewOnlyMode, deleteCookie */
+/* global displayUI, pointerX, pointerY */
 
 "use strict";
 
@@ -488,6 +489,8 @@ function SAGE2_interaction(wsio) {
 		} else {
 			// enable SAGE2 Pointer
 			this.wsio.emit('startSagePointer', this.user);
+			// Update its position given the mouse position
+			displayUI.pointerMove(pointerX, pointerY);
 
 			document.addEventListener('mousedown',  this.pointerPress,     false);
 			document.addEventListener('mousemove',  this.pointerMove,      false);
