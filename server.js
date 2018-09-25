@@ -4359,7 +4359,7 @@ function wsRemoteSagePointerPosition(wsio, data) {
 	}
 
 	sagePointers[data.id].left = data.left;
-	sagePointers[data.id].top = data.top;
+	sagePointers[data.id].top  = data.top;
 
 	broadcast('updateSagePointerPosition', sagePointers[data.id]);
 }

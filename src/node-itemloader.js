@@ -595,7 +595,7 @@ AppLoader.prototype.loadAppFromFileFromRegistry = function(file, mime_type, aUrl
 };
 
 AppLoader.prototype.loadAppFromFile = function(file, mime_type, aUrl, external_url, name, data, callback) {
-console.log('loadAppFromFile', file, mime_type, aUrl, external_url, name, data);
+	console.log('loadAppFromFile', file, mime_type, aUrl, external_url, name, data);
 
 	var _this = this;
 	var zipFolder = file;
@@ -611,7 +611,7 @@ console.log('loadAppFromFile', file, mime_type, aUrl, external_url, name, data);
 
 		_this.scaleAppToFitDisplay(appInstance);
 		appInstance.file = file;
-		console.log('TOTO', appInstance)
+		console.log('TOTO', appInstance);
 		callback(appInstance);
 	});
 };
@@ -983,7 +983,7 @@ AppLoader.prototype.loadFileFromWebURL = function(file, callback) {
 	var mime_type = file.type;
 	var filename = decodeURI(file.url.substring(file.url.lastIndexOf("/") + 1));
 
-console.log('loadApplication', {location: "url", url: file.url, type: mime_type, name: filename, strictSSL: false});
+	console.log('loadApplication', {location: "url", url: file.url, type: mime_type, name: filename, strictSSL: false});
 
 	// Load the app
 	this.loadApplication({location: "url", url: file.url, type: mime_type, name: filename, strictSSL: false},
@@ -1323,7 +1323,7 @@ AppLoader.prototype.loadApplication = function(appData, callback) {
 		}
 	} else if (appData.location === "url") {
 		app = registry.getDefaultAppFromMime(appData.type, true);
-console.log('HERE', app)
+		console.log('HERE', app);
 		if (app === "image_viewer") {
 			this.loadImageFromURL(appData.url, appData.type, appData.name, appData.strictSSL, function(appInstance) {
 				callback(appInstance, null);
@@ -1344,7 +1344,7 @@ console.log('HERE', app)
 				callback(appInstance, null);
 			});
 		} else if (app === "Webview") {
-console.log('APPPPP', appData, app);
+			console.log('APPPPP', appData, app);
 			// Special case to load URLs in the webview app
 			var webpath = getSAGE2Path('/uploads/apps/Webview');
 			// Set the URL
