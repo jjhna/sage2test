@@ -121,10 +121,9 @@ function PerformanceManager() {
 
 	this.durationInMinutes = 5;
 	// default to 2 second - 'normal'
-	this.samplingInterval  = 2;
+	this.samplingInterval  = 3;
 
 	// Write to file periodically
-
 	this.saveInterval = 30; // In seconds
 
 	// Loop handle is used to clear the interval and restart when sampling rate is changed
@@ -281,14 +280,14 @@ PerformanceManager.prototype.setSamplingInterval = function(interval) {
 			sageutils.log('Perf', 'Performance monitoring has been stopped!');
 			return;
 		case 'often':
-			this.samplingInterval = 1;
+			this.samplingInterval = 2;
 			break;
 		case 'slow':
 			this.samplingInterval = 5;
 			break;
 		case 'normal':
 		default:
-			this.samplingInterval = 2;
+			this.samplingInterval = 3;
 			break;
 	}
 	// clear the previous callback
