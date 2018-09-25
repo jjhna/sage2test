@@ -60,16 +60,18 @@ SagePointer.prototype.start = function(label, color, sourceType) {
 */
 SagePointer.prototype.stop = function() {
 	this.visibleLeft = this.left;
-	this.visibleTop = this.top;
+	this.visibleTop  = this.top;
 	this.visible = false;
 };
 
 SagePointer.prototype.updatePointerPosition = function(data, maxW, maxH) {
 	if (data.pointerX !== undefined) {
-		this.left = data.pointerX;
+		// Keep 2 decimals
+		this.left = Math.round(data.pointerX * 100) / 100;
 	}
 	if (data.pointerY !== undefined) {
-		this.top = data.pointerY;
+		// Keep 2 decimals
+		this.top = Math.round(data.pointerY * 100) / 100;
 	}
 	if (data.dx !== undefined) {
 		this.left += data.dx;
