@@ -880,7 +880,6 @@ SAGE2DisplayUI.prototype.pointerMove = function(x, y) {
 	// Remove decimals, keep 2
 	globalX = Math.round(globalX * 100) / 100;
 	globalY = Math.round(globalY * 100) / 100;
-	console.log('sending move', globalX, globalY);
 	this.wsio.emit('pointerPosition', {pointerX: globalX, pointerY: globalY});
 };
 
