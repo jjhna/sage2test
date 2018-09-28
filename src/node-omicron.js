@@ -83,6 +83,8 @@ function OmicronManager(sysConfig) {
 	this.lastWandFlags     = 0;
 	this.wandState = {};
 
+	this.defaultWandMode = "window"; // App interaction mode (window/app)
+
 	// 1 euro filtering
 	var freq = 120;
 	var mincutoff = 1.25;
@@ -396,7 +398,8 @@ OmicronManager.prototype.setCallbacks = function(
 	createRadialMenuCB,
 	omi_pointerChangeModeCB,
 	kinectInputCB,
-	remoteInteractionCB) {
+	remoteInteractionCB,
+	wsCallFunctionOnAppCB) {
 	this.sagePointers        = sagePointerList;
 	this.createSagePointer   = createSagePointerCB;
 	this.showPointer         = showPointerCB;
@@ -417,6 +420,7 @@ OmicronManager.prototype.setCallbacks = function(
 	this.kinectInput 				 = kinectInputCB;
 	this.pointerChangeMode = omi_pointerChangeModeCB;
 	this.remoteInteraction = remoteInteractionCB;
+	this.callFunctionOnApp = wsCallFunctionOnAppCB;
 	// sageutils.log('Omicron', "Server callbacks set");
 };
 
@@ -692,27 +696,26 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		var showHideButton  = button5;
 		var scaleUpButton   = buttonUp;
 		var scaleDownButton = buttonDown;
-		// var maximizeButton  = button5;
+		var maximizeButton  = buttonRight;
 		var previousButton  = buttonLeft;
 		var nextButton      = buttonRight;
 		var playButton      = buttonRight;
 		var movePointerHold	= button7;
 		var pointerModeButton	= button6;
 
-		var wandID = address;
+		var wandID = sourceID;
 		var updateWandPosition = (e.flags & movePointerHold) === movePointerHold;
 
 		var wandName = omicronManager.wandNames[wandID] === undefined ?
-			omicronManager.wandLabel : omicronManager.wandNames[wandID].label;
+			omicronManager.wandLabel + " " + sourceID : omicronManager.wandNames[wandID].label;
 		var wandColor = omicronManager.wandNames[wandID] === undefined ?
 			omicronManager.wandColor : omicronManager.wandNames[wandID].color;
 
 		if (omicronManager.wandState[wandID] === undefined) {
-			sageutils.log('Omicron', "New Wand Pointer " + sourceID);
-
+			sageutils.log('Omicron', "New Wand Pointer id" + sourceID + " (" + wandName + ")");
 			omicronManager.createSagePointer(wandID);
 
-			omicronManager.wandState[wandID] = { visible: false, buttonState: 0 };
+			omicronManager.wandState[wandID] = { visible: false, buttonState: 0, mode: omicronManager.defaultWandMode };
 
 			if (omicronManager.wandState[wandID].visible === true) {
 				omicronManager.showPointer(wandID, {
@@ -751,6 +754,11 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 			(lastButtonState & pointerModeButton) === 0) {
 
 			omicronManager.pointerChangeMode(wandID);
+			if (omicronManager.wandState[wandID].mode === "window") {
+				omicronManager.wandState[wandID].mode = "app";
+			} else {
+				omicronManager.wandState[wandID].mode = "window";
+			}
 		}
 
 		if (updateWandPosition) {
@@ -821,28 +829,6 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 			omicronManager.keyUp(wandID, posX, posY, { code: 80 });
 		}
 
-		// Previous / Left Arrow
-		if ((e.flags & previousButton) === previousButton &&
-			(lastButtonState & previousButton) === 0) {
-
-			omicronManager.keyDown(wandID, posX, posY, { code: 37 });
-		} else if ((e.flags & previousButton) === 0 &&
-			(lastButtonState & previousButton) === previousButton) {
-
-			omicronManager.keyUp(wandID, posX, posY, { code: 37 });
-		}
-
-		// Next / Right Arrow
-		if ((e.flags & nextButton) === nextButton &&
-			(lastButtonState & nextButton) === 0) {
-
-			omicronManager.keyDown(wandID, posX, posY, { code: 39 });
-		} else if ((e.flags & nextButton) === 0 &&
-			(lastButtonState & nextButton) === nextButton) {
-
-			omicronManager.keyUp(wandID, posX, posY, { code: 39 });
-		}
-
 		// Menu / Right Click
 		if ((e.flags & menuButton) === menuButton &&
 			(lastButtonState & menuButton) === 0) {
@@ -854,121 +840,100 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 			omicronManager.pointerRelease(wandID, posX, posY, { button: "right" });
 		}
 
-		// ? / Up Arrow
-		if ((e.flags & scaleUpButton) === scaleUpButton &&
-			(lastButtonState & scaleUpButton) === 0) {
+		if (omicronManager.wandState[wandID].mode === "app") {
+			// Previous / Left Arrow
+			if ((e.flags & previousButton) === previousButton &&
+				(lastButtonState & previousButton) === 0) {
 
-			omicronManager.keyDown(wandID, posX, posY, { code: 38 });
-		} else if ((e.flags & scaleUpButton) === 0 &&
-			(lastButtonState & scaleUpButton) === scaleUpButton) {
+				omicronManager.keyDown(wandID, posX, posY, { code: 37 });
+			} else if ((e.flags & previousButton) === 0 &&
+				(lastButtonState & previousButton) === previousButton) {
 
-			omicronManager.keyUp(wandID, posX, posY, { code: 38 });
+				omicronManager.keyUp(wandID, posX, posY, { code: 37 });
+			}
+
+			// Next  / Right Arrow
+			if ((e.flags & nextButton) === nextButton &&
+				(lastButtonState & nextButton) === 0) {
+
+				omicronManager.keyDown(wandID, posX, posY, { code: 39 });
+			} else if ((e.flags & nextButton) === 0 &&
+				(lastButtonState & nextButton) === nextButton) {
+
+				omicronManager.keyUp(wandID, posX, posY, { code: 39 });
+			}
+
+			// Up Arrow
+			if ((e.flags & scaleUpButton) === scaleUpButton &&
+				(lastButtonState & scaleUpButton) === 0) {
+
+				omicronManager.keyDown(wandID, posX, posY, { code: 38 });
+			} else if ((e.flags & scaleUpButton) === 0 &&
+				(lastButtonState & scaleUpButton) === scaleUpButton) {
+
+				omicronManager.keyUp(wandID, posX, posY, { code: 38 });
+			}
+
+			// Down Arrow
+			if ((e.flags & scaleDownButton) === scaleDownButton &&
+				(lastButtonState & scaleDownButton) === 0) {
+
+				omicronManager.keyDown(wandID, posX, posY, { code: 40 });
+			} else if ((e.flags & scaleDownButton) === 0 &&
+				(lastButtonState & scaleDownButton) === scaleDownButton) {
+
+				omicronManager.keyUp(wandID, posX, posY, { code: 40 });
+			}
+		} else {
+			// Left Arrow
+			if ((e.flags & previousButton) === previousButton &&
+				(lastButtonState & previousButton) === 0) {
+				// Send to back?
+
+			} else if ((e.flags & previousButton) === 0 &&
+				(lastButtonState & previousButton) === previousButton) {
+				// Not used
+			}
+
+			// Right Arrow / Maximize
+			if ((e.flags & maximizeButton) === maximizeButton &&
+				(lastButtonState & maximizeButton) === 0) {
+
+				omicronManager.pointerDblClick(wandID, posX, posY);
+			} else if ((e.flags & maximizeButton) === 0 &&
+				(lastButtonState & maximizeButton) === maximizeButton) {
+				// Not used
+			}
+
+			// Up Arrow / Scale Window
+			if ((e.flags & scaleUpButton) === scaleUpButton &&
+				(lastButtonState & scaleUpButton) === 0) {
+
+				omicronManager.pointerScrollStart(wandID, posX, posY);
+				omicronManager.pointerScroll(wandID, {
+					wheelDelta: -0.1 * omicronManager.touchZoomScale });
+			} else if ((e.flags & scaleUpButton) === 0 &&
+				(lastButtonState & scaleUpButton) === scaleUpButton) {
+				omicronManager.pointerScrollEnd(wandID, posX, posY);
+			}
+
+			// Down Arrow / Scale Window
+			if ((e.flags & scaleDownButton) === scaleDownButton &&
+				(lastButtonState & scaleDownButton) === 0) {
+
+				omicronManager.pointerScrollStart(wandID, posX, posY);
+				omicronManager.pointerScroll(wandID, {
+					wheelDelta: 0.1 * omicronManager.touchZoomScale });
+			} else if ((e.flags & scaleDownButton) === 0 &&
+				(lastButtonState & scaleDownButton) === scaleDownButton) {
+
+				omicronManager.pointerScrollEnd(wandID, posX, posY);
+			}
 		}
 
-		// ? / Down Arrow
-		if ((e.flags & scaleDownButton) === scaleDownButton &&
-			(lastButtonState & scaleDownButton) === 0) {
-
-			omicronManager.keyDown(wandID, posX, posY, { code: 40 });
-		} else if ((e.flags & scaleDownButton) === 0 &&
-			(lastButtonState & scaleDownButton) === scaleDownButton) {
-
-			omicronManager.keyUp(wandID, posX, posY, { code: 40 });
-		}
 
 		// Update button state
 		omicronManager.wandState[wandID].buttonState = e.flags;
-		if (e.flags !== 0) {
-
-
-			/*
-			if ((e.flags & clickDragButton) === clickDragButton && omicronManager.showPointerToggle) {
-				if (omicronManager.lastWandFlags === 0) {
-					// Wand Click
-					omicronManager.pointerPress(wandID, posX, posY, { button: "left" });
-				} else {
-					// Wand Drag
-					if (timeSinceLastNonCritEvent >= omicronManager.nonCriticalEventDelay) {
-						omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
-						omicronManager.pointerMove(wandID, posX, posY, { deltaX: 0, deltaY: 0, button: "left" });
-
-						omicronManager.lastNonCritEventTime = Date.now();
-					}
-				}
-			} else if (omicronManager.lastWandFlags === 0 && (e.flags & menuButton) === menuButton &&
-						omicronManager.showPointerToggle) {
-				omicronManager.pointerPress(wandID, posX, posY, { button: "right" });
-			} else if (omicronManager.lastWandFlags === 0 && (e.flags & showHideButton) === showHideButton) {
-				if (!omicronManager.showPointerToggle) {
-					omicronManager.showPointerToggle = true;
-					omicronManager.showPointer(wandID, {
-						label:  omicronManager.wandLabel + " " + sourceID, color: omicronManager.wandColor
-					});
-					omicronManager.pointerPosition(wandID, { pointerX: posX, pointerY: posY });
-				} else {
-					omicronManager.showPointerToggle = false;
-					// hidePointer( omicronManager.config.inputServerIP );
-				}
-			} else if (omicronManager.lastWandFlags === 0 &&
-					(e.flags & scaleUpButton) === scaleUpButton &&
-					omicronManager.showPointerToggle) {
-				omicronManager.pointerScrollStart(wandID, posX, posY);
-
-				// Casting the parameters to correct type
-				omicronManager.pointerScroll(address, { wheelDelta: parseInt(-omicronManager.wandScaleDelta, 10) });
-			} else if (omicronManager.lastWandFlags === 0 &&
-						(e.flags & scaleDownButton) === scaleDownButton &&
-						omicronManager.showPointerToggle) {
-				omicronManager.pointerScrollStart(wandID, posX, posY);
-
-				// Casting the parameters to correct type
-				omicronManager.pointerScroll(wandID, { wheelDelta: parseInt(omicronManager.wandScaleDelta, 10) });
-			} else if (omicronManager.lastWandFlags === 0 &&
-					(e.flags & maximizeButton) === maximizeButton &&
-					omicronManager.showPointerToggle) {
-				omicronManager.pointerDblClick(wandID, posX, posY);
-			} else if ((omicronManager.lastWandFlags & previousButton) === 0 &&
-					(e.flags & previousButton) === previousButton) {
-				omicronManager.keyDown(wandID, posX, posY, { code: 37 });
-			} else if ((omicronManager.lastWandFlags & nextButton) === 0 &&
-					(e.flags & nextButton) === nextButton) {
-				omicronManager.keyDown(wandID, posX, posY, { code: 39 });
-			} else if ((omicronManager.lastWandFlags & playButton) === 0  &&
-					(e.flags & playButton) === playButton) {
-				omicronManager.keyPress(wandID, posX, posY, { code: 32 });
-			}
-
-			omicronManager.lastWandFlags = e.flags;
-			*/
-		} else if (omicronManager.lastWandFlags !== 0) {
-
-			/*
-			// TODO: Add a smarter way of detecting press, drag, release from button flags
-			if ((omicronManager.lastWandFlags & clickDragButton) === clickDragButton) {
-				// console.log("wandPointer release");
-				omicronManager.pointerRelease(wandID, posX, posY, { button: "left" });
-
-				omicronManager.lastWandFlags = 0;
-			} else if ((omicronManager.lastWandFlags & showHideButton) === showHideButton) {
-				omicronManager.lastWandFlags = 0;
-			} else if ((omicronManager.lastWandFlags & scaleUpButton) === scaleUpButton) {
-				omicronManager.lastWandFlags = 0;
-			} else if ((omicronManager.lastWandFlags & scaleDownButton) === scaleDownButton) {
-				omicronManager.lastWandFlags = 0;
-			} else if ((omicronManager.lastWandFlags & maximizeButton) === maximizeButton) {
-				omicronManager.lastWandFlags = 0;
-			} else if ((omicronManager.lastWandFlags & previousButton) === previousButton) {
-				omicronManager.lastWandFlags = 0;
-				omicronManager.keyUp(wandID, posX, posY, { code: 37 });
-			} else if ((omicronManager.lastWandFlags & nextButton) === nextButton) {
-				omicronManager.lastWandFlags = 0;
-				omicronManager.keyUp(wandID, posX, posY, { code: 39 });
-			} else if ((omicronManager.lastWandFlags & playButton) === playButton) {
-				omicronManager.lastWandFlags = 0;
-				omicronManager.keyUp(wandID, posX, posY, { code: 32 });
-			}
-			*/
-		}
 	} // ServiceTypeWand ends ///////////////////////////////////////////
 };
 

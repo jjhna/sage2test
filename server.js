@@ -9684,7 +9684,8 @@ omicronManager.setCallbacks(
 	createRadialMenu,
 	omi_pointerChangeMode,
 	undefined, // sendKinectInput
-	remoteInteraction);
+	remoteInteraction,
+	wsCallFunctionOnApp);
 omicronManager.linkDrawingManager(drawingManager);
 
 /* ****** Radial Menu section ************************************************************** */
