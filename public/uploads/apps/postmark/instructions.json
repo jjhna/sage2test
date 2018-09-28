@@ -1,0 +1,20 @@
+{
+	"main_script": "postmark.js",
+	"icon": "postmark.png",
+	"width":  600,
+	"height": 600,
+	"resize": "free",
+	"animation": false,
+	"dependencies": [
+	    "showdown.min.js"
+	],
+	"load": {
+		"text": "My first post card"
+	},
+	"title": "postmark",
+	"version": "1.0.0",
+	"description": "SAGE2 application postmark",
+	"keywords": [ "sage2", "postmark" ],
+	"author": "Luc Renambot <renambot@gmail.com>",
+	"license": "SAGE2-Software-License"
+}
