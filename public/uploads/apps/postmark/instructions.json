@@ -1,17 +1,18 @@
 {
 	"main_script": "postmark.js",
 	"icon": "postmark.png",
-	"width":  600,
-	"height": 600,
+	"width":  800,
+	"height": 350,
 	"resize": "free",
 	"animation": false,
 	"dependencies": [
 	    "showdown.min.js"
 	],
 	"load": {
-		"text": "My first post card"
+		"text": "My first post card",
+		"scale": 1
 	},
-	"title": "postmark",
+	"title": "Postmark",
 	"version": "1.0.0",
 	"description": "SAGE2 application postmark",
 	"keywords": [ "sage2", "postmark" ],
