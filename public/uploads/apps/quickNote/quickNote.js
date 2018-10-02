@@ -10,6 +10,8 @@
 
 "use strict";
 
+/* global showdown */
+
 var quickNote = SAGE2_App.extend({
 	init: function(data) {
 		this.SAGE2Init("div", data);
@@ -17,37 +19,30 @@ var quickNote = SAGE2_App.extend({
 		this.resizeEvents = "continuous"; // "onfinish";
 
 		this.element.id = "div" + data.id;
-		this.element.style.background = "lightyellow";
+		// this.element.style.background = "lightyellow";
 		this.element.style.fontSize   = ui.titleTextSize + "px";
 		// Using SAGE2 default mono font
 		this.element.style.fontFamily = "Oxygen Mono";
 		// Default starting attributes
 		this.backgroundChoice = "lightyellow";
 
-		/*
-		basing text size on title size is throwing off the sizing based on site location.
-		need to have a base size and then scale.
-		starting with size 20 and scaling up provides 25 characters of space
-		at 300px wide, this is 15px per character.
-		each character is roughly 26.8px tall
-		*/
-		this.useStaticFontSize      = false;
-		this.startingFontSize       = 19.9;
-		this.startingAppWidth       = 300; // Hardcode necessary(?) to keep scale on resize/restart/reload
-		this.startingAppHeight      = 134; // 5 lines is 26.8 * 5 = 134;
-		this.startingFontHeight     = 26.8;
-		this.startingTextZoneWidth  = 25;
-		this.startingTextZoneHeight = 5;
-		this.needTextZoneHeight     = 5;
-		this.sizeModification       = 1; // 1 is normal <1 is small >1 is larger
 
+
+		// Separate div since the html will be contantly edited with showdown
+		this.markdownDiv = document.createElement("div");
+		this.markdownDiv.style.position = "absolute";
+		this.markdownDiv.style.top      = "0";
+		this.markdownDiv.style.left     = "0";
+		this.markdownDiv.style.width    = "100%";
+		this.markdownDiv.style.height   = "100%";
+		this.markdownDiv.style.background = "lightyellow";
+		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
-
+		// Make a converter
+		this.showdown_converter = new showdown.Converter();
 		// If loaded from session, this.state will have meaningful values.
 		this.setMessage(this.state);
-
-
 		var _this = this;
 		// If it got file contents from the sever, then extract.
 		if (data.state.contentsOfNoteFile) {
@@ -59,6 +54,7 @@ var quickNote = SAGE2_App.extend({
 			data.customLaunchParams.serverDate = new Date(Date.now());
 			_this.setMessage(data.customLaunchParams);
 		}
+		this.adjustFontSize();
 	},
 
 	/**
@@ -82,70 +78,24 @@ var quickNote = SAGE2_App.extend({
 	msgParams.clientInput	What they typed for the note.
 	*/
 	setMessage: function(msgParams) {
-		// First clean the input, if there is i nput
-		if (msgParams.clientInput) {
-			this.state.clientInput = msgParams.clientInput; // keep original
-			let words = msgParams.clientInput; // make temp copy
-			words = words.replace(/\n/g, " "); // make new lines equivalent to spaces
-			words = words.split(" "); // separate out words
-			let hasModifiedWord = false;
-			// determine the number of lines needed
-			let lines = msgParams.clientInput.split("\n");
-			this.needTextZoneHeight = lines.length + 1; // have extra line to show no missing text
-			for (let i = 0; i < lines.length; i++) {
-				if (lines[i].length > this.startingTextZoneWidth) {
-					this.needTextZoneHeight += parseInt(lines[i].length / this.startingTextZoneWidth);
-				}
-			}
-
-			for (let i = 0; i < words.length; i++) {
-				// if a word is larget than the zone width
-				if (words[i].length > this.startingTextZoneWidth) {
-					hasModifiedWord = true;
-					let pieces = "";
-					// split it into pieces that will fit within one line
-					while (words[i].length > this.startingTextZoneWidth) {
-						pieces += words[i].substring(0, this.startingTextZoneWidth);
-						pieces += " ";
-						words[i] = words[i].substring(this.startingTextZoneWidth);
-						this.needTextZoneHeight++; // inflates lines usage by 1
-					}
-					pieces += words[i];
-					words[i] = pieces; // put back into location
-				}
-			}
-			// if there was word modification to shrink into view, then need to rejoin
-			if (hasModifiedWord) {
-				msgParams.clientInput = words.join(" ");
-			}
-			msgParams.clientInput = msgParams.clientInput.replace(/\n/g, "<br>");
-		}
 		// If defined by a file, use those values
 		if (msgParams.fileDefined === true) {
-			this.backgroundChoice   = msgParams.colorChoice;
-			this.state.colorChoice  = this.backgroundChoice;
+			this.markdownDiv.style.background = this.state.colorChoice  = this.backgroundChoice = msgParams.colorChoice;
 			this.state.creationTime = msgParams.clientName;
-			this.element.style.background = msgParams.colorChoice;
-			this.element.innerHTML        = msgParams.clientInput;
 			this.formatAndSetTitle(this.state.creationTime);
 			this.saveNote(msgParams.creationTime);
 		} else { // else defined by load or user input
 			// Otherwise set the values using probably user input.
 			if (msgParams.clientName === undefined || msgParams.clientName === null || msgParams.clientName == "") {
-				msgParams.clientName = "";
+				msgParams.clientName = ""; // Could be anon
 			}
-			// If the color choice was defined, use the given color. RMB choices do not provide a color (currently)
+			// If the color choice was defined, use the given color.
 			if (msgParams.colorChoice !== undefined && msgParams.colorChoice !== null && msgParams.colorChoice !== "") {
-				this.backgroundChoice = msgParams.colorChoice;
-				this.element.style.background = msgParams.colorChoice;
+				this.markdownDiv.style.background = this.backgroundChoice = this.state.colorChoice = msgParams.colorChoice;
 			}
-
-			// set the text, currently innerHTML matters to render <br> and allow for html tags
-			this.element.innerHTML = msgParams.clientInput;
 			// client input state set as part of the clean
 			this.state.clientName  = msgParams.clientName;
 			this.state.colorChoice = this.backgroundChoice;
-
 			// if the creationTime has not been set, then fill it out.
 			if (this.state.creationTime === null
 				&& msgParams.serverDate !== undefined
@@ -192,11 +142,9 @@ var quickNote = SAGE2_App.extend({
 			}
 		}
 
-		// adjust height to show all text. minimum 5 lines enforce(?)
-		this.needTextZoneHeight = (this.needTextZoneHeight < 5) ? 5 : this.needTextZoneHeight;
-		this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
-		this.sendResize(this.sage2_width,
-			this.needTextZoneHeight * this.startingFontHeight * this.sizeModification);
+		// set the text, currently innerHTML matters to render <br> and allow for html tags
+		this.state.clientInput = msgParams.clientInput;
+		this.markdownDiv.innerHTML = this.showdown_converter.makeHtml(msgParams.clientInput);
 
 		// save if didn't come from file
 		if (msgParams.fileDefined !== true) {
@@ -207,7 +155,7 @@ var quickNote = SAGE2_App.extend({
 	setColor: function(responseObject) {
 		this.backgroundChoice         = responseObject.color;
 		this.state.colorChoice        = this.backgroundChoice;
-		this.element.style.background = responseObject.color;
+		this.markdownDiv.style.background = responseObject.color;
 		this.saveNote(responseObject.creationTime);
 	},
 
@@ -244,6 +192,7 @@ var quickNote = SAGE2_App.extend({
 				colorChoice:  this.state.colorChoice,
 				creationTime: this.state.creationTime
 			});
+			this.adjustFontSize();
 		}
 		this.resize(date);
 	},
@@ -269,7 +218,6 @@ var quickNote = SAGE2_App.extend({
 		wsio.emit("saveDataOnServer", fileData);
 		// save the state value
 		this.state.contentsOfNoteFile = fileData.fileContent;
-
 		// update the context menu with the current content
 		this.getFullContextMenuAndUpdate();
 	},
@@ -278,11 +226,6 @@ var quickNote = SAGE2_App.extend({
 	},
 
 	resize: function(date) {
-		this.element.style.background = this.backgroundChoice;
-		if (!this.useStaticFontSize) {
-			this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
-			this.element.style.fontSize = (this.startingFontSize * this.sizeModification) + "px";
-		}
 	},
 
 	event: function(eventType, position, user_id, data, date) {
@@ -301,7 +244,8 @@ var quickNote = SAGE2_App.extend({
 			this.launchAppWithValues("quickNote", {
 				clientName: responseObject.clientName,
 				clientInput: this.state.clientInput,
-				colorChoice: this.state.colorChoice
+				colorChoice: this.state.colorChoice,
+				scale: this.state.scale,
 			},
 			this.sage2_x + 100, this.sage2_y);
 		}
@@ -420,20 +364,6 @@ var quickNote = SAGE2_App.extend({
 				modifier: "decrease"
 			}
 		});
-		entry = {
-			description: "Set static font size:",
-			callback: "adjustFontSize",
-			inputField: true,
-			inputFieldSize: 5,
-			parameters: {
-				modifier: "static"
-			}
-		};
-		if (this.useStaticFontSize) {
-			entry.value = this.startingFontSize;
-		} else {
-			entry.value = (this.startingFontSize * parseInt(this.element.clientWidth) / this.startingAppWidth);
-		}
 		entries.push(entry);
 
 		entries.push({description: "separator"});
@@ -450,28 +380,21 @@ var quickNote = SAGE2_App.extend({
 	},
 
 	adjustFontSize: function(responseObject) {
-		if (responseObject.modifier === "increase") {
-			this.startingFontSize += 1;
-			this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
-			this.element.style.fontSize = (this.startingFontSize * this.sizeModification) + "px";
-		} else if (responseObject.modifier === "decrease") {
-			this.startingFontSize -= 1;
-			if (this.startingFontSize <= 0) {
-				this.startingFontSize = 1;
+		// if this is activated as part of a state update, skip the adjustment
+		if (responseObject) {
+			if (responseObject.modifier === "increase") {
+				this.state.scale *= 1.2; // 20 percent increase good?
+			} else if (responseObject.modifier === "decrease") {
+				this.state.scale *= 0.8; // same reduction?
 			}
-			this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
-			this.element.style.fontSize = (this.startingFontSize * this.sizeModification) + "px";
-		} else if (responseObject.modifier === "static") {
-			this.useStaticFontSize = true;
-			this.startingFontSize = parseInt(responseObject.clientInput);
-			this.element.style.fontSize = this.startingFontSize + "px";
 		}
+		this.markdownDiv.style.transform = "scale(" + this.state.scale + ")";
 		this.getFullContextMenuAndUpdate();
+		this.SAGE2Sync(true);
 	},
 
 
 	addTopLeftArrowToWall: function() {
-
 		if (this.hasLoadedTopLeftArrow) {
 			if (!this.isShowingArrow) {
 				this.arrow.style.display = "block";

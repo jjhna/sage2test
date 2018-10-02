@@ -6,12 +6,14 @@
 	"animation": false,
 	"sticky": true,
 	"dependencies": [
+		"showdown.min.js"
 	],
 	"load": {
 		"clientName": "Quick Note",
 		"clientInput": "Loading note from user...",
 		"colorChoice": "lightyellow",
-		"creationTime": null
+		"creationTime": null,
+		"scale": 1
 	},
 	"title": "Quick Note",
 	"version": "1.0.0",
