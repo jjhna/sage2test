@@ -827,7 +827,7 @@ function process_request(cfg, req, res) {
 			wstream.on('finish', function() {
 				// stream closed
 				console.log('HTTP>		PUT file has been written', filename, fileLength, 'bytes');
-				if (selfSign) {
+				if (selfSign == "true") { // values from querystring will be a string, false will be "false" the string, not bool false
 					updateCertificates(); // keeping this if someone edits with basic / advanced
 				}
 			});
