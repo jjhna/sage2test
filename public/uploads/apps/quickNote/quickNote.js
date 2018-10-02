@@ -35,7 +35,10 @@ var quickNote = SAGE2_App.extend({
 		this.markdownDiv.style.left     = "0";
 		this.markdownDiv.style.width    = "100%";
 		this.markdownDiv.style.height   = "100%";
-		this.markdownDiv.style.background = "lightyellow";
+		this.markdownDiv.style.padding = ui.titleTextSize + "px 0 0 " + (ui.titleTextSize * 2) + "px"; // multiplier based on starting size
+		this.markdownDiv.style.fontFamily = "Oxygen Mono";
+		this.markdownDiv.style.transformOrigin = "0% 0%";
+		this.markdownDiv.style.fontSize = (ui.titleTextSize) + "px"; // seems that with monospace, there are two units reserved for lists
 		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
@@ -55,6 +58,7 @@ var quickNote = SAGE2_App.extend({
 			_this.setMessage(data.customLaunchParams);
 		}
 		this.adjustFontSize();
+		this.showOrHideArrow();
 	},
 
 	/**
@@ -65,11 +69,12 @@ var quickNote = SAGE2_App.extend({
 	*/
 	parseDataFromServer: function(fileContentsFromServer) {
 		var fileData  = {};
-		var fileLines = fileContentsFromServer.split("\n");
 		fileData.fileDefined = true;
-		fileData.clientName  = fileLines[0];
-		fileData.colorChoice = fileLines[1];
-		fileData.clientInput = fileLines[2];
+		fileData.clientName  = fileContentsFromServer.substring(0, fileContentsFromServer.indexOf("\n"));
+		fileContentsFromServer  = fileContentsFromServer.substring(fileContentsFromServer.indexOf("\n") + 1); // Remove first line
+		fileData.colorChoice  = fileContentsFromServer.substring(0, fileContentsFromServer.indexOf("\n"));
+		fileContentsFromServer  = fileContentsFromServer.substring(fileContentsFromServer.indexOf("\n") + 1); // Remove second line
+		fileData.clientInput = fileContentsFromServer; // The rest is to be displayed
 		this.setMessage(fileData);
 	},
 
@@ -80,7 +85,7 @@ var quickNote = SAGE2_App.extend({
 	setMessage: function(msgParams) {
 		// If defined by a file, use those values
 		if (msgParams.fileDefined === true) {
-			this.markdownDiv.style.background = this.state.colorChoice  = this.backgroundChoice = msgParams.colorChoice;
+			this.element.style.background = this.state.colorChoice  = this.backgroundChoice = msgParams.colorChoice;
 			this.state.creationTime = msgParams.clientName;
 			this.formatAndSetTitle(this.state.creationTime);
 			this.saveNote(msgParams.creationTime);
@@ -91,7 +96,7 @@ var quickNote = SAGE2_App.extend({
 			}
 			// If the color choice was defined, use the given color.
 			if (msgParams.colorChoice !== undefined && msgParams.colorChoice !== null && msgParams.colorChoice !== "") {
-				this.markdownDiv.style.background = this.backgroundChoice = this.state.colorChoice = msgParams.colorChoice;
+				this.element.style.background = this.backgroundChoice = this.state.colorChoice = msgParams.colorChoice;
 			}
 			// client input state set as part of the clean
 			this.state.clientName  = msgParams.clientName;
@@ -193,6 +198,7 @@ var quickNote = SAGE2_App.extend({
 				creationTime: this.state.creationTime
 			});
 			this.adjustFontSize();
+			this.showOrHideArrow();
 		}
 		this.resize(date);
 	},
@@ -226,6 +232,9 @@ var quickNote = SAGE2_App.extend({
 	},
 
 	resize: function(date) {
+		// Adjust the width according to the scale factor: helps with word wrapping
+		// this.markdownDiv.style.width  = (this.sage2_width  / this.state.scale) + "px";
+		// this.markdownDiv.style.height = (this.sage2_height / this.state.scale) + "px";
 	},
 
 	event: function(eventType, position, user_id, data, date) {
@@ -246,6 +255,7 @@ var quickNote = SAGE2_App.extend({
 				clientInput: this.state.clientInput,
 				colorChoice: this.state.colorChoice,
 				scale: this.state.scale,
+				showArrow: true
 			},
 			this.sage2_x + 100, this.sage2_y);
 		}
@@ -283,14 +293,14 @@ var quickNote = SAGE2_App.extend({
 		if (!this.isShowingArrow) {
 			entry = {};
 			entry.description = "Show arrow";
-			entry.callback    = "addTopLeftArrowToWall";
-			entry.parameters  = {};
+			entry.callback    = "showOrHideArrow";
+			entry.parameters  = {status: "show"};
 			entries.push(entry);
 		} else {
 			entry = {};
 			entry.description = "Hide arrow";
-			entry.callback    = "hideTopLeftArrow";
-			entry.parameters  = {};
+			entry.callback    = "showOrHideArrow";
+			entry.parameters  = {status: "hide"};
 			entries.push(entry);
 		}
 
@@ -364,7 +374,6 @@ var quickNote = SAGE2_App.extend({
 				modifier: "decrease"
 			}
 		});
-		entries.push(entry);
 
 		entries.push({description: "separator"});
 
@@ -393,6 +402,24 @@ var quickNote = SAGE2_App.extend({
 		this.SAGE2Sync(true);
 	},
 
+	showOrHideArrow: function(responseObject) {
+		if (!responseObject) { // state update
+			if (this.state.showArrow) {
+				this.addTopLeftArrowToWall();
+			} else {
+				this.hideTopLeftArrow();
+			}
+		} else {
+			if (responseObject.status === "show") {
+				this.addTopLeftArrowToWall();
+				this.state.showArrow = true;
+			} else if (responseObject.status === "hide") {
+				this.hideTopLeftArrow();
+				this.state.showArrow = false;
+			}
+			this.SAGE2Sync(true);
+		}
+	},
 
 	addTopLeftArrowToWall: function() {
 		if (this.hasLoadedTopLeftArrow) {
@@ -428,6 +455,6 @@ var quickNote = SAGE2_App.extend({
 			this.isShowingArrow = false;
 		}
 		this.getFullContextMenuAndUpdate();
-	},
+	}
 
 });

@@ -13,7 +13,8 @@
 		"clientInput": "Loading note from user...",
 		"colorChoice": "lightyellow",
 		"creationTime": null,
-		"scale": 1
+		"scale": 1,
+		"showArrow": false
 	},
 	"title": "Quick Note",
 	"version": "1.0.0",
