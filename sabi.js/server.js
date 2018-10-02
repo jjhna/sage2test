@@ -822,11 +822,14 @@ function process_request(cfg, req, res) {
 			let filename   = cfg.actions[action].editor;
 			filename = path.resolve(untildify(filename));
 			var wstream    = fs.createWriteStream(filename);
+			var selfSign   = params.selfSign;
 
 			wstream.on('finish', function() {
 				// stream closed
 				console.log('HTTP>		PUT file has been written', filename, fileLength, 'bytes');
-				updateCertificates(); // keeping this if someone edits with basic / advanced
+				if (selfSign) {
+					updateCertificates(); // keeping this if someone edits with basic / advanced
+				}
 			});
 			// Getting data
 			req.on('data', function(chunk) {
