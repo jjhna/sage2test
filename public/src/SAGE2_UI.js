@@ -841,8 +841,6 @@ function resizeMenuUI(ratio) {
 			menuScale = freeWidth / 840;
 		}
 
-		menuUI.style.webkitTransform = "scale(" + menuScale + ")";
-		menuUI.style.mozTransform = "scale(" + menuScale + ")";
 		menuUI.style.transform = "scale(" + menuScale + ")";
 		menuContainer.style.height = parseInt(86 * menuScale, 10) + "px";
 
@@ -1334,9 +1332,7 @@ function mouseCheck(event) {
 
 	var uiButtonImg = getCSSProperty("style_ui.css", "#menuUI tr td:hover img");
 	if (uiButtonImg !== null) {
-		uiButtonImg.style.webkitTransform = "scale(1.2)";
-		uiButtonImg.style.mozTransform    = "scale(1.2)";
-		uiButtonImg.style.transform       = "scale(1.2)";
+		uiButtonImg.style.transform = "scale(1.2)";
 	}
 	// Display/hide the labels under the UI buttons
 	// var uiButtonP = getCSSProperty("style_ui.css", "#menuUI tr td p");
@@ -1365,6 +1361,7 @@ function handleClick(element) {
 	// Menu Buttons
 	if (element.id === "sage2pointer"        || element.id === "sage2pointerContainer" || element.id === "sage2pointerLabel") {
 		interactor.startSAGE2Pointer(element.id);
+		displayUI.pointerMove(pointerX, pointerY);
 	} else if (element.id === "sharescreen"  || element.id === "sharescreenContainer"  || element.id === "sharescreenLabel") {
 		interactor.requestToStartScreenShare();
 	} else if (element.id === "applauncher"  || element.id === "applauncherContainer"  || element.id === "applauncherLabel") {
@@ -1997,9 +1994,6 @@ function pointerDblClick(event) {
 function handleDblClick(element) {
 	if (element.id === "sage2UICanvas") {
 		displayUI.pointerDblClick();
-		if (event.preventDefault) {
-			event.preventDefault();
-		}
 	} else if (element.id.length > 14 && element.id.substring(0, 14) === "available_app_") {
 		loadSelectedApplication();
 		hideDialog('appLauncherDialog');
@@ -2420,7 +2414,6 @@ function keyPress(event) {
 	// or process the event
 	if (event.keyCode === 32) {
 		interactor.startSAGE2Pointer("sage2pointer");
-		displayUI.pointerMove(pointerX, pointerY);
 	} else if (displayUI.keyPress(pointerX, pointerY, parseInt(event.charCode, 10))) {
 		event.preventDefault();
 	}
@@ -2707,6 +2700,14 @@ function setAppContextMenuEntries(data) {
 					url = 'sage2StandAloneApp.html?appID=' + this.app;
 					var appWin = window.open(url, '_blank');
 					appWin.focus();
+				} else if (this.callback === "SAGE2_openPage") {
+					var appUrl; // Special case: open another tab with the given address.
+					if (this.parameters.url !== undefined && this.parameters.url !== null) {
+						appUrl = this.parameters.url + "?appId=" + this.app;
+						appUrl += "&pointerName=" + interactor.user.label;
+						appUrl += "&pointerColor='" + interactor.user.color + "'";
+						open(appUrl, "Page From App");
+					}
 				} else if (this.callback === "SAGE2_editQuickNote") {
 					// special case: reopen the QuickNote editor, but with a "save" button instead of "create"
 					var sendButton = document.getElementById('uiNoteMakerSendButton');
