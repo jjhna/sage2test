@@ -35,10 +35,11 @@ var quickNote = SAGE2_App.extend({
 		this.markdownDiv.style.left     = "0";
 		this.markdownDiv.style.width    = "100%";
 		this.markdownDiv.style.height   = "100%";
-		this.markdownDiv.style.padding = ui.titleTextSize + "px 0 0 " + (ui.titleTextSize) + "px"; // multiplier based on starting size
+		this.markdownDiv.style.padding = ui.titleTextSize + "px " + ui.titleTextSize + "px 0 " + ui.titleTextSize + "px"; // multiplier based on starting size
 		this.markdownDiv.style.fontFamily = "Oxygen Mono";
 		this.markdownDiv.style.transformOrigin = "0% 0%";
-		this.markdownDiv.style.fontSize = (ui.titleTextSize) + "px"; // seems that with monospace, there are two units reserved for lists
+		this.markdownDiv.style.fontSize = ui.titleTextSize + "px";
+		this.markdownDiv.style.boxSizing = "border-box";
 		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
@@ -397,7 +398,8 @@ var quickNote = SAGE2_App.extend({
 				this.state.scale *= 0.8; // same reduction?
 			}
 		}
-		this.markdownDiv.style.transform = "scale(" + this.state.scale + ")";
+		// this.markdownDiv.style.transform = "scale(" + this.state.scale + ")";
+		this.markdownDiv.style.fontSize = parseInt(ui.titleTextSize * this.state.scale) + "px";
 		this.getFullContextMenuAndUpdate();
 		this.SAGE2Sync(true);
 	},
