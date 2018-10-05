@@ -9,7 +9,7 @@
 // Copyright (c) 2014-15
 
 /* global createjs */
-"use strict";
+"use strict"; 
 
 /**
  * SAGE2 Audio Manager, renders the audio streams for a given site
