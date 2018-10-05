@@ -412,9 +412,10 @@ function setupListeners() {
 			//console.log("speaker" + speaker);
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
-			var panParameter = audioPannerNodes[data.elemId].parameters.get('panAudioParam');
-			panParameter.setTargetAtTime(speaker, audioCtx.currentTime, .015);
-
+			var gain = audioPannerNodes[data.elemId].parameters.get('gain');
+			var leftSpeakerParameter = audioPannerNodes[data.elemId].parameters.get('leftChannel');
+			gain.setTargetAtTime(speaker, audioCtx.currentTime, .015);
+			//gain.
 		}
 	});
 
@@ -436,7 +437,7 @@ function setupListeners() {
 			//console.log("speaker" + speaker);
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
-			var panParameter = audioPannerNodes[data.elemId].parameters.get('panAudioParam');
+			var panParameter = audioPannerNodes[data.elemId].parameters.get('gain');
 			panParameter.setTargetAtTime(speaker, audioCtx.currentTime, .015);
 		}
 	});
