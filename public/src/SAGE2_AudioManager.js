@@ -30,6 +30,7 @@ var initialVolume = 8;
 var audioCtx;
 var audioGainNodes   = {};
 var audioPannerNodes = {};
+var channelCount;
 
 // Number of sound instances being played at once
 var numberOfSounds    = 0;
@@ -221,6 +222,14 @@ function setupListeners() {
 		// Main audio context (for low-level operations)
 		audioCtx = new(window.AudioContext || window.webkitAudioContext)();
 		audioCtx.listener.setPosition(0, 0, 0);
+
+		// Get the number of channels availble the connected Audio Interface and set up audioCtx
+		channelCount = audioCtx.destination.maxChannelCount;
+		audioCtx.destination.channelCount = channelCount;
+		audioCtx.destination.channelCountMode = 'explicit';
+		audioCtx.destination.channelInterpretation = 'discrete';
+		console.log("Channel Count: " + channelCount);
+
 		totalWidth  = json_cfg.totalWidth;
 	});
 
@@ -306,14 +315,20 @@ function setupListeners() {
 			var gainNode    = audioCtx.createGain();
 			audioGainNodes[vid.id] = gainNode;
 
-			var panNode = audioCtx.createPanner();
-			panNode.panningModel = 'equalpower';
-			audioPannerNodes[vid.id] = panNode;
+			audioCtx.audioWorklet.addModule('/src/panX.js').then(() => {
+				let panX = new AudioWorkletNode(audioCtx, 'panX', {
+					channelCount: channelCount,
+					channelCountMode: 'explicit',
+					channelInterpretation: 'discrete',
+				});
 
-			// source -> gain -> pan -> speakers
-			audioSource.connect(gainNode);
-			gainNode.connect(panNode);
-			panNode.connect(audioCtx.destination);
+				audioPannerNodes[vid.id] = panX;
+
+				// source -> gain -> pan -> speakers
+				audioSource.connect(gainNode);
+				gainNode.connect(panX);
+				panX.connect(audioCtx.destination);
+			});
 			// webaudio end
 
 			var videoRow = document.createElement('tr');
@@ -395,6 +410,7 @@ function setupListeners() {
 			// Calculate center of the application window
 			var halfTotalWidth = totalWidth / 2;
 			var centerX = data.elemLeft + data.elemWidth / 2 - halfTotalWidth;
+			//console.log("centerX" + centerX);
 			if (centerX < -totalWidth) {
 				centerX = -totalWidth;
 			}
@@ -403,10 +419,13 @@ function setupListeners() {
 			}
 			// Update the panner position
 			var panX = centerX / totalWidth;
+			var speaker = (halfTotalWidth / totalWidth) + panX;
+			//console.log("speaker" + speaker);
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
-			var panNode = audioPannerNodes[data.elemId];
-			panNode.setPosition(panX, panY, panZ);
+			var panParameter = audioPannerNodes[data.elemId].parameters.get('panAudioParam');
+			panParameter.setTargetAtTime(speaker, audioCtx.currentTime, .015);
+
 		}
 	});
 
@@ -415,6 +434,7 @@ function setupListeners() {
 			// Calculate center of the application window
 			var halfTotalWidth = totalWidth / 2;
 			var centerX = data.elemLeft + data.elemWidth / 2 - halfTotalWidth;
+			//console.log("centerX" + centerX);
 			if (centerX < -totalWidth) {
 				centerX = -totalWidth;
 			}
@@ -423,10 +443,12 @@ function setupListeners() {
 			}
 			// Update the panner position
 			var panX = centerX / totalWidth;
+			var speaker = (halfTotalWidth / totalWidth) + panX;
+			//console.log("speaker" + speaker);
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
-			var panNode = audioPannerNodes[data.elemId];
-			panNode.setPosition(panX, panY, panZ);
+			var panParameter = audioPannerNodes[data.elemId].parameters.get('panAudioParam');
+			panParameter.setTargetAtTime(speaker, audioCtx.currentTime, .015);
 		}
 	});
 
