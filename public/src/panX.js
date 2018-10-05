@@ -1,6 +1,5 @@
 class panX extends AudioWorkletProcessor {
 
-  // Custom AudioParams can be defined with this static getter.
   static get parameterDescriptors() {
     return [{ name: 'gain', defaultValue: 0 },
             { name: 'leftChannel', defaultValue: 0},

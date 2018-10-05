@@ -13,6 +13,7 @@
 /* global showSAGE2PointerOverlayNoMouse, hideSAGE2PointerOverlayNoMouse */
 /* global pointerClick, sagePointerDisabled, sagePointerEnabled */
 /* global viewOnlyMode, deleteCookie */
+/* global displayUI, pointerX, pointerY */
 
 "use strict";
 
@@ -49,14 +50,6 @@ function SAGE2_interaction(wsio) {
 	this.maxUploadSize = 20 * (1024 * 1024 * 1024); // 20GB just as a precaution
 	this.array_xhr     = [];
 
-	// Event filtering for mouseMove
-	this.now = Date.now();
-	this.cnt = 0;
-	// accumultor for delta motion of the mouse
-	this.deltaX = 0;
-	this.deltaY = 0;
-	// Send frequency (frames per second)
-	this.sendFrequency = 30;
 	// Timeout for when scrolling ends
 	this.scrollTimeId = null;
 
@@ -264,7 +257,7 @@ function SAGE2_interaction(wsio) {
 	* @param dropX {Number} drop location X
 	* @param dropY {Number} drop location Y
 	*/
-	this.uploadFiles = function(files, dropX, dropY) {
+	this.uploadFiles = function(files, showCompressed, dropX, dropY) {
 		var _this = this;
 		var loaded = {};
 		var filesFinished = 0;
@@ -324,15 +317,15 @@ function SAGE2_interaction(wsio) {
 
 		// Clear the upload array
 		this.array_xhr.length = 0;
-
+		// Converting value to boolean
+		showCompressed = (showCompressed === true);
 		for (var i = 0; i < files.length; i++) {
 			if (files[i].size <= this.maxUploadSize) {
 				var formdata = new FormData();
 				formdata.append("file" + i.toString(), files[i]);
 				formdata.append("dropX", dropX);
 				formdata.append("dropY", dropY);
-				formdata.append("open",  true);
-
+				formdata.append("open",  showCompressed);
 				formdata.append("SAGE2_ptrName",  userSettings.SAGE2_ptrName);
 				formdata.append("SAGE2_ptrColor", userSettings.SAGE2_ptrColor);
 
@@ -496,6 +489,8 @@ function SAGE2_interaction(wsio) {
 		} else {
 			// enable SAGE2 Pointer
 			this.wsio.emit('startSagePointer', this.user);
+			// Update its position given the mouse position
+			displayUI.pointerMove(pointerX, pointerY);
 
 			document.addEventListener('mousedown',  this.pointerPress,     false);
 			document.addEventListener('mousemove',  this.pointerMove,      false);
@@ -848,31 +843,14 @@ function SAGE2_interaction(wsio) {
 		var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
 		var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-		// Event filtering
-		var now  = Date.now();
-		// time difference since last event
-		var diff = now - this.now;
-		// count the events
-		this.cnt++;
-		if (diff >= (1000 / this.sendFrequency)) {
-			// Calculate the offset
-			// increase the speed for touch devices
-			var scale = (hasMouse ? this.sensitivity : 3 * this.sensitivity);
-			var px  = this.deltaX * scale;
-			var py  = this.deltaY * scale;
-			// Send the event
-			this.wsio.emit('pointerMove', {dx: Math.round(px), dy: Math.round(py)});
-			// Reset the accumulators
-			this.deltaX = 0;
-			this.deltaY = 0;
-			// Reset the time and count
-			this.now = now;
-			this.cnt = 0;
-		} else {
-			// if it's not time, just accumulate
-			this.deltaX += movementX;
-			this.deltaY += movementY;
-		}
+		// Calculate the offset
+		// increase the speed for touch devices
+		var scale = (hasMouse ? this.sensitivity : 3 * this.sensitivity);
+		var px  = movementX * scale;
+		var py  = movementY * scale;
+		// Send the event
+		this.wsio.emit('pointerMove', {dx: Math.round(px), dy: Math.round(py)});
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -887,6 +865,7 @@ function SAGE2_interaction(wsio) {
 	this.pointerReleaseMethod = function(event) {
 		var btn = (event.button === 0) ? "left" : (event.button === 1) ? "middle" : "right";
 		this.wsio.emit('pointerRelease', {button: btn});
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -900,6 +879,7 @@ function SAGE2_interaction(wsio) {
 	*/
 	this.pointerDblClickMethod = function(event) {
 		this.wsio.emit('pointerDblClick');
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -924,6 +904,7 @@ function SAGE2_interaction(wsio) {
 			_this.wsio.emit('pointerScrollEnd');
 			_this.scrollTimeId = null;
 		}, 500);
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
