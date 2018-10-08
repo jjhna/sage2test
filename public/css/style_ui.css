@@ -1338,6 +1338,10 @@ The z-index is very important.
     opacity: 0;
     transition: opacity 0.5s;
     z-index: 1000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center; 
 }
 
 #codeSnippetEditor .ace_gutter-layer {
@@ -1353,15 +1357,15 @@ The z-index is very important.
 }
 
 #codeSnippetEditor .editorWrapper {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    /* position: absolute; */
+    /* top: 50%;
+    left: 50%; */
     height: 90%;
     width: 80%;
     max-width: 1250px;
-    transform: translateX(-50%) translateY(-50%);
+    /* transform: translateX(-50%) translateY(-50%); */
     background-color: white;
-    border: 4px solid #787878;
+    border: 2px solid #444;
     border-radius: 0 0 12px 12px;
     padding: 0;
     z-index: 1000;
@@ -1377,9 +1381,9 @@ The z-index is very important.
     padding: 0 15px;
     line-height: 30px;
     box-sizing: border-box;
-    background-color: #787878;
+    background-color: #aaa;
     color: white;
-    border-bottom: 2px solid #333;
+    border-bottom: 1px solid #999;
 }
 
 #codeSnippetEditor #snippetEditorControls {
@@ -1392,11 +1396,12 @@ The z-index is very important.
 #codeSnippetEditor .controlRow {
     position: absolute;
     width: 100%;
-    height: 50px;
+    height: 35px;
     top: 0;
     left: 0;
     background: #eee;
     box-sizing: border-box;
+    padding: 2px;
     /* border: 1.25px solid white; */
     border-bottom: 2.25px solid rgba(100, 100, 100, 0.25);
 }
@@ -1417,7 +1422,7 @@ The z-index is very important.
 #codeSnippetEditor .controlButton {
     box-sizing: border-box;
     background: #ddd;
-    background: linear-gradient(#eee, #ddd 80%);
+    background: linear-gradient(#ccc, #eee 30%, #ccc 100%);
     border: 1.25px solid rgba(100, 100, 100, 0.25);
     padding: 8px;
     cursor: pointer;
@@ -1434,8 +1439,9 @@ The z-index is very important.
 
 #codeSnippetEditor .controlButton:hover {
     background: #ccc;
-    background: linear-gradient(#ccc, #ddd 80%);
-    border: 1.25px solid white;
+    background: linear-gradient(#ccc, #aaa 50%, #ccc 100%);
+    color: white;
+    border: 1.25px solid rgba(100, 100, 100, 0.5);
 }
 
 #codeSnippetEditor .controlButton.disabled {
@@ -1599,8 +1605,9 @@ The z-index is very important.
 }
 
 #codeSnippetEditor #snippetEditorClose:hover {
-    background: linear-gradient(#fcbba1, #fc9272 80%);
-    color: white;
+    /* background: linear-gradient(#fcbba1, #fc9272 80%); */
+    background: linear-gradient(#fc9272, #fcbba1 50%, #fc9272 90%);
+    /* color: black; */
 }
 
 #codeSnippetEditor #createNewScriptWrapper {

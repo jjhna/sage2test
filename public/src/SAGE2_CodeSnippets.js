@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global wsio d3 */
+/* global wsio d3 CodeSnippetCompiler */
 
 let SAGE2_CodeSnippets = (function() {
 	let self = {
@@ -160,7 +160,6 @@ let SAGE2_CodeSnippets = (function() {
 
 		if (isMaster) {
 			// loadable script defitition in server
-			// let savedScriptBody = createScriptBody(null, func.text, func.desc, [], "new", func.type, func.src);
 
 			wsio.emit("snippetSaveIntoServer", {
 				text: func.text,
@@ -199,37 +198,33 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} author - the display name of the user saving changes
 	 */
 	function saveSnippet(uniqueID, code, desc, type, scriptID, author) {
-		var script = document.createElement("script");
 
-		let links = [];
-		let src = null;
-		let creator = author;
+		let src = "null";
 
-		if (scriptID !== "new") {
-			let oldFunction = self.functions[scriptID];
+		if (scriptID === "new") {
+			scriptID = getNewFunctionID();
 
-			// save the links, remove the old script
-			if (document.getElementById(scriptID)) {
-				document.getElementById(scriptID).remove();
-			}
-
-			if (oldFunction) {
-				links = oldFunction.links;
-				src = oldFunction.src;
-				creator = oldFunction.creator;
-			}
-
-			// clear any intervals remaining from a generator script
-			if (oldFunction && oldFunction.interval) {
-				clearInterval(oldFunction.interval);
-			}
+			self.functions[scriptID] = {
+				src,
+				type,
+				editor: uniqueID,
+				creator: author,
+				links: []
+			};
 		}
 
-		// create new script
-		script.text = createScriptBody(uniqueID, code, desc, links, scriptID, type, src, creator);
-		script.charset = "utf-8";
-		script.id = scriptID;
-		document.body.appendChild(script);
+		let snippetInfo = self.functions[scriptID];
+		snippetInfo.desc = desc;
+
+		try {
+			snippetInfo.code = CodeSnippetCompiler.createFunction(type, code);
+			snippetInfo.text = code.replace(/`/gi, "\\`").replace(/\$/gi, "\\$");
+		} catch (err) {
+			// console.log("Error parsing code", err);
+			throwErrorToUser(scriptID, err, uniqueID);
+		}
+
+		updateFunctionDefinition(scriptID, snippetInfo);
 
 		// open a snippet list if it isn't open already
 		if (Object.values(self.listApps).length === 0) {
@@ -283,19 +278,26 @@ let SAGE2_CodeSnippets = (function() {
 			self.reloadSnippetFilemap[filename] = id;
 		}
 
-		var script = document.createElement("script");
-		script.text = createScriptBody(
-			null,
-			func.text,
-			func.desc,
-			[],
-			"new",
-			func.type,
-			filename,
-			func.creator ? func.creator : "unknown");
+		if (id === "new") {
+			id = getNewFunctionID();
+		}
 
-		script.charset = "utf-8";
-		document.body.appendChild(script);
+		self.functions[id] = {
+			filename,
+			type: func.type,
+			desc: func.desc,
+			creator: func.creator || "unknown",
+			links: []
+		};
+
+		let snippetInfo = self.functions[id];
+
+		try {
+			snippetInfo.code = CodeSnippetCompiler.createFunction(func.type, func.text);
+			snippetInfo.text = func.text.replace(/`/gi, "\\`").replace(/\$/gi, "\\$");
+		} catch (err) {
+			console.log("Error parsing code", err);
+		}
 
 		// only create a list application if there are none referenced
 		// and the file is not reloading from state
@@ -304,116 +306,6 @@ let SAGE2_CodeSnippets = (function() {
 		}
 
 		updateListApps();
-	}
-
-	/**
-	 * Function to fill in a template string based on snippet function information with
-	 * necessary wrapper code to properly curate the code.
-	 *
-	 * @method createScriptBody
-	 */
-	function createScriptBody(uniqueID, code, desc, links, scriptID, type, src, creator) {
-
-		let startBlock = `(function() {
-			// check if script with same src exists
-
-			let key;
-			let srcLoadedIn;
-
-			let functionInfo = SAGE2_CodeSnippets.getFunctionInfo();
-
-			// check for scripts loaded from .js file
-			if ("${src}" !== "null") {
-				srcLoadedIn = Object.keys(functionInfo).find(f => {
-					return functionInfo[f].src === "${src}"
-				});
-			}
-
-			if (srcLoadedIn) {
-				key = srcLoadedIn;
-			} else {
-				key = "${scriptID}" === "new" ? SAGE2_CodeSnippets.getNewFunctionID() : "${scriptID}";
-			}
-
-			// loaded from script
-			let functionDefinition = {
-				// src: document.currentScript.src !== "" ? document.currentScript.src : "user-defined",
-				src: "${src}",
-				type: "${type}",
-				desc: "${desc}",
-				editor: "${uniqueID}",
-				creator: "${creator ? creator : uniqueID}",
-				links: JSON.parse(\`${links ? JSON.stringify(links) : []}\`),
-				text: \`${code.replace(/`/gi, "\\`").replace(/\$/gi, "\\$")}\`,
-				code: `;
-
-		let endBlock = `
-			}
-
-			// update Snippet Curator with new information
-			SAGE2_CodeSnippets.updateFunctionDefinition(key, functionDefinition);
-
-			// set ID of the script in order to remove old script on update
-			document.currentScript.id = key;
-
-		})();`;
-
-		return startBlock + createFunctionBlock(type, code) + endBlock;
-		// return startBlock + createFunctionBlock(type, code) + endBlock;
-	}
-
-	/**
-	 * Create the funtion block for the new snippet. The user-defined code first put through a
-	 * pseudo-compile process in order to append additional parameters to SAGE2 API functions,
-	 * then wrapped in the necessary code to execute the snippet.
-	 *
-	 * @method createFunctionBlock
-	 * @param {String} type - the type of the snippet (gen, draw, data)
-	 * @param {String} code - the code which a user wrote, to be loaded
-	 */
-	function createFunctionBlock(type, code) {
-		// replace special syntax pieces using RegExp
-		let inputsRegex = new SnippetsInputRegExp(/SAGE2.SnippetInput\(({[\w,\W]*?})\)/, "gm");
-		let visElemRegex = new SnippetsVisElementRegExp(/SAGE2.SnippetVisElement\(({[\w,\W]*?})\)/, "gm");
-		let timeoutRegex = new SnippetsTimeoutRegExp(/SAGE2.SnippetTimeout\(({[\w,\W]*?})\)/, "gm");
-
-		// "compile" code and replace/extract special syntax values
-		let codeCompile_1 = code.replace(inputsRegex);
-		let codeCompile_2 = codeCompile_1.replace(timeoutRegex);
-		let codeCompile_final = codeCompile_2.replace(visElemRegex);
-
-		let functionBlocks = {
-			data: `(function (data, link) {
-				/* USER DEFINED CODE */
-				// Code written by user will be inserted here
-				
-				${codeCompile_final}
-
-				/* END USER DEFINED CODE*/
-			})`,
-			draw: `(function (data, link) {
-				/* USER DEFINED CODE */
-				// Code written by user will be inserted here
-
-				${codeCompile_final}
-				
-				/* END USER DEFINED CODE*/
-		
-			})`,
-			gen: `(function (previousData, link) {
-				// Promise to handle async
-				return new Promise((resolve, reject) => {
-					/* USER DEFINED CODE */
-					// Code written by user will be inserted here
-
-					${codeCompile_final}
-
-				});
-				/* END USER DEFINED CODE*/
-			})`
-		};
-
-		return functionBlocks[type];
 	}
 
 	/**
@@ -879,6 +771,8 @@ let SAGE2_CodeSnippets = (function() {
 			// OR if the snippet specifies input elements, since these can be inconsistent across calls
 			let newLink = new Link(parent, null, snippetID);
 
+			console.log(parent, snippetID);
+
 			let linkID = "link-" + self.linkCount++;
 			self.links[linkID] = newLink;
 
@@ -1046,7 +940,7 @@ let SAGE2_CodeSnippets = (function() {
 		let functionBodies = {};
 
 		for (let id of Object.keys(self.functions)) {
-			functionBodies[id] = createFunctionBlock(self.functions[id].type, self.functions[id].text);
+			functionBodies[id] = CodeSnippetCompiler.createFunctionBlock(self.functions[id].type, self.functions[id].text);
 		}
 
 		let functionObject = Object.keys(functionBodies).map(
@@ -1067,6 +961,14 @@ let SAGE2_CodeSnippets = (function() {
 			functions: functionObject,
 			links
 		});
+	}
+
+	function consoleLogToUser(...args) {
+		console.log("Send Log to:", this.uniqueID, this.snippetID, ...args);
+	}
+
+	function throwErrorToUser(snippetID, err, uniqueID) {
+		console.log("Send Error to:", uniqueID, snippetID, err);
 	}
 
 	/**
@@ -1198,10 +1100,18 @@ let SAGE2_CodeSnippets = (function() {
 				let c = self.child;
 				let id = self.transformID;
 
+				let logger = {
+					log: consoleLogToUser.bind({snippetID: id, uniqueID: curator.functions[id].editor})
+				};
+
+				console.log(p, c, id);
+
+				console.log(curator.functions);
+
 				if (curator.functions[id].type === "data" && p) {
 					// call function (calculates new dataset and updates child)
 					try {
-						let result = curator.functions[id].code.call(c, p.getDataset(), publicObject);
+						let result = curator.functions[id].code.call(c, p.getDataset(), publicObject, logger);
 						c.updateDataset(result);
 					} catch (err) {
 						c.displayError(err);
@@ -1212,7 +1122,7 @@ let SAGE2_CodeSnippets = (function() {
 						// remove error dialogue when the element is requested for draw function
 						c.errorBox.style.display = "none";
 
-						curator.functions[id].code.call(c, p.getDataset(), publicObject);
+						curator.functions[id].code.call(c, p.getDataset(), publicObject, logger);
 						c.updateAncestorTree();
 					} catch (err) {
 						c.displayError(err);
@@ -1220,7 +1130,7 @@ let SAGE2_CodeSnippets = (function() {
 				} else if (curator.functions[id].type === "gen") {
 					// call function (this returns a promise)
 					curator.functions[id]
-						.code.call(c, c.getDataset(), publicObject)
+						.code.call(c, c.getDataset(), publicObject, logger)
 						.then(function(data) {
 							c.updateDataset(data);
 						})
@@ -1270,76 +1180,5 @@ let SAGE2_CodeSnippets = (function() {
 		updateSavedSnippetAssociations
 	};
 }());
-
-// Regular Expression which will find SAGE2.SnippetInput({ ... })
-//	and add an extra link parameter to the calls
-class SnippetsInputRegExp extends RegExp {
-	// change the replace function
-	[Symbol.replace](str, inputs) {
-		let output = ``;
-
-		let result;
-		let lastIndex = 0;
-		while ((result = this.exec(str))) {
-
-			// reconstruct code string with SAGE2.Input calls given an extra property of link
-			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, link)`;
-			lastIndex = result.index + result[0].length;
-		}
-
-		// append rest of code
-		output += str.substring(lastIndex);
-
-		return output;
-	}
-}
-
-// Regular Expression which will find SAGE2.SnippetVisElement({ ... })
-//	and add an extra app ('this') parameter to the calls
-class SnippetsVisElementRegExp extends RegExp {
-	// change the replace function
-	[Symbol.replace](str, inputs) {
-		// code replaced with new string
-		let output = ``;
-
-		let result;
-		let lastIndex = 0;
-		while ((result = this.exec(str))) {
-
-			// reconstruct code string with SAGE2.Input calls given an extra property of app reference
-			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, this)`;
-			lastIndex = result.index + result[0].length;
-		}
-
-		// append rest of code
-		output += str.substring(lastIndex);
-
-		return output;
-	}
-}
-
-// Regular Expression which will find SAGE2.SnippetTimeout({ ... })
-//	and add an extra link parameter to the calls
-class SnippetsTimeoutRegExp extends RegExp {
-	// change the replace function
-	[Symbol.replace](str, inputs) {
-		// code replaced with new string
-		let output = ``;
-
-		let result;
-		let lastIndex = 0;
-		while ((result = this.exec(str))) {
-
-			// reconstruct code string with SAGE2.Input calls given an extra property of app reference
-			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, link)`;
-			lastIndex = result.index + result[0].length;
-		}
-
-		// append rest of code
-		output += str.substring(lastIndex);
-
-		return output;
-	}
-}
 
 

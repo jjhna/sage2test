@@ -66,10 +66,11 @@ var Snippets_Vis = SAGE2_App.extend({
 		errorBox.style.border = "2px solid #ffb4b4";
 		errorBox.style.color = "red";
 		errorBox.style.fontWeight = "bold";
+		errorBox.style.fontSize = (3 * ui.titleBarHeight) / 4 + "px";
 		errorBox.style.padding = "10px";
 
 		errorBox.style.fontFamily = 'monospace';
-		errorBox.style.whiteSpace = "pre";
+		errorBox.style.whiteSpace = "normal";
 
 		errorBox.style.display = "none";
 
@@ -96,12 +97,12 @@ var Snippets_Vis = SAGE2_App.extend({
 		// give descriptive title to app
 		if (this.parentLink) {
 			if (this.parentLink.getParent()) {
-				this.updateTitle("VizSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
+				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
 			} else {
-				this.updateTitle("VizSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
+				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
 			}
 		} else {
-			this.updateTitle("VizSnippets: " + this.state.snippetsID);
+			this.updateTitle("VisSnippets: " + this.state.snippetsID);
 		}
 	},
 
@@ -137,12 +138,12 @@ var Snippets_Vis = SAGE2_App.extend({
 		// give descriptive title to app
 		if (this.parentLink) {
 			if (this.parentLink.getParent()) {
-				this.updateTitle("VizSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
+				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
 			} else {
-				this.updateTitle("VizSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
+				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
 			}
 		} else {
-			this.updateTitle("VizSnippets: " + this.state.snippetsID);
+			this.updateTitle("VisSnippets: " + this.state.snippetsID);
 		}
 	},
 

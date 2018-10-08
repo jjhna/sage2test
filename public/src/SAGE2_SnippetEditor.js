@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global ace displayUI interactor wsio SAGE2_SnippetExporter */
+/* global ace displayUI interactor wsio SAGE2_SnippetExporter CodeSnippetCompiler */
 
 let SAGE2_SnippetEditor = (function () {
 	// api examples to be inserted in the editor
@@ -35,6 +35,7 @@ let SAGE2_SnippetEditor = (function () {
 	});`,
 			Range: `let slider = SAGE2.SnippetInput({
 		name: "my_slider", // name your input element
+		type: "range",
 		range: [1, 20],
 		step: 1,
 		defaultVal: 1 // an *optional* default value for the input
@@ -176,13 +177,20 @@ let SAGE2_SnippetEditor = (function () {
 		function saveScript() {
 			// save script into current file, or create new file if one does not exist (new)
 
-			wsio.emit('editorSaveSnippet', {
-				author: interactor.user.label,
-				text: self.editor.getValue(),
-				type: self.loadedSnippetType,
-				desc: self.descInput.value ? self.descInput.value : self.loadedSnippetType + " snippet",
-				scriptID: self.loadedSnippet
-			});
+			// first test if it has syntax errors
+			try {
+				CodeSnippetCompiler.createFunction(self.loadedSnippetType, self.editor.getValue());
+
+				wsio.emit('editorSaveSnippet', {
+					author: interactor.user.label,
+					text: self.editor.getValue(),
+					type: self.loadedSnippetType,
+					desc: self.descInput.value ? self.descInput.value : self.loadedSnippetType + " snippet",
+					scriptID: self.loadedSnippet
+				});
+			} catch (err) {
+				console.error(err);
+			}
 		}
 
 		/**
@@ -288,8 +296,6 @@ let SAGE2_SnippetEditor = (function () {
 				let name = document.createElement("span");
 
 				newOption.className = "dropdownOption";
-
-				console.log(examples, key);
 
 				if (typeof examples[key] === "string") {
 					newOption.onclick = function() {

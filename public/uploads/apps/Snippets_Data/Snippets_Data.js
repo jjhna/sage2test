@@ -45,10 +45,11 @@ var Snippets_Data = SAGE2_App.extend({
 		errorBox.style.border = "2px solid #ffb4b4";
 		errorBox.style.color = "red";
 		errorBox.style.fontWeight = "bold";
+		errorBox.style.fontSize =  (3 * ui.titleBarHeight / 4) + "px";
 		errorBox.style.padding = "10px";
 
 		errorBox.style.fontFamily = "monospace";
-		errorBox.style.whiteSpace = "pre";
+		errorBox.style.whiteSpace = "normal";
 
 		errorBox.style.display = "none";
 
@@ -68,6 +69,8 @@ var Snippets_Data = SAGE2_App.extend({
 
 		this.content = content;
 		this.element.appendChild(content);
+
+		console.log(ui.titleBarHeight);
 
 		let inputs = document.createElement("div");
 		inputs.className = "snippetsInputWrapper";
@@ -101,12 +104,12 @@ var Snippets_Data = SAGE2_App.extend({
 
 		if (this.parentLink) {
 			if (this.parentLink.getParent()) {
-				this.updateTitle("VizSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
+				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
 			} else {
-				this.updateTitle("VizSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
+				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
 			}
 		} else {
-			this.updateTitle("VizSnippets: " + this.state.snippetsID);
+			this.updateTitle("VisSnippets: " + this.state.snippetsID);
 		}
 	},
 
@@ -137,7 +140,7 @@ var Snippets_Data = SAGE2_App.extend({
 
 		// draw
 		this.content.innerHTML = dataString.length > 500 ? 
-			(dataString).substring(0, 500) + "\n\n..." : 
+			(dataString).substring(0, 1500) + "\n\n..." : 
 			(dataString);
 
 		this.updateChildren();
@@ -174,12 +177,12 @@ var Snippets_Data = SAGE2_App.extend({
 
 		if (this.parentLink) {
 			if (this.parentLink.getParent()) {
-				this.updateTitle("VizSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
+				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
 			} else {
-				this.updateTitle("VizSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
+				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
 			}
 		} else {
-			this.updateTitle("VizSnippets: " + this.state.snippetsID);
+			this.updateTitle("VisSnippets: " + this.state.snippetsID);
 		}
 	},
 
