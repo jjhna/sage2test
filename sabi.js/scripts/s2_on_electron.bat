@@ -17,7 +17,7 @@ rem The above are necessary so this doesn't need to be edited
 rem If you want to make a custom launcher look at sage2_on.bat
 
 
-start /MIN /D .. sage2.bat -f %1
+start /D .. sage2.bat -f %1
 rem delay about 2 seconds
 ping localhost -n 3
 
