@@ -93,11 +93,15 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
 			}
 			this.contentType = "youtube";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.startsWith('https://youtu.be')) {
 			// youtube short URL (used in sharing)
 			video_id = view_url.split('/').pop();
 			view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
 			this.contentType = "youtube";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.indexOf('vimeo') >= 0) {
 			// Search for the Vimeo ID
 			var m = view_url.match(/^.+vimeo.com\/(.*\/)?([^#?]*)/);
@@ -106,6 +110,8 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://player.vimeo.com/video/' + vimeo_id;
 			}
 			this.contentType = "vimeo";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.endsWith('.ipynb')) {
 			// ipython notebook file are link to nbviewer.jupyter.org online
 			var host = this.config.host + ':' + this.config.port;
@@ -124,18 +130,28 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://player.twitch.tv/?!autoplay&video=v' + twitch_id;
 			}
 			this.contentType = "twitch";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.includes(this.config.host) && view_url.includes("/user/apps")) {
 			// Locally hosted WebViews are assumed to be Unity applications
 			// Move to more dedicated url later? //users/apps/unity ?
 			this.contentType = "unity";
 		} else if (view_url.indexOf('docs.google.com/presentation') >= 0) {
 			this.contentType = "google_slides";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.indexOf('appear.in') >= 0) {
 			if (!view_url.endsWith('?widescreen')) {
 				// to enable non-cropped mode, in widescreen
 				view_url += '?widescreen';
 			}
 			this.contentType = "appearin";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
+		} else if (view_url.indexOf('scp.tv') >= 0) {
+			this.contentType = "periscope";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.endsWith('.pptx')) {
 			// try to handle Office file. Starting with PPTX
 			let localurl = view_url;
@@ -146,6 +162,8 @@ var Webview = SAGE2_App.extend({
 			view_url += encodeURIComponent('http://' + host + localurl);
 			view_url += "&wdAr=1.7777777777777777";
 			this.contentType = "msoffice";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		}
 
 		// Store the zoom level, when in desktop emulation
@@ -684,10 +702,7 @@ var Webview = SAGE2_App.extend({
 			});
 		} else if (this.contentType === "vimeo" || this.contentType === "twitch") {
 			// Simulate a spacebar
-			this.element.sendInputEvent({
-				type: "char",
-				keyCode: ' '
-			});
+			this.simulateChar({key: ' '});
 		}
 	},
 
@@ -755,6 +770,15 @@ var Webview = SAGE2_App.extend({
 		}
 	},
 
+	simulateChar: function(act) {
+		if (act.key) {
+			this.element.sendInputEvent({
+				type: "char",
+				keyCode: act.key
+			});
+		}
+	},
+
 	muteUnmute: function(act) {
 		if (isMaster) {
 			var content = this.element.getWebContents();
@@ -799,6 +823,28 @@ var Webview = SAGE2_App.extend({
 				entry.parameters = {};
 				entries.push(entry);
 			}
+
+		} else if (this.contentType === "periscope") {
+			entry = {};
+			entry.description = "Cinema mode";
+			entry.accelerator = "H";
+			entry.callback = "simulateChar";
+			entry.parameters = {key: 'H'};
+			entries.push(entry);
+
+			entry = {};
+			entry.description = "Sidebar on/off";
+			entry.accelerator = "P";
+			entry.callback = "simulateChar";
+			entry.parameters = {key: 'P'};
+			entries.push(entry);
+
+			entry = {};
+			entry.description = "Mute/Unmute";
+			entry.accelerator = "M";
+			entry.callback = "muteUnmute";
+			entry.parameters = {};
+			entries.push(entry);
 
 		} else if (this.contentType === "google_slides") {
 			entry = {};
@@ -975,10 +1021,7 @@ var Webview = SAGE2_App.extend({
 			this.element.insertText(responseObject.clientInput);
 
 			for (let i = 0; i < responseObject.clientInput.length; i++) {
-				this.element.sendInputEvent({ // Not sure why we need 'char' but it works ! -- Luc
-					type: "char",
-					keyCode: responseObject.clientInput.charAt(i)
-				});
+				this.simulateChar({key: responseObject.clientInput.charAt(i)});
 			}
 		}
 	},
@@ -1153,6 +1196,14 @@ var Webview = SAGE2_App.extend({
 					this.element.focus();
 				}
 
+				if (this.contentType === "periscope") {
+					if (data.character === "m") {
+						// m for mute
+						this.muteUnmute();
+						return;
+					}
+				}
+
 				if (this.contentType === "youtube" ||
 					this.contentType === "vimeo"   ||
 					this.contentType === "twitch") {
@@ -1189,12 +1240,7 @@ var Webview = SAGE2_App.extend({
 				}
 
 				// send the character event
-				this.element.sendInputEvent({
-					// type: "keyDown",
-					// Not sure why we need 'char' but it works ! -- Luc
-					type: "char",
-					keyCode: data.character
-				});
+				this.simulateChar({key: data.character});
 				setTimeout(function() {
 					_this.element.sendInputEvent({
 						type: "keyUp",

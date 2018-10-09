@@ -5870,6 +5870,12 @@ function processInputCommand(line) {
 			sageutils.log('Console', 'perfsampling\tset performance metric sampling rate');
 			sageutils.log('Console', 'saveperfdata\tsave performance data to file');
 			sageutils.log('Console', 'hardware\tget an summary of the hardware running the server');
+			sageutils.log('Console', 'enabletouch\tEnable touch events in oMicron');
+			sageutils.log('Console', 'disabletouch\tDisable touch events in oMicron');
+			sageutils.log('Console', 'enablemocap\tEnable mocap events in oMicron');
+			sageutils.log('Console', 'disablemocap\tDisable mocap events in oMicron');
+			sageutils.log('Console', 'enablewand\tEnable 3D wand events in oMicron');
+			sageutils.log('Console', 'disablewand\tDisable 3D events in oMicron');
 			sageutils.log('Console', 'update\t\trun a git update');
 			sageutils.log('Console', 'version\tprint SAGE2 version');
 			sageutils.log('Console', 'exit\t\tstop SAGE2');

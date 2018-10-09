@@ -875,8 +875,11 @@ SAGE2DisplayUI.prototype.pointerMove = function(x, y) {
 	}
 	this.pointerX = x;
 	this.pointerY = y;
-	var globalX = this.pointerX / this.scale;
-	var globalY = this.pointerY / this.scale;
+	let globalX = this.pointerX / this.scale;
+	let globalY = this.pointerY / this.scale;
+	// Remove decimals, keep 2
+	globalX = Math.round(globalX * 100) / 100;
+	globalY = Math.round(globalY * 100) / 100;
 	this.wsio.emit('pointerPosition', {pointerX: globalX, pointerY: globalY});
 };
 
@@ -919,7 +922,6 @@ SAGE2DisplayUI.prototype.pointerDblClick = function() {
  */
 SAGE2DisplayUI.prototype.keyDown = function(x, y, keyCode) {
 	if (keyCode !== 27) { // not ESC key
-		this.pointerMove(x, y);
 		this.wsio.emit('keyDown', {code: keyCode});
 		if (keyCode === 9) { // tab is a special case - must emulate keyPress event
 			this.wsio.emit('keyPress', {code: keyCode, character: String.fromCharCode(keyCode)});
@@ -929,6 +931,8 @@ SAGE2DisplayUI.prototype.keyDown = function(x, y, keyCode) {
 			(keyCode >= 47 && keyCode <= 90) || (keyCode >= 94 && keyCode <= 111) ||
 			keyCode >= 146) {
 			return false;
+		} else {
+			this.pointerMove(x, y);
 		}
 	}
 	return true;
