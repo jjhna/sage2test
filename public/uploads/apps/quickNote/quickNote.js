@@ -35,16 +35,22 @@ var quickNote = SAGE2_App.extend({
 		this.markdownDiv.style.left     = "0";
 		this.markdownDiv.style.width    = "100%";
 		this.markdownDiv.style.height   = "100%";
-		this.markdownDiv.style.padding = ui.titleTextSize + "px " + ui.titleTextSize + "px 0 " + ui.titleTextSize + "px"; // multiplier based on starting size
+		// padding: top, right, bottom, and left
+		// or global value, here 1/2 line
+		this.markdownDiv.style.padding  = "0.5em";
+		// Monospace font that we loaded
 		this.markdownDiv.style.fontFamily = "Oxygen Mono";
-		this.markdownDiv.style.transformOrigin = "0% 0%";
+		// Default font size based on SAGE2 settings
 		this.markdownDiv.style.fontSize = ui.titleTextSize + "px";
 		this.markdownDiv.style.boxSizing = "border-box";
 		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
 		// Make a converter
-		this.showdown_converter = new showdown.Converter();
+		this.showdown_converter = new showdown.Converter({
+			// enable emoji, like :smile:
+			emoji: true
+		});
 		// If loaded from session, this.state will have meaningful values.
 		this.setMessage(this.state);
 		var _this = this;
@@ -233,18 +239,17 @@ var quickNote = SAGE2_App.extend({
 	},
 
 	resize: function(date) {
-		// Adjust the width according to the scale factor: helps with word wrapping
-		// this.markdownDiv.style.width  = (this.sage2_width  / this.state.scale) + "px";
-		// this.markdownDiv.style.height = (this.sage2_height / this.state.scale) + "px";
 	},
 
 	event: function(eventType, position, user_id, data, date) {
-		// arrow down
-		if (data.code === 40 && data.state === "down") {
-			this.adjustFontSize({ modifier: "decrease" });
-		} else if (data.code === 38 && data.state === "down") {
-			// arrow up
-			this.adjustFontSize({ modifier: "increase" });
+		if (eventType === "specialKey") {
+			if (data.code === 40 && data.state === "down") {
+				// arrow down
+				this.adjustFontSize({ modifier: "decrease" });
+			} else if (data.code === 38 && data.state === "down") {
+				// arrow up
+				this.adjustFontSize({ modifier: "increase" });
+			}
 		}
 	},
 
@@ -398,7 +403,6 @@ var quickNote = SAGE2_App.extend({
 				this.state.scale *= 0.8; // same reduction?
 			}
 		}
-		// this.markdownDiv.style.transform = "scale(" + this.state.scale + ")";
 		this.markdownDiv.style.fontSize = parseInt(ui.titleTextSize * this.state.scale) + "px";
 		this.getFullContextMenuAndUpdate();
 		this.SAGE2Sync(true);
