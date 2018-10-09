@@ -5,13 +5,17 @@
 	"height": 134,
 	"animation": false,
 	"sticky": true,
+	"resize": "free",
 	"dependencies": [
+		"showdown.min.js"
 	],
 	"load": {
 		"clientName": "Quick Note",
 		"clientInput": "Loading note from user...",
 		"colorChoice": "lightyellow",
-		"creationTime": null
+		"creationTime": null,
+		"scale": 1,
+		"showArrow": false
 	},
 	"title": "Quick Note",
 	"version": "1.0.0",

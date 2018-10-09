@@ -1354,6 +1354,7 @@ function handleClick(element) {
 	// Menu Buttons
 	if (element.id === "sage2pointer"        || element.id === "sage2pointerContainer" || element.id === "sage2pointerLabel") {
 		interactor.startSAGE2Pointer(element.id);
+		displayUI.pointerMove(pointerX, pointerY);
 	} else if (element.id === "sharescreen"  || element.id === "sharescreenContainer"  || element.id === "sharescreenLabel") {
 		interactor.requestToStartScreenShare();
 	} else if (element.id === "applauncher"  || element.id === "applauncherContainer"  || element.id === "applauncherLabel") {
@@ -2404,7 +2405,6 @@ function keyPress(event) {
 	// or process the event
 	if (event.keyCode === 32) {
 		interactor.startSAGE2Pointer("sage2pointer");
-		displayUI.pointerMove(pointerX, pointerY);
 	} else if (displayUI.keyPress(pointerX, pointerY, parseInt(event.charCode, 10))) {
 		event.preventDefault();
 	}
@@ -2691,6 +2691,14 @@ function setAppContextMenuEntries(data) {
 					url = 'sage2StandAloneApp.html?appID=' + this.app;
 					var appWin = window.open(url, '_blank');
 					appWin.focus();
+				} else if (this.callback === "SAGE2_openPage") {
+					var appUrl; // Special case: open another tab with the given address.
+					if (this.parameters.url !== undefined && this.parameters.url !== null) {
+						appUrl = this.parameters.url + "?appId=" + this.app;
+						appUrl += "&pointerName=" + interactor.user.label;
+						appUrl += "&pointerColor='" + interactor.user.color + "'";
+						open(appUrl, "Page From App");
+					}
 				} else if (this.callback === "SAGE2_editQuickNote") {
 					// special case: reopen the QuickNote editor, but with a "save" button instead of "create"
 					var sendButton = document.getElementById('uiNoteMakerSendButton');
