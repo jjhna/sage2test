@@ -5,6 +5,7 @@
 	"height": 134,
 	"animation": false,
 	"sticky": true,
+	"resize": "free",
 	"dependencies": [
 		"showdown.min.js"
 	],
