@@ -205,7 +205,7 @@ function setupListeners() {
 		};
 		// Array of assets to preload
 		var soundAssets = [
-			{id: "startup",   src: jingle,          defaultPlayProps: defaults},
+			//{id: "startup",   src: jingle,          defaultPlayProps: defaults},
 			{id: "newapp",    src: "newapp2.mp3",   defaultPlayProps: defaults},
 			{id: "deleteapp", src: "deleteapp.mp3", defaultPlayProps: defaults},
 			{id: "remote",    src: "remote.mp3",    defaultPlayProps: lowdefaults},
@@ -395,11 +395,13 @@ function setupListeners() {
 	});
 
 	wsio.on('setItemPosition', function (data) {
+		//console.log(data);
 		if (audioPannerNodes[data.elemId]) {
 			// Calculate center of the application window
 			var halfTotalWidth = totalWidth / 2;
 			var centerX = data.elemLeft + data.elemWidth / 2 - halfTotalWidth;
-			//console.log("centerX" + centerX);
+			//console.log("centerX " + centerX);
+			//console.log(totalWidth);
 			if (centerX < -totalWidth) {
 				centerX = -totalWidth;
 			}
@@ -409,12 +411,18 @@ function setupListeners() {
 			// Update the panner position
 			var panX = centerX / totalWidth;
 			var speaker = (halfTotalWidth / totalWidth) + panX;
-			//console.log("speaker" + speaker);
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
 			var gain = audioPannerNodes[data.elemId].parameters.get('gain');
+			var leftSpeakerParameter = audioPannerNodes[data.elemId].parameters.get('leftChannel');
+			var rightSpeakerParameter = audioPannerNodes[data.elemId].parameters.get('rightChannel');
 			gain.setTargetAtTime(speaker, audioCtx.currentTime, .015);
-
+			var leftChannel = Math.floor((data.elemLeft / totalWidth) * channelCount);
+			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * channelCount);
+			// console.log("left " + leftChannel + " rightChannel " + rightChannel);
+			//console.log("left " + ((data.elemLeft / totalWidth) * channelCount) + " right " +  ((data.elemLeft + data.elemWidth) / totalWidth * channelCount));
+			leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0.3);
+			rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0.3);
 		}
 	});
 
@@ -436,8 +444,8 @@ function setupListeners() {
 			//console.log("speaker" + speaker);
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
-			var panParameter = audioPannerNodes[data.elemId].parameters.get('panAudioParam');
-			panParameter.setTargetAtTime(speaker, audioCtx.currentTime, .015);
+			var gain = audioPannerNodes[data.elemId].parameters.get('gain');
+			//gain.setTargetAtTime(speaker, audioCtx.currentTime, .015);
 		}
 	});
 
@@ -575,9 +583,9 @@ function setupListeners() {
 function handleSoundJSLoad(event) {
 	if (event.id === "startup") {
 		// Play the startup jingle at load
-		var instance = createjs.Sound.play(event.src);
-		// Set the volume
-		instance.volume = initialVolume / 10;
+		// var instance = createjs.Sound.play(event.src);
+		// // Set the volume
+		// instance.volume = initialVolume / 10;
 	}
 	console.log('SoundJS> asset loaded', event.id);
 }
