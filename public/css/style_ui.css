@@ -1369,16 +1369,26 @@ The z-index is very important.
     border-radius: 0 0 12px 12px;
     padding: 0;
     z-index: 1000;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
 }
 
 /* ===================================== */
 /* ====== Editor Controls Styling ====== */
 /* ===================================== */
 #codeSnippetEditor #snippetEditorTitlebar {
+    display: flex;
+    /* flex: 0 0 30px; */
+    align-items: center;
+    justify-content: space-between;
+
     position: relative;
+    /* height: 30px; */
     width: 100%;
-    height: 30px;
-    padding: 0 15px;
+
+    padding-left: 15px;
     line-height: 30px;
     box-sizing: border-box;
     background-color: #aaa;
@@ -1389,16 +1399,24 @@ The z-index is very important.
 #codeSnippetEditor #snippetEditorControls {
     position: relative;
     width: 100%;
-    height: 45px;
+
+    display: flex;
+    /* flex: 0 0; */
+
+    /* height: 45px; */
     /* margin: 5px 0; */
 }
 
 #codeSnippetEditor .controlRow {
-    position: absolute;
+    /* position: absolute; */
+    display: flex;
+    flex-flow: row wrap;
+
+    align-items: center;
+    justify-content: space-between;
+
     width: 100%;
-    height: 35px;
-    top: 0;
-    left: 0;
+    /* height: 35px; */
     background: #eee;
     box-sizing: border-box;
     padding: 2px;
@@ -1406,17 +1424,25 @@ The z-index is very important.
     border-bottom: 2.25px solid rgba(100, 100, 100, 0.25);
 }
 
+@media (max-width: 785px) {
+    #codeSnippetEditor .controlRow {
+        justify-content: start;
+    }
+}
+
+
 #codeSnippetEditor .control {
     box-sizing: border-box;
     /* padding: 8px; */
-    height: 100%;
+    height: 30px;
+    margin: 2px 5px;
     vertical-align: middle;
     display: inline-flex;
     align-items: stretch;
 }
 
 #codeSnippetEditor .control.right {
-    float: right;
+    justify-self: flex-end;
 }
 
 #codeSnippetEditor .controlButton {
@@ -1574,7 +1600,6 @@ The z-index is very important.
     border: 1.25px solid rgba(100, 100, 100, 0.25);
     padding: 5px;
     font-size: 16px;
-    margin-left: 8px;
     width: 150px;
 }
 
@@ -1584,12 +1609,16 @@ The z-index is very important.
 
 #codeSnippetEditor #snippetEditorClose {
     /* float: right; */
-    position: absolute;
+    /* position: absolute;
     right: 0;
-    top: 0;
-    height: 100%;
-    display: inline-block;
-    padding: 0 3px;
+    top: 0; */
+    
+  height: 30px;
+  width: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
 }
 
 #codeSnippetEditor #exportProject {
@@ -1606,8 +1635,9 @@ The z-index is very important.
 
 #codeSnippetEditor #snippetEditorClose:hover {
     /* background: linear-gradient(#fcbba1, #fc9272 80%); */
-    background: linear-gradient(#fc9272, #fcbba1 50%, #fc9272 90%);
+    /* background: linear-gradient(#fc9272, #fcbba1 50%, #fc9272 90%); */
     /* color: black; */
+    color: white;
 }
 
 #codeSnippetEditor #createNewScriptWrapper {
@@ -1646,8 +1676,10 @@ The z-index is very important.
 /* ============================ */
 
 #codeSnippetEditor #snippetEditor {
-    height: calc(100% - 100px);
-    border-radius: 10px;
+    flex: 1 0;
+
+    /* height: calc(100% - 100px); */
+    border-radius: 0 0 10px 10px;
     margin: 15px;
     box-sizing: border-box;
 }

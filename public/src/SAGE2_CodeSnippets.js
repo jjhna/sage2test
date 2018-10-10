@@ -963,9 +963,9 @@ let SAGE2_CodeSnippets = (function() {
 		});
 	}
 
-	function consoleLogToUser(...args) {
-		console.log("Send Log to:", this.uniqueID, this.snippetID, ...args);
-	}
+	// function consoleLogToUser(...args) {
+	// 	console.log("Send Log to:", this.uniqueID, this.snippetID, ...args);
+	// }
 
 	function throwErrorToUser(snippetID, err, uniqueID) {
 		console.log("Send Error to:", uniqueID, snippetID, err);
@@ -1036,6 +1036,7 @@ let SAGE2_CodeSnippets = (function() {
 				parent,
 				child,
 				transformID,
+				log: [],
 
 				inputs: {},
 				inputInit: {}
@@ -1089,6 +1090,27 @@ let SAGE2_CodeSnippets = (function() {
 				return self.inputInit;
 			}
 
+
+			function appendConsoleToLog(...args) {
+				self.log.push({
+					type: "console",
+					time: Date.now(),
+					content: args.map(a => a instanceof Object ? JSON.stringify(a).substring(0, 1500) : a).join(" ")
+				});
+
+				console.log(transformID, self.log);
+			}
+
+			function appendErrorToLog(err) {
+				self.log.push({
+					type: "error",
+					time: Date.now(),
+					content: err
+				});
+
+				console.log(transformID, self.log);
+			}
+
 			/**
 			 * Handles passing information between applications and calling functions based on
 			 * the function type. This function is used to update all children of an app when the app is updated.
@@ -1101,12 +1123,9 @@ let SAGE2_CodeSnippets = (function() {
 				let id = self.transformID;
 
 				let logger = {
-					log: consoleLogToUser.bind({snippetID: id, uniqueID: curator.functions[id].editor})
+					// log: consoleLogToUser.bind({snippetID: id, uniqueID: curator.functions[id].editor})
+					log: appendConsoleToLog
 				};
-
-				console.log(p, c, id);
-
-				console.log(curator.functions);
 
 				if (curator.functions[id].type === "data" && p) {
 					// call function (calculates new dataset and updates child)
@@ -1115,6 +1134,8 @@ let SAGE2_CodeSnippets = (function() {
 						c.updateDataset(result);
 					} catch (err) {
 						c.displayError(err);
+
+						appendErrorToLog(err);
 					}
 				} else if (curator.functions[id].type === "draw" && p) {
 					// call function (plots data on svg)
@@ -1126,6 +1147,8 @@ let SAGE2_CodeSnippets = (function() {
 						c.updateAncestorTree();
 					} catch (err) {
 						c.displayError(err);
+
+						appendErrorToLog(err);
 					}
 				} else if (curator.functions[id].type === "gen") {
 					// call function (this returns a promise)
@@ -1136,6 +1159,8 @@ let SAGE2_CodeSnippets = (function() {
 						})
 						.catch(err => {
 							c.displayError(err);
+
+							appendErrorToLog(err);
 						});
 				}
 			}
