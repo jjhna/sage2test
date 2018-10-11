@@ -52,6 +52,20 @@
             font-family: Helvetica, sans-serif;
             margin-top: 5px;
             position: absolute;
+            right: 100px;
+            background-color:#49ab81;
+            border:3px solid #398564;
+            display:inline-block;
+            cursor:pointer;
+            color:#ffffff;
+            padding:9px 23px;
+            text-decoration:none;
+            text-shadow:0 1px 0 #5b8a3c;
+        }
+        .myButton3 {
+            font-family: Helvetica, sans-serif;
+            margin-top: 5px;
+            position: absolute;
             right: 9px;
             background-color:#49ab81;
             border:3px solid #398564;
@@ -84,7 +98,8 @@
 
         <section class="siteType">
             <a onclick="Editor_cancel()" class="myButton1">Cancel</a>
-            <a onclick="Editor_save()" class="myButton2">Save</a>
+            <a onclick="Editor_save(true)" class="myButton2">Save and Make Self-Signed Certificates</a>
+            <a onclick="Editor_save()" class="myButton3">Save</a>
         </section>
 
 
@@ -95,13 +110,13 @@
         history.back();
         return false;
     }
-    function Editor_save() {
+    function Editor_save(selfSign = false) {
         console.log('saving...');
 
         // Create a PUT request to the SAGE2 server
         var xhr = new XMLHttpRequest();
-        // Specify the destination filename
-        xhr.open("PUT", "/upload?action=" + action, true);
+				// Specify the destination filename
+				xhr.open("PUT", "/upload?selfSign=" + selfSign + "&action=" + action, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 // All done
