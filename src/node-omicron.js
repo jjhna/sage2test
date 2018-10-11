@@ -818,17 +818,6 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 			omicronManager.pointerRelease(wandID, posX, posY, { button: "left" });
 		}
 
-		// Play / P
-		if ((e.flags & playButton) === playButton &&
-			(lastButtonState & playButton) === 0) {
-
-			omicronManager.keyDown(wandID, posX, posY, { code: 80 });
-		} else if ((e.flags & playButton) === 0 &&
-			(lastButtonState & playButton) === playButton) {
-
-			omicronManager.keyUp(wandID, posX, posY, { code: 80 });
-		}
-
 		// Menu / Right Click
 		if ((e.flags & menuButton) === menuButton &&
 			(lastButtonState & menuButton) === 0) {
@@ -840,7 +829,19 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 			omicronManager.pointerRelease(wandID, posX, posY, { button: "right" });
 		}
 
+		// Wand in application interaction mode --------------------------------------------
 		if (omicronManager.wandState[wandID].mode === "app") {
+			// Play / P
+			if ((e.flags & playButton) === playButton &&
+				(lastButtonState & playButton) === 0) {
+
+				omicronManager.keyDown(wandID, posX, posY, { code: 80 });
+			} else if ((e.flags & playButton) === 0 &&
+				(lastButtonState & playButton) === playButton) {
+
+				omicronManager.keyUp(wandID, posX, posY, { code: 80 });
+			}
+
 			// Previous / Left Arrow
 			if ((e.flags & previousButton) === previousButton &&
 				(lastButtonState & previousButton) === 0) {
@@ -872,6 +873,11 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 				(lastButtonState & scaleUpButton) === scaleUpButton) {
 
 				omicronManager.keyUp(wandID, posX, posY, { code: 38 });
+			} else if ((e.flags & scaleUpButton) === scaleUpButton &&
+				(lastButtonState & scaleUpButton) === scaleUpButton) {
+
+				// On button hold (Scrolling Webviews)
+				omicronManager.keyDown(wandID, posX, posY, { code: 38 });
 			}
 
 			// Down Arrow
@@ -883,8 +889,15 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 				(lastButtonState & scaleDownButton) === scaleDownButton) {
 
 				omicronManager.keyUp(wandID, posX, posY, { code: 40 });
+			} else if ((e.flags & scaleDownButton) === scaleDownButton &&
+				(lastButtonState & scaleDownButton) === scaleDownButton) {
+
+				// On button hold (Scrolling Webviews)
+				omicronManager.keyDown(wandID, posX, posY, { code: 40 });
 			}
+
 		} else {
+			// Wand in window manipulation mode -------------------------------------------
 			// Left Arrow
 			if ((e.flags & previousButton) === previousButton &&
 				(lastButtonState & previousButton) === 0) {
