@@ -148,8 +148,8 @@ class SnippetsVisElementRegExp extends RegExp {
 		let lastIndex = 0;
 		while ((result = this.exec(str))) {
 
-			// reconstruct code string with SAGE2.Input calls given an extra property of app reference
-			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, this)`;
+			// reconstruct code string with SAGE2.Input calls given an extra property of link reference
+			output += str.substring(lastIndex, result.index + result[0].length - 1) + `, link)`;
 			lastIndex = result.index + result[0].length;
 		}
 

@@ -80,20 +80,25 @@ var SAGE2 = SAGE2 || {};
 	 * Break parameters for the function into outputElement specification and parent element
 	 *
 	 */
-	SAGE2.SnippetVisElement = function(specification, app) {
+	SAGE2.SnippetVisElement = function(specification, link) {
 		let {type} = specification;
 
-		if (app.snippetVisElement && app.snippetsVisElement.tagName !== type) {
-			app.snippetsVisElement.remove();
-			delete app.snippetsVisElement;
+		let view = link.getChild();
+
+		if (view.snippetVisElement && view.snippetsVisElement.tagName !== type) {
+			view.snippetsVisElement.remove();
+			delete view.snippetsVisElement;
 		}
 
+		let { width, height } = view.getDimensions();
+
 		// set size to leave space for the inputs
-		let elementWidth = app.state.inputsOpen ? app.sage2_width - 300 : app.sage2_width;
+		let elementWidth = width;
+		// let elementWidth = app.state.inputsOpen ? app.sage2_width - 300 : app.sage2_width;
 
 		// if the app doesn't have a vis element, create one
-		if (!app.snippetsVisElement) {
-			app.snippetsVisElement = d3.select(app.content)
+		if (!view.snippetsVisElement) {
+			view.snippetsVisElement = d3.select(view.getElem())
 				.append(type)
 				.style("position", "absolute")
 				// .style("top", ui.titleBarHeight * 2 + "px")
@@ -101,23 +106,29 @@ var SAGE2 = SAGE2 || {};
 				.style("box-sizing", "border-box").node();
 		}
 		// in all cases, reset the size of the vis element
-		d3.select(app.snippetsVisElement).each(function() {
+		d3.select(view.snippetsVisElement).each(function() {
 			if (type === "svg") {
 				d3.select(this)
 					.attr("width", elementWidth)
-					.attr("height", app.sage2_height - (ui.titleBarHeight * 1.5));
+					.attr("height", height - ui.titleBarHeight);
 			} else {
 				d3.select(this)
 					.style("width", (elementWidth) + "px")
-					.style("height", (app.sage2_height - (ui.titleBarHeight * 1.5)) + "px");
+					.style("height", height - ui.titleBarHeight + "px");
 			}
 		});
 
 		return {
-			elem: app.snippetsVisElement,
+			elem: view.snippetsVisElement,
 			width: elementWidth,
-			height: app.sage2_height - ui.titleBarHeight * 1.5
+			height: height - ui.titleBarHeight
 		};
+
+		// return {
+		// 	elem: app.snippetsVisElement,
+		// 	width: elementWidth,
+		// 	height: app.sage2_height - ui.titleBarHeight * 1.5
+		// };
 	};
 
 	/*

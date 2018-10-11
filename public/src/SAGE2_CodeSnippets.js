@@ -283,9 +283,10 @@ let SAGE2_CodeSnippets = (function() {
 		}
 
 		self.functions[id] = {
-			filename,
+			src: filename,
 			type: func.type,
 			desc: func.desc,
+			editor: null,
 			creator: func.creator || "unknown",
 			links: []
 		};
@@ -354,6 +355,7 @@ let SAGE2_CodeSnippets = (function() {
 	 */
 	function notifySnippetClosed(scriptID) {
 		self.functions[scriptID].editor = null;
+		console.log(self.functions);
 
 		// broadcast update of function states
 		if (isMaster) {
@@ -517,36 +519,38 @@ let SAGE2_CodeSnippets = (function() {
 
 	function handleLoadedApplication(app) {
 		// call required function, update reference
-		if (app.application === "Snippets_Vis") {
-			let primedLink = self.pendingVisLinks.pop();
+		// if (app.application === "Snippets_Vis") {
+		// 	let primedLink = self.pendingVisLinks.pop();
 
-			if (primedLink.getParent()) {
-				primedLink.getParent().addChildLink(primedLink);
-			}
+		// 	if (primedLink.getParent()) {
+		// 		primedLink.getParent().addView(primedLink);
+		// 	}
 
-			app.setParentLink(primedLink);
+		// 	app.setParentLink(primedLink);
 
-			primedLink.setChild(app);
-			primedLink.update();
+		// 	primedLink.setChild(app);
+		// 	primedLink.update();
 
-			// fix reference
-			self.outputApps[app.state.snippetsID] = app;
+		// 	// fix reference
+		// 	self.outputApps[app.state.snippetsID] = app;
 
-		} else if (app.application === "Snippets_Data") {
-			let primedLink = self.pendingDataLinks.pop();
+		// } else if (app.application === "Snippets_Data") {
 
-			if (primedLink.getParent()) {
-				primedLink.getParent().addChildLink(primedLink);
-			}
+		let primedLink = self.pendingDataLinks.pop();
 
-			app.setParentLink(primedLink);
-
-			primedLink.setChild(app);
-			primedLink.update();
-
-			// fix reference
-			self.outputApps[app.state.snippetsID] = app;
+		if (primedLink.getParent()) {
+			primedLink.getParent().addChildLink(primedLink);
 		}
+
+		app.setParentLink(primedLink);
+
+		primedLink.setChild(app);
+		primedLink.update();
+
+		// fix reference
+		self.outputApps[app.state.snippetsID] = app;
+
+		// }
 
 		updateSavedSnippetAssociations();
 	}
@@ -682,17 +686,21 @@ let SAGE2_CodeSnippets = (function() {
 				.attr("width", height - 16)
 				.attr("height", height - 16)
 				.on("click", function() {
-					if (!app.state.inputsOpen) {
-						app.inputsClosedHeight = app.sage2_height;
+					// TODO: update this with new structure
 
-						let newHeight = Math.max(app.sage2_height, app.inputs.clientHeight);
+					console.log("Toggle inputs", app);
 
-						app.state.inputsOpen = true;
-						app.sendResize(app.sage2_width + 300, newHeight);
-					} else {
-						app.state.inputsOpen = false;
-						app.sendResize(app.sage2_width - 300, app.inputsClosedHeight ? app.inputsClosedHeight : app.sage2_height);
-					}
+					// if (!app.state.inputsOpen) {
+					// 	app.inputsClosedHeight = app.sage2_height;
+
+					// 	let newHeight = Math.max(app.sage2_height, app.inputs.clientHeight);
+
+					// 	app.state.inputsOpen = true;
+					// 	app.sendResize(app.sage2_width + 300, newHeight);
+					// } else {
+					// 	app.state.inputsOpen = false;
+					// 	app.sendResize(app.sage2_width - 300, app.inputsClosedHeight ? app.inputsClosedHeight : app.sage2_height);
+					// }
 				});
 		}
 
@@ -779,12 +787,17 @@ let SAGE2_CodeSnippets = (function() {
 			self.functions[snippetID].links.push(linkID);
 
 			if (snippet.type === "draw") {
-				let snippetsID = "vis-" + self.visCount++;
+				// maybe don't need this ID anymore?
+				let viewID = "vis-" + self.visCount++;
 
-				// get link ready for application finish
-				self.pendingVisLinks.push(newLink);
+				let newView = parent.addView(viewID, newLink);
+				console.log("New View:", newView);
 
-				createVisApplication(snippetsID);
+				newView.updateTitle(self.functions[snippetID].desc);
+
+				// newLink.setChild(newView);
+
+				newLink.update();
 			} else {
 				let snippetsID = "data-" + self.dataCount++;
 
@@ -793,6 +806,22 @@ let SAGE2_CodeSnippets = (function() {
 
 				createDataApplication(snippetsID);
 			}
+
+			// if (snippet.type === "draw") {
+			// 	let snippetsID = "vis-" + self.visCount++;
+
+			// 	// get link ready for application finish
+			// 	self.pendingVisLinks.push(newLink);
+
+			// 	createVisApplication(snippetsID);
+			// } else {
+			// 	let snippetsID = "data-" + self.dataCount++;
+
+			// 	// get link ready for application finish
+			// 	self.pendingDataLinks.push(newLink);
+
+			// 	createDataApplication(snippetsID);
+			// }
 		} else {
 			self.links[Object.keys(self.links)[linkIndex]].update();
 		}
@@ -1144,7 +1173,7 @@ let SAGE2_CodeSnippets = (function() {
 						c.errorBox.style.display = "none";
 
 						curator.functions[id].code.call(c, p.getDataset(), publicObject, logger);
-						c.updateAncestorTree();
+						// c.updateAncestorTree();
 					} catch (err) {
 						c.displayError(err);
 
