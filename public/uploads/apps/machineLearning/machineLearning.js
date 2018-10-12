@@ -26,6 +26,7 @@ var oldHandsDistance = 0;
 var dragHoldX = 0;
 var dragHoldY = 0;
 
+var rightFootCalibration = [0,0,0];
 
 let previousIDs = [];
 const bodyParts = {
@@ -235,6 +236,7 @@ var machineLearning = SAGE2_App.extend( {
 
 		this.textToDraw = "waiting for kinect input... ";
 
+		this.rightFootCalibration = [0,0,0];
 		this.skeletons = {};
 		this.speechEvents = [];
 
@@ -285,6 +287,7 @@ var machineLearning = SAGE2_App.extend( {
 			//"minY": -0.92, // meters
 			//"maxY": 0.92, // meters + 0.58 meters
 			//didn't change
+			//updated
 			"minY": -1.21, // meters
 			"maxY": 1.21, // meters + 0.58 meters
 
@@ -297,14 +300,22 @@ var machineLearning = SAGE2_App.extend( {
 			"kinectToCenterOfScreenHorizontal": 0.0, // meters
 
 			"lengthFromDisplayToKinectGroundIntersect": 4.00, // meters
-			"angleFromKinectToDisplay": 63, // degrees
+			"angleFromKinectToDisplay": 63, // degrees ///NEW ANGLE: 43 degrees
 
 			"rotationMatrix": [
 				1.0, 0.0, 0.0, 0.0,
-				0.0, 0.891, 0.454, 0.0,
-				0.0, -0.454, 0.891, 0.0,
+				0.0, 0.682, 0.731, 0.0,
+				0.0, -0.731, 0.682, 0.0,
 				0.0, 0.0, 0.0, 1.0
 			]
+
+			//Old
+		//	"rotationMatrix": [
+		//		1.0, 0.0, 0.0, 0.0,
+		//		0.0, 0.891, 0.454, 0.0,
+		//		0.0, -0.454, 0.891, 0.0,
+		//		0.0, 0.0, 0.0, 1.0
+		//	]
 		};
 
 		// Math.seed(date);
@@ -726,6 +737,9 @@ drawSkeletonLines: function(){
 			// draw trial number
 			this.ctx.fillStyle = "white";
 			this.ctx.fillText("Trial: " + this.trialNumber, 30, 20);
+			this.ctx.fillText("Right foot: " + this.rightFootCalibration,500, 100);
+
+			//HERE I GO
 
 			// filter out skeletons that haven't been updated in over 1 second
 			this.skeletons = _.pickBy(this.skeletons, function (skeleton) {
@@ -1332,6 +1346,9 @@ drawSkeletonLines: function(){
 					//console.log(bodyPartName);
 					if( bodyPartName == "rightFoot"){
 						console.log( "x " +  bodyPart.x + " y " + bodyPart.y + " z " + bodyPart.z  );
+						this.rightFootCalibration[0] = bodyPart.x;
+						this.rightFootCalibration[1] = bodyPart.y;
+						this.rightFootCalibration[2] = bodyPart.z;
 					}
 
 					this.skeletons[skeletonID][bodyPartName] = {};
