@@ -336,8 +336,8 @@ HttpServer.prototype.onreq = function(req, res) {
 			var header = this.buildHeader();
 
 			if (path.extname(pathname) === ".html") {
-				if (pathname.endsWith("public/index.html") ||
-				    pathname.endsWith("public/session.html")
+				if (pathname === path.resolve("public/index.html") ||
+				    pathname === path.resolve("public/session.html")
 				) {
 					// Allow embedding the UI page
 					delete header['X-Frame-Options'];
