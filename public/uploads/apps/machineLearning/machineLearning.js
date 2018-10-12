@@ -212,6 +212,7 @@ const bodyParts = {
 //kinect App
 var machineLearning = SAGE2_App.extend( {
 	init: function(data) {
+
 		// Create div into the DOM
 		this.SAGE2Init("canvas", data);
 		// Set the background to black
@@ -483,7 +484,7 @@ var machineLearning = SAGE2_App.extend( {
 	// 	this.ctx.stroke();
 	// },
 drawSkeletonLines: function(){
-
+//	console.log("drawing skeleton");
 	for (const skeletonID in this.skeletons) {
 		const skeleton = this.skeletons[skeletonID];
 
@@ -749,7 +750,9 @@ drawSkeletonLines: function(){
 	//---------- DRAWING FUNCTIONS ----------//
 	//---------------------------------------//
 	draw: function(date) {
+		//	console.log("draw in machine learning");
 		if(this.skeletons){
+		//	console.log("draw skeleton");
 			//josh and joe - remove kinect pointers from inactive skeletons
 			let curIDs = Object.keys(this.skeletons);
 			if(curIDs.length !== previousIDs.length){
@@ -1283,6 +1286,7 @@ drawSkeletonLines: function(){
 	},
 
 	event: function(eventType, position, user_id, data, date) {
+		console.log(eventType);
 		const skeletonColors = ["red", "blue", "green", "orange", "pink"];
 
 		if (eventType == "pointerPress"){

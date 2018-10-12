@@ -33,29 +33,17 @@
 		viewing_distance: 4
 	},
 	resolution: {
-		width: 1366,//7680,
-		height: 2304//2100
+		width: 5440, //1366,//7680,
+		height: 3072 //2304//2100
 	},
 	layout: {
 		rows: 1,
-		columns: 4
+		columns: 1
 	},
 	displays: [
 		{
 			row: 0,
 			column: 0
-		},
-		{
-			row: 0,
-			column: 1
-		},
-		{
-			row: 0,
-			column: 2
-		},
-		{
-			row: 0,
-			column: 3
 		}
 	],
 	alternate_hosts: [

@@ -1,8 +1,8 @@
 {
 	"main_script": "machineLearning.js",
 	"icon": "machineLearning.png",
-	"width": 5464,
-	"height": 2304,
+	"width": 5440,
+	"height": 3072,
 	"resize": "free",
 	"animation": true,
 	"dependencies": [

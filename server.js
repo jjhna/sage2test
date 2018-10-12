@@ -10425,7 +10425,7 @@ function handleNewApplication(appInstance, videohandle) {
 	appInstance.data.pointersOverApp = [];
 
 
-	
+
 	// // handle parent/children
 	// if (isAChildApp(appId)) {
 	// 	sendChildMonitoringEvent(getParentApp(appId), appId, "childCloseEvent", {});
@@ -10696,9 +10696,10 @@ omicronManager.setCallbacks(
 	keyUp,
 	keyPress,
 	createRadialMenu,
-		sendKinectInput,
+	//	sendKinectInput,
 	omi_pointerChangeMode,
-	undefined, // sendKinectInput
+	sendKinectInput,
+//	undefined, // sendKinectInput
 	remoteInteraction);
 omicronManager.linkDrawingManager(drawingManager);
 
