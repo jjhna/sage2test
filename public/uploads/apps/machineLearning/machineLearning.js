@@ -275,19 +275,23 @@ var machineLearning = SAGE2_App.extend( {
 		//	0 cos-27 -sin-27 0
 		//	0 sin-27 cos-27 0
 		//	0 0 0 1.0]
+
+		//New
+
 		this.physicalSpace = {
 			"minX": -2.0, // meters
 			"maxX": 2.0, // meters
 
 			//"minY": -0.92, // meters
 			//"maxY": 0.92, // meters + 0.58 meters
+			//didn't change
 			"minY": -1.21, // meters
 			"maxY": 1.21, // meters + 0.58 meters
 
 
-			"heightOfKinect": 2.04, // meters
+			"heightOfKinect": 2.58,//2.04, // meters
 			//"kinectToCenterOfScreenVertical":1.0,// 0.92, // meters
-			"kinectToCenterOfScreenVertical":1.29,// 0.92, // meters
+			"kinectToCenterOfScreenVertical":1.16, //1.29,// 0.92, // meters
 
 			//"kinectToCenterOfScreenHorizontal": 0.06, // meters
 			"kinectToCenterOfScreenHorizontal": 0.0, // meters
@@ -485,6 +489,7 @@ var machineLearning = SAGE2_App.extend( {
 	// },
 drawSkeletonLines: function(){
 //	console.log("drawing skeleton");
+
 	for (const skeletonID in this.skeletons) {
 		const skeleton = this.skeletons[skeletonID];
 
@@ -1286,7 +1291,7 @@ drawSkeletonLines: function(){
 	},
 
 	event: function(eventType, position, user_id, data, date) {
-		console.log(eventType);
+//		console.log(eventType);
 		const skeletonColors = ["red", "blue", "green", "orange", "pink"];
 
 		if (eventType == "pointerPress"){
@@ -1321,8 +1326,14 @@ drawSkeletonLines: function(){
 			for (const bodyPartID in data) {
 				const bodyPart = data[bodyPartID];
 
+
 				if (bodyParts[bodyPartID]) {
 					const bodyPartName = bodyParts[bodyPartID].partName;
+					//console.log(bodyPartName);
+					if( bodyPartName == "rightFoot"){
+						console.log( "x " +  bodyPart.x + " y " + bodyPart.y + " z " + bodyPart.z  );
+					}
+
 					this.skeletons[skeletonID][bodyPartName] = {};
 					this.skeletons[skeletonID][bodyPartName].x = this.element.width/2.0+bodyPart.x*this.element.width;
 					this.skeletons[skeletonID][bodyPartName].y = this.element.height/2.0-bodyPart.y*this.element.height;

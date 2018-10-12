@@ -585,7 +585,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		if (this.kinectInput != undefined && e.extraDataItems == 29) {
 			if (omicronManager.eventDebug) {
 				sageutils.log('Omicron', "Kinect body " + sourceID +
-					" head Pos: (" + e.posx + ", " + e.posy + "," + e.posz + ")");
+					" head Pos: (" + e.posx + ", " + e.posy + "," + e.posz + ") orientation? (" + 	e.orx + "," + e.ory + "," + e.orz + "," + e.orw  + ")" );
 			}
 
 			var extraData = [];
