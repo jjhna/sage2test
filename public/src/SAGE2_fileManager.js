@@ -2249,12 +2249,29 @@ function FileManager(wsio, mydiv, uniqueID) {
 		});
 
 		// Add the remote sites link into the top menubar
+		var remote_menu = $$('topmenu').getSubMenu('remote_menu');
 		this.json_cfg.remote_sites.forEach(function(site, i, arr) {
 			// if we have a valid definition of a remote site (host, port and name)
 			if (site.host && site.port && site.name) {
+				// Add the menu entry with a link to the remote UI
+				remote_menu.add({
+					// use id as an index
+					id: i.toString(),
+					config: {autowidth: true, zIndex: 9000},
+					value: site.name,
+					tooltip: "Opens the UI for " + site.name
+				});
+			}
+		});
+		// Attach the callbacks on the remote site menu items
+		remote_menu.attachEvent("onItemClick", function (act, evt, node) {
+			// retrieve the index from the id
+			let idx = parseInt(act);
+			let site = _this.json_cfg.remote_sites[idx];
+			if (site.host && site.port && site.name) {
 				// Build the UI URL
-				var protocol  = (site.secure === true) ? "https" : "http";
-				var remoteURL = protocol + "://" + site.host + ":" + site.port;
+				let protocol  = (site.secure === true) ? "https" : "http";
+				let remoteURL = protocol + "://" + site.host + ":" + site.port;
 				// pass the password or hash to the URL
 				if (site.password) {
 					remoteURL += '/session.html?page=index.html?session=' + site.password;
@@ -2263,16 +2280,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 				} else {
 					remoteURL += '/index.html';
 				}
-				// Add the menu entry with a link to the remote UI
-				$$('topmenu').getSubMenu('remote_menu').add({
-					id: "remotesite_" + i,
-					tooltip: remoteURL,
-					config: {autowidth: true, zIndex: 9000},
-					value: site.name,
-					// when clicked, open the remote UI in a new tab
-					href: remoteURL,
-					target: "_blank"
-				});
+				// when clicked, open the remote UI in a new tab
+				window.open(remoteURL, '_blank');
 			}
 		});
 
