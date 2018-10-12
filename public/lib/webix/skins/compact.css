@@ -1,6 +1,6 @@
 /*
 @license
-webix UI v.5.3.0
+webix UI v.5.4.0
 This software is allowed to use under GPL or you need to obtain Commercial License 
  to use it in non-GPL project. Please contact sales@webix.com for details
 */
@@ -8,7 +8,7 @@ This software is allowed to use under GPL or you need to obtain Commercial Licen
 .webix_view.webix_form{background-color:#fff}
 body{-webkit-tap-highlight-color:transparent!important}
 .webix_abslayout{position:relative}
-.webix_abslayout>.webix_view{position:absolute}
+.webix_abslayout>.webix_view{position:absolute!important}
 .webix_layout_space,.webix_layout_wide{background-color:#ddd}
 .webix_layout_accordion,.webix_layout_clean,.webix_layout_line,.webix_multiview{background:0 0}
 .webix_overlay{width:100%;height:100%;position:absolute;z-index:10;text-align:center;padding-top:10px}
@@ -156,7 +156,7 @@ x\:ui{display:none}
 .webix_unit_header{padding:0 10px;line-height:19px;text-align:left;background-color:#d2e3ef}
 .webix_list-x .webix_list_item{display:inline-block;vertical-align:top;border-right:1px solid #ebebeb;border-bottom:none;border-color:#ebebeb}
 .webix_list-x .webix_list_item.webix_selected{border-left:1px solid #ebebeb;border-right:1px solid #ebebeb;padding-left:9px}
-.webix_list-x .webix_scroll_cont{display:inline}
+.webix_list-x .webix_scroll_cont{display:inline-block}
 .webix_view.webix_list-x{white-space:nowrap}
 .webix_list_item.webix_disabled{color:#8b949e}
 .webix_list_item.webix_disabled .webix_submenu_icon{visibility:hidden}
@@ -1014,8 +1014,8 @@ div.webix_item_tab.webix_selected{padding-top:2px}
 .webixtype_next:focus,.webixtype_next:focus+.webixtype_next_arrow,.webixtype_prev:focus,.webixtype_prev:focus+.webixtype_prev_arrow{background-color:#2489cc}
 .webixtype_next:hover,.webixtype_next:hover+.webixtype_next_arrow,.webixtype_prev:hover,.webixtype_prev:hover+.webixtype_prev_arrow{background-color:#268fd5}
 .webix_el_box .webixtype_form{font-size:13px;padding:auto 6px;font-family:'PT Sans',Tahoma;border:1px solid #3498db;outline:0;background:#27ae60;color:#fff;border-color:#27ae60;border-bottom:1px solid #209150;box-shadow:none}
-.webix_inp_counter_next:hover,.webix_inp_counter_prev:hover,.webix_input_icon:hover,.webix_segment_0:hover,.webix_segment_1:hover,.webix_segment_N:hover,.webixbutton:hover,.webixtype_base:hover{background-color:#268fd5}
-.webix_inp_counter_next:active,.webix_inp_counter_prev:active,.webix_input_icon:active,.webix_segment_0:active,.webix_segment_1:active,.webix_segment_N:active,.webixbutton:active,.webixtype_base:active{background-color:#2489cc;box-shadow:inset 0 3px 5px rgba(0,0,0,.125)}
+.webix_inp_counter_next:hover,.webix_inp_counter_prev:hover,.webix_segment_0:hover,.webix_segment_1:hover,.webix_segment_N:hover,.webixbutton:hover,.webixtype_base:hover{background-color:#268fd5}
+.webix_inp_counter_next:active,.webix_inp_counter_prev:active,.webix_segment_0:active,.webix_segment_1:active,.webix_segment_N:active,.webixbutton:active,.webixtype_base:active{background-color:#2489cc;box-shadow:inset 0 3px 5px rgba(0,0,0,.125)}
 .webix_el_text .webix_input_icon:active,.webix_el_text .webix_input_icon:hover{color:#3498db;background:inherit;cursor:pointer}
 .webix_inp_counter_next:focus,.webix_inp_counter_prev:focus,.webix_segment_0:focus,.webix_segment_1:focus,.webix_segment_N:focus,.webixbutton:focus,.webixtype_base:focus{background-color:#2489cc}
 .webix_selected.webix_segment_0:hover,.webix_selected.webix_segment_1:hover,.webix_selected.webix_segment_N:hover{background-color:#239d57}
