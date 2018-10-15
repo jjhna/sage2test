@@ -406,6 +406,7 @@ console.log("debugDatagram: "+ data);
 			//this.closeChild(this.getNumberOfChildren()-1); //right now we just close the last one, later will use a unique id of the vis
 		}
 		else if (specificationObj["request"] == "close.01"){
+			console.log("CLOSE");
 			for(var key in this.childList)
 			{
 				if(this.childList[key].childId == this.targetAppID)
