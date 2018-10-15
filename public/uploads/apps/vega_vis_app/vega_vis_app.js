@@ -37,6 +37,7 @@ var vega_vis_app = SAGE2_App.extend( {
 		this.initBarSpec();
 		this.initLineSpec();
 
+		this.updateTitle(this.state.title);
 		//access the data from the articualte ui that we need to draw this properly
 		//and then overwrite the default values in the app
 		if(this.state.type == "bar"){

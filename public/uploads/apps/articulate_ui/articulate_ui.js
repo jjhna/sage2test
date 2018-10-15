@@ -235,10 +235,10 @@ console.log("debugDatagram: "+ data);
 		//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
 
 		//only send url and the index of the request
-		if( isMaster ){
+		//if( isMaster ){
 			console.log("ABOUT TO CONTACT ARTICULATE HUB")
 			this.contactArticulateHub(base_url+data.text, requestIndex - 1);  //send to the articulate hub
-		}
+		//}
 		//----------------------------------------
 
 		//if( isMaster ){
@@ -431,8 +431,10 @@ console.log("debugDatagram: "+ data);
 		}
 		else // else make a vis!
 		{
+			title = specificationObj["plotTitle"];
+
 			type = specificationObj["plotType"].toLowerCase(); //what kind of plot: bar chart, map, line chart
-			x = specificationObj["horizontalGroupAxis"].toLowerCase();
+			x = specificationObj["horizontalGroupAxis"].toLowerCase();//changed: specificationObj["horizontalGroupAxis"].toLowerCase()
 			y = specificationObj["verticalAxis"].toLowerCase();
 			hub_id = specificationObj["id"];
 			id = null;//specificationObj["id"]; //not using right now...
@@ -505,7 +507,7 @@ console.log("debugDatagram: "+ data);
 					value: 20,
 					data: dataToVisualize, //here is where I send the locations and number of crimes at this location, which came from the nlp smart hub
 					maxValue: maxVal,
-					title: "visualization response"
+					title: plotTitle
 				};
 			}
 			else if( type == "bar" ){
@@ -550,6 +552,7 @@ console.log("debugDatagram: "+ data);
 
 				initState = {  // the vis app will get these values and use them to draw appropriately
 					value: 10,
+					title: plotTitle,
 					type: type.toLowerCase(),  //what kind of chart: bar or line
 					x: x.toLowerCase(), //x axis for the bar chart
 					y: y.toLowerCase(), //y axis for the bar chart (usually counts in our case)
@@ -608,6 +611,7 @@ console.log("debugDatagram: "+ data);
 				initState = {  // these values will load on child app init
 					value: 10, //not used
 					type: type.toLowerCase(), //line chart
+					title: plotTitle,
 					x: x.toLowerCase(),//x axis (like years)
 					y: y.toLowerCase(), //y axis (usually counts)
 					id: id, //what are the lines
