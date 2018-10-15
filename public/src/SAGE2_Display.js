@@ -21,8 +21,6 @@
 /* global SAGE2RemoteSitePointer */
 /* global process */
 
-/* global require */
-
 "use strict";
 
 /**
@@ -168,8 +166,14 @@ function setupFocusHandlers() {
 	});
 
 	if (__SAGE2__.browser.isElectron) {
+		// Get the version number for Electron
+		let electronVersion = process.versions.electron;
+		// Parse the string and get the Major version number
+		let majorVersion = parseInt(electronVersion.split('.')[0]);
+		let electron = require('electron');
+
 		// Display warning messages from the 'Main' Electron process
-		require('electron').ipcRenderer.on('warning', function(event, message) {
+		electron.ipcRenderer.on('warning', function(event, message) {
 			var problemDialog = ui.buildMessageBox('problemDialog', message);
 			ui.main.appendChild(problemDialog);
 			document.getElementById('problemDialog').style.display = "block";
@@ -180,21 +184,28 @@ function setupFocusHandlers() {
 		});
 
 		// Receive hardware info from the main process (electron node)
-		require('electron').ipcRenderer.on('hardwareData', function(event, message) {
+		electron.ipcRenderer.on('hardwareData', function(event, message) {
 			if (wsio !== undefined) {
 				// and send it to the server
 				wsio.emit('displayHardware', message);
 			}
 		});
 		// Receive performance info from the main process (electron node)
-		require('electron').ipcRenderer.on('performanceData', function(event, message) {
+		electron.ipcRenderer.on('performanceData', function(event, message) {
 			if (wsio !== undefined) {
 				// Add renderer process load info
-				var procMem = process.getProcessMemoryInfo();
 				var procCPU = process.getCPUUsage();
-				message.processLoad.memResidentSet += procMem.workingSetSize;
-				message.processLoad.memPercent += (procMem.workingSetSize / message.mem.total) * 100;
 				message.processLoad.cpuPercent += procCPU.percentCPUUsage;
+
+				if (majorVersion < 4) {
+					// for version 3 and below
+					var procMem = process.getProcessMemoryInfo();
+					message.processLoad.memResidentSet += procMem.workingSetSize;
+					message.processLoad.memPercent += (procMem.workingSetSize / message.mem.total) * 100;
+				} else {
+					// version 4 has new APIs
+					// ...
+				}
 				// and send it to the server
 				wsio.emit('performanceData', message);
 			}
