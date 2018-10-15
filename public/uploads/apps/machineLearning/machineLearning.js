@@ -1345,7 +1345,7 @@ drawSkeletonLines: function(){
 					const bodyPartName = bodyParts[bodyPartID].partName;
 					//console.log(bodyPartName);
 					if( bodyPartName == "rightFoot"){
-						console.log( "x " +  bodyPart.x + " y " + bodyPart.y + " z " + bodyPart.z  );
+						//console.log( "x " +  bodyPart.x + " y " + bodyPart.y + " z " + bodyPart.z  );
 						this.rightFootCalibration[0] = bodyPart.x;
 						this.rightFootCalibration[1] = bodyPart.y;
 						this.rightFootCalibration[2] = bodyPart.z;
