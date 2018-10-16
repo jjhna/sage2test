@@ -2432,9 +2432,134 @@ function loadSelectedFile() {
  * @param id {String} element to show
  */
 function showDialog(id) {
-	openDialog = id;
-	document.getElementById('blackoverlay').style.display = "block";
-	document.getElementById(id).style.display = "block";
+	if (id === 'uiNoteMaker') {
+		// Build a webix dialog
+		webix.ui({
+			view: "window",
+			id: "quicknote_window",
+			position: "center",
+			modal: true,
+			zIndex: "1999",
+			head: "Write a Quick Note",
+			borderless: false,
+			body: {
+				view: "form",
+				id: "quicknote_form",
+				width: 530,
+				padding: 5,
+				borderless: false,
+				elements: [
+					{
+						cols: [
+							{
+								view: "label",
+								width: 90,
+								label: "Color"
+							},
+							{
+								view: "colorboard",
+								id: "quicknote_color",
+								name: "color",
+								value: "#ffffe0",
+								width: 425,
+								height: 70,
+								cols: 6,
+								rows: 1,
+								palette: [
+									["#ffffe0", "#add8e6", "#ffb6c1", "#90ee90", "#ffa07a", "#dbdbdb"]
+								]
+							}
+						]
+					},
+					{
+						cols: [
+							{
+								view: "label",
+								width: 90,
+								label: "Anonymous"
+							},
+							{
+								// Text box
+								view: "checkbox",
+								id: "quicknote_anon",
+								name: "anon",
+								value: false
+							}
+						]
+					},
+					{
+						cols: [
+							{
+								view: "label",
+								width: 90,
+								label: "Note"
+							},
+							{
+								// Text box
+								view: "textarea",
+								value: "",
+								id: "quicknote_text",
+								name: "text",
+								height: 200,
+								placeholder: "Type note here..."
+							}
+						]
+					},
+					{
+						cols: [
+							{view: "button", value: "Close", click: function() {
+								this.getTopParentView().hide();
+							}},
+							{view: "button", value: "Make Note [Enter]", type: "form", click: function() {
+								// get the values from the form
+								let values = this.getFormView().getValues();
+								console.log('Values', values);
+								// Process values
+								// close the form
+								this.getTopParentView().hide();
+							}}
+						]
+					}
+				]
+			}
+		}).show();
+		// CSS tweaks on the text input area
+		$$('quicknote_text').getInputNode().style.color = "black";
+		$$('quicknote_text').getInputNode().style.fontFamily = "Oxygen Mono";
+		$$('quicknote_text').getInputNode().style.fontSize   = "18px";
+		$$('quicknote_text').getInputNode().setAttribute("spellcheck", "false");
+
+		$$("quicknote_color").attachEvent("onSelect", function (val, control, ev) {
+			if (val) {
+				// console.log('Selected', this.config.id, val);
+				$$('quicknote_text').getInputNode().style.backgroundColor = val;
+			}
+		});
+
+		// Attach handlers for keyboard
+		$$("quicknote_text").attachEvent("onKeyPress", function(code, e) {
+			// ESC closes
+			if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+				this.getTopParentView().hide();
+				return false;
+			}
+			// ENTER activates
+			if (code === 13 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+				let values = this.getFormView().getValues();
+				console.log('Enter', values);
+				// close the form
+				this.getTopParentView().hide();
+				return false;
+			}
+		});
+		// Focus the text box
+		$$('quicknote_text').focus();
+
+	} else {
+		openDialog = id;
+		document.getElementById('blackoverlay').style.display = "block";
+		document.getElementById(id).style.display = "block";
+	}
 }
 
 /**
@@ -2444,13 +2569,17 @@ function showDialog(id) {
  * @param id {String} element to show
  */
 function hideDialog(id) {
-	openDialog = null;
-	document.getElementById('blackoverlay').style.display = "none";
-	document.getElementById(id).style.display = "none";
-	document.getElementById('uiDrawZoneEraseReference').style.left = "-100px";
-	document.getElementById('uiDrawZoneEraseReference').style.top  = "-100px";
-	if (id == 'uiDrawZone') {
-		uiDrawZoneRemoveSelfAsClient();
+	if (id === 'uiNoteMaker') {
+		// nyi
+	} else {
+		openDialog = null;
+		document.getElementById('blackoverlay').style.display = "none";
+		document.getElementById(id).style.display = "none";
+		document.getElementById('uiDrawZoneEraseReference').style.left = "-100px";
+		document.getElementById('uiDrawZoneEraseReference').style.top  = "-100px";
+		if (id == 'uiDrawZone') {
+			uiDrawZoneRemoveSelfAsClient();
+		}
 	}
 }
 
@@ -3374,7 +3503,7 @@ function setNoteToMakeMode() {
 /**
  * This function is activated in 2 ways.
  * 1) User click the send button.
- * 2) User hits enter when making a note. This check is done in the noBackspace funciton.
+ * 2) User hits enter when making a note. This check is done in the noBackspace function.
  * When activated will make the packet to launch app. Collects values from tags on page.
  *
  * @method sendMessageMakeNote
@@ -3742,7 +3871,7 @@ function uiDrawSendLineCommand(xDest, yDest, xPrev, yPrev) {
 This function actually causes the line to appear on the canvas.
 Data packet sent by the doodle master app itself.
 
-This funciton activated by receiving that corresponding packet.
+This function activated by receiving that corresponding packet.
 
 Will need to be cleaned up later.
 data.params will match the doodle.js drawLined lineData parameter.
