@@ -439,10 +439,11 @@ var quickNote = SAGE2_App.extend({
 
 		let arrow = document.createElement("img");
 		arrow.style.position = "absolute";
-		arrow.style.top = "0px"; // keep aligned to top of window
+		arrow.style.top = 0; // keep aligned to top of window
 		// need to calculate size
-		arrow.style.height = ui.titleBarHeight * 2 + "px";
-		arrow.style.left = ui.titleBarHeight * -2 + "px"; // move it outside of the title bar
+		arrow.style.height = (ui.titleBarHeight * 1) + "px";
+		// move it outside of the title bar
+		arrow.style.left   = (ui.titleBarHeight * -1) + "px";
 		arrow.src = "images/quickNote_leftArrow.svg";
 
 		let titlebar = document.getElementById(this.id + "_title");
