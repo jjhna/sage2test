@@ -19,11 +19,6 @@ var quickNote = SAGE2_App.extend({
 		this.resizeEvents = "continuous"; // "onfinish";
 
 		this.element.id = "div" + data.id;
-		// this.element.style.background = "lightyellow";
-		this.element.style.fontSize   = ui.titleTextSize + "px";
-		// Using SAGE2 default mono font
-		this.element.style.fontFamily = "Oxygen Mono";
-		// Default starting attributes
 		this.backgroundChoice = "lightyellow";
 
 		// Separate div since the html will be contantly edited with showdown
@@ -35,12 +30,14 @@ var quickNote = SAGE2_App.extend({
 		this.markdownDiv.style.height   = "100%";
 		// padding: top, right, bottom, and left
 		// or global value, here 1/2 line
-		this.markdownDiv.style.padding  = "0.5em";
+		this.markdownDiv.style.padding = ui.titleTextSize + "px";
+		this.markdownDiv.style.margin = 0;
 		// Monospace font that we loaded
 		this.markdownDiv.style.fontFamily = "Oxygen Mono";
 		// Default font size based on SAGE2 settings
 		this.markdownDiv.style.fontSize = ui.titleTextSize + "px";
 		this.markdownDiv.style.boxSizing = "border-box";
+		this.markdownDiv.style.listStylePosition = "inside";
 		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
@@ -402,6 +399,7 @@ var quickNote = SAGE2_App.extend({
 			}
 		}
 		this.markdownDiv.style.fontSize = parseInt(ui.titleTextSize * this.state.scale) + "px";
+
 		this.getFullContextMenuAndUpdate();
 		this.SAGE2Sync(true);
 	},
