@@ -443,7 +443,6 @@ function SAGE2_init() {
 
 	// This will startup the uiNote and uiDraw sections of the UI.
 	setupAppContextMenuDiv();
-	setupUiNoteMaker();
 	setupUiDrawCanvas();
 }
 
@@ -1551,9 +1550,7 @@ function handleClick(element) {
 		// Finally show the dialog
 		showDialog('infoDialog');
 	} else if (element.id === "ezNote" || element.id === "ezNoteContainer" || element.id === "ezNoteLabel") {
-		setNoteToMakeMode();
 		noteMakerDialog('create');
-		// showDialog('uiNoteMaker');
 	} else if (element.id === "ezDraw" || element.id === "ezDrawContainer" || element.id === "ezDrawLabel") {
 		// clear drawzone
 		uiDrawCanvasBackgroundFlush('white');
@@ -2331,28 +2328,19 @@ function noBackspace(event) {
 		&& event.target.id.indexOf("Input") !== -1) {
 		// if a user hits enter within an appContextMenuEntry, it will cause the effect to happen
 		event.target.parentNode["buttonEffect" + event.target.id]();
-	} else if (event.ctrlKey && event.keyCode === 13 && event.target.id === "uiNoteMakerInputField") {
-		// ctrl + enter in note maker adds a line rather than send note
-		event.target.value += "\n";
-	} else if (event.shiftKey && event.keyCode === 13 && event.target.id === "uiNoteMakerInputField") {
-		// shift + enter adds a line
-	} else if (event.keyCode === 13 && event.target.id === "uiNoteMakerInputField") {
-		// if a user hits enter within an appContextMenuEntry, it will cause the effect to happen
-		sendMessageMakeNote();
-		event.preventDefault(); // prevent new line on next note
-	} else if (event.keyCode === 191 && event.shiftKey &&
-		(event.target.id === "uiNoteMakerInputField" || event.target.id.includes("appContextMenuEntry"))) {
-		// allow "?" within note creation and any of the right click menues
-	} else if (event.keyCode === 191 && event.shiftKey && event.type === "keydown" && !keyEvents) {
-		// if keystrokes not captured and pressing  down '?'
-		//    then show help
-		webix.modalbox({
-			title: "Mouse and keyboard operations",
-			buttons: ["Ok"],
-			text: "<img src=/images/cheat-sheet.jpg width=100%>",
-			width: "70%",
-			height: "50%"
-		});
+	} else if (event.key === '?' && event.type === "keydown" && !keyEvents) {
+		// if keystrokes not captured and pressing  down '?' then show help
+		// Dont do it for input elements and webix forms
+		if (!event.target.className.startsWith('webix') &&
+			event.target.nodeName !== "INPUT") {
+			webix.modalbox({
+				title: "Mouse and keyboard operations",
+				buttons: ["Ok"],
+				text: "<img src=/images/cheat-sheet.jpg width=100%>",
+				width: "70%",
+				height: "50%"
+			});
+		}
 	}
 	return true;
 }
@@ -2426,8 +2414,13 @@ function loadSelectedFile() {
 	}
 }
 
+
 /**
  * Open the quickNote form
+ * This function is activated in 2 ways.
+ * 1) User click the send button.
+ * 2) User hits enter when making a note. This check is done in the noBackspace function.
+ * When activated will make the packet to launch app. Collects values from tags on page.
  *
  * @method     noteMakerDialog
  * @param      {String}  mode    create or edit mode
@@ -2453,9 +2446,6 @@ function noteMakerDialog(mode, params, app) {
 		if (params.currentColorChoice) {
 			noteColor = params.currentColorChoice;
 		}
-		// if (params.currentContent) {
-		// 	noteText = params.currentContent;
-		// }
 	}
 
 	// Build a webix dialog
@@ -2465,7 +2455,7 @@ function noteMakerDialog(mode, params, app) {
 		position: "center",
 		modal: true,
 		zIndex: "1999",
-		head: "Write a Quick Note",
+		head: "Write a Quick Note <i>(text or markdown syntax)</i>",
 		borderless: false,
 		body: {
 			view: "form",
@@ -2474,6 +2464,22 @@ function noteMakerDialog(mode, params, app) {
 			padding: 5,
 			borderless: false,
 			elements: [
+				{
+					cols: [
+						{
+							view: "label",
+							width: 90,
+							label: "Anonymous"
+						},
+						{
+							// Text box
+							view: "checkbox",
+							id: "quicknote_anon",
+							name: "anon",
+							value: isAnon
+						}
+					]
+				},
 				{
 					cols: [
 						{
@@ -2501,22 +2507,6 @@ function noteMakerDialog(mode, params, app) {
 						{
 							view: "label",
 							width: 90,
-							label: "Anonymous"
-						},
-						{
-							// Text box
-							view: "checkbox",
-							id: "quicknote_anon",
-							name: "anon",
-							value: isAnon
-						}
-					]
-				},
-				{
-					cols: [
-						{
-							view: "label",
-							width: 90,
 							label: "Note"
 						},
 						{
@@ -2532,59 +2522,69 @@ function noteMakerDialog(mode, params, app) {
 				},
 				{
 					cols: [
-						{view: "button", value: "Close", click: function() {
-							this.getTopParentView().hide();
-						}},
-						{view: "button", value: okButton, type: "form", click: function() {
-							// get the values from the form
-							let values = this.getFormView().getValues();
-
-							if (mode === 'edit') {
-								let data = {};
-								// send update of note
-								data.app  = app;
-								data.func = "setMessage";
-								data.parameters = params;
-								data.parameters.clientInput = values.text;
-								data.parameters.clientId    = interactor.uniqueID;
-								data.parameters.clientName  = interactor.pointerLabel;
-								if (values.anon) {
-									data.parameters.clientName = "Anonymous";
-								}
-								data.parameters.colorChoice = values.color;
-								// Send update message to server
-								wsio.emit('callFunctionOnApp', data);
-								// put back values
-								setNoteToMakeMode();
-							} else {
-								let data = {};
-								data.appName = "quickNote";
-								data.customLaunchParams = {};
-								data.customLaunchParams.clientName = interactor.pointerLabel;
-								data.customLaunchParams.clientInput = values.text;
-								if (values.anon) {
-									data.customLaunchParams.clientName = "Anonymous";
-								}
-								data.customLaunchParams.colorChoice = values.color;
-								// Send creation message to server
-								wsio.emit('launchAppWithValues', data);
+						{
+							view: "button", value: "Close", click: function() {
+								this.getTopParentView().hide();
 							}
+						},
+						{
+							view: "button",
+							value: okButton,
+							type: "form",
+							// Shift-enter activates the button
+							hotkey: "enter+shift",
+							// Callback
+							click: function() {
+								// get the values from the form
+								let values = this.getFormView().getValues();
 
-							// close the form
-							this.getTopParentView().hide();
-						}}
+								if (mode === 'edit') {
+									let data = {};
+									// send update of note
+									data.app  = app;
+									data.func = "setMessage";
+									data.parameters = params;
+									data.parameters.clientInput = values.text;
+									data.parameters.clientId    = interactor.uniqueID;
+									data.parameters.clientName  = interactor.pointerLabel;
+									if (values.anon) {
+										data.parameters.clientName = "Anonymous";
+									}
+									data.parameters.colorChoice = values.color;
+									// Send update message to server
+									wsio.emit('callFunctionOnApp', data);
+								} else {
+									let data = {};
+									data.appName = "quickNote";
+									data.customLaunchParams = {};
+									data.customLaunchParams.clientName = interactor.pointerLabel;
+									data.customLaunchParams.clientInput = values.text;
+									if (values.anon) {
+										data.customLaunchParams.clientName = "Anonymous";
+									}
+									data.customLaunchParams.colorChoice = values.color;
+									// Send creation message to server
+									wsio.emit('launchAppWithValues', data);
+								}
+
+								// close the form
+								this.getTopParentView().hide();
+							}
+						}
 					]
 				}
 			]
 		}
 	}).show();
+
 	// CSS tweaks on the text input area
 	$$('quicknote_text').getInputNode().style.color = "black";
 	$$('quicknote_text').getInputNode().style.fontFamily = "Oxygen Mono";
-	$$('quicknote_text').getInputNode().style.fontSize   = "16px";
+	$$('quicknote_text').getInputNode().style.fontSize   = "14px";
 	$$('quicknote_text').getInputNode().style.backgroundColor = noteColor;
+	// Disable spellcheck, annoying underline
 	$$('quicknote_text').getInputNode().setAttribute("spellcheck", "false");
-
+	// Set color of textarea to mimick the note rendering
 	$$("quicknote_color").attachEvent("onSelect", function (val, control, ev) {
 		if (val) {
 			$$('quicknote_text').getInputNode().style.backgroundColor = val;
@@ -2598,15 +2598,12 @@ function noteMakerDialog(mode, params, app) {
 			this.getTopParentView().hide();
 			return false;
 		}
-		// ENTER activates
-		if (code === 13 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-			let values = this.getFormView().getValues();
-			console.log('Enter', values);
-			// close the form
+		if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
 			this.getTopParentView().hide();
 			return false;
 		}
 	});
+
 	// Focus the text box
 	$$('quicknote_text').focus();
 }
@@ -2873,27 +2870,7 @@ function setAppContextMenuEntries(data) {
 					}
 				} else if (this.callback === "SAGE2_editQuickNote") {
 					// special case: reopen the QuickNote editor, but with a "save" button instead of "create"
-					var sendButton = document.getElementById('uiNoteMakerSendButton');
-					sendButton.textContent = "Save [Enter]";
-					sendButton.inSaveMode = true;
-					sendButton.app = this.app;
-					sendButton.callback = "setMessage";
-					sendButton.parameters = this.parameters;
-					// put current text into note
-					var inputForNote = document.getElementById('uiNoteMakerInputField');
-					inputForNote.value = this.parameters.currentContent;
-					// select current color
-					switch (this.parameters.currentColorChoice) {
-						case "lightyellow": setUiNoteColorSelect(1); break;
-						case "lightblue":   setUiNoteColorSelect(2); break;
-						case "lightpink":   setUiNoteColorSelect(3); break;
-						case "lightgreen":  setUiNoteColorSelect(4); break;
-						case "lightsalmon": setUiNoteColorSelect(5); break;
-						case "white":       setUiNoteColorSelect(6); break;
-						default: setUiNoteColorSelect(1); break; // default is yellow if unknown
-					}
 					noteMakerDialog('edit', this.parameters, this.app);
-					// showDialog('uiNoteMaker');
 				} else if (this.callback === "SAGE2_copyURL") {
 					// special case: want to copy the URL of the file to clipboard
 					var dlurl = this.parameters.url;
@@ -3392,27 +3369,7 @@ function addMenuEntry(menuDiv, entry, id, app) {
 							}
 						} else if (this.callback === "SAGE2_editQuickNote") {
 							// special case: reopen the QuickNote editor, but with a "save" button instead of "create"
-							var sendButton = document.getElementById('uiNoteMakerSendButton');
-							sendButton.textContent = "Save [Enter]";
-							sendButton.inSaveMode = true;
-							sendButton.app = this.app;
-							sendButton.callback = "setMessage";
-							sendButton.parameters = this.parameters;
-							// put current text into note
-							var inputForNote = document.getElementById('uiNoteMakerInputField');
-							inputForNote.value = this.parameters.currentContent;
-							// select current color
-							switch (this.parameters.currentColorChoice) {
-								case "lightyellow": setUiNoteColorSelect(1); break;
-								case "lightblue": setUiNoteColorSelect(2); break;
-								case "lightpink": setUiNoteColorSelect(3); break;
-								case "lightgreen": setUiNoteColorSelect(4); break;
-								case "lightsalmon": setUiNoteColorSelect(5); break;
-								case "white": setUiNoteColorSelect(6); break;
-								default: setUiNoteColorSelect(1); break; // default is yellow if unknown
-							}
 							noteMakerDialog('edit', this.parameters, this.app);
-							// showDialog('uiNoteMaker');
 						} else if (this.callback === "SAGE2_copyURL") {
 							// special case: want to copy the URL of the file to clipboard
 							var dlurl = this.parameters.url;
@@ -3487,133 +3444,6 @@ function addMenuEntry(menuDiv, entry, id, app) {
 	}
 }
 
-/**
-Called automatically as part of page setup.
-Fills out some of the field properties.
-*/
-function setupUiNoteMaker() {
-	var workingDiv = document.getElementById('uiNoteMaker');
-	var inputField = document.getElementById('uiNoteMakerInputField');
-	inputField.id = "uiNoteMakerInputField";
-	inputField.rows = 5;
-	inputField.cols = 24;
-	var sendButton = document.getElementById('uiNoteMakerSendButton');
-	// click effect to make a note on the display (app launch)
-	sendButton.addEventListener('click', function() {
-		sendMessageMakeNote();
-	});
-	var closeButton = document.getElementById('uiNoteMakerCloseButton');
-	// click effect to cancel making a note
-	closeButton.addEventListener('click', function() {
-		hideDialog(openDialog);
-	});
-	// Add Color fields.
-	for (var i = 1; i <= 6; i++) {
-		workingDiv = document.getElementById("uinmColorPick" + i);
-		workingDiv.colorNumber = i;
-		workingDiv.colorWasPicked = false;
-		workingDiv.addEventListener("click", function () {
-			setUiNoteColorSelect(this.colorNumber);
-		});
-		// This is necessary because for some strange reason, css values are not visible as properties.
-		switch (i) {
-			case 1: workingDiv.style.background = "lightyellow"; break;
-			case 2: workingDiv.style.background = "lightblue"; break;
-			case 3: workingDiv.style.background = "lightpink"; break;
-			case 4: workingDiv.style.background = "lightgreen"; break;
-			case 5: workingDiv.style.background = "lightsalmon"; break;
-			case 6: workingDiv.style.background = "white"; break;
-		}
-	}
-	setUiNoteColorSelect(1);
-}
-
-function setUiNoteColorSelect(colorNumber) {
-	var workingDiv;
-	// Adjust border size width
-	for (var i = 1; i <= 6; i++) {
-		workingDiv = document.getElementById("uinmColorPick" + i);
-		workingDiv.style.border = "1px solid black";
-		workingDiv.colorWasPicked = false;
-		workingDiv.style.width = (parseInt(workingDiv.style.width) + 8) + "px";
-		workingDiv.style.height = (parseInt(workingDiv.style.height) + 8) + "px";
-	}
-	workingDiv = document.getElementById("uinmColorPick" + colorNumber);
-	workingDiv.style.border = "3px solid black";
-	workingDiv.colorWasPicked = true;
-	workingDiv.style.width = (parseInt(workingDiv.style.width) - 8) + "px";
-	workingDiv.style.height = (parseInt(workingDiv.style.height) - 8) + "px";
-}
-
-/**
- * This sets the values of the note making button to make instead of save.
- *
- * @method setNoteToMakeMode
- */
-function setNoteToMakeMode() {
-	// get send button
-	var sendButton = document.getElementById('uiNoteMakerSendButton');
-	sendButton.inSaveMode = false;
-	sendButton.textContent = "Make Note [Enter]";
-	var workingDiv = document.getElementById('uiNoteMakerInputField');
-	workingDiv.value = "";
-}
-
-/**
- * This function is activated in 2 ways.
- * 1) User click the send button.
- * 2) User hits enter when making a note. This check is done in the noBackspace function.
- * When activated will make the packet to launch app. Collects values from tags on page.
- *
- * @method sendMessageMakeNote
- */
-function sendMessageMakeNote() {
-	// get send button
-	var sendButton = document.getElementById('uiNoteMakerSendButton');
-	var workingDiv = document.getElementById('uiNoteMakerInputField');
-	var data = {};
-	// if in save mode, instead of make mode, then need to revert and save.
-	if (sendButton.inSaveMode) {
-		// send update of note
-		data.app = sendButton.app;
-		data.func = sendButton.callback;
-		data.parameters = sendButton.parameters;
-		data.parameters.clientInput = workingDiv.value;
-		data.parameters.clientId   = interactor.uniqueID;
-		data.parameters.clientName = interactor.pointerLabel;
-		if (document.getElementById("uiNoteMakerCheckAnonymous").checked) {
-			data.parameters.clientName = "Anonymous";
-		}
-		data.parameters.colorChoice = "lightyellow";
-		for (let i = 1; i <= 6; i++) {
-			if (document.getElementById("uinmColorPick" + i).colorWasPicked) {
-				data.parameters.colorChoice = document.getElementById("uinmColorPick" + i).style.background;
-			}
-		}
-		wsio.emit('callFunctionOnApp', data);
-		// put back values
-		setNoteToMakeMode();
-		// hide the dialog, done editing
-		hideDialog(openDialog);
-		workingDiv.value = ""; // clear out the input field.
-	} else {
-		data.appName = "quickNote";
-		data.customLaunchParams = {};
-		data.customLaunchParams.clientName = interactor.pointerLabel;
-		data.customLaunchParams.clientInput = workingDiv.value;
-		if (document.getElementById("uiNoteMakerCheckAnonymous").checked) {
-			data.customLaunchParams.clientName = "Anonymous";
-		}
-		data.customLaunchParams.colorChoice = "lightyellow";
-		for (let i = 1; i <= 6; i++) {
-			if (document.getElementById("uinmColorPick" + i).colorWasPicked) {
-				data.customLaunchParams.colorChoice = document.getElementById("uinmColorPick" + i).style.background;
-			}
-		}
-		wsio.emit('launchAppWithValues', data);
-		workingDiv.value = ""; // clear out the input field.
-	}
-}
 
 /**
 Called automatically as part of the page setup.
