@@ -19,16 +19,19 @@ class panX extends AudioWorkletProcessor {
     let output = outputs[0];
 	let leftChannelParameter = parameters.leftChannel;
 	let rightChannelParameter = parameters.rightChannel;
-    let leftOutputChannel = output[leftChannelParameter[0]];
-    let rightOutputChannel = output[rightChannelParameter[0]];
+    let leftOutputChannel = output[Math.floor(leftChannelParameter[0])];
+    let rightOutputChannel = output[Math.floor(rightChannelParameter[0])];
 
     let leftInputChannel = input[0];
     let rightInputChannel = input[1];
 
     let gain = parameters.gain;
-    console.log("L " + leftChannelParameter[0] + " R " + rightChannelParameter[0]);
+    // console.log("L " + leftChannelParameter[0] + " R " + rightChannelParameter[0]);
     for (let i = 0; i < leftInputChannel.length; ++i) {
       leftOutputChannel[i] = leftInputChannel[i] * gain[i];
+    }
+	
+	for (let i = 0; i < rightInputChannel.length; ++i) {
       rightOutputChannel[i] = rightInputChannel[i] * gain[i];
     }
 

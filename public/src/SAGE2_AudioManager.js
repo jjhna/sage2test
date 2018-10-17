@@ -31,6 +31,7 @@ var audioCtx;
 var audioGainNodes   = {};
 var audioPannerNodes = {};
 var channelCount;
+var LeftOutput, RightOutput;
 
 // Number of sound instances being played at once
 var numberOfSounds    = 0;
@@ -416,10 +417,11 @@ function setupListeners() {
 			var gain = audioPannerNodes[data.elemId].parameters.get('gain');
 			var leftSpeakerParameter = audioPannerNodes[data.elemId].parameters.get('leftChannel');
 			var rightSpeakerParameter = audioPannerNodes[data.elemId].parameters.get('rightChannel');
+			//console.log("speaker " + speaker);
 			gain.setTargetAtTime(speaker, audioCtx.currentTime, .015);
 			var leftChannel = Math.floor((data.elemLeft / totalWidth) * channelCount);
 			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * channelCount);
-			// console.log("left " + leftChannel + " rightChannel " + rightChannel);
+			console.log("left " + leftChannel + " rightChannel " + rightChannel);
 			//console.log("left " + ((data.elemLeft / totalWidth) * channelCount) + " right " +  ((data.elemLeft + data.elemWidth) / totalWidth * channelCount));
 			leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0.3);
 			rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0.3);
