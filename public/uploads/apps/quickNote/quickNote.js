@@ -26,8 +26,6 @@ var quickNote = SAGE2_App.extend({
 		// Default starting attributes
 		this.backgroundChoice = "lightyellow";
 
-
-
 		// Separate div since the html will be contantly edited with showdown
 		this.markdownDiv = document.createElement("div");
 		this.markdownDiv.style.position = "absolute";
@@ -350,8 +348,8 @@ var quickNote = SAGE2_App.extend({
 			{
 				description: "White",
 				callback: "setColor",
-				parameters: { color: "white"},
-				entryColor: "white"
+				parameters: { color: "#f4f4f4"},
+				entryColor: "#f4f4f4"
 			},
 			{
 				description: "Orange",
