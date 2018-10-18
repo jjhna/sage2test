@@ -2429,7 +2429,7 @@ function loadSelectedFile() {
  */
 function noteMakerDialog(mode, params, app) {
 	// Default mode is 'create' a new note
-	let okButton = "Make Note [Enter]";
+	let okButton = "Make Note [Shift-Enter]";
 	// not anonymous
 	let isAnon = false;
 	// empty note
@@ -2439,7 +2439,7 @@ function noteMakerDialog(mode, params, app) {
 
 	// If edit mode, use the parameters
 	if (mode === 'edit') {
-		okButton = "Save [Enter]";
+		okButton = "Save [Shift-Enter]";
 		if (params.currentContent) {
 			noteText = params.currentContent;
 		}
@@ -2455,12 +2455,12 @@ function noteMakerDialog(mode, params, app) {
 		position: "center",
 		modal: true,
 		zIndex: "1999",
-		head: "Write a Quick Note <i>(text or markdown syntax)</i>",
+		head: "Write a Quick Note <i>(text or markdown)</i>",
 		borderless: false,
 		body: {
 			view: "form",
 			id: "quicknote_form",
-			width: 530,
+			width: 650,
 			padding: 5,
 			borderless: false,
 			elements: [
@@ -2492,8 +2492,8 @@ function noteMakerDialog(mode, params, app) {
 							id: "quicknote_color",
 							name: "color",
 							value: noteColor,
-							width: 425,
-							height: 70,
+							width: 548,
+							height: 50,
 							cols: 6,
 							rows: 1,
 							palette: [
@@ -2523,7 +2523,7 @@ function noteMakerDialog(mode, params, app) {
 				{
 					cols: [
 						{
-							view: "button", value: "Close", click: function() {
+							view: "button", value: "Close [ESC]", click: function() {
 								this.getTopParentView().hide();
 							}
 						},
