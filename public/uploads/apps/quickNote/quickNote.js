@@ -43,9 +43,12 @@ var quickNote = SAGE2_App.extend({
 		this.noteTitle = "";
 		// Make a converter
 		this.showdown_converter = new showdown.Converter({
-			// enable emoji, like :smile:
-			emoji: true
+			emoji: true,
+			simpleLineBreaks: true,
+			simplifiedAutoLink: true,
+			headerLevelStart: 2
 		});
+
 		// If loaded from session, this.state will have meaningful values.
 		this.setMessage(this.state);
 		var _this = this;
