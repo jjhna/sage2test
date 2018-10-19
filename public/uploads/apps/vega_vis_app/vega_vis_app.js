@@ -78,7 +78,7 @@ var vega_vis_app = SAGE2_App.extend( {
 	},
 
 	draw: function(date) {
-		console.log('vega_vis_app> Draw with state value', this.state.value);
+		//console.log('vega_vis_app> Draw with state value', this.state.value);
 
 		// //this.spec = this.state.specFile;//"uploads/apps/vega_vis_app/data/spec.json";
 		// console.log(this.spec);
@@ -275,26 +275,24 @@ var vega_vis_app = SAGE2_App.extend( {
 
 
 // DEFAULT SPECS...
-
-
 	initLineSpec: function(){
 		this.lineSpec =
 		  {
-			  "width": 1240,//1260
-			  "height": 530,//530,
+			  "width": 2140,//2140,//1240,//1260 //WHY- no ideal
+			  "height": 730,//530,//530,
   			  "padding": {"top": 10, "left": 60, "bottom": 60, "right": 30},
 			  "data": [
 			    {
 			      "name": "table",
 			      "values": [
-			        {"x": 2010,"y": 100,"id": "Loop"},
-			        {"x": 2011,"y": 200,"id": "Loop"},
-			        {"x": 2012,"y": 300,"id": "Loop"},
-			        {"x": 2013,"y": 400,"id": "Loop"},
-			        {"x": 2010,"y": 100,"id": "UIC"},
-			        {"x": 2011,"y": 250,"id": "UIC"},
-			        {"x": 2012,"y": 380,"id": "UIC"},
-			        {"x": 2013,"y": 420,"id": "UIC"}
+			        {"x": 2010,"y": 100,"c": "Loop"},
+			        {"x": 2011,"y": 200,"c": "Loop"},
+			        {"x": 2012,"y": 300,"c": "Loop"},
+			        {"x": 2013,"y": 400,"c": "Loop"},
+			        {"x": 2010,"y": 100,"c": "UIC"},
+			        {"x": 2011,"y": 250,"c": "UIC"},
+			        {"x": 2012,"y": 380,"c": "UIC"},
+			        {"x": 2013,"y": 420,"c": "UIC"}
 			        ]
 			    }
 			  ],
@@ -315,7 +313,7 @@ var vega_vis_app = SAGE2_App.extend( {
 			    {
 			      "name": "color",
 			      "type": "ordinal",
-			      "domain": {"data": "table", "field": "id"},
+			      "domain": {"data": "table", "field": "c"},
 			      "range": "category20"
 			    }
 			  ],
@@ -331,7 +329,22 @@ var vega_vis_app = SAGE2_App.extend( {
 		        		 "stroke": {"value": "white"},
 		        		 "strokeWidth": {"value": 1.0}
 		       		}
-			    }
+			    },
+					"legends": [
+				    {
+				      "fill": "color",
+				      "title": "Key",
+				      "offset": 0,
+				      "encode": {
+				        "symbols": {
+				          "update": {
+				            "fillOpacity": {"value": 1.0},
+				            "stroke": {"value": "transparent"}
+				          }
+				        }
+				      }
+				    }
+				  ],
 			},
 			    {"type": "y",
 			    "scale": "y",
@@ -351,7 +364,7 @@ var vega_vis_app = SAGE2_App.extend( {
 			      "type": "group",
 			      "from": {
 			        "data": "table",
-			        "transform": [{"type": "facet", "groupby": ["id"]}]
+			        "transform": [{"type": "facet", "groupby": ["c"]}]
 			      },
 			      "marks": [
 			        {
@@ -360,30 +373,59 @@ var vega_vis_app = SAGE2_App.extend( {
 			            "enter": {
 			              "x": {"scale": "x", "field": "x"},
 			              "y": {"scale": "y", "field": "y"},
-			              "stroke": {"scale": "color", "field": "id"},
+			              "stroke": {"scale": "color", "field": "c"},
 			              "strokeWidth": {"value": 4},
-
+										"text":{
+											"text": "HELLO",
+											"fill": "white",
+											"fontSize": 100
+										}
 			            }
 			          }
-			        },
-			        {
-			          "type": "text",
-			          "from": {
-			            "transform": [{"type": "filter", "test": "datum.date == 1267430400000"}]
-			          },
-			          "properties": {
-			            "enter": {
-			              "x": {"scale": "x", "field": "x", "offset": 2},
-			              "y": {"scale": "y", "field": "y"},
-			              "fill": {"scale": "color", "field": "id", "value": "white"},
-			              "text": {"field": "id"},
-			              "baseline": {"value": "middle"}
-			            }
-			          }
+								//{
+							//		"type": "text",
+	          	//		"from": {"data": "id"},
+				       //   "encode": {
+				        //    "update": {
+				         //     "x": {"scale": "x", "field": "date", "offset": 2},
+				         //     "y": {"scale": "y", "field": "indexed_price"},
+				        //      "fill": {"scale": "color", "field": "symbol"},
+				        //      "text": {"field": "symbol"},
+				        //      "baseline": {"value": "middle"}
+				         //   }
+				          //}
+				        //}
 			        }
+
+
 			      ]
 			    }
-			  ]
+			  ],
+				"legends": [
+		      {
+		        "fill": "color",
+		        "title": "Values",
+		        "offset": -100,
+		        "encode": {
+		          "symbols": {
+		            "update": {
+		              "fillOpacity": {
+		                "value": 0.5
+		              },
+		              "stroke": {
+		                "value": "transparent"
+		              }
+		            }
+		          },
+        			"labels": {
+          			"update": {
+           				"fill": "white"
+          			}
+        			}
+		        }
+		      }
+		    ]
+
 			}
 
 	},
@@ -394,9 +436,9 @@ var vega_vis_app = SAGE2_App.extend( {
 
 	initBarSpec: function(){
 		this.barSpec = {
-			  "width": 1200,
-			  "height": 600,
-			  "padding": {"top": 10, "left": 60, "bottom": 60, "right": 30},
+			  "width": 2000,
+			  "height": 800,
+			  "padding": {"top": 10, "left": 100, "bottom": 220, "right": 30},
 			  "data": [
 			    {
 			      "name": "table",
@@ -443,11 +485,12 @@ var vega_vis_app = SAGE2_App.extend( {
 				       "labels": {
 				         "fill": {"value": "white"},
 				         "angle": {"value": 50},
-				         "fontSize": {"value": 10},
+				         "fontSize": {"value": 15},
 				         "align": {"value": "left"},
 				         "baseline": {"value": "middle"}				       },
 				       "title": {
-				         "fontSize": {"value": 16}
+								 "fill": {"value": "white"},
+				         "fontSize": {"value": 20}
 				       },
 				       "axis": {
 				         "stroke": {"value": "white"},
@@ -466,10 +509,11 @@ var vega_vis_app = SAGE2_App.extend( {
 				       },
 				       "labels": {
 				         "fill": {"value": "white"},
-				         "fontSize": {"value": 10}
+				         "fontSize": {"value": 15}
 				         			       },
 				       "title": {
-				         "fontSize": {"value": 16}
+								 "fill": {"value": "white"},
+				         "fontSize": {"value": 20}
 				       },
 				       "axis": {
 				         "stroke": {"value": "white"},

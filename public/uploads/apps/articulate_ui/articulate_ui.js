@@ -88,7 +88,7 @@ var articulate_ui = SAGE2_App.extend( {
 	//I used the canvas to draw because I find it preferable for text, and I am more accustumed to it
 	//but this isn't necessary
 	draw: function(date) {
-		console.log('articulate_ui> Draw with state value', this.state.value);
+		//console.log('articulate_ui> Draw with state value', this.state.value);
 
 		this.ctx.clearRect(0, 0, this.element.width, this.element.height);
 
@@ -564,12 +564,12 @@ console.log("debugDatagram: "+ data);
 						console.log(tokens);
 						obj["y"] = parseInt(tokens[2]);
 						obj["x"] = tokens[6];
-						obj["id"] = "null";
+						obj["c"] = "null";
 					}
 					else {
 						obj["y"] = parseInt(tokens[2]);
 						obj["x"] = tokens[6];
-						obj["id"] = "null"; //NULL FOR NOW!!
+						obj["c"] = "null"; //NULL FOR NOW!!
 					}
 
 
@@ -621,14 +621,14 @@ console.log("debugDatagram: "+ data);
 						console.log(tokens);
 						obj["y"] = parseInt(tokens[2]);
 						obj["x"] = tokens[6];
-						obj["id"] = "null";
+						obj["c"] = "null";
 					}
 					else {
 						//to do
 						console.log(tokens);
 						obj["y"] = parseInt(tokens[2]);
 						obj["x"] = tokens[6];
-						obj["id"] = tokens[10];
+						obj["c"] = tokens[10];
 					}
 
 
