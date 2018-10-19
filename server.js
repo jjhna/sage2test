@@ -3449,7 +3449,7 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 		console.log("arraylength2 " + pointedToApps.length);
 		var targetAppID = mostOccurrenceItem(pointedToApps);
 		console.log("targetAppID in server " + targetAppID);
-		var data = {id: app.id, data: {text: data.text, orderedItems: orderedItems}, date: Date.now()};
+		var data = {id: app.id, data: {text: data.text, orderedItems: orderedItems, targetAppID: targetAppID}, date: Date.now()};
 		broadcast('textInputEvent', data);
 
 		var data = {id: app.id, data: {timestamp: debugDatagram.timestamp, commandText: debugDatagram.commandText, currentApps: debugDatagram.currentApps, mostOccurantItems: debugDatagram.mostOccurantItems}};

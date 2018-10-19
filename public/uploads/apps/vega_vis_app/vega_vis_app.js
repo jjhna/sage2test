@@ -36,7 +36,7 @@ var vega_vis_app = SAGE2_App.extend( {
 		//these are default specs that we overwrite with the data from the articulate ui
 		this.initBarSpec();
 		this.initLineSpec();
-
+		console.log(this.state.title);
 		this.updateTitle(this.state.title);
 		//access the data from the articualte ui that we need to draw this properly
 		//and then overwrite the default values in the app

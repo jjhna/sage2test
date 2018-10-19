@@ -31,6 +31,8 @@ var articulate_ui = SAGE2_App.extend( {
 		this.counter = 0;
 		this.debugMode = true;
 
+		this.useMaster = false; //turn on and off using the isMaster function...
+
 		//-------- THIS IS JUST FOR DEBUGGING - quickly launching pre-loaded visualization specs, rather than
 		//------------- basically rather than complete the circuit from the input UI, to the NLP server, back to this app
 		//------------- instead I just access these pre-loaded specs to make sure the parsing and vis lauching code works
@@ -235,10 +237,10 @@ console.log("debugDatagram: "+ data);
 		//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
 
 		//only send url and the index of the request
-		//if( isMaster ){
+		if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
 			console.log("ABOUT TO CONTACT ARTICULATE HUB")
-			this.contactArticulateHub(base_url+data.text, requestIndex - 1);  //send to the articulate hub
-		//}
+			this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID);  //send to the articulate hub
+		}
 		//----------------------------------------
 
 		//if( isMaster ){
@@ -265,12 +267,32 @@ console.log("debugDatagram: "+ data);
 	//---------------------------------------------
 	//contact the smart hub-- only called by master
 	//contactArticulateHub: function(url, orderedItems, requestIndex){
-	contactArticulateHub: function(url, requestIndex){
+	contactArticulateHub: function(url, requestIndex, targetAppID){
 		//msg.replace(" ", "%");
 		console.log("sending msg: " , url);
+		console.log(targetAppID);
+
+		//debugging
+		console.log(this.childList);
+		targetHubId = null;
+		if( this.childList.length > 1 ){
+			for(i = 0; i<this.childList.length;i++){
+				console.log("child:");
+				console.log(this.childList[i]);
+				if(this.childList[i].childId == targetAppID){
+					console.log("FOUND THE TARGET");
+					targetHubId = this.childList[i]["initState"]["hub_id"];
+				}
+			}
+		}
+
 		//var temp= JSON.stringify(orderedItems);
 		//console.log("orderedItems: " + temp);
 		url = url.replace(/"/g,"");
+
+		//new: adding the gestureRelease
+		url=url+"/gesturetargetid/"+targetHubId;
+		console.log(url);
 
 		this.callbackFunc = this.callback.bind(this);
 		this.postRequest(url, this.callbackFunc, 'JSON', requestIndex);
@@ -373,18 +395,23 @@ console.log("debugDatagram: "+ data);
 				this.refresh();
 			//OLD
 			//this.handleResponse(specObj);
-				if( isMaster){
+				if( isMaster || !this.useMaster){
 					this.readExample2(specObj, this.colors[this.counter]); // call the parser
 				}
 			}
 			else if(specObj["dataQuery"] == null){
-				this.refresh();
-				this.systemInstruction = "";
-				this.refresh();
-				this.systemInstruction = ">> Cannot understand the request! Try again . . .";
-				console.log("Cannot understand the request! Try again");
-				this.refresh();
 
+				if( specObj["request"] == "close.01" ){
+					this.readExample2(specObj);
+				}
+				else{ //not sure what this is for
+					this.refresh();
+					this.systemInstruction = "";
+					this.refresh();
+					this.systemInstruction = ">> Cannot understand the request! Try again . . .";
+					console.log("Cannot understand the request! Try again");
+					this.refresh();
+			}
 			}
 			//then broadcast the results to display nodes!
 			//broadcast( "handleResponse", {response:"responseTest"} );
@@ -394,26 +421,29 @@ console.log("debugDatagram: "+ data);
 	// parse the data
 	// the specification object is not nicely formatting- parsing is a pain!  =(
 	readExample2: function(specificationObj, color){
-		if(specificationObj == null){
+		//if(specificationObj == null){
 			//console.log("children " + this.childList[this.childList.length-1].childId);
-			for(var key in this.childList)
-			{
-				if(this.childList[key].childId == this.targetAppID)
-				var closeAppIndex = this.childList.indexOf(this.childList[key]);
-				this.closeChild(closeAppIndex);
-				console.log("Close "+this.childList[key].childId);
-			}
+			//for(var key in this.childList)
+			//{
+			//	if(this.childList[key].childId == this.targetAppID)
+			//	var closeAppIndex = this.childList.indexOf(this.childList[key]);
+			//	this.closeChild(closeAppIndex);
+			//	console.log("Close "+this.childList[key].childId);
+			//}
 			//this.closeChild(this.getNumberOfChildren()-1); //right now we just close the last one, later will use a unique id of the vis
-		}
-		else if (specificationObj["request"] == "close.01"){
+		//}
+	   if (specificationObj["request"] == "close.01"){
 			console.log("CLOSE");
-			for(var key in this.childList)
-			{
-				if(this.childList[key].childId == this.targetAppID)
-				var closeAppIndex = this.childList.indexOf(this.childList[key]);
-				this.closeChild(closeAppIndex);
-				console.log("Close "+this.childList[key].childId);
-			}
+			console.log(specificationObj["targetId"]);
+			hubId = specificationObj["targetId"];
+			this.closeChildByHubId(hubId);
+			//for(var key in this.childList)
+			//{
+			//	if(this.childList[key].childId == this.targetAppID)
+			//	var closeAppIndex = this.childList.indexOf(this.childList[key]);
+			//	this.closeChild(closeAppIndex);
+			//	console.log("Close "+this.childList[key].childId);
+			//}
 		}
 		else if( specificationObj.specType == "Layout") //only used for close operations
 		 {
@@ -431,7 +461,9 @@ console.log("debugDatagram: "+ data);
 		}
 		else // else make a vis!
 		{
-			title = specificationObj["plotTitle"];
+			console.log("make a vis!");
+			plotTitle = specificationObj["plotTitle"];
+			console.log(plotTitle);
 
 			type = specificationObj["plotType"].toLowerCase(); //what kind of plot: bar chart, map, line chart
 			x = specificationObj["horizontalGroupAxis"].toLowerCase();//changed: specificationObj["horizontalGroupAxis"].toLowerCase()
@@ -507,7 +539,8 @@ console.log("debugDatagram: "+ data);
 					value: 20,
 					data: dataToVisualize, //here is where I send the locations and number of crimes at this location, which came from the nlp smart hub
 					maxValue: maxVal,
-					title: plotTitle
+					title: plotTitle,
+					hub_id: hub_id
 				};
 			}
 			else if( type == "bar" ){
@@ -552,14 +585,15 @@ console.log("debugDatagram: "+ data);
 
 				initState = {  // the vis app will get these values and use them to draw appropriately
 					value: 10,
+					hub_id: hub_id,
 					title: plotTitle,
 					type: type.toLowerCase(),  //what kind of chart: bar or line
 					x: x.toLowerCase(), //x axis for the bar chart
 					y: y.toLowerCase(), //y axis for the bar chart (usually counts in our case)
 					color: color, //what color to give the bars - at this point a single color- someday need multiple colors
 					visId: this.counter,  //unique id for the vis, based on the count
-					data: dataToVisualize, //the data to visualize- like counts and labels
-					title: "visualization response" //should make this better someday...
+					data: dataToVisualize //the data to visualize- like counts and labels
+					//title: "visualization response" //should make this better someday...
 				};
 			}
 			else { //line charts are the only remaining at this point
@@ -615,24 +649,40 @@ console.log("debugDatagram: "+ data);
 					x: x.toLowerCase(),//x axis (like years)
 					y: y.toLowerCase(), //y axis (usually counts)
 					id: id, //what are the lines
+					hub_id: hub_id,
 					color: color, //i can't remember where the colors for the lines get set- maybe in the vega vis app... but someday need to be able to pass array of colors associated with lines
 					visId: this.counter, //unique id for the vis
-					data: dataToVisualize, //data to draw
-					title: "visualization response"
+					data: dataToVisualize //data to draw
+				//	title: "visualization response"
 				};
 			}// this is the end of the line chart
 
 			// launch the app we created!
 
+			console.log("LAUNCH!");
 			this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
-			console.log(hub_id);
-			console.log(this.childList[this.getNumberOfChildren()-1]);
-			this.childList[this.getNumberOfChildren()-1].hub_id_YO = hub_id;
-			console.log(this.childList[this.getNumberOfChildren()-1]);
+
+			//console.log(hub_id);
+			//console.log(this.childList[this.getNumberOfChildren()-1]);
+			//this.childList[this.getNumberOfChildren()-1].hub_id_YO = hub_id;
+			//console.log(this.childList[this.getNumberOfChildren()-1]);
+
+
 			//this.closeChild(this.getNumberOfChildren()-1);
 			//console.log("after " + this.childList.length);
 		}
 
+	},
+
+	closeChildByHubId: function(hubId){
+		for(var key in this.childList)
+		{
+			if(this.childList[key]["initState"]["hub_id"] == hubId){
+				var closeAppIndex = this.childList.indexOf(this.childList[key]);
+				this.closeChild(closeAppIndex);
+				console.log("Close "+this.childList[key].childId);
+			}
+		}
 	},
 
 
@@ -647,6 +697,10 @@ console.log("debugDatagram: "+ data);
 			console.log("child move and resize");
 		if( type == "childCloseEvent" )
 			console.log("child close");
+
+			//IS CHILD OFF LIST?
+			//NEED TO TELL ARTICULATE HUB?
+
 		if( type == "childOpenEvent") {
 			//center and resize the current child
 			//if( this.getNumberOfChildren() > 1){
@@ -656,6 +710,10 @@ console.log("debugDatagram: "+ data);
 			//this.moveChild(this.getNumberOfChildren()-1, 2000, 750); //center
 			//this.resizeChild(this.getNumberOfChildren()-1, 1600, 1200, false);
 			console.log("child open");
+			console.log(this.childList);
+
+			//
+
 			this.refresh(date);
 		}
 		if( type == "childReopenEvent"){
