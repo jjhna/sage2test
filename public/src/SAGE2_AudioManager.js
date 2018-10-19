@@ -27,11 +27,9 @@ var wsio;
 var autoplay = false;
 var initialVolume = 8;
 // WebAudio API variables
-var audioCtx;
+var audioCtx, channelCount;
 var audioGainNodes   = {};
 var audioPannerNodes = {};
-var channelCount;
-var LeftOutput, RightOutput;
 
 // Number of sound instances being played at once
 var numberOfSounds    = 0;
@@ -206,7 +204,7 @@ function setupListeners() {
 		};
 		// Array of assets to preload
 		var soundAssets = [
-			//{id: "startup",   src: jingle,          defaultPlayProps: defaults},
+			{id: "startup",   src: jingle,          defaultPlayProps: defaults},
 			{id: "newapp",    src: "newapp2.mp3",   defaultPlayProps: defaults},
 			{id: "deleteapp", src: "deleteapp.mp3", defaultPlayProps: defaults},
 			{id: "remote",    src: "remote.mp3",    defaultPlayProps: lowdefaults},
@@ -223,14 +221,8 @@ function setupListeners() {
 		// Main audio context (for low-level operations)
 		audioCtx = new(window.AudioContext || window.webkitAudioContext)();
 		audioCtx.listener.setPosition(0, 0, 0);
-
-		// Get the number of channels availble the connected Audio Interface and set up audioCtx
 		channelCount = audioCtx.destination.maxChannelCount;
-		audioCtx.destination.channelCount = channelCount;
-		audioCtx.destination.channelCountMode = 'explicit';
-		audioCtx.destination.channelInterpretation = 'discrete';
-		console.log("Channel Count: " + channelCount);
-
+		console.log("Total Number of Available Output Channels: " + channelCount);
 		totalWidth  = json_cfg.totalWidth;
 	});
 
@@ -253,9 +245,11 @@ function setupListeners() {
 			var videosTable = document.getElementById('videos');
 
 			var vid;
-			if (__SAGE2__.browser.isFirefox) {
-				// Firefox seems to crash with audio elements
+			if (__SAGE2__.browser.isFirefox || isFileTypeSupportedByHtmlPlayer(data.data.audio_url)) {
+				// Firefox seems to crash with audio elements, html player also uses this
 				vid = document.createElement('video');
+				window.vidRef = vid;
+				vid.isUsingHtmlPlayer = true;
 			} else {
 				vid = document.createElement('audio');
 			}
@@ -265,6 +259,7 @@ function setupListeners() {
 			vid.startPaused   = data.data.paused;
 			vid.controls      = false;
 			vid.style.display = "none";
+			vid.crossOrigin   = "anonymous";
 			vid.addEventListener('canplaythrough', function() {
 				// Video is loaded and can be played
 				if (vid.firstPlay && vid.sessionTime) {
@@ -292,12 +287,20 @@ function setupListeners() {
 			var url    = cleanURL(data.data.audio_url);
 			var source = document.createElement('source');
 			var param  = url.indexOf('?');
-			if (param >= 0) {
+
+			// Remove the URL params when using the html player.
+			if (vid.isUsingHtmlPlayer) {
+				source.src = url;
+				console.log(url);
+			} else if (param >= 0) {
 				source.src = url + "&clientID=audio";
 			} else {
 				source.src = url + "?clientID=audio";
 			}
-			source.type = data.data.audio_type;
+			// Having the audio type interferes with playback on certain video types. Probably alters how file is read.
+			if (!vid.isUsingHtmlPlayer) {
+				source.type = data.data.audio_type;
+			}
 			vid.appendChild(source);
 
 			// WebAudio API
@@ -396,13 +399,10 @@ function setupListeners() {
 	});
 
 	wsio.on('setItemPosition', function (data) {
-		//console.log(data);
 		if (audioPannerNodes[data.elemId]) {
 			// Calculate center of the application window
 			var halfTotalWidth = totalWidth / 2;
 			var centerX = data.elemLeft + data.elemWidth / 2 - halfTotalWidth;
-			//console.log("centerX " + centerX);
-			//console.log(totalWidth);
 			if (centerX < -totalWidth) {
 				centerX = -totalWidth;
 			}
@@ -411,20 +411,20 @@ function setupListeners() {
 			}
 			// Update the panner position
 			var panX = centerX / totalWidth;
-			var speaker = (halfTotalWidth / totalWidth) + panX;
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
-			var gain = audioPannerNodes[data.elemId].parameters.get('gain');
-			var leftSpeakerParameter = audioPannerNodes[data.elemId].parameters.get('leftChannel');
-			var rightSpeakerParameter = audioPannerNodes[data.elemId].parameters.get('rightChannel');
-			//console.log("speaker " + speaker);
-			gain.setTargetAtTime(speaker, audioCtx.currentTime, .015);
+			var panNode = audioPannerNodes[data.elemId];
+			
+			var gain = panNode.parameters.get('gain');
+			var leftSpeakerParameter = panNode.parameters.get('leftChannel');
+			var rightSpeakerParameter = panNode.parameters.get('rightChannel');
+			
 			var leftChannel = Math.floor((data.elemLeft / totalWidth) * channelCount);
 			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * channelCount);
-			console.log("left " + leftChannel + " rightChannel " + rightChannel);
-			//console.log("left " + ((data.elemLeft / totalWidth) * channelCount) + " right " +  ((data.elemLeft + data.elemWidth) / totalWidth * channelCount));
-			leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0.3);
-			rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0.3);
+			// console.log("left: " + leftChannel + " right " + rightChannel);
+			leftSpeakerParameter.setValueAtTime(leftChannel, audioCtx.currentTime);
+			rightSpeakerParameter.setValueAtTime(rightChannel, audioCtx.currentTime);
+			gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
 		}
 	});
 
@@ -433,7 +433,6 @@ function setupListeners() {
 			// Calculate center of the application window
 			var halfTotalWidth = totalWidth / 2;
 			var centerX = data.elemLeft + data.elemWidth / 2 - halfTotalWidth;
-			//console.log("centerX" + centerX);
 			if (centerX < -totalWidth) {
 				centerX = -totalWidth;
 			}
@@ -442,12 +441,22 @@ function setupListeners() {
 			}
 			// Update the panner position
 			var panX = centerX / totalWidth;
-			var speaker = (halfTotalWidth / totalWidth) + panX;
-			//console.log("speaker" + speaker);
 			var panY = 0;
 			var panZ = 1 - Math.abs(panX);
-			var gain = audioPannerNodes[data.elemId].parameters.get('gain');
-			//gain.setTargetAtTime(speaker, audioCtx.currentTime, .015);
+			var panNode = audioPannerNodes[data.elemId];
+			
+			var gain = panNode.parameters.get('gain');
+			var leftSpeakerParameter = panNode.parameters.get('leftChannel');
+			var rightSpeakerParameter = panNode.parameters.get('rightChannel');
+			
+			var leftChannel = Math.floor((data.elemLeft / totalWidth) * channelCount);
+			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * channelCount);
+			
+			// console.log("setItemPositionAndSize left: " + leftChannel + " right " + rightChannel);
+			
+			leftSpeakerParameter.setValueAtTime(leftChannel, audioCtx.currentTime);
+			rightSpeakerParameter.setValueAtTime(rightChannel, audioCtx.currentTime);
+			gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
 		}
 	});
 
@@ -524,6 +533,12 @@ function setupListeners() {
 			} else {
 				vid.currentTime = data.timestamp;
 			}
+
+			if (data.play) {
+				vid.play();
+			} else {
+				vid.pause();
+			}
 		}
 	});
 
@@ -583,12 +598,12 @@ function setupListeners() {
  * @param event {Event} event data
  */
 function handleSoundJSLoad(event) {
-	if (event.id === "startup") {
-		// Play the startup jingle at load
+	// if (event.id === "startup") {
+		// // Play the startup jingle at load
 		// var instance = createjs.Sound.play(event.src);
 		// // Set the volume
 		// instance.volume = initialVolume / 10;
-	}
+	// }
 	console.log('SoundJS> asset loaded', event.id);
 }
 
@@ -638,4 +653,30 @@ function playVideo(videoId) {
  */
 function updateVideotime(videoId, timestamp, play) {
 	wsio.emit('updateVideoTime', {id: videoId, timestamp: timestamp, play: play});
+}
+
+/**
+ * Checks if the filetype is supported by the html player
+ *
+ * @method isFileTypeSupportedByHtmlPlayer
+ * @param file {String} url path of the file
+ */
+function isFileTypeSupportedByHtmlPlayer(file) {
+	// supportedTypes based on https://developer.mozilla.org/en-US/docs/Web/HTML/Supported_media_formats
+	let supportedTypes = ["webm", "ogg", "mp4", "mov"]; // flac
+	let ext = file.lastIndexOf(".");
+	if (ext > -1) {
+		ext = file.substring(ext + 1);
+		ext = ext.trim().toLowerCase();
+		for (let i = 0; i < supportedTypes.length; i++) {
+			if (ext === supportedTypes[i]) {
+				console.log("Extension " + file + " supported by html player");
+				return true;
+			}
+		}
+		console.log("Extension " + file + " didn't match any of the known player formats: " + supportedTypes);
+	} else {
+		console.log("No extension in: " + file);
+	}
+	return false;
 }
