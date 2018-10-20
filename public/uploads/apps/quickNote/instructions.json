@@ -1,8 +1,8 @@
 {
 	"main_script": "quickNote.js",
 	"icon": "quickNote.png",
-	"width": 300,
-	"height": 134,
+	"width": 320,
+	"height": 230,
 	"animation": false,
 	"sticky": true,
 	"resize": "free",
@@ -14,7 +14,7 @@
 		"clientInput": "Loading note from user...",
 		"colorChoice": "lightyellow",
 		"creationTime": null,
-		"scale": 1,
+		"scale": 1.2,
 		"showArrow": false
 	},
 	"title": "Quick Note",

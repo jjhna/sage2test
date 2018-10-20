@@ -2448,6 +2448,43 @@ function noteMakerDialog(mode, params, app) {
 		}
 	}
 
+	let helpText = "Notes are written as Markdown syntax, a simple text-to-HTML conversion tool. " +
+		"Markdown allows you to write using an easy-to-read, easy-to-write plain text format" +
+		"then convert it to structurally valid HTML.\n" +
+		"\n" +
+		"# h1 Heading\n" +
+		"## h2 Heading\n" +
+		"### h3 Heading\n" +
+		"#### h4 Heading\n" +
+		"\n" +
+		"# Emphasis\n" +
+		"Emphasis, aka italics, with *asterisks* or _underscores_.\n" +
+		"Strong emphasis, aka bold, with **asterisks** or __underscores__.\n" +
+		"\n" +
+		"# Lists\n" +
+		"* Unordered list can use asterisks\n" +
+		"- Or minuses\n" +
+		"+ Or pluses\n" +
+		"\n" +
+		"Ordered list uses number\n" +
+		"1. First ordered list item\n" +
+		"2. Another item\n" +
+		"1. Actual numbers don't matter, just that it's a number\n" +
+		"\n" +
+		"# Links\n" +
+		"There are two ways to create links.\n" +
+		"[I'm an inline-style link](https://www.google.com)\n" +
+		"or just write a link http://www.google.com\n" +
+		"\n" +
+		"# Code\n" +
+		"Inline `code` has `back-ticks around` it.\n" +
+		"Blocks of code are either fenced by lines with three back-ticks:\n" +
+		"```javascript\n" +
+		"var s = \"JavaScript syntax highlighting\";\n" +
+		"alert(s);\n" +
+		"```\n";
+
+
 	// Build a webix dialog
 	webix.ui({
 		view: "window",
@@ -2458,124 +2495,178 @@ function noteMakerDialog(mode, params, app) {
 		head: "Write a Quick Note <i>(text or markdown)</i>",
 		borderless: false,
 		body: {
-			view: "form",
-			id: "quicknote_form",
-			width: 650,
-			padding: 5,
-			borderless: false,
-			elements: [
+			view: "tabview",
+			id: "quicknote_tab",
+			multiview: { fitBiggest: true },
+			cells: [
 				{
-					cols: [
-						{
-							view: "label",
-							width: 90,
-							label: "Anonymous"
-						},
-						{
-							// Text box
-							view: "checkbox",
-							id: "quicknote_anon",
-							name: "anon",
-							value: isAnon
-						}
-					]
-				},
-				{
-					cols: [
-						{
-							view: "label",
-							width: 90,
-							label: "Color"
-						},
-						{
-							view: "colorboard",
-							id: "quicknote_color",
-							name: "color",
-							value: noteColor,
-							width: 548,
-							height: 50,
-							cols: 6,
-							rows: 1,
-							palette: [
-								["#ffffe0", "#add8e6", "#ffb6c1", "#90ee90", "#ffa07a", "#f4f4f4"]
-							]
-						}
-					]
-				},
-				{
-					cols: [
-						{
-							view: "label",
-							width: 90,
-							label: "Note"
-						},
-						{
-							// Text box
-							view: "textarea",
-							value: noteText,
-							id: "quicknote_text",
-							name: "text",
-							height: 200,
-							placeholder: "Type note here..."
-						}
-					]
-				},
-				{
-					cols: [
-						{
-							view: "button", value: "Close [ESC]", click: function() {
-								this.getTopParentView().hide();
-							}
-						},
-						{
-							view: "button",
-							value: okButton,
-							type: "form",
-							// Shift-enter activates the button
-							hotkey: "enter+shift",
-							// Callback
-							click: function() {
-								// get the values from the form
-								let values = this.getFormView().getValues();
-
-								if (mode === 'edit') {
-									let data = {};
-									// send update of note
-									data.app  = app;
-									data.func = "setMessage";
-									data.parameters = params;
-									data.parameters.clientInput = values.text;
-									data.parameters.clientId    = interactor.uniqueID;
-									data.parameters.clientName  = interactor.pointerLabel;
-									if (values.anon) {
-										data.parameters.clientName = "Anonymous";
+					header: "Note",
+					body: {
+						view: "form",
+						id: "quicknote_form",
+						width: 650,
+						padding: 5,
+						borderless: false,
+						elements: [
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Anonymous"
+									},
+									{
+										// Text box
+										view: "checkbox",
+										id: "quicknote_anon",
+										name: "anon",
+										value: isAnon
 									}
-									data.parameters.colorChoice = values.color;
-									// Send update message to server
-									wsio.emit('callFunctionOnApp', data);
-								} else {
-									let data = {};
-									data.appName = "quickNote";
-									data.customLaunchParams = {};
-									data.customLaunchParams.clientName = interactor.pointerLabel;
-									data.customLaunchParams.clientInput = values.text;
-									if (values.anon) {
-										data.customLaunchParams.clientName = "Anonymous";
+								]
+							},
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Color"
+									},
+									{
+										view: "colorboard",
+										id: "quicknote_color",
+										name: "color",
+										value: noteColor,
+										width: 548,
+										height: 50,
+										cols: 6,
+										rows: 1,
+										palette: [
+											["#ffffe0", "#add8e6", "#ffb6c1", "#90ee90", "#ffa07a", "#f4f4f4"]
+										]
 									}
-									data.customLaunchParams.colorChoice = values.color;
-									// Send creation message to server
-									wsio.emit('launchAppWithValues', data);
-								}
+								]
+							},
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Note"
+									},
+									{
+										// Text box
+										view: "textarea",
+										value: noteText,
+										id: "quicknote_text",
+										name: "text",
+										height: 200,
+										placeholder: "# Example\n* todo item 1\n* todo item 2\n* todo item 3"
+									}
+								]
+							},
+							{
+								cols: [
+									{
+										view: "button", value: "Close [ESC]", click: function() {
+											this.getTopParentView().hide();
+										}
+									},
+									{
+										view: "button",
+										value: okButton,
+										type: "form",
+										// Shift-enter activates the button
+										hotkey: "enter+shift",
+										// Callback
+										click: function() {
+											// get the values from the form
+											let values = this.getFormView().getValues();
 
-								// close the form
-								this.getTopParentView().hide();
+											if (mode === 'edit') {
+												let data = {};
+												// send update of note
+												data.app  = app;
+												data.func = "setMessage";
+												data.parameters = params;
+												data.parameters.clientInput = values.text;
+												data.parameters.clientId    = interactor.uniqueID;
+												data.parameters.clientName  = interactor.pointerLabel;
+												if (values.anon) {
+													data.parameters.clientName = "Anonymous";
+												}
+												data.parameters.colorChoice = values.color;
+												// Send update message to server
+												wsio.emit('callFunctionOnApp', data);
+											} else {
+												let data = {};
+												data.appName = "quickNote";
+												data.customLaunchParams = {};
+												data.customLaunchParams.clientName = interactor.pointerLabel;
+												data.customLaunchParams.clientInput = values.text;
+												if (values.anon) {
+													data.customLaunchParams.clientName = "Anonymous";
+												}
+												data.customLaunchParams.colorChoice = values.color;
+												// Send creation message to server
+												wsio.emit('launchAppWithValues', data);
+											}
+
+											// close the form
+											this.getTopParentView().hide();
+										}
+									}
+								]
 							}
-						}
-					]
+						]
+					}
+				},
+				{
+					header: "Syntax",
+					body: {
+						view: "form",
+						id: "quickhelp_form",
+						width: 650,
+						padding: 5,
+						borderless: false,
+						elements: [
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Help"
+									},
+									{
+										// Text box
+										view: "textarea",
+										id: "helparea_text",
+										name: "help_area",
+										value: helpText,
+										readonly: true,
+										height: 320
+									}
+								]
+							}
+						]
+					}
 				}
 			]
 		}
 	}).show();
+
+	$$('quicknote_tab').getTabbar().attachEvent('onAfterTabClick', function(id) {
+		if (id === "quickhelp_form") {
+			let helparea = $$('helparea_text').getInputNode();
+			helparea.style.color = "black";
+			helparea.style.fontFamily = "Oxygen Mono";
+			helparea.style.fontSize = "14px";
+			helparea.style.backgroundColor = "#f4f4f4";
+			$$('helparea_text').focus();
+		} else {
+			// Focus the text box
+			$$('quicknote_text').focus();
+		}
+	});
 
 	// CSS tweaks on the text input area
 	$$('quicknote_text').getInputNode().style.color = "black";
@@ -3539,65 +3630,6 @@ function setupUiDrawCanvas() {
 			thicknessSelectBox.style.border = "3px solid red";
 		}
 	}
-	// var thicknessSelectBox = document.getElementById('uidztp1');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 1;
-	// 		uiDrawSelectThickness('uidztp1');
-	// 	});
-	// // start the with 1px selected
-	// uidzCanvas.lineWidth = 1;
-	// thicknessSelectBox.style.border = "3px solid red";
-	// // have to hard code each selection due to linewidth adjustment
-	// // 2
-	// thicknessSelectBox = document.getElementById('uidztp2');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 2;
-	// 		uiDrawSelectThickness('uidztp2');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp3');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 4;
-	// 		uiDrawSelectThickness('uidztp3');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp4');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 8;
-	// 		uiDrawSelectThickness('uidztp4');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp5');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 16;
-	// 		uiDrawSelectThickness('uidztp5');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp6');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 32;
-	// 		uiDrawSelectThickness('uidztp6');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp7');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 64;
-	// 		uiDrawSelectThickness('uidztp7');
-	// 	});
 }
 
 /**
