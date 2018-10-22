@@ -2774,7 +2774,7 @@ function saveSession(filename) {
 	// add gray background
 	svg += "<rect width=\"" + width +
 		"\" height=\"" + height +
-		"\" style=\"fill: #666666;\"" + "></rect>";
+		"\" style=\"fill: #AAAAAA;\"" + "></rect>";
 
 	for (var ptn of states.partitions) {
 		// partition areas
@@ -2801,7 +2801,7 @@ function saveSession(filename) {
 			"\" height=\"" + ap.height +
 			"\" x=\"" + ap.left +
 			"\" y=\"" + ap.top +
-			"\" style=\"fill: " + "#AAAAAA; fill-opacity: 0.5; stroke: black; stroke-width: 5;\">" + "</rect>";
+			"\" style=\"fill: " + "#474747; fill-opacity: 1.0; stroke: black; stroke-width: 5;\">" + "</rect>";
 
 		var iconPath;
 		if (ap.icon) {
