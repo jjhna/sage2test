@@ -2694,15 +2694,27 @@ function noteMakerDialog(mode, params, app) {
 										view: "textarea",
 										id: "helparea_text",
 										name: "help_area",
+										borderless: true,
 										value: helpText,
 										readonly: true,
-										height: 320
+										height: 320,
+										width: 240
 									},
 									{
-										view: "scrollview", id: "render_view", height: 320,
+										view: "scrollview",
+										id: "render_view",
+										borderless: false,
 										scroll: "y",
+										margin: 5,
+										width: 300,
 										body: {
-											rows: [{ id: "help_area_render_text", template: renderText, autoheight: true}]
+											rows: [
+												{
+													id: "help_area_render_text",
+													template: renderText,
+													autoheight: true
+												}
+											]
 										}
 									}
 								]
@@ -2727,6 +2739,10 @@ function noteMakerDialog(mode, params, app) {
 			helparea.addEventListener("scroll", (e) => {
 				renderView.parentElement.parentElement.parentElement.scrollTop = e.target.scrollTop;
 			});
+			// Tweaks to line up the elements
+			let renderText = $$('render_view').getNode();
+			renderText.style.marginTop = "4px";
+			renderText.style.height = "310px";
 		} else {
 			// Focus the text box
 			$$('quicknote_text').focus();
