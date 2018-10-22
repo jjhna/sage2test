@@ -2448,7 +2448,11 @@ function noteMakerDialog(mode, params, app) {
 		}
 	}
 
-	let helpText = "Notes are written as Markdown syntax, a simple text-to-HTML conversion tool. " +
+	let helpText =
+		"Markdown Text" +
+		"\n" +
+		"\n" +
+		"Notes are written as Markdown syntax, a simple text-to-HTML conversion tool. " +
 		"Markdown allows you to write using an easy-to-read, easy-to-write plain text format" +
 		"then convert it to structurally valid HTML.\n" +
 		"\n" +
@@ -2480,10 +2484,59 @@ function noteMakerDialog(mode, params, app) {
 		"Inline `code` has `back-ticks around` it.\n" +
 		"Blocks of code are either fenced by lines with three back-ticks:\n" +
 		"```javascript\n" +
-		"var s = \"JavaScript syntax highlighting\";\n" +
+		"var s = \"Code \" +" +
+		"\n\"formatting \" +" +
+		"\n\"section\";\n" +
 		"alert(s);\n" +
 		"```\n";
 
+	let renderText = '<div style="font-family: \'Oxygen Mono\'; font-size: 10px;' +
+		'box-sizing: border-box; list-style-position: inside;">' +
+		'<p style="font-family:\'Oxygen Mono\'">Rendered View</p>' +
+		'<br>' +
+		'<p style="font-family:\'Oxygen Mono\'">Notes are written as Markdown syntax,' +
+		' a simple text-to-HTML conversion tool. Markdown allows you to write using an easy-to-read, ' +
+		'easy-to-write plain text formatthen convert it to structurally valid HTML.</p>' +
+		'<br>' +
+		'<h1 style="font-family:\'Oxygen Mono\'">h1 Heading</h1>' +
+		'<h2 style="font-size:1.75em; margin:auto; font-family:\'Oxygen Mono\'">h2 Heading</h2>' +
+		'<h3 style="font-size:1.5em; style="font-family:\'Oxygen Mono\'">h3 Heading</h3>' +
+		'<h4 style="font-size:1.25em; style="font-family:\'Oxygen Mono\'">h4 Heading</h4>' +
+		'<br>' +
+		'<h1 style="font-family:\'Oxygen Mono\'">Emphasis</h1>' +
+		'<p style="font-family:\'Oxygen Mono\'">Emphasis, aka italics, with ' +
+		'<em style="font-style: italic;">asterisks</em> or <em style="font-style: italic;">underscores</em>.<br>' +
+		'Strong emphasis, aka bold, with ' +
+		'<strong style="font-weight: bold;">asterisks</strong> or ' +
+		'<strong style="font-weight: bold;">underscores</strong>.</p>' +
+		'<br>' +
+		'<h1 id="lists" style="font-family:\'Oxygen Mono\'">Lists</h1>' +
+		'<ul>' +
+		'<li style="font-family:\'Oxygen Mono\'">Unordered list can use asterisks</li>' +
+		'<li style="font-family:\'Oxygen Mono\'">Or minuses</li>' +
+		'<li style="font-family:\'Oxygen Mono\'">Or pluses</li>' +
+		'</ul>' +
+		'<p style="font-family:\'Oxygen Mono\'">Ordered list uses number</p>' +
+		'<ol>' +
+		'<li style="font-family:\'Oxygen Mono\'">First ordered list item</li>' +
+		'<li style="font-family:\'Oxygen Mono\'">Another item</li>' +
+		'<li style="font-family:\'Oxygen Mono\'">Actual numbers don\'t matter, just that it\'s a number</li>' +
+		'</ol>' +
+		'<br>' +
+		'<h1 id="links" style="font-family:\'Oxygen Mono\'">Links</h1>' +
+		'<p style="font-family:\'Oxygen Mono\'">There are two ways to create links.<br>' +
+		'<a href="https://www.google.com" style="font-family:\'Oxygen Mono\'">I\'m an inline-style link</a><br>' +
+		'or just write a link <a href="http://www.google.com" style="font-family:\'Oxygen Mono\'">http://www.google.com</a></p>' +
+		'<br>' +
+		'<h1 style="font-family:\'Oxygen Mono\'">Code</h1>' +
+		'<p style="font-family:\'Oxygen Mono\'">Inline <code>code</code> has <code>back-ticks around</code> it.<br>' +
+		'Blocks of code are either fenced by lines with three back-ticks:</p>' +
+		'<pre style="font-family:\'Oxygen Mono\'">' +
+		'<code class="javascript language-javascript">var s = "Code " +' +
+		'<br>"formatting " +' +
+		'<br>"section";' +
+		'<br>alert(s);' +
+		'</code></pre></div>';
 
 	// Build a webix dialog
 	webix.ui({
@@ -2644,6 +2697,13 @@ function noteMakerDialog(mode, params, app) {
 										value: helpText,
 										readonly: true,
 										height: 320
+									},
+									{
+										view: "scrollview", id: "render_view", height: 320,
+										scroll: "y",
+										body: {
+											rows: [{ id: "help_area_render_text", template: renderText, autoheight: true}]
+										}
 									}
 								]
 							}
@@ -2662,6 +2722,11 @@ function noteMakerDialog(mode, params, app) {
 			helparea.style.fontSize = "14px";
 			helparea.style.backgroundColor = "#f4f4f4";
 			$$('helparea_text').focus();
+			// Show render view
+			let renderView = $$('help_area_render_text').getNode();
+			helparea.addEventListener("scroll", (e) => {
+				renderView.parentElement.parentElement.parentElement.scrollTop = e.target.scrollTop;
+			});
 		} else {
 			// Focus the text box
 			$$('quicknote_text').focus();
