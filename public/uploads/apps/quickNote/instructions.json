@@ -7,7 +7,9 @@
 	"sticky": true,
 	"resize": "free",
 	"dependencies": [
-		"showdown.min.js"
+		"showdown.min.js",
+		"highlight.min.css",
+		"highlight.min.js"
 	],
 	"load": {
 		"clientName": "Quick Note",

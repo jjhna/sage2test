@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global showdown */
+/* global showdown hljs*/
 
 var quickNote = SAGE2_App.extend({
 	init: function(data) {
@@ -41,12 +41,16 @@ var quickNote = SAGE2_App.extend({
 		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
+
+		// Add highlight extension before making converter
+		this.makeHighlightExtension();
 		// Make a converter
 		this.showdown_converter = new showdown.Converter({
 			emoji: true,
 			simpleLineBreaks: true,
 			simplifiedAutoLink: true,
-			headerLevelStart: 2
+			headerLevelStart: 2,
+			extensions: ['codehighlight']
 		});
 
 		// If loaded from session, this.state will have meaningful values.
@@ -64,6 +68,40 @@ var quickNote = SAGE2_App.extend({
 		}
 		this.adjustFontSize();
 		this.showOrHideArrow();
+	},
+
+	makeHighlightExtension: function () {
+		// Prevent multiple creations of the same extension.
+		if (showdown.hasLoadedCustomHighlightExtension) {
+			return;
+		}
+		showdown.hasLoadedCustomHighlightExtension = true;
+		// add extension
+		showdown.extension('codehighlight', function() {
+			function htmlunencode(text) {
+				return (
+					text
+						.replace(/&amp;/g, '&')
+						.replace(/&lt;/g, '<')
+						.replace(/&gt;/g, '>')
+				);
+			}
+			return [
+				{
+					type: 'output',
+					filter: function (text, converter, options) {
+						var left  = '<pre><code\\b[^>]*>',
+							right = '</code></pre>',
+							flags = 'g',
+							replacement = function (wholeMatch, match, left, right) {
+								match = htmlunencode(match);
+								return left + hljs.highlightAuto(match).value + right;
+							};
+						return showdown.helper.replaceRecursiveRegExp(text, replacement, left, right, flags);
+					}
+				}
+			];
+		});
 	},
 
 	/**
