@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global showdown */
+/* global showdown hljs*/
 
 var quickNote = SAGE2_App.extend({
 	init: function(data) {
@@ -19,14 +19,7 @@ var quickNote = SAGE2_App.extend({
 		this.resizeEvents = "continuous"; // "onfinish";
 
 		this.element.id = "div" + data.id;
-		// this.element.style.background = "lightyellow";
-		this.element.style.fontSize   = ui.titleTextSize + "px";
-		// Using SAGE2 default mono font
-		this.element.style.fontFamily = "Oxygen Mono";
-		// Default starting attributes
 		this.backgroundChoice = "lightyellow";
-
-
 
 		// Separate div since the html will be contantly edited with showdown
 		this.markdownDiv = document.createElement("div");
@@ -37,20 +30,29 @@ var quickNote = SAGE2_App.extend({
 		this.markdownDiv.style.height   = "100%";
 		// padding: top, right, bottom, and left
 		// or global value, here 1/2 line
-		this.markdownDiv.style.padding  = "0.5em";
+		this.markdownDiv.style.padding = ui.titleTextSize + "px";
+		this.markdownDiv.style.margin = 0;
 		// Monospace font that we loaded
 		this.markdownDiv.style.fontFamily = "Oxygen Mono";
 		// Default font size based on SAGE2 settings
 		this.markdownDiv.style.fontSize = ui.titleTextSize + "px";
 		this.markdownDiv.style.boxSizing = "border-box";
+		this.markdownDiv.style.listStylePosition = "inside";
 		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
+
+		// Add highlight extension before making converter
+		this.makeHighlightExtension();
 		// Make a converter
 		this.showdown_converter = new showdown.Converter({
-			// enable emoji, like :smile:
-			emoji: true
+			emoji: true,
+			simpleLineBreaks: true,
+			simplifiedAutoLink: true,
+			headerLevelStart: 2,
+			extensions: ['codehighlight']
 		});
+
 		// If loaded from session, this.state will have meaningful values.
 		this.setMessage(this.state);
 		var _this = this;
@@ -66,6 +68,40 @@ var quickNote = SAGE2_App.extend({
 		}
 		this.adjustFontSize();
 		this.showOrHideArrow();
+	},
+
+	makeHighlightExtension: function () {
+		// Prevent multiple creations of the same extension.
+		if (showdown.hasLoadedCustomHighlightExtension) {
+			return;
+		}
+		showdown.hasLoadedCustomHighlightExtension = true;
+		// add extension
+		showdown.extension('codehighlight', function() {
+			function htmlunencode(text) {
+				return (
+					text
+						.replace(/&amp;/g, '&')
+						.replace(/&lt;/g, '<')
+						.replace(/&gt;/g, '>')
+				);
+			}
+			return [
+				{
+					type: 'output',
+					filter: function (text, converter, options) {
+						var left  = '<pre><code\\b[^>]*>',
+							right = '</code></pre>',
+							flags = 'g',
+							replacement = function (wholeMatch, match, left, right) {
+								match = htmlunencode(match);
+								return left + hljs.highlightAuto(match).value + right;
+							};
+						return showdown.helper.replaceRecursiveRegExp(text, replacement, left, right, flags);
+					}
+				}
+			];
+		});
 	},
 
 	/**
@@ -350,8 +386,8 @@ var quickNote = SAGE2_App.extend({
 			{
 				description: "White",
 				callback: "setColor",
-				parameters: { color: "white"},
-				entryColor: "white"
+				parameters: { color: "#f4f4f4"},
+				entryColor: "#f4f4f4"
 			},
 			{
 				description: "Orange",
@@ -404,6 +440,7 @@ var quickNote = SAGE2_App.extend({
 			}
 		}
 		this.markdownDiv.style.fontSize = parseInt(ui.titleTextSize * this.state.scale) + "px";
+
 		this.getFullContextMenuAndUpdate();
 		this.SAGE2Sync(true);
 	},
@@ -441,10 +478,11 @@ var quickNote = SAGE2_App.extend({
 
 		let arrow = document.createElement("img");
 		arrow.style.position = "absolute";
-		arrow.style.top = "0px"; // keep aligned to top of window
+		arrow.style.top = 0; // keep aligned to top of window
 		// need to calculate size
-		arrow.style.height = ui.titleBarHeight * 2 + "px";
-		arrow.style.left = ui.titleBarHeight * -2 + "px"; // move it outside of the title bar
+		arrow.style.height = (ui.titleBarHeight * 1) + "px";
+		// move it outside of the title bar
+		arrow.style.left   = (ui.titleBarHeight * -1) + "px";
 		arrow.src = "images/quickNote_leftArrow.svg";
 
 		let titlebar = document.getElementById(this.id + "_title");

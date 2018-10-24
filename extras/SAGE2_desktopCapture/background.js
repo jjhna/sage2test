@@ -14,9 +14,132 @@
 
 var ports = {};
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Context menu support
+////////////////////////////////////////////////////////////////////////////////
+
+function setUpContextMenus(id, site) {
+	chrome.contextMenus.create({
+		title: 'Send Webpage to ' + site,
+		type: 'normal',
+		id: 'send_webpage' + id,
+		contexts: ['all']
+	});
+
+	chrome.contextMenus.create({
+		title: 'Send Screenshot to ' + site,
+		type: 'normal',
+		id: 'send_screenshot' + id,
+		contexts: ['all']
+	});
+
+	chrome.contextMenus.create( {
+		title: 'Create a Quick Note to ' + site + ' "%s"',
+		type: 'normal',
+		id: 'create_quicknote'  + id,
+		contexts: ['selection']
+	});
+
+	chrome.contextMenus.create( {
+		title: 'Send image to ' + site,
+		type: 'normal',
+		id: 'send_image'  + id,
+		contexts: ['image']
+	});
+
+	chrome.contextMenus.create( {
+		title: 'Send link to ' + site,
+		type: 'normal',
+		id: 'send_link'  + id,
+		contexts: ['link']
+	});
+}
+
+function removeContextMenus(id) {
+	chrome.contextMenus.remove('send_webpage'     + id);
+	chrome.contextMenus.remove('send_screenshot'  + id);
+	chrome.contextMenus.remove('create_quicknote' + id);
+	chrome.contextMenus.remove('send_image' + id);
+	chrome.contextMenus.remove('send_link'  + id);
+}
+
 chrome.runtime.onInstalled.addListener(function() {
+	// The extension is installed
 	ports = {};
 });
+
+chrome.contextMenus.onClicked.addListener(function(itemData, sender) {
+	if (itemData.menuItemId.startsWith("create_quicknote")) {
+		for (let p in ports) {
+			if (itemData.menuItemId === 'create_quicknote' + ports[p].sender.tab.id) {
+				ports[p].postMessage({
+					id:   ports[p].sender.id,
+					cmd:  "createnote",
+					text: itemData.selectionText
+				});
+			}
+		}
+	} else if (itemData.menuItemId.startsWith("send_webpage")) {
+		chrome.tabs.query({active: true, currentWindow:true}, function(tabs) {
+			let tab = tabs[0];
+			for (let p in ports) {
+				if (itemData.menuItemId === 'send_webpage' + ports[p].sender.tab.id) {
+					ports[p].postMessage({
+						id:     ports[p].sender.id,
+						cmd:    "openlink",
+						url:    itemData.pageUrl,
+						title:  tab.title,
+						width:  tab.width,
+						height: tab.height
+					});
+				}
+			}
+		});
+	} else if (itemData.menuItemId.startsWith("send_link")) {
+		for (let p in ports) {
+			if (itemData.menuItemId === 'send_link' + ports[p].sender.tab.id) {
+				ports[p].postMessage({
+					id:  ports[p].sender.id,
+					cmd: "openlink",
+					url: itemData.linkUrl
+				});
+			}
+		}
+	} else if (itemData.menuItemId.startsWith("send_image")) {
+		for (let p in ports) {
+			if (itemData.menuItemId === 'send_image' + ports[p].sender.tab.id) {
+				ports[p].postMessage({
+					id:  ports[p].sender.id,
+					cmd: "openimage",
+					url: itemData.srcUrl || itemData.linkUrl
+				});
+			}
+		}
+	} else if (itemData.menuItemId.startsWith("send_screenshot")) {
+		chrome.tabs.query({active: true, currentWindow:true}, function(tabs) {
+			let tab = tabs[0];
+			chrome.tabs.captureVisibleTab(null, {format: "jpeg", quality: 85}, function(screenshotUrl) {
+				for (let p in ports) {
+					if (itemData.menuItemId === 'send_screenshot' + ports[p].sender.tab.id) {
+						ports[p].postMessage({
+							id:     ports[p].sender.id,
+							cmd:    "screenshot",
+							src:    screenshotUrl,
+							title:  tab.title,
+							url:    tab.url,
+							width:  tab.width,
+							height: tab.height
+						});
+					}
+				}
+			});
+		});
+	}
+});
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 chrome.runtime.onSuspend.addListener(function() {
 });
@@ -82,11 +205,13 @@ chrome.runtime.onConnect.addListener(function(port) {
 		var urls = uniqueArray(allURL(ports));
 		var numberOfConnection = urls.length;
 		if (numberOfConnection === 0) {
-			chrome.browserAction.setBadgeText({text:""});
+			chrome.browserAction.setBadgeText({text: ""});
 		} else {
-			chrome.browserAction.setBadgeText({text:numberOfConnection.toString()});
+			chrome.browserAction.setBadgeText({text: numberOfConnection.toString()});
 		}
 		port.onMessage.removeListener(portOnMessageHanlder);
+		// Remove the context menu entries
+		removeContextMenus(port.sender.tab.id);
 	});
 
 	// this one is called for each message from "content-script.js"
@@ -102,6 +227,10 @@ chrome.runtime.onConnect.addListener(function(port) {
 				ports[port.sender.tab.id] = port;
 				var numberOfConnection = Object.keys(ports).length;
 				chrome.browserAction.setBadgeText({text: numberOfConnection.toString()});
+
+				// setup the context menus
+				let sage2name = port.sender.tab.title.split('-')[1];
+				setUpContextMenus(port.sender.tab.id, sage2name);
 			} else {
 				ports[port.sender.tab.id] = port;
 			}
