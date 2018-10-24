@@ -439,6 +439,28 @@ function SAGE2_init() {
 				url: event.data.url
 			});
 		}
+		// event coming from the extension ("create quickNote from..."")
+		if (event.data.cmd === "createnote") {
+			let qnote = {};
+			qnote.appName = "quickNote";
+			qnote.customLaunchParams = {};
+			qnote.customLaunchParams.clientName  = interactor.pointerLabel;
+			qnote.customLaunchParams.clientInput = event.data.text;
+			qnote.customLaunchParams.colorChoice = "#ffffe0";
+			// Send creation message to server
+			wsio.emit('launchAppWithValues', qnote);
+		}
+		// event coming from the extension
+		if (event.data.cmd === "openimage") {
+			// Open the image viewer
+			wsio.emit('addNewWebElement', {
+				url: event.data.url,
+				type: "image/jpeg",
+				id: interactor.uniqueID,
+				// Middle of the screen
+				position: [0.5, 0.5]
+			});
+		}
 	});
 
 	// This will startup the uiNote and uiDraw sections of the UI.
