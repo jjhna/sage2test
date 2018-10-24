@@ -202,7 +202,7 @@ var media_stream = SAGE2_App.extend({
 			appId: this.id,
 			destinationId: this.webrtcParts.streamerId,
 			sourceId: wsio.UID,
-			message: "appStarted",
+			message: "appStarted"
 		});
 	},
 
@@ -223,6 +223,6 @@ var media_stream = SAGE2_App.extend({
 			// Otherwise, let it get handled
 			this.webrtcParts.s2wpc.readMessage(responseObject.message);
 		}
-	},
+	}
 
 });

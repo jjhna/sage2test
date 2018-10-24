@@ -18,6 +18,7 @@ var SAGE2_webrtc_ui_tracker = {
 	enabled: true,
 	stream: null,
 	allPeers: [],
+	shouldHaltNormalUiScreenSendAfterRtcConnection: false,
 	streamSuccess: function(stream) {
 		SAGE2_webrtc_ui_tracker.debugprint("Success Got stream");
 		SAGE2_webrtc_ui_tracker.stream = stream;
@@ -41,7 +42,7 @@ var SAGE2_webrtc_ui_tracker = {
 		if (SAGE2_webrtc_ui_tracker.debug) {
 			console.log("SAGE2_webrtc> DEBUG> " + message);
 		}
-	},
+	}
 };
 
 
@@ -85,7 +86,7 @@ class SAGE2WebrtcPeerConnection {
 		this.configForPeer = {
 			iceServers: [
 				// These stun servers from simplepeer.js
-				{ urls: "stun:stun.l.google.com:19302" },
+				{ urls: "stun:stun.l.google.com:19302" }
 				// {urls:"stun:global.stun.twilio.com:3478?transport=udp"},
 			]
 		};
@@ -220,7 +221,7 @@ class SAGE2WebrtcPeerConnection {
 				appId: this.appId,
 				destinationId: this.streamerId,
 				sourceId: this.myId,
-				message: message,
+				message: message
 			});
 		} else {
 			this.debugprint("ERROR, sendMessage activated without one of the following: myId, streamerId, displayId");
@@ -240,17 +241,25 @@ class SAGE2WebrtcPeerConnection {
 		// Check if it was an ice message, if it was add it
 		if (mConverted.ice !== undefined) {
 			this.peer.addIceCandidate(mConverted.ice)
-				.catch(() => { console.log("SAGE2_webrtc> ice candidate error"); });
+				.catch(() => {
+					console.log("SAGE2_webrtc> ice candidate error");
+				});
 		} else if (mConverted.sdp.type === "answer") {
 			// Answers are seen by the UI (streamer)
 			this.peer.setRemoteDescription(new RTCSessionDescription(mConverted.sdp))
-				.then(() => { this.sendStoredIceCandidates(); })
-				.catch(() => { console.log("SAGE2_webrtc> answer handling error"); });
+				.then(() => {
+					this.sendStoredIceCandidates();
+				})
+				.catch(() => {
+					console.log("SAGE2_webrtc> answer handling error");
+				});
 		} else if (mConverted.sdp.type === "offer") {
 			this.debugprint("got offer, going to make answer");
 			// Offers seen by displays
 			this.peer.setRemoteDescription(new RTCSessionDescription(mConverted.sdp))
-				.then(()=> { return this.peer.createAnswer(); })
+				.then(() => {
+					return this.peer.createAnswer();
+				})
 				.then((answer) => {
 					this.peer.setLocalDescription(answer);
 					this.debugprint("Set local description, btw answer was:");
@@ -262,7 +271,9 @@ class SAGE2WebrtcPeerConnection {
 					this.sendStoredIceCandidates();
 					this.debugprint("sent stored ice candidates");
 				})
-				.catch(() => { console.log("SAGE2_webrtc> offer handling error"); });
+				.catch(() => {
+					console.log("SAGE2_webrtc> offer handling error");
+				});
 		} else {
 			this.debugprint(" ERROR unknown message (not ice, answer or offer): " + message);
 		}
@@ -270,6 +281,11 @@ class SAGE2WebrtcPeerConnection {
 
 	// Sends the stored up ice candidates, sending too early will cause silent errors within webrtc
 	sendStoredIceCandidates() {
+		this.debugprint("Detected rtc candidate connection in UI, stopping default share method.");
+		if (this.shouldHaltNormalUiScreenSendAfterRtcConnection) {
+			interactor.broadcasting = false;
+		}
+
 		this.completedOfferAnswerResponse = true;
 		for (let i = 0; i < this.iceCandidatesReadyToSend.length; i++) {
 			this.sendMessage(this.iceCandidatesReadyToSend[i]);
