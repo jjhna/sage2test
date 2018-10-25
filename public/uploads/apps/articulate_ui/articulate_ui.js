@@ -232,7 +232,7 @@ console.log("debugDatagram: "+ data);
 
 		console.log("TEXT INPUT " + data.text);
 		//new logic to maintain the same sessionId
-		var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/";
+		var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query?utterance=";
 		var requestIndex = this.requests.push(base_url + data.text); //returns the number of elements
 		//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
 
@@ -291,7 +291,11 @@ console.log("debugDatagram: "+ data);
 		url = url.replace(/"/g,"");
 
 		//new: adding the gestureRelease
-		url=url+"/gesturetargetid/"+targetHubId;
+		if(targetHubId != null)
+			url=url+"&gesturetargetid="+targetHubId;
+		//else {
+
+		//}
 		console.log(url);
 
 		this.callbackFunc = this.callback.bind(this);
@@ -333,7 +337,7 @@ console.log("debugDatagram: "+ data);
 		if(requestIndex >= 1){
 			//for (var i = 0; i < this.responces.length; i++){
 			//	if(this.responces[i].sessionId != null)
-			final_url = url + ";jsessionid=" + this.sessionId;
+			final_url = url + "&jsessionid=" + this.sessionId;
 			//final_url = url + ";jsessionid=" + this.responces[requestIndex-1].sessionId;
 			//}
 			console.log("supsequent call " + final_url);
