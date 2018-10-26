@@ -470,8 +470,8 @@ console.log("debugDatagram: "+ data);
 			console.log(plotTitle);
 
 			type = specificationObj["plotType"].toLowerCase(); //what kind of plot: bar chart, map, line chart
-			x = specificationObj["horizontalGroupAxis"].toLowerCase();//changed: specificationObj["horizontalGroupAxis"].toLowerCase()
-			y = specificationObj["verticalAxis"].toLowerCase();
+			x = specificationObj["horizontalGroupAxis"];//.toLowerCase();//changed: specificationObj["horizontalGroupAxis"].toLowerCase()
+			y = specificationObj["verticalAxis"];//.toLowerCase();
 			hub_id = specificationObj["id"];
 			id = null;//specificationObj["id"]; //not using right now...
 			if( specificationObj["horizontalAxis"] ) // this  just required some additional parsing...
@@ -479,6 +479,7 @@ console.log("debugDatagram: "+ data);
 					id = null;//specificationObj["id"];
 				else
 					id = specificationObj["horizontalAxis"].toLowerCase();
+
 			dataToVisualize = [];
 
 			//print for sanity
