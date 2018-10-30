@@ -324,8 +324,9 @@ Interaction.prototype.scrollSelectedItem = function(scale) {
 		return null;
 	}
 
-	var iWidth = this.selectedScrollItem.width * scale;
+	var iWidth  = this.selectedScrollItem.width * scale;
 	var iHeight = iWidth / this.selectedScrollItem.aspect;
+
 	if (iWidth < this.configuration.ui.minWindowWidth) {
 		iWidth  = this.configuration.ui.minWindowWidth;
 		iHeight = iWidth / this.selectedScrollItem.aspect;
@@ -342,13 +343,27 @@ Interaction.prototype.scrollSelectedItem = function(scale) {
 		iHeight = this.configuration.ui.maxWindowHeight;
 		iWidth  = iHeight * this.selectedScrollItem.aspect;
 	}
-	var iCenterX = this.selectedScrollItem.left + (this.selectedScrollItem.width / 2);
-	var iCenterY = this.selectedScrollItem.top + (this.selectedScrollItem.height / 2);
+
+	var iCenterX = this.selectedScrollItem.left + (this.selectedScrollItem.width  / 2);
+	var iCenterY = this.selectedScrollItem.top  + (this.selectedScrollItem.height / 2);
 
 	this.selectedScrollItem.left   = iCenterX - (iWidth / 2);
 	this.selectedScrollItem.top    = iCenterY - (iHeight / 2);
 	this.selectedScrollItem.width  = iWidth;
 	this.selectedScrollItem.height = iHeight;
+
+	// Check the right and bottom boundaries
+	if (this.selectedScrollItem.left >= this.configuration.totalWidth) {
+		// offset a little to the left
+		this.selectedScrollItem.left = this.configuration.totalWidth - this.configuration.ui.titleBarHeight;
+	}
+	if (this.selectedScrollItem.top >= this.configuration.totalHeight) {
+		this.selectedScrollItem.top = this.configuration.totalHeight - this.configuration.ui.titleBarHeight;
+	}
+	if ((this.selectedScrollItem.left + this.selectedScrollItem.width) < this.configuration.ui.titleBarHeight) {
+		// offset to the right
+		this.selectedScrollItem.left = -this.selectedScrollItem.width + this.configuration.ui.titleBarHeight;
+	}
 
 	this.selectedScrollItem.maximized = false;
 
@@ -475,6 +490,20 @@ Interaction.prototype.resizeSelectedItem = function(pointerX, pointerY) {
 			this.selectedResizeItem.height = this.selectedResizeItem.partitionList.minSize.height;
 			this.selectedResizeItem.top = botCoord - this.selectedResizeItem.height;
 		}
+	}
+
+	// Check the boundaries
+	if (this.selectedResizeItem.left >= this.configuration.totalWidth) {
+		// offset a little to the left
+		this.selectedResizeItem.left = this.configuration.totalWidth - this.configuration.ui.titleBarHeight;
+	}
+	if (this.selectedResizeItem.top >= this.configuration.totalHeight) {
+		// offset a little upward
+		this.selectedResizeItem.top = this.configuration.totalHeight - this.configuration.ui.titleBarHeight;
+	}
+	if ((this.selectedResizeItem.left + this.selectedResizeItem.width) < this.configuration.ui.titleBarHeight) {
+		// offset to the right
+		this.selectedResizeItem.left = -this.selectedResizeItem.width + this.configuration.ui.titleBarHeight;
 	}
 
 	return {
