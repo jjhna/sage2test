@@ -1434,7 +1434,6 @@ function SAGE2_interaction(wsio) {
 		}
 	});
 
-
 	/**
 	* Getter for user name
 	*
@@ -1456,7 +1455,6 @@ function SAGE2_interaction(wsio) {
 			return userSettings.SAGE2_userEmail;
 		}
 	});
-
 
 	/**
 	* Getter for pointer color
@@ -1480,7 +1478,6 @@ function SAGE2_interaction(wsio) {
 		}
 	});
 
-
 	this.streamSuccess               = this.streamSuccessMethod.bind(this);
 	this.streamFail                  = this.streamFailMethod.bind(this);
 	this.streamEnded                 = this.streamEndedMethod.bind(this);
@@ -1502,9 +1499,6 @@ function SAGE2_interaction(wsio) {
 	this.changeScreenShareResolution = this.changeScreenShareResolutionMethod.bind(this);
 	this.changeScreenShareQuality    = this.changeScreenShareQualityMethod.bind(this);
 	this.step                        = this.stepMethod.bind(this);
-
-
-	/** init **/
 
 	// Check if a domain cookie exists for the name
 	var cookieName = getCookie('SAGE2_ptrName');
