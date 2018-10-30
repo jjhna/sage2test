@@ -3386,7 +3386,7 @@ function wsLoadApplication(wsio, data) {
 		}
 
 		// Get the drop position and convert it to wall coordinates
-		var position = data.position || [0, 0];
+		var position = data.position || [0, config.ui.titleBarHeight];
 
 		if (position[0] > 1) {
 			// value in pixels, used as origin
@@ -3503,7 +3503,7 @@ function wsLoadImageFromBuffer(wsio, data) {
 		data.mime, "", data.url, data.title, {},
 		function(appInstance) {
 			// Get the drop position and convert it to wall coordinates
-			var position = data.position || [0, 0];
+			var position = data.position || [0, config.ui.titleBarHeight];
 			if (position[0] > 1) {
 				// value in pixels, used as origin
 				appInstance.left = position[0];
@@ -3555,7 +3555,7 @@ function wsLoadFileFromServer(wsio, data) {
 	} else {
 		var fileLoadCallBack = function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
-			var position = data.position || [0, 0];
+			var position = data.position || [0, config.ui.titleBarHeight];
 			if (position[0] > 1) {
 				// value in pixels, used as origin
 				appInstance.left = position[0];
@@ -3864,7 +3864,7 @@ function wsAddNewWebElement(wsio, data) {
 		broadcast('storedFileList', getSavedFilesList());
 
 		// Get the drop position and convert it to wall coordinates
-		var position = data.position || [0, 0];
+		var position = data.position || [0, config.ui.titleBarHeight];
 
 		if (position[0] > 1) {
 			// value in pixels, used as origin
@@ -3939,7 +3939,7 @@ function wsCommand(wsio, data) {
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
 	// use the window position if specified
-	let position   = data.position || [0, 0];
+	let position   = data.position || [0, config.ui.titleBarHeight];
 	// use the window size if specified
 	let dimensions = data.dimensions || null;
 	wsLoadApplication(wsio, {
@@ -5414,7 +5414,7 @@ function sendConfig(req, res) {
 function uploadForm(req, res) {
 	var form     = new formidable.IncomingForm();
 	// Drop position
-	var position = [0, 0];
+	var position = [0, config.ui.titleBarHeight];
 	// Open or not the file after upload
 	var openAfter = true;
 	// User information
@@ -5918,7 +5918,7 @@ function processInputCommand(line) {
 		}
 		case 'open': {
 			if (command[1] !== undefined) {
-				var pos  = [0.0, 0.0];
+				var pos  = [0, config.ui.titleBarHeight];
 				var file = command[1];
 				if (command.length === 4) {
 					pos = [parseFloat(command[2]), parseFloat(command[3])];
@@ -10776,7 +10776,7 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 					name: fname
 				}],
 				// position and size
-				[0, 0, config.totalWidth / 4],
+				[0, config.ui.titleBarHeight, config.totalWidth / 4],
 				// username and color
 				"screenshot", "#B4B4B4",
 				// to be opened afterward
@@ -10797,7 +10797,7 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 			// file name
 			name: fileSaveObject.fileName}],
 		// position and size
-		[0, 0, config.totalWidth / 4],
+		[0, config.ui.titleBarHeight, config.totalWidth / 4],
 		// username and color
 		"screenshot", "#B4B4B4",
 		// to be opened afterward
@@ -10997,7 +10997,7 @@ function appFileSaveRequest(wsio, data) {
 					path: fullpath
 				};
 				// Add the file to the asset library and not open it (false)
-				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", false);
+				manageUploadedFiles(fileObject, [0, config.ui.titleBarHeight], data.app, "#B4B4B4", false);
 			}
 		} catch (err) {
 			sageutils.log('File', "error while saving to", fullpath + ":" + err);
