@@ -381,18 +381,28 @@ function initializeSage2Server() {
 		sageutils.log("Secure", "Saved to file name", passwordFile);
 		// the session is protected
 		config.passwordProtected = true;
+		// New password, regenerate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
 	} else if (sageutils.fileExists(passwordFile)) {
-		// If a password file exists, load it
-		var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
-		var passwordFileJson       = JSON.parse(passwordFileJsonString);
-		if (passwordFileJson.pwd !== null) {
-			global.__SESSION_ID = passwordFileJson.pwd;
-			sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
-			// the session is protected
-			config.passwordProtected = true;
-		} else {
-			sageutils.log("Secure", "Invalid hash file", passwordFile);
-		}
+		// remove pasword file, if option not specified
+		fs.unlinkSync(passwordFile);
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
+
+		// // If a password file exists, load it
+		// var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
+		// var passwordFileJson       = JSON.parse(passwordFileJsonString);
+		// if (passwordFileJson.pwd !== null) {
+		// 	global.__SESSION_ID = passwordFileJson.pwd;
+		// 	sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
+		// 	// the session is protected
+		// 	config.passwordProtected = true;
+		// } else {
+		// 	sageutils.log("Secure", "Invalid hash file", passwordFile);
+		// }
+	} else {
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
 	}
 
 	/*
@@ -5931,9 +5941,14 @@ function processInputCommand(line) {
 						position: pos
 					});
 				} else {
-					wsLoadFileFromServer({id: "127.0.0.1:42"}, {
-						application: "something",
-						filename: file,
+					// wsLoadFileFromServer({id: "127.0.0.1:42"}, {
+					// 	application: "something",
+					// 	filename: file,
+					// 	user: "127.0.0.1:42",
+					// 	position: pos
+					// });
+					wsLoadApplication({id: "127.0.0.1:42"}, {
+						application: file,
 						user: "127.0.0.1:42",
 						position: pos
 					});

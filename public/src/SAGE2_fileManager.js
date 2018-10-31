@@ -418,13 +418,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 			tooltip: "Mouse and keyboard operations and shortcuts",
 			callback: function (evt) {
 				window.open("help/interaction.html", '_blank');
-				// webix.modalbox({
-				// 	title: "Mouse and keyboard operations",
-				// 	buttons: ["Ok"],
-				// 	text: "<img src=/images/cheat-sheet.jpg width=100%>",
-				// 	width: "70%",
-				// 	height: "50%"
-				// });
 			}
 		},
 
@@ -432,6 +425,23 @@ function FileManager(wsio, mydiv, uniqueID) {
 			tooltip: "Quick Reference for Voice Commands",
 			callback: function (evt) {
 				window.open("help/voice.html", '_blank');
+			}
+		},
+
+		notehelp_menu: {value: "Connection Note",
+			tooltip: "Create a quick note with connection information",
+			callback: function (evt) {
+				// Open the server generated quickNote
+				wsio.emit('loadApplication', {
+					application: '/user/notes/Connect.note',
+					user: _this.uniqueID,
+					dimensions: [720, 690],
+					// Center top
+					position: [
+						(_this.json_cfg.totalWidth - 720) / 2,
+						_this.json_cfg.ui.titleBarHeight
+					]
+				});
 			}
 		},
 
