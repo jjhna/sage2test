@@ -445,6 +445,14 @@ function FileManager(wsio, mydiv, uniqueID) {
 			}
 		},
 
+		clearcache_menu: {value: "Clear Cache",
+			tooltip: "Clear your browser: cache, cookies, local storage, etc",
+			callback: function (evt) {
+				// NAvigate to the 'logout' route
+				window.location.href = "/logout";
+			}
+		},
+
 		separator2: { value: "separator" },
 
 		forum_menu: {value: "User Forum",
