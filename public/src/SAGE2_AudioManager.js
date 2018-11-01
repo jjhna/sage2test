@@ -28,8 +28,12 @@ var autoplay = false;
 var initialVolume = 8;
 // WebAudio API variables
 var audioCtx, channelCount;
+var channelMerger;
+var leftSpeakers = {};
+var rightSpeakers = {};
 var audioGainNodes   = {};
 var audioPannerNodes = {};
+var speakerLayout = [];
 
 // Number of sound instances being played at once
 var numberOfSounds    = 0;
@@ -204,7 +208,7 @@ function setupListeners() {
 		};
 		// Array of assets to preload
 		var soundAssets = [
-			{id: "startup",   src: jingle,          defaultPlayProps: defaults},
+			{id: "startup",   src: "sage 2 startup sound.wav",          defaultPlayProps: defaults},
 			{id: "newapp",    src: "newapp2.mp3",   defaultPlayProps: defaults},
 			{id: "deleteapp", src: "deleteapp.mp3", defaultPlayProps: defaults},
 			{id: "remote",    src: "remote.mp3",    defaultPlayProps: lowdefaults},
@@ -222,8 +226,15 @@ function setupListeners() {
 		audioCtx = new(window.AudioContext || window.webkitAudioContext)();
 		audioCtx.listener.setPosition(0, 0, 0);
 		channelCount = audioCtx.destination.maxChannelCount;
+		audioCtx.destination.channelCount = channelCount;
 		console.log("Total Number of Available Output Channels: " + channelCount);
+		
+		//create merger and connect it to destination to re order outputs for various speaker setups
+		channelMerger = audioCtx.createChannelMerger(channelCount);
+		channelMerger.connect(audioCtx.destination);
 		totalWidth  = json_cfg.totalWidth;
+		
+		// Play startup sound
 	});
 
 	wsio.on('createAppWindow', function(data) {
@@ -316,6 +327,8 @@ function setupListeners() {
 				});
 
 				audioPannerNodes[vid.id] = panX;
+				leftSpeakers[vid.id] = 0;
+				rightSpeakers[vid.id] = 0;
 
 				// source -> gain -> pan -> speakers
 				audioSource.connect(gainNode);
@@ -398,7 +411,7 @@ function setupListeners() {
 		}
 	});
 
-	wsio.on('setItemPosition', function (data) {
+	wsio.on('setItemPosition', function (data) {		
 		if (audioPannerNodes[data.elemId]) {
 			// Calculate center of the application window
 			var halfTotalWidth = totalWidth / 2;
@@ -421,10 +434,21 @@ function setupListeners() {
 			
 			var leftChannel = Math.floor((data.elemLeft / totalWidth) * channelCount);
 			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * channelCount);
-			// console.log("left: " + leftChannel + " right " + rightChannel);
-			leftSpeakerParameter.setValueAtTime(leftChannel, audioCtx.currentTime);
-			rightSpeakerParameter.setValueAtTime(rightChannel, audioCtx.currentTime);
-			gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
+			
+			if(leftChannel < 0)
+				leftChannel = 0;
+			if(rightChannel < 0)
+				rightChannel = 0;
+			
+			if(leftChannel != leftSpeakers[data.elemId] || rightChannel != rightSpeakers[data.elemId])
+			{
+				leftSpeakers[data.elemId] = leftChannel;
+				rightSpeakers[data.elemId] = rightChannel;
+				gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+				gain.setTargetAtTime(1, audioCtx.currentTime, 1.0);
+				leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0.5);
+				rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0.5);
+			}
 		}
 	});
 
@@ -452,11 +476,20 @@ function setupListeners() {
 			var leftChannel = Math.floor((data.elemLeft / totalWidth) * channelCount);
 			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * channelCount);
 			
-			// console.log("setItemPositionAndSize left: " + leftChannel + " right " + rightChannel);
-			
-			leftSpeakerParameter.setValueAtTime(leftChannel, audioCtx.currentTime);
-			rightSpeakerParameter.setValueAtTime(rightChannel, audioCtx.currentTime);
-			gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
+			if(leftChannel < 0)
+				leftChannel = 0;
+			if(rightChannel < 0)
+				rightChannel = 0;
+
+			if(leftChannel != leftSpeakers[data.elemId] || rightChannel != rightSpeakers[data.elemId])
+			{
+				leftSpeakers[data.elemId] = leftChannel;
+				rightSpeakers[data.elemId] = rightChannel;
+				gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+				gain.setTargetAtTime(1, audioCtx.currentTime, 1.0);
+				leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0.5);
+				rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0.5);
+			}
 		}
 	});
 
@@ -570,6 +603,8 @@ function setupListeners() {
 		// Delete also the webaudio nodes
 		delete audioPannerNodes[data.elemId];
 		delete audioGainNodes[data.elemId];
+		delete leftSpeakers[data.elemId];
+		delete rightSpeakers[data.elemId];
 	});
 
 	wsio.on('connectedToRemoteSite', function(data) {
@@ -603,6 +638,32 @@ function handleSoundJSLoad(event) {
 		// var instance = createjs.Sound.play(event.src);
 		// // Set the volume
 		// instance.volume = initialVolume / 10;
+		// var startupInstanceNode = instance.sourceNode;
+		
+		// audioCtx.audioWorklet.addModule('/src/panX.js').then(() => {
+		// let panX = new AudioWorkletNode(audioCtx, 'panX', {
+			// channelcount: channelCount,
+			// channelcountmode: 'explicit',
+			// channelinterpretation: 'discrete',
+		// });
+
+		// // source -> gain -> pan -> speakers
+		// startupInstanceNode.connect(panX);
+		// panX.connect(audioCtx.destination);
+			
+		// var left = panX.parameters.get('leftChannel');
+		// var right = panX.parameters.get('rightChannel');
+
+		// for(let i = 0; i < channelCount; i++)
+		// {
+			// left.setTargetAtTime(i, audioCtx.currentTime, i);
+			// right.setTargetAtTime(i+1, audioCtx.currentTime, i+1);
+		// }
+
+	// });
+
+
+		
 	// }
 	console.log('SoundJS> asset loaded', event.id);
 }
