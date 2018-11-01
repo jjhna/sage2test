@@ -1407,6 +1407,8 @@ function initializeExistingApps(wsio, appID) {
 			// does this cause issues?
 			appCopy = Object.assign({}, SAGE2Items.applications.list[key]);
 			delete appCopy.partition;
+			delete appCopy.backgroundItem;
+			delete appCopy.foregroundItems;
 
 			wsio.emit('createAppWindow', appCopy);
 			if (SAGE2Items.renderSync.hasOwnProperty(key)) {
