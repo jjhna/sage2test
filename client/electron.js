@@ -24,7 +24,7 @@ const electron = require('electron');
 // Get platform and hostname
 var os = require('os');
 
-if (os.platform() === "win32") {
+if (os.platform() === "win32" || os.platform() === "darwin") {
 	electron.app.setAppPath(process.cwd());
 }
 
