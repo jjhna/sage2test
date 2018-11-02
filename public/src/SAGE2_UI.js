@@ -250,6 +250,51 @@ function setupFocusHandlers() {
 	});
 }
 
+/**
+ * Event handler for the 'paste' event, which creates notes and opens webview
+ *
+ * @method     pasteHandler
+ * @param      {<type>}  event   The event
+ */
+function pasteHandler(event) {
+	console.log('TARGET', event.target);
+	// get the clipboard data
+	let items = event.clipboardData;
+	// Iterate over the various types
+	for (let i = items.types.length - 1; i >= 0; i--) {
+		let t = items.types[i];
+		if (t === "Files") {
+			// Chrome cannot deal with files yet (maybe with async clipboard API)
+			showSAGE2Message('Cannot paste files yet,<br>Only URLs and plain text.');
+			return;
+		} else if (t === "text/plain" || t === "text/html") {
+			let it = items.items[0];
+			// handle as a string object
+			it.getAsString(function(str) {
+				// detect URLs
+				if (str.startsWith('httpss://') ||
+					str.startsWith('https://')) {
+					// Note very secure, but assumes it is a valid URI
+					wsio.emit('openNewWebpage', {
+						id: interactor.uniqueID,
+						url: str
+					});
+				} else {
+					// Otherwise, use the text and create a quickNote
+					let qnote = {};
+					qnote.appName = "quickNote";
+					qnote.customLaunchParams = {};
+					qnote.customLaunchParams.clientName  = interactor.pointerLabel;
+					qnote.customLaunchParams.clientInput = str;
+					qnote.customLaunchParams.colorChoice = "#ffffe0";
+					// Send creation message to server
+					wsio.emit('launchAppWithValues', qnote);
+				}
+			});
+			return;
+		}
+	}
+}
 
 /**
  * Entry point of the user interface
@@ -374,44 +419,7 @@ function SAGE2_init() {
 	sage2UI.addEventListener('drop',      fileDrop,       false);
 
 	// Handler for 'paste' event (as in copy/paste)
-	document.addEventListener("paste", function(event) {
-		// get the clipboard data
-		let items = event.clipboardData;
-		// Iterate over the various types
-		for (let i = items.types.length - 1; i >= 0; i--) {
-			let t = items.types[i];
-			if (t === "Files") {
-				// Chrome cannot deal with files yet (maybe with async clipboard API)
-				showSAGE2Message('Cannot paste files yet,<br>Only URLs and plain text.');
-				return;
-			} else if (t === "text/plain" || t === "text/html") {
-				let it = items.items[0];
-				// handle as a string object
-				it.getAsString(function(str) {
-					// detect URLs
-					if (str.startsWith('httpss://') ||
-						str.startsWith('https://')) {
-						// Note very secure, but assumes it is a valid URI
-						wsio.emit('openNewWebpage', {
-							id: interactor.uniqueID,
-							url: str
-						});
-					} else {
-						// Otherwise, use the text and create a quickNote
-						let qnote = {};
-						qnote.appName = "quickNote";
-						qnote.customLaunchParams = {};
-						qnote.customLaunchParams.clientName  = interactor.pointerLabel;
-						qnote.customLaunchParams.clientInput = str;
-						qnote.customLaunchParams.colorChoice = "#ffffe0";
-						// Send creation message to server
-						wsio.emit('launchAppWithValues', qnote);
-					}
-				});
-				return;
-			}
-		}
-	}, false);
+	document.addEventListener("paste", pasteHandler, false);
 
 	// Force click for Safari, events:
 	//   webkitmouseforcewillbegin webkitmouseforcechanged
@@ -1503,6 +1511,8 @@ function handleClick(element) {
 							}
 							// close the form
 							this.getTopParentView().hide();
+							// Handler for 'paste' event (as in copy/paste)
+							document.addEventListener("paste", pasteHandler, false);
 						}}
 					]}
 				],
@@ -1517,6 +1527,8 @@ function handleClick(element) {
 			// ESC closes
 			if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 			// ENTER activates
@@ -1549,6 +1561,8 @@ function handleClick(element) {
 				}
 				// close the form
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 		});
@@ -1557,6 +1571,8 @@ function handleClick(element) {
 			// ESC closes
 			if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 			// ENTER activates
@@ -1574,9 +1590,13 @@ function handleClick(element) {
 				}
 				// close the form
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 		});
+		// Handler for 'paste' event (as in copy/paste)
+		document.removeEventListener("paste", pasteHandler, false);
 		// Focus the URL box
 		$$('browser_url').focus();
 
@@ -2683,6 +2703,8 @@ function noteMakerDialog(mode, params, app) {
 								cols: [
 									{
 										view: "button", value: "Close [ESC]", click: function() {
+											// Handler for 'paste' event (as in copy/paste)
+											document.addEventListener("paste", pasteHandler, false);
 											this.getTopParentView().hide();
 										}
 									},
@@ -2728,6 +2750,9 @@ function noteMakerDialog(mode, params, app) {
 
 											// close the form
 											this.getTopParentView().hide();
+
+											// Handler for 'paste' event (as in copy/paste)
+											document.addEventListener("paste", pasteHandler, false);
 										}
 									}
 								]
@@ -2829,14 +2854,15 @@ function noteMakerDialog(mode, params, app) {
 	$$("quicknote_text").attachEvent("onKeyPress", function(code, e) {
 		// ESC closes
 		if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-			this.getTopParentView().hide();
-			return false;
-		}
-		if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+			// Handler for 'paste' event (as in copy/paste)
+			document.addEventListener("paste", pasteHandler, false);
 			this.getTopParentView().hide();
 			return false;
 		}
 	});
+
+	// Handler for 'paste' event (as in copy/paste)
+	document.removeEventListener("paste", pasteHandler, false);
 
 	// Focus the text box
 	$$('quicknote_text').focus();
@@ -2850,6 +2876,9 @@ function noteMakerDialog(mode, params, app) {
  */
 function showDialog(id) {
 	openDialog = id;
+	// Remove 'paste' handler event
+	document.removeEventListener("paste", pasteHandler, false);
+	// Show the dialog
 	document.getElementById('blackoverlay').style.display = "block";
 	document.getElementById(id).style.display = "block";
 }
@@ -2869,6 +2898,8 @@ function hideDialog(id) {
 	if (id == 'uiDrawZone') {
 		uiDrawZoneRemoveSelfAsClient();
 	}
+	// Handler for 'paste' event (as in copy/paste)
+	document.addEventListener("paste", pasteHandler, false);
 }
 
 /**

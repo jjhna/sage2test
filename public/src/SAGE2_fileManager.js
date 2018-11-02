@@ -19,7 +19,7 @@
 
 /* global SAGE2_init, SAGE2_resize, escape, unescape, sage2Version, showDialog */
 /* global removeAllChildren, SAGE2_copyToClipboard, displayUI, dateToYYYYMMDDHHMMSS */
-/* global showSAGE2Message */
+/* global showSAGE2Message, pasteHandler */
 /* global SAGE2_speech */
 
 "use strict";
@@ -1854,11 +1854,15 @@ function FileManager(wsio, mydiv, uniqueID) {
 					{margin: 5, cols: [
 						{view: "button", value: "Cancel", click: function() {
 							this.getTopParentView().hide();
+							// Handler for 'paste' event (as in copy/paste)
+							document.addEventListener("paste", pasteHandler, false);
 						}},
 						{view: "button", value: "Save", type: "form", click: function() {
 							var values = this.getFormView().getValues();
 							wsio.emit('saveSession', values.session);
 							this.getTopParentView().hide();
+							// Handler for 'paste' event (as in copy/paste)
+							document.addEventListener("paste", pasteHandler, false);
 						}}
 					]}
 				],
@@ -1873,6 +1877,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 			// ESC closes
 			if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 			// ENTER activates
@@ -1880,9 +1886,13 @@ function FileManager(wsio, mydiv, uniqueID) {
 				var values = this.getFormView().getValues();
 				wsio.emit('saveSession', values.session);
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 		});
+		// Handler for 'paste' event (as in copy/paste)
+		document.removeEventListener("paste", pasteHandler, false);
 		// Set focus on the text box
 		$$('session_filename').focus();
 		// select the text in the box (easier to type another name)
