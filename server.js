@@ -3320,6 +3320,18 @@ function deleteAllApplications(wsio) {
 
 	// Reset the app_id counter to 0
 	getUniqueAppId(-1);
+
+	// Reset structure to handle automated placement of apps
+	appLaunchPositioning = {
+		xStart: 10,
+		yStart: 50,
+		xLast: -1,
+		yLast: -1,
+		widthLast: -1,
+		heightLast: -1,
+		tallestInRow: -1,
+		padding: 20
+	};
 }
 
 /**
