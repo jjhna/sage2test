@@ -1224,8 +1224,7 @@ function setupListeners(wsio) {
 
 	wsio.on('createFolder',                         wsCreateFolder);
 
-	// Jupyper messages
-	wsio.on('startJupyterSharing',                  wsStartJupyterSharing);
+	// Jupyter messages
 	wsio.on('updateJupyterSharing',                 wsUpdateJupyterSharing);
 
 	// message passing between clients
@@ -10864,57 +10863,31 @@ function wsPerformanceData(wsio, data) {
 }
 
 
-/**
- * Start a jupyter connection
- *
- * @method     wsStartJupyterSharing
- * @param      {Object}  wsio    The websocket
- * @param      {Object}  data    The data
- */
-function wsStartJupyterSharing(wsio, data) {
-	sageutils.log('Jupyter', "received new stream:", data.id);
-
-	/*var i;
-	SAGE2Items.renderSync[data.id] = {clients: {}, chunks: []};
-	for (i = 0; i < clients.length; i++) {
-		if (clients[i].clientType === "display") {
-			SAGE2Items.renderSync[data.id].clients[clients[i].id] = {wsio: clients[i], readyForNextFrame: false, blocklist: []};
-		}
-	}
-	*/
-
-	console.log(data.width, data.height);
-
-	// forcing 'int' type for width and height
-	data.width  = parseInt(data.width,  10);
-	data.height = parseInt(data.height, 10);
-
-	// appLoader.createJupyterApp(data.src, data.type, data.encoding, data.title, data.color, 800, 1200,
-	// 	function(appInstance) {
-	// 		appInstance.id = data.id;
-	// 		handleNewApplication(appInstance, null);
-	// 	}
-	// );
-
-	console.log(data.id);
-
-	console.log("createJupyterApp: ", data.src, data.type, data.encoding, data.title, data.color, data.width, data.height);
-
-	appLoader.createJupyterApp(data.src, data.type, data.encoding, data.title, data.color, data.width, data.height,
-		function (appInstance) {
-			appInstance.id = data.id;
-			handleNewApplication(appInstance, null);
-
-			console.log(appInstance.id);
-		}
-	);
-}
-
+// /**
+//  * Update data from a JupyterLab connection, starting a new application if necessary.
+//  *
+//  * @method     wsUpdateJupyterSharing
+//  * @param      {Object}  wsio    The websocket
+//  * @param      {Object}  data    The data
+//  */
 function wsUpdateJupyterSharing(wsio, data) {
 	sageutils.log('Jupyter', "received update from:", data.id);
 
-	// pass data into app by ID
-	sendApplicationDataUpdate(data);
+	let existingApp = Object.values(SAGE2Items.applications.list).find(app => app.id === data.id);
+
+	// create an app if one does not already exist for this connection+cell
+	if (!existingApp) {
+		appLoader.createJupyterApp(data.src, data.mime, "base64", data.title, "#F27729", data.width, data.height,
+			function (appInstance) {
+				appInstance.id = data.id;
+
+				handleNewApplication(appInstance, null);
+			}
+		);
+	} else {
+		// only update -- pass data into app by ID
+		sendApplicationDataUpdate(data);
+	}
 }
 
 function sendApplicationDataUpdate(data) {
@@ -10932,28 +10905,6 @@ function sendApplicationDataUpdate(data) {
 	broadcast('eventInItem', event);
 }
 
-/*
-function wsUpdateJupyterSharing(wsio, data) {
-	sageutils.log('Jupyter', "received update from:", data.id);
-	sendJupyterUpdates(data);
-}
-
-function sendJupyterUpdates(data) {
-	// var ePosition = {x: 0, y: 0};
-	var eUser = {id: 1, label: "Touch", color: "none"};
-
-	var event = {
-		id: data.id,
-		type: "imageUpload",
-		position: 0,
-		user: eUser,
-		data: data,
-		date: Date.now()
-	};
-
-	broadcast('eventInItem', event);
-}
-*/
 
 /**
  * Method handling a file save request from a SAGE2_App
