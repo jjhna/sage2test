@@ -42,6 +42,8 @@ function SAGE2_interaction(wsio) {
 	this.mediaVideo  = null;
 	this.mediaResolution = 2;
 	this.mediaQuality    = 9;
+	// By default, do not use WebRTC
+	this.mediaUseRTC     = false;
 	this.chromeDesktopCaptureEnabled = false;
 	this.broadcasting  = false;
 	this.gotRequest    = false;
@@ -1061,6 +1063,17 @@ function SAGE2_interaction(wsio) {
 	};
 
 	/**
+	* Handler to enable webrtc desktop sharing
+	*
+	* @method changeScreenShareWebRTCMethod
+	* @param value {Boolean} true/false for webrtc technique
+	*/
+	this.changeScreenShareWebRTCMethod = function(value) {
+		this.mediaUseRTC = value ? true : false;
+		console.log('WebRTC value changed', this.mediaUseRTC);
+	};
+
+	/**
 	* Handler for screen resolution selection
 	*
 	* @method changeScreenShareResolutionMethod
@@ -1387,6 +1400,12 @@ function SAGE2_interaction(wsio) {
 									{id: 7, value: "Medium"},
 									{id: 9, value: "High"}
 								]
+							},
+							{
+								view: "checkbox",
+								label: "Use WebRTC",
+								id:   "use_webrtc",
+								value: this.mediaUseRTC
 							}
 						]
 					},
@@ -1407,6 +1426,11 @@ function SAGE2_interaction(wsio) {
 
 		// change screen resolution
 		if (type === 'main') {
+			let rtc = $$("use_webrtc");
+			rtc.attachEvent("onChange", () => {
+				this.changeScreenShareWebRTC(rtc.getValue());
+			});
+
 			let res = $$("screen_resolution");
 			res.attachEvent("onChange", () => {
 				this.changeScreenShareResolution(res.getValue() - 1, res.getText());
@@ -1505,6 +1529,7 @@ function SAGE2_interaction(wsio) {
 	this.changeSage2PointerColor     = this.changeSage2PointerColorMethod.bind(this);
 	this.changeScreenShareResolution = this.changeScreenShareResolutionMethod.bind(this);
 	this.changeScreenShareQuality    = this.changeScreenShareQualityMethod.bind(this);
+	this.changeScreenShareWebRTC     = this.changeScreenShareWebRTCMethod.bind(this);
 	this.step                        = this.stepMethod.bind(this);
 
 
