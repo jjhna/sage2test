@@ -23,29 +23,15 @@ class panX extends AudioWorkletProcessor {
     let leftOutputChannel = output[Math.floor(leftChannelParameter[0])];
     let rightOutputChannel = output[Math.floor(rightChannelParameter[0])];
 
-    let leftInputChannel = input[0];
-    let rightInputChannel = input[1];
+    // let leftInputChannel = input[0];
+    // let rightInputChannel = input[1];
 
     // console.log("L " + leftOutputChannel.length + " R " + rightOutputChannel.length + "gain" + gain[0]);
-	if(gain.length === 1)
-		for (let i = 0; i < leftInputChannel.length; ++i) {
-			leftOutputChannel[i] = leftInputChannel[i];// * gain[0];
-			rightOutputChannel[i] = rightInputChannel[i];// * gain[0];
-		}
-	else
-		for (let i = 0; i < leftInputChannel.length; ++i) {
-			leftOutputChannel[i] = leftInputChannel[i];// * gain[i];
-			rightOutputChannel[i] = rightInputChannel[i];// * gain[i];
-		}
-	
-	// if(gain.length === 1)
-		// for (let i = 0; i < rightInputChannel.length; ++i) {
-			// rightOutputChannel[i] = rightInputChannel[i] * gain[0];
-		// }
-	// else
-		// for (let i = 0; i < rightInputChannel.length; ++i) {
-			// rightOutputChannel[i] = rightInputChannel[i] * gain[i];
-		// }
+	// for(let channel = 0; channel < this.channelCount; ++channel)
+	// {
+		output[Math.floor(leftChannelParameter[0])].set(input[0].map(v => v * gain[0]));
+		output[Math.floor(rightChannelParameter[0])].set(input[1].map(v => v * gain[0]));
+	// }
 
     return true;
   }//process

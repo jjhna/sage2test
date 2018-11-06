@@ -33,7 +33,10 @@ var leftSpeakers = {};
 var rightSpeakers = {};
 var audioGainNodes   = {};
 var audioPannerNodes = {};
-var speakerLayout = [];
+var speakerWalls = [];
+var wallsSpeakers = [];
+var wallOffsets = [];
+var wall = 1;
 
 // Number of sound instances being played at once
 var numberOfSounds    = 0;
@@ -150,6 +153,33 @@ function SAGE2_init() {
 	});
 }
 
+function routeSpeakers() {
+	var speakerOrderingFromHTML = document.getElementById("speakerWalls").value;
+	speakerWalls = speakerOrderingFromHTML.split(',');
+	console.log("Speaker Wall Ordering: ");
+
+	var totalSpeakers = 0;
+	for(var wall = 0; wall < speakerWalls.length; wall++)
+	{
+		for(var wallsSpeaker = 0; wallsSpeaker < speakerWalls[wall]; wallsSpeaker++)
+		{
+			totalSpeakers++;
+			wallsSpeakers[totalSpeakers - +1] = wall + +1;
+			
+			console.log((wallsSpeaker + +1) + "-th Speaker " + totalSpeakers + " set to wall: " + wallsSpeakers[totalSpeakers]);
+		}
+	}
+	
+	for(var w = 0; w < speakerWalls.length; w++)
+	{
+		if(w!=0)
+			wallOffsets[w] = wallOffsets[w - 1] + +speakerWalls[w];
+		else
+			wallOffsets[w] = +speakerWalls[w];
+		console.log("wall offsets for wall" + w + ": " + wallOffsets[w]);
+	}
+}
+
 function setupListeners() {
 	// wall values
 	var totalWidth;
@@ -228,10 +258,8 @@ function setupListeners() {
 		channelCount = audioCtx.destination.maxChannelCount;
 		audioCtx.destination.channelCount = channelCount;
 		console.log("Total Number of Available Output Channels: " + channelCount);
-		
+
 		//create merger and connect it to destination to re order outputs for various speaker setups
-		channelMerger = audioCtx.createChannelMerger(channelCount);
-		channelMerger.connect(audioCtx.destination);
 		totalWidth  = json_cfg.totalWidth;
 		
 		// Play startup sound
@@ -317,13 +345,13 @@ function setupListeners() {
 			// WebAudio API
 			var audioSource = audioCtx.createMediaElementSource(vid);
 			var gainNode    = audioCtx.createGain();
-			audioGainNodes[vid.id] = gainNode;
+			audioGainNodes[vid.id] = gainNode;	
 
 			audioCtx.audioWorklet.addModule('/src/panX.js').then(() => {
 				let panX = new AudioWorkletNode(audioCtx, 'panX', {
 					channelCount: channelCount,
 					channelCountMode: 'explicit',
-					channelInterpretation: 'discrete',
+					channelInterpretation: 'discrete'
 				});
 
 				audioPannerNodes[vid.id] = panX;
@@ -432,22 +460,32 @@ function setupListeners() {
 			var leftSpeakerParameter = panNode.parameters.get('leftChannel');
 			var rightSpeakerParameter = panNode.parameters.get('rightChannel');
 			
-			var leftChannel = Math.floor((data.elemLeft / totalWidth) * channelCount);
-			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * channelCount);
+			var leftChannel = Math.floor((data.elemLeft / totalWidth) * speakerWalls[wall]) + +wallOffsets[wall - +1] + +2;
+			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * speakerWalls[wall]) + +wallOffsets[wall - +1] + +2;
 			
 			if(leftChannel < 0)
 				leftChannel = 0;
 			if(rightChannel < 0)
 				rightChannel = 0;
+			if(rightChannel == leftChannel)
+				rightChannel = leftChannel + +1;
+			if(leftChannel == channelCount)
+				leftChannel = channelCount - +1;
+			if(rightChannel == channelCount)
+				rightChannel = channelCount - +1;			
 			
+			//if(speakerOrdering[leftChannel] == leftChannel - 1)
+			console.log("leftchan: " + leftChannel);
+			
+			gain.setTargetAtTime(1, audioCtx.currentTime, 0);
 			if(leftChannel != leftSpeakers[data.elemId] || rightChannel != rightSpeakers[data.elemId])
 			{
 				leftSpeakers[data.elemId] = leftChannel;
 				rightSpeakers[data.elemId] = rightChannel;
-				gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
-				gain.setTargetAtTime(1, audioCtx.currentTime, 1.0);
-				leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0.5);
-				rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0.5);
+				//gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+				//gain.setTargetAtTime(1, audioCtx.currentTime, 1.0);
+				leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0);
+				rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0);
 			}
 		}
 	});
@@ -473,22 +511,28 @@ function setupListeners() {
 			var leftSpeakerParameter = panNode.parameters.get('leftChannel');
 			var rightSpeakerParameter = panNode.parameters.get('rightChannel');
 			
-			var leftChannel = Math.floor((data.elemLeft / totalWidth) * channelCount);
-			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * channelCount);
+			var leftChannel = Math.floor((data.elemLeft / totalWidth) * speakerWalls[wall]) + +wallOffsets[wall - +1] + +2;
+			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * speakerWalls[wall]) + +wallOffsets[wall - +1] + +2;
 			
 			if(leftChannel < 0)
 				leftChannel = 0;
 			if(rightChannel < 0)
 				rightChannel = 0;
+			if(rightChannel == leftChannel)
+				rightChannel = leftChannel + +1;
+			if(leftChannel == channelCount)
+				leftChannel = channelCount - +1;
+			if(rightChannel == channelCount)
+				rightChannel = channelCount - +1;			
 
 			if(leftChannel != leftSpeakers[data.elemId] || rightChannel != rightSpeakers[data.elemId])
 			{
 				leftSpeakers[data.elemId] = leftChannel;
 				rightSpeakers[data.elemId] = rightChannel;
-				gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
-				gain.setTargetAtTime(1, audioCtx.currentTime, 1.0);
-				leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0.5);
-				rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0.5);
+				//gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+				//gain.setTargetAtTime(1, audioCtx.currentTime, 1.0);
+				leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0);
+				rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0);
 			}
 		}
 	});
