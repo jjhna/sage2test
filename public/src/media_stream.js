@@ -193,17 +193,37 @@ var media_stream = SAGE2_App.extend({
 	// Request stream info from UI, give it the UID from wsio to uniquely identify display client
 	// The UID is used incase there are two display clients pointed at the same viewport
 	webrtc_askUIForStreamInfo: function() {
-		// Need to handshake with the source client
-		this.webrtcParts.streamerId = this.id.split("|")[0];
-		// Send to client
-		wsio.emit("sendDataToClient", {
-			clientDest: this.webrtcParts.streamerId,
-			func: "webrtc_SignalMessageFromDisplay",
-			appId: this.id,
-			destinationId: this.webrtcParts.streamerId,
-			sourceId: wsio.UID,
-			message: "appStarted"
-		});
+		let isRemoteShare = false; // WARNING: only works one hop?
+		// Remote share if there are three pipes: remote_server:port | client| stream id
+		if (this.id.split("|").length === 3) {
+			isRemoteShare = true;
+		}
+		if (!isRemoteShare) {
+			// Need to handshake with the source client
+			this.webrtcParts.streamerId = this.id.split("|")[0];
+			// Send to client
+			wsio.emit("sendDataToClient", {
+				clientDest: this.webrtcParts.streamerId,
+				func: "webrtc_SignalMessageFromDisplay",
+				appId: this.id,
+				destinationId: this.webrtcParts.streamerId,
+				sourceId: wsio.UID,
+				message: "appStarted"
+			});
+		} else {
+			// This is a remotely shared ScreenShare, need to handshake with the original source client
+			// Three parts, the middle is the source client
+			this.webrtcParts.streamerId = this.id.split("|")[1];
+			// Send to client
+			wsio.emit("webRtcRemoteScreenShareSendingDisplayMessage", {
+				clientDest: this.webrtcParts.streamerId,
+				func: "webrtc_SignalMessageFromDisplay",
+				appId: this.id,
+				destinationId: this.webrtcParts.streamerId,
+				sourceId: wsio.UID,
+				message: "appStarted"
+			});
+		}
 	},
 
 	webrtc_SignalMessageFromUi: function(responseObject) {
@@ -213,11 +233,12 @@ var media_stream = SAGE2_App.extend({
 			// If a peer has not yet been made, make it now
 			if (!this.webrtcParts.s2wpc) {
 				this.webrtcParts.s2wpc = new SAGE2WebrtcPeerConnection(
-					this.id, // Id of this app
-					responseObject.sourceId, // UI id for identifying streamerid
-					wsio.UID, // Goto specific display
-					null, // Display doesn't have stream
-					this.webrtcParts.videoElement // Display has desintation video element
+					this.id,                            // Id of this app
+					responseObject.sourceId,            // UI id for identifying streamerid
+					wsio.UID,                           // Goto specific display
+					null,                               // Display doesn't have stream
+					this.webrtcParts.videoElement,      // Display has destination video element
+					responseObject.cameFromSourceServer // Only has a value if came from a remote source
 				);
 			}
 			// Otherwise, let it get handled

@@ -16,9 +16,10 @@ var SAGE2_webrtc_ui_tracker = {
 	debug: false,
 
 	enabled: true,
-	stream: null,
+	stream: null, // Set after plugin gets screenshare stream
 	allPeers: [],
 	shouldHaltNormalUiScreenSendAfterRtcConnection: false,
+	forRemoteDisplay: false,
 	streamSuccess: function(stream) {
 		SAGE2_webrtc_ui_tracker.debugprint("Success Got stream");
 		SAGE2_webrtc_ui_tracker.stream = stream;
@@ -34,7 +35,8 @@ var SAGE2_webrtc_ui_tracker = {
 				interactor.uniqueID, // UI id for identifying streamerid
 				dataFromDisplay.sourceId, // Goto specific display
 				SAGE2_webrtc_ui_tracker.stream, // UI will send stream
-				null) // No stream element on UI
+				null, // No stream element on UI, display version fills this in (media_stream.js)
+				dataFromDisplay.goingToSourceServer) // Will not be undefined if app was remotely shared
 		);
 	},
 
@@ -50,8 +52,10 @@ var SAGE2_webrtc_ui_tracker = {
 
 
 // While written in the public/src folder, this can be accessed by media_stream (screen share app)
+// stream is the UI stream of the screen captures
+// streamElement is the element displaying the stream on the Display
 class SAGE2WebrtcPeerConnection {
-	constructor(appId, streamerId, displayId, stream = null, streamElement = null) {
+	constructor(appId, streamerId, displayId, stream = null, streamElement = null, goingToSourceServer = null) {
 		// Enable debug printing
 		this.debug = false;
 
@@ -60,9 +64,9 @@ class SAGE2WebrtcPeerConnection {
 
 		// Create handlers. Stream means UI, no stream is display
 		if (stream) {
-			this.setupUIHandlers(stream);
+			this.setupUIHandlers(stream, goingToSourceServer);
 		} else {
-			this.setupDisplayHandlers(streamElement);
+			this.setupDisplayHandlers(streamElement, goingToSourceServer);
 		}
 	}
 
@@ -101,7 +105,11 @@ class SAGE2WebrtcPeerConnection {
 		this.completedOfferAnswerResponse = false;
 	}
 
-	setupUIHandlers(stream) {
+	setupUIHandlers(stream, useRemoteServerSending) {
+		if (useRemoteServerSending) {
+			this.forRemoteDisplay = true;
+		}
+
 		this.debugprint("Setting up handlers for UI");
 		// This is a UI sending a stream
 		this.myId = this.streamerId;
@@ -135,7 +143,10 @@ class SAGE2WebrtcPeerConnection {
 		}, this.offerOptions);
 	}
 
-	setupDisplayHandlers(streamElement) {
+	setupDisplayHandlers(streamElement, useRemoteServerSending) {
+		if (useRemoteServerSending) {
+			this.forRemoteClient = true;
+		}
 		this.debugprint("Setting up handlers for Display");
 		// This is a display
 		this.myId = this.displayId;
@@ -199,30 +210,38 @@ class SAGE2WebrtcPeerConnection {
 		if (this.displayId && (this.displayId !== this.myId)) {
 			this.debugprint("Sending to display:" + message);
 			// create data to send, then emit
-			var data = {};
+			let data = {};
 			data.app = this.appId;
 			data.func = "webrtc_SignalMessageFromUi";
 			data.parameters = {};
 			data.parameters.destinationId = this.displayId;
 			data.parameters.sourceId = this.myId;
 			data.parameters.message = message;
-			wsio.emit('callFunctionOnApp', data);
+
+			// Different packet if needs to be remote
+			if (!this.forRemoteDisplay) {
+				wsio.emit("callFunctionOnApp", data);
+			} else {
+				wsio.emit("webRtcRemoteScreenShareSendingUiMessage", data);
+			}
 		} else if (this.streamerId && (this.streamerId !== this.myId)) {
 			// Elese it is a Display -> UI
 			this.debugprint("Sending to UI:" + message);
 			// Else must be a display sending to UI
-			var dataForClient = {};
-			dataForClient.destinationId = this.streamerId;
-			dataForClient.sourceId  = this.myId;
-			dataForClient.message = message;
-			wsio.emit("sendDataToClient", {
-				clientDest: this.streamerId,
-				func: "webrtc_SignalMessageFromDisplay",
-				appId: this.appId,
-				destinationId: this.streamerId,
-				sourceId: this.myId,
-				message: message
-			});
+			let data = {};
+			data.clientDest = this.streamerId;
+			data.func = "webrtc_SignalMessageFromDisplay";
+			data.appId = this.appId;
+			data.destinationId = this.streamerId;
+			data.sourceId  = this.myId;
+			data.message = message;
+
+			// Different packet if needs to be remote
+			if (!this.forRemoteClient) {
+				wsio.emit("sendDataToClient", data);
+			} else {
+				wsio.emit("webRtcRemoteScreenShareSendingDisplayMessage", data);
+			}
 		} else {
 			this.debugprint("ERROR, sendMessage activated without one of the following: myId, streamerId, displayId");
 			this.debugprint(this.myId);
