@@ -5698,6 +5698,10 @@ function manageRemoteConnection(remote, site, index) {
 	remote.on('updateApplicationState',                 wsUpdateApplicationState);
 	remote.on('updateApplicationStateOptions',          wsUpdateApplicationStateOptions);
 
+	// Message from a ScreenShare needing to connect with original ScreenShare client
+	remote.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
+	remote.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
+
 	remote.emit('addClient', clientDescription);
 	clients.push(remote);
 
@@ -11299,7 +11303,6 @@ function wsWebRtcRemoteScreenShareSendingDisplayMessage(wsio, data) {
 	// sourceId: wsio.UID,
 	// message: "appStarted"
 
-
 	// Keep sending to this function until finding the application
 	var sender = {wsio: null, serverId: null, clientId: null, streamId: null};
 	var mediaStreamData = data.appId.split("|"); // remote stream --> remote_server | client | stream_id
@@ -11317,18 +11320,15 @@ function wsWebRtcRemoteScreenShareSendingDisplayMessage(wsio, data) {
 		}
 		if (sender.wsio !== null) {
 			data.goingToSourceServer = sender.serverId;
-			sender.wsio.emit('webRtcremoteScreenShareSendingDisplayMessage', data);
+			sender.wsio.emit('webRtcRemoteScreenShareSendingDisplayMessage', data);
 		} else {
-			console.log("Error, unable to find remote site");
+			console.log("Error with WebRTC message passing unable to find destination remote site " + sender.serverId);
 		}
 	} else {
-		if (data.goingToSourceServer === (config.host + ":" + config.port)) {
-			// Has a value for goingToSourceServer
-			// Normally directly from application goes to wsio.emit("sendDataToClient", data);
-			wsSendDataToClient(null, data);
-		} else {
-			console.log("Error, server(" + data.goingToSourceServer + ") doesn't match " + (config.host + ":" + config.port));
-		}
+		// Has a value for goingToSourceServer
+		// Normally directly from application goes to wsio.emit("sendDataToClient", data);
+		data.remoteDisplayServer = wsio.id;
+		wsSendDataToClient(null, data);
 	}
 }
 
@@ -11346,7 +11346,7 @@ function wsWebRtcRemoteScreenShareSendingUiMessage(wsio, data) {
 	if (mediaStreamData.length > 3) {
 		console.log("ERROR with wsWebRtcRemoteScreenShareSendingUiMessage parsing source failed: " + data.app);
 	} else if (!data.cameFromSourceServer) {
-		sender.serverId = mediaStreamData[0];
+		sender.serverId = data.remoteDisplayServer;
 		sender.clientId = mediaStreamData[1];
 		sender.streamId = mediaStreamData[2];
 		for (let i = 0; i < clients.length; i++) {
@@ -11358,20 +11358,16 @@ function wsWebRtcRemoteScreenShareSendingUiMessage(wsio, data) {
 		if (sender.wsio !== null) {
 			data.cameFromSourceServer = sender.serverId;
 			data.clientId = wsio.id;
-			sender.wsio.emit('wsWebRtcRemoteScreenShareSendingUiMessage', data);
+			sender.wsio.emit('webRtcRemoteScreenShareSendingUiMessage', data);
 		} else {
-			console.log("Error, unable to find remote site");
+			console.log("Error, unable to find remote site " + sender.serverId);
 		}
 	} else {
-		if (data.cameFromSourceServer === (config.host + ":" + config.port)) {
-			// Has a value for cameFromSourceServer
-			// Normally directly from UI goes to wsio.emit("wsCallFunctionOnApp", data);
-			// This should get offer back to the display, need to provide id of original wsio for normal wsCallFunctionOnApp work
-			data.parameters.cameFromSourceServer = data.cameFromSourceServer;
-			wsCallFunctionOnApp({id: data.clientId}, data);
-		} else {
-			console.log("Error, server(" + data.cameFromSourceServer + ") doesn't match " + (config.host + ":" + config.port));
-		}
+		// Has a value for cameFromSourceServer
+		// Normally directly from UI goes to wsio.emit("wsCallFunctionOnApp", data);
+		// This should get offer back to the display, need to provide id of original wsio for normal wsCallFunctionOnApp work
+		data.parameters.cameFromSourceServer = data.cameFromSourceServer;
+		wsCallFunctionOnApp({id: data.clientId}, data);
 	}
 }
 

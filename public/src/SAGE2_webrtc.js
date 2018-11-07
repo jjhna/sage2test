@@ -36,7 +36,7 @@ var SAGE2_webrtc_ui_tracker = {
 				dataFromDisplay.sourceId, // Goto specific display
 				SAGE2_webrtc_ui_tracker.stream, // UI will send stream
 				null, // No stream element on UI, display version fills this in (media_stream.js)
-				dataFromDisplay.goingToSourceServer) // Will not be undefined if app was remotely shared
+				dataFromDisplay.remoteDisplayServer) // Will not be undefined if app was remotely shared
 		);
 	},
 
@@ -105,10 +105,8 @@ class SAGE2WebrtcPeerConnection {
 		this.completedOfferAnswerResponse = false;
 	}
 
-	setupUIHandlers(stream, useRemoteServerSending) {
-		if (useRemoteServerSending) {
-			this.forRemoteDisplay = true;
-		}
+	setupUIHandlers(stream, remoteDisplayServer = false) {
+		this.remoteDisplayServer = remoteDisplayServer;
 
 		this.debugprint("Setting up handlers for UI");
 		// This is a UI sending a stream
@@ -183,6 +181,11 @@ class SAGE2WebrtcPeerConnection {
 					this.streamElement.srcObject = track;
 				} else {
 					console.log("SAGE2_webrtc> discarding ontrack stream received");
+					if (!track.active) {
+						console.log("SAGE2_webrtc> - Reason: track inactive");
+					}	else if (this.streamElement.srcObject) {
+						console.log("SAGE2_webrtc> - Reason: streamElement already receiving");
+					}
 				}
 			}
 		};
@@ -193,6 +196,13 @@ class SAGE2WebrtcPeerConnection {
 				this.streamElement.srcObject = event.stream;
 			} else {
 				console.log("SAGE2_webrtc> discarding onaddstream stream received");
+				if (!event.stream) {
+					console.log("SAGE2_webrtc> - Reason: No stream given");
+				} else if (!event.stream.active) {
+					console.log("SAGE2_webrtc> - Reason: stream inactive");
+				} else if (this.streamElement.srcObject) {
+					console.log("SAGE2_webrtc> - Reason: streamElement already receiving");
+				}
 			}
 		};
 	}
@@ -219,9 +229,10 @@ class SAGE2WebrtcPeerConnection {
 			data.parameters.message = message;
 
 			// Different packet if needs to be remote
-			if (!this.forRemoteDisplay) {
+			if (!this.remoteDisplayServer) {
 				wsio.emit("callFunctionOnApp", data);
 			} else {
+				data.remoteDisplayServer = this.remoteDisplayServer;
 				wsio.emit("webRtcRemoteScreenShareSendingUiMessage", data);
 			}
 		} else if (this.streamerId && (this.streamerId !== this.myId)) {
