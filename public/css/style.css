@@ -342,3 +342,8 @@ body {
 .a-canvas.a-grab-cursor:active,.a-grabbing{
 	cursor:none !important
 }
+
+/* quickNote text */
+.showdown * {
+	font-family: Oxygen Mono;
+}

@@ -16,24 +16,32 @@ chrome.runtime.onMessage.addListener(function(response) {
 		// Add new servers
 		for (var v in response.urls) {
 			if (response.urls[v]) {
-				// remove index.html from URL
-				var baseURL = response.urls[v].split('index.html');
+
+				let sage2name  = response.urls[v].title;
+				let sage2parts = response.urls[v].title.split('-');
+				if (sage2parts.length > 1) {
+					sage2name = sage2parts[1];
+				}
+
 				var div = document.createElement('div');
 				div.className = 'server';
-				var textnode = document.createTextNode(baseURL[0]);
+				var textnode = document.createTextNode(sage2name);
+				// Storing the URL in the DOM
+				div.targetURL = response.urls[v].url;
 				div.appendChild(textnode);
 				// Set a click callback
-				div.addEventListener('click', click);
+				div.addEventListener('click', sendScreenshot);
 				// Add to the popup page
 				screenList.appendChild(div);
 
-
 				var div2 = document.createElement('div');
 				div2.className = 'server';
-				var textnode2 = document.createTextNode(baseURL[0]);
+				var textnode2 = document.createTextNode(sage2name);
+				// Storing the URL in the DOM
+				div2.targetURL = response.urls[v].url;
 				div2.appendChild(textnode2);
 				// Set a click callback
-				div2.addEventListener('click', openlink);
+				div2.addEventListener('click', sendLink);
 				// Add to the popup page
 				linkList.appendChild(div2);
 			}
@@ -56,27 +64,28 @@ function removeAllChildren(node) {
 	}
 }
 
-function openlink(e) {
+function sendLink(e) {
 	chrome.tabs.query({active: true, currentWindow:true}, function(tabs) {
 		var tab = tabs[0];
-		chrome.runtime.sendMessage({id: tabs[0].id,
-			sender: e.target.innerText + 'index.html',
+		chrome.runtime.sendMessage({
+			id:     tab.id,
+			sender: e.target.targetURL,
 			cmd:    "openlink",
 			title:  tab.title,
 			url:    tab.url,
 			width:  tab.width,
 			height: tab.height
 		});
-		// window.close();
 	});
 }
 
-function click(e) {
+function sendScreenshot(e) {
 	chrome.tabs.query({active: true, currentWindow:true}, function(tabs) {
 		var tab = tabs[0];
 		chrome.tabs.captureVisibleTab(function(screenshotUrl) {
-			chrome.runtime.sendMessage({id: tabs[0].id,
-				sender: e.target.innerText + 'index.html',
+			chrome.runtime.sendMessage({
+				id:     tab.id,
+				sender: e.target.targetURL,
 				cmd:    "screenshot",
 				src:    screenshotUrl,
 				title:  tab.title,
@@ -84,7 +93,6 @@ function click(e) {
 				width:  tab.width,
 				height: tab.height
 			});
-			// window.close();
 		});
 	});
 }

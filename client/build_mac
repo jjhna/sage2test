@@ -19,4 +19,4 @@ cp README.mac     SAGE2_client-darwin-x64/SAGE2_client.app/Contents/Resources/RE
 cp View.mac       SAGE2_client-darwin-x64/SAGE2_client.app/Contents/Resources/Display0.command
 cp Fullscreen.mac SAGE2_client-darwin-x64/SAGE2_client.app/Contents/Resources/Fullscreen.command
 
-npx electron-installer-dmg SAGE2_client-darwin-x64/SAGE2_client.app SAGE2_client --out=SAGE2_client-darwin-x64 --icon=sage2.icns --background=background.png --overwrite
+npx electron-installer-dmg SAGE2_client-darwin-x64/SAGE2_client.app SAGE2_client --dmgPath=SAGE2_client-darwin-x64/SAGE2_client-darwin-x64.dmg --icon=sage2.icns --background=background.png --overwrite

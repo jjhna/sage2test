@@ -23,6 +23,9 @@ var quickNote = SAGE2_App.extend({
 
 		// Separate div since the html will be contantly edited with showdown
 		this.markdownDiv = document.createElement("div");
+		// Add a CSS class so we can style the text in the css file
+		this.markdownDiv.classList.add("showdown");
+		// Control position and size
 		this.markdownDiv.style.position = "absolute";
 		this.markdownDiv.style.top      = "0";
 		this.markdownDiv.style.left     = "0";
@@ -32,8 +35,6 @@ var quickNote = SAGE2_App.extend({
 		// or global value, here 1/2 line
 		this.markdownDiv.style.padding = ui.titleTextSize + "px";
 		this.markdownDiv.style.margin = 0;
-		// Monospace font that we loaded
-		this.markdownDiv.style.fontFamily = "Oxygen Mono";
 		// Default font size based on SAGE2 settings
 		this.markdownDiv.style.fontSize = ui.titleTextSize + "px";
 		this.markdownDiv.style.boxSizing = "border-box";

@@ -1356,6 +1356,13 @@ var Webview = SAGE2_App.extend({
 						});
 					}
 					this.refresh(date);
+				} else if (data.code === 86 && data.state === "down") {
+					// CTRL/CMD v for 'paste'
+					if (data.status.CTRL || data.status.CMD) {
+						// paste the content of the clipboard into the webview
+						this.element.paste();
+					}
+					this.refresh(date);
 				}
 			}
 		}

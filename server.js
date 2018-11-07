@@ -381,18 +381,28 @@ function initializeSage2Server() {
 		sageutils.log("Secure", "Saved to file name", passwordFile);
 		// the session is protected
 		config.passwordProtected = true;
+		// New password, regenerate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
 	} else if (sageutils.fileExists(passwordFile)) {
-		// If a password file exists, load it
-		var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
-		var passwordFileJson       = JSON.parse(passwordFileJsonString);
-		if (passwordFileJson.pwd !== null) {
-			global.__SESSION_ID = passwordFileJson.pwd;
-			sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
-			// the session is protected
-			config.passwordProtected = true;
-		} else {
-			sageutils.log("Secure", "Invalid hash file", passwordFile);
-		}
+		// remove pasword file, if option not specified
+		fs.unlinkSync(passwordFile);
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
+
+		// // If a password file exists, load it
+		// var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
+		// var passwordFileJson       = JSON.parse(passwordFileJsonString);
+		// if (passwordFileJson.pwd !== null) {
+		// 	global.__SESSION_ID = passwordFileJson.pwd;
+		// 	sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
+		// 	// the session is protected
+		// 	config.passwordProtected = true;
+		// } else {
+		// 	sageutils.log("Secure", "Invalid hash file", passwordFile);
+		// }
+	} else {
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
 	}
 
 	/*
@@ -1214,8 +1224,7 @@ function setupListeners(wsio) {
 
 	wsio.on('createFolder',                         wsCreateFolder);
 
-	// Jupyper messages
-	wsio.on('startJupyterSharing',                  wsStartJupyterSharing);
+	// Jupyter messages
 	wsio.on('updateJupyterSharing',                 wsUpdateJupyterSharing);
 
 	// message passing between clients
@@ -1401,6 +1410,8 @@ function initializeExistingApps(wsio, appID) {
 			// does this cause issues?
 			appCopy = Object.assign({}, SAGE2Items.applications.list[key]);
 			delete appCopy.partition;
+			delete appCopy.backgroundItem;
+			delete appCopy.foregroundItems;
 
 			wsio.emit('createAppWindow', appCopy);
 			if (SAGE2Items.renderSync.hasOwnProperty(key)) {
@@ -3312,6 +3323,18 @@ function deleteAllApplications(wsio) {
 
 	// Reset the app_id counter to 0
 	getUniqueAppId(-1);
+
+	// Reset structure to handle automated placement of apps
+	appLaunchPositioning = {
+		xStart: 10,
+		yStart: 50,
+		xLast: -1,
+		yLast: -1,
+		widthLast: -1,
+		heightLast: -1,
+		tallestInRow: -1,
+		padding: 20
+	};
 }
 
 /**
@@ -3390,7 +3413,7 @@ function wsLoadApplication(wsio, data) {
 		}
 
 		// Get the drop position and convert it to wall coordinates
-		var position = data.position || [0, 0];
+		var position = data.position || [0, config.ui.titleBarHeight];
 
 		if (position[0] > 1) {
 			// value in pixels, used as origin
@@ -3507,7 +3530,7 @@ function wsLoadImageFromBuffer(wsio, data) {
 		data.mime, "", data.url, data.title, {},
 		function(appInstance) {
 			// Get the drop position and convert it to wall coordinates
-			var position = data.position || [0, 0];
+			var position = data.position || [0, config.ui.titleBarHeight];
 			if (position[0] > 1) {
 				// value in pixels, used as origin
 				appInstance.left = position[0];
@@ -3559,7 +3582,7 @@ function wsLoadFileFromServer(wsio, data) {
 	} else {
 		var fileLoadCallBack = function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
-			var position = data.position || [0, 0];
+			var position = data.position || [0, config.ui.titleBarHeight];
 			if (position[0] > 1) {
 				// value in pixels, used as origin
 				appInstance.left = position[0];
@@ -3868,7 +3891,7 @@ function wsAddNewWebElement(wsio, data) {
 		broadcast('storedFileList', getSavedFilesList());
 
 		// Get the drop position and convert it to wall coordinates
-		var position = data.position || [0, 0];
+		var position = data.position || [0, config.ui.titleBarHeight];
 
 		if (position[0] > 1) {
 			// value in pixels, used as origin
@@ -3943,7 +3966,7 @@ function wsCommand(wsio, data) {
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
 	// use the window position if specified
-	let position   = data.position || [0, 0];
+	let position   = data.position || [0, config.ui.titleBarHeight];
 	// use the window size if specified
 	let dimensions = data.dimensions || null;
 	wsLoadApplication(wsio, {
@@ -5418,7 +5441,7 @@ function sendConfig(req, res) {
 function uploadForm(req, res) {
 	var form     = new formidable.IncomingForm();
 	// Drop position
-	var position = [0, 0];
+	var position = [0, config.ui.titleBarHeight];
 	// Open or not the file after upload
 	var openAfter = true;
 	// User information
@@ -5926,7 +5949,7 @@ function processInputCommand(line) {
 		}
 		case 'open': {
 			if (command[1] !== undefined) {
-				var pos  = [0.0, 0.0];
+				var pos  = [0, config.ui.titleBarHeight];
 				var file = command[1];
 				if (command.length === 4) {
 					pos = [parseFloat(command[2]), parseFloat(command[3])];
@@ -5939,9 +5962,14 @@ function processInputCommand(line) {
 						position: pos
 					});
 				} else {
-					wsLoadFileFromServer({id: "127.0.0.1:42"}, {
-						application: "something",
-						filename: file,
+					// wsLoadFileFromServer({id: "127.0.0.1:42"}, {
+					// 	application: "something",
+					// 	filename: file,
+					// 	user: "127.0.0.1:42",
+					// 	position: pos
+					// });
+					wsLoadApplication({id: "127.0.0.1:42"}, {
+						application: file,
 						user: "127.0.0.1:42",
 						position: pos
 					});
@@ -10784,7 +10812,7 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 					name: fname
 				}],
 				// position and size
-				[0, 0, config.totalWidth / 4],
+				[0, config.ui.titleBarHeight, config.totalWidth / 4],
 				// username and color
 				"screenshot", "#B4B4B4",
 				// to be opened afterward
@@ -10805,7 +10833,7 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 			// file name
 			name: fileSaveObject.fileName}],
 		// position and size
-		[0, 0, config.totalWidth / 4],
+		[0, config.ui.titleBarHeight, config.totalWidth / 4],
 		// username and color
 		"screenshot", "#B4B4B4",
 		// to be opened afterward
@@ -10843,57 +10871,31 @@ function wsPerformanceData(wsio, data) {
 }
 
 
-/**
- * Start a jupyter connection
- *
- * @method     wsStartJupyterSharing
- * @param      {Object}  wsio    The websocket
- * @param      {Object}  data    The data
- */
-function wsStartJupyterSharing(wsio, data) {
-	sageutils.log('Jupyter', "received new stream:", data.id);
-
-	/*var i;
-	SAGE2Items.renderSync[data.id] = {clients: {}, chunks: []};
-	for (i = 0; i < clients.length; i++) {
-		if (clients[i].clientType === "display") {
-			SAGE2Items.renderSync[data.id].clients[clients[i].id] = {wsio: clients[i], readyForNextFrame: false, blocklist: []};
-		}
-	}
-	*/
-
-	console.log(data.width, data.height);
-
-	// forcing 'int' type for width and height
-	data.width  = parseInt(data.width,  10);
-	data.height = parseInt(data.height, 10);
-
-	// appLoader.createJupyterApp(data.src, data.type, data.encoding, data.title, data.color, 800, 1200,
-	// 	function(appInstance) {
-	// 		appInstance.id = data.id;
-	// 		handleNewApplication(appInstance, null);
-	// 	}
-	// );
-
-	console.log(data.id);
-
-	console.log("createJupyterApp: ", data.src, data.type, data.encoding, data.title, data.color, data.width, data.height);
-
-	appLoader.createJupyterApp(data.src, data.type, data.encoding, data.title, data.color, data.width, data.height,
-		function (appInstance) {
-			appInstance.id = data.id;
-			handleNewApplication(appInstance, null);
-
-			console.log(appInstance.id);
-		}
-	);
-}
-
+// /**
+//  * Update data from a JupyterLab connection, starting a new application if necessary.
+//  *
+//  * @method     wsUpdateJupyterSharing
+//  * @param      {Object}  wsio    The websocket
+//  * @param      {Object}  data    The data
+//  */
 function wsUpdateJupyterSharing(wsio, data) {
 	sageutils.log('Jupyter', "received update from:", data.id);
 
-	// pass data into app by ID
-	sendApplicationDataUpdate(data);
+	let existingApp = Object.values(SAGE2Items.applications.list).find(app => app.id === data.id);
+
+	// create an app if one does not already exist for this connection+cell
+	if (!existingApp) {
+		appLoader.createJupyterApp(data.src, data.mime, "base64", data.title, "#F27729", data.width, data.height,
+			function (appInstance) {
+				appInstance.id = data.id;
+
+				handleNewApplication(appInstance, null);
+			}
+		);
+	} else {
+		// only update -- pass data into app by ID
+		sendApplicationDataUpdate(data);
+	}
 }
 
 function sendApplicationDataUpdate(data) {
@@ -10911,28 +10913,6 @@ function sendApplicationDataUpdate(data) {
 	broadcast('eventInItem', event);
 }
 
-/*
-function wsUpdateJupyterSharing(wsio, data) {
-	sageutils.log('Jupyter', "received update from:", data.id);
-	sendJupyterUpdates(data);
-}
-
-function sendJupyterUpdates(data) {
-	// var ePosition = {x: 0, y: 0};
-	var eUser = {id: 1, label: "Touch", color: "none"};
-
-	var event = {
-		id: data.id,
-		type: "imageUpload",
-		position: 0,
-		user: eUser,
-		data: data,
-		date: Date.now()
-	};
-
-	broadcast('eventInItem', event);
-}
-*/
 
 /**
  * Method handling a file save request from a SAGE2_App
@@ -11005,7 +10985,7 @@ function appFileSaveRequest(wsio, data) {
 					path: fullpath
 				};
 				// Add the file to the asset library and not open it (false)
-				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", false);
+				manageUploadedFiles(fileObject, [0, config.ui.titleBarHeight], data.app, "#B4B4B4", false);
 			}
 		} catch (err) {
 			sageutils.log('File', "error while saving to", fullpath + ":" + err);

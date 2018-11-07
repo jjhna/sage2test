@@ -56,6 +56,43 @@ function setUpContextMenus(id, site) {
 	});
 }
 
+function updateContextMenus(id, site) {
+	chrome.contextMenus.update({
+		title: 'Send Webpage to ' + site,
+		type: 'normal',
+		id: 'send_webpage' + id,
+		contexts: ['all']
+	});
+
+	chrome.contextMenus.update({
+		title: 'Send Screenshot to ' + site,
+		type: 'normal',
+		id: 'send_screenshot' + id,
+		contexts: ['all']
+	});
+
+	chrome.contextMenus.update( {
+		title: 'Create a Quick Note to ' + site + ' "%s"',
+		type: 'normal',
+		id: 'create_quicknote'  + id,
+		contexts: ['selection']
+	});
+
+	chrome.contextMenus.update( {
+		title: 'Send image to ' + site,
+		type: 'normal',
+		id: 'send_image'  + id,
+		contexts: ['image']
+	});
+
+	chrome.contextMenus.update( {
+		title: 'Send link to ' + site,
+		type: 'normal',
+		id: 'send_link'  + id,
+		contexts: ['link']
+	});
+}
+
 function removeContextMenus(id) {
 	chrome.contextMenus.remove('send_webpage'     + id);
 	chrome.contextMenus.remove('send_screenshot'  + id);
@@ -183,7 +220,10 @@ function findURL(arr, aurl) {
 function allURL(arr) {
 	var res = [];
 	Object.keys(arr).forEach(function(k) {
-		res.push(arr[k].sender.url);
+		res.push({
+			url:   arr[k].sender.url,
+			title: arr[k].sender.tab.title
+		});
 	});
 	return res;
 }
@@ -226,13 +266,33 @@ chrome.runtime.onConnect.addListener(function(port) {
 				// Save the port in the list, indexed by URL
 				ports[port.sender.tab.id] = port;
 				var numberOfConnection = Object.keys(ports).length;
-				chrome.browserAction.setBadgeText({text: numberOfConnection.toString()});
+				chrome.browserAction.setBadgeText({
+					text: numberOfConnection.toString()
+				});
 
 				// setup the context menus
-				let sage2name = port.sender.tab.title.split('-')[1];
-				setUpContextMenus(port.sender.tab.id, sage2name);
+				let sage2parts = port.sender.tab.title.split('-');
+				if (sage2parts.length > 1) {
+					// Use the title we got
+					let sage2name = sage2parts[1];
+					setUpContextMenus(port.sender.tab.id, sage2name);
+				} else {
+					// setup a callback waiting for the title to change
+					chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, thistab) {
+						if (tabId === port.sender.tab.id) {
+							if (changeInfo.title) {
+								// Use the title we got
+								let sage2name = changeInfo.title.split('-')[1];
+								port.sender.tab.title = changeInfo.title;
+								setUpContextMenus(port.sender.tab.id, sage2name);
+							}
+						}
+					});
+				}
 			} else {
 				ports[port.sender.tab.id] = port;
+				let sage2name = changeInfo.title.split('-')[1];
+				updateContextMenus(port.sender.tab.id, sage2name);
 			}
 		}
 	}

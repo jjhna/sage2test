@@ -20,7 +20,13 @@
 'use strict';
 
 const electron = require('electron');
-electron.app.setAppPath(process.cwd());
+
+// Get platform and hostname
+var os = require('os');
+
+if (os.platform() === "win32" || os.platform() === "darwin") {
+	electron.app.setAppPath(process.cwd());
+}
 
 //
 // handle install/update for Windows
@@ -96,8 +102,6 @@ var commander = require('commander');
 var si = require('systeminformation');
 // Get the version from the package file
 var version = require('./package.json').version;
-// Get platform and hostname
-var os = require('os');
 
 /**
  * Setup the command line argument parsing (commander module)

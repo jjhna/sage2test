@@ -118,6 +118,23 @@ HttpServer.prototype.redirect = function(res, aurl) {
 };
 
 /**
+ * Clear the user's data caches and redirect to index.html
+ *
+ * @method clearSiteData
+ * @param res {Object} response
+ */
+HttpServer.prototype.clearSiteData = function(res) {
+	// Default header first
+	var header = this.buildHeader();
+	// Use the Clear-Site-Data header:
+	// https://www.w3.org/TR/clear-site-data/
+	header["Clear-Site-Data"] = '{"types":["cache","cookies","storage","executionContexts"]}';
+	header.Location = "index.html";
+	res.writeHead(302, header);
+	res.end();
+};
+
+/**
  * Build an HTTP header object
  *
  * @method buildHeader
@@ -245,6 +262,12 @@ HttpServer.prototype.onreq = function(req, res) {
 		// redirect root path to index.html
 		if (getName === "/") {
 			this.redirect(res, "index.html");
+			return;
+		}
+
+		// Clear the user's cache and redirect to index.html
+		if (getName === "/logout") {
+			this.clearSiteData(res);
 			return;
 		}
 
