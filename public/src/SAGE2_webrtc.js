@@ -18,8 +18,7 @@ var SAGE2_webrtc_ui_tracker = {
 	enabled: true,
 	stream: null, // Set after plugin gets screenshare stream
 	allPeers: [],
-	shouldHaltNormalUiScreenSendAfterRtcConnection: false,
-	forRemoteDisplay: false,
+	shouldHaltNormalUiScreenSendAfterRtcConnection: false, // Hard to detect when a new display fails to WebRTC connect.
 	streamSuccess: function(stream) {
 		SAGE2_webrtc_ui_tracker.debugprint("Success Got stream");
 		SAGE2_webrtc_ui_tracker.stream = stream;
@@ -29,15 +28,18 @@ var SAGE2_webrtc_ui_tracker = {
 	},
 
 	makePeer: function(dataFromDisplay) {
-		this.allPeers.push(
-			new SAGE2WebrtcPeerConnection(
-				dataFromDisplay.appId, // Which app this is for
-				interactor.uniqueID, // UI id for identifying streamerid
-				dataFromDisplay.sourceId, // Goto specific display
-				SAGE2_webrtc_ui_tracker.stream, // UI will send stream
-				null, // No stream element on UI, display version fills this in (media_stream.js)
-				dataFromDisplay.remoteDisplayServer) // Will not be undefined if app was remotely shared
-		);
+		// If there is no interactor (display) or settings have WebRTC enabled
+		if (!interactor || interactor.mediaUseRTC) {
+			this.allPeers.push(
+				new SAGE2WebrtcPeerConnection(
+					dataFromDisplay.appId, // Which app this is for
+					interactor.uniqueID, // UI id for identifying streamerid
+					dataFromDisplay.sourceId, // Goto specific display
+					SAGE2_webrtc_ui_tracker.stream, // UI will send stream
+					null, // No stream element on UI, display version fills this in (media_stream.js)
+					dataFromDisplay.remoteDisplayServer) // Will not be undefined if app was remotely shared
+			);
+		}
 	},
 
 	debugprint: function(message) {
@@ -78,9 +80,10 @@ class SAGE2WebrtcPeerConnection {
 
 	setupProperties(appId, streamerId, displayId) {
 		// For identification of clients
-		this.appId = appId; // Actually id of sage2 app
-		this.streamerId = streamerId; // unique clientId
-		this.displayId = displayId; // unique displayId, identified by offer because SAGE2 doesn't distinguish displays beyond which viewport they access
+		this.appId = appId;              // Actually id of sage2 app
+		this.streamerId = streamerId;    // unique clientId
+		this.displayId = displayId;      // unique displayId, identified by offer because SAGE2 doesn't distinguish displays beyond which viewport they access
+		this.remoteDisplayServer = null; // Used if screen share is passed to remote site
 
 		// Webrtc
 		this.offerOptions = {
