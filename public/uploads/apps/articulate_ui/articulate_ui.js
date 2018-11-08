@@ -31,25 +31,28 @@ var articulate_ui = SAGE2_App.extend( {
 		this.counter = 0;
 		this.debugMode = true;
 
-		this.useMaster = false; //turn on and off using the isMaster function...
-
-		//-------- THIS IS JUST FOR DEBUGGING - quickly launching pre-loaded visualization specs, rather than
-		//------------- basically rather than complete the circuit from the input UI, to the NLP server, back to this app
-		//------------- instead I just access these pre-loaded specs to make sure the parsing and vis lauching code works
-
-		// this.specificationObjects = [
-		// 		{"plot-type":{"valueType":"STRING","string":"BAR","chars":"BAR"},"x-axis":{"valueType":"STRING","string":"dayofweek","chars":"dayofweek"},"y-axis":{"valueType":"STRING","string":"TOTAL_CRIME","chars":"TOTAL_CRIME"},"data-query":{"valueType":"STRING","string":"SELECT count(*) as TOTAL_CRIME,`dayofweek` FROM chicagocrime WHERE `neighborhood`='loop' AND `timeofdayrange`='6pm-midnight' GROUP BY dayofweek","chars":"SELECT count(*) as TOTAL_CRIME,`dayofweek` FROM chicagocrime WHERE `neighborhood`='loop' AND `timeofdayrange`='6pm-midnight' GROUP BY dayofweek"},"data-query-result":[{"valueType":"STRING","string":"(total_crime,1255);(dayofweek,friday)","chars":"(total_crime,1255);(dayofweek,friday)"},{"valueType":"STRING","string":"(total_crime,913);(dayofweek,monday)","chars":"(total_crime,913);(dayofweek,monday)"},{"valueType":"STRING","string":"(total_crime,1117);(dayofweek,saturday)","chars":"(total_crime,1117);(dayofweek,saturday)"},{"valueType":"STRING","string":"(total_crime,699);(dayofweek,sunday)","chars":"(total_crime,699);(dayofweek,sunday)"},{"valueType":"STRING","string":"(total_crime,1018);(dayofweek,thursday)","chars":"(total_crime,1018);(dayofweek,thursday)"},{"valueType":"STRING","string":"(total_crime,935);(dayofweek,tuesday)","chars":"(total_crime,935);(dayofweek,tuesday)"},{"valueType":"STRING","string":"(total_crime,944);(dayofweek,wednesday)","chars":"(total_crime,944);(dayofweek,wednesday)"}] },
-		// 		{"plot-type":{"valueType":"STRING","string":"BAR","chars":"BAR"},"x-axis":{"valueType":"STRING","string":"crimetype","chars":"crimetype"},"y-axis":{"valueType":"STRING","string":"TOTAL_CRIME","chars":"TOTAL_CRIME"},"data-query":{"valueType":"STRING","string":"SELECT count(*) as TOTAL_CRIME,`crimetype` FROM chicagocrime WHERE `dayofweek`='saturday' GROUP BY crimetype","chars":"SELECT count(*) as TOTAL_CRIME,`crimetype` FROM chicagocrime WHERE `dayofweek`='saturday' GROUP BY crimetype"},"data-query-result":[{"valueType":"STRING","string":"(total_crime,5);(crimetype,arson)","chars":"(total_crime,5);(crimetype,arson)"},{"valueType":"STRING","string":"(total_crime,581);(crimetype,assault)","chars":"(total_crime,581);(crimetype,assault)"},{"valueType":"STRING","string":"(total_crime,1781);(crimetype,battery)","chars":"(total_crime,1781);(crimetype,battery)"},{"valueType":"STRING","string":"(total_crime,604);(crimetype,burglary)","chars":"(total_crime,604);(crimetype,burglary)"},{"valueType":"STRING","string":"(total_crime,29);(crimetype,crim-sexual-assault)","chars":"(total_crime,29);(crimetype,crim-sexual-assault)"},{"valueType":"STRING","string":"(total_crime,1410);(crimetype,criminal-damage)","chars":"(total_crime,1410);(crimetype,criminal-damage)"},{"valueType":"STRING","string":"(total_crime,664);(crimetype,criminal-trespass)","chars":"(total_crime,664);(crimetype,criminal-trespass)"},{"valueType":"STRING","string":"(total_crime,1256);(crimetype,deceptive-practice)","chars":"(total_crime,1256);(crimetype,deceptive-practice)"},{"valueType":"STRING","string":"(total_crime,12);(crimetype,gambling)","chars":"(total_crime,12);(crimetype,gambling)"},{"valueType":"STRING","string":"(total_crime,5);(crimetype,homicide)","chars":"(total_crime,5);(crimetype,homicide)"},{"valueType":"STRING","string":"(total_crime,26);(crimetype,interference-with-public-officer)","chars":"(total_crime,26);(crimetype,interference-with-public-officer)"},{"valueType":"STRING","string":"(total_crime,4);(crimetype,intimidation)","chars":"(total_crime,4);(crimetype,intimidation)"},{"valueType":"STRING","string":"(total_crime,2);(crimetype,kidnapping)","chars":"(total_crime,2);(crimetype,kidnapping)"},{"valueType":"STRING","string":"(total_crime,56);(crimetype,liquor-law-violation)","chars":"(total_crime,56);(crimetype,liquor-law-violation)"},{"valueType":"STRING","string":"(total_crime,576);(crimetype,motor-vehicle-theft)","chars":"(total_crime,576);(crimetype,motor-vehicle-theft)"},{"valueType":"STRING","string":"(total_crime,690);(crimetype,narcotics)","chars":"(total_crime,690);(crimetype,narcotics)"},{"valueType":"STRING","string":"(total_crime,1);(crimetype,non-criminal)","chars":"(total_crime,1);(crimetype,non-criminal)"},{"valueType":"STRING","string":"(total_crime,1);(crimetype,obscenity)","chars":"(total_crime,1);(crimetype,obscenity)"},{"valueType":"STRING","string":"(total_crime,55);(crimetype,offense-involving-children)","chars":"(total_crime,55);(crimetype,offense-involving-children)"},{"valueType":"STRING","string":"(total_crime,450);(crimetype,other-offense)","chars":"(total_crime,450);(crimetype,other-offense)"},{"valueType":"STRING","string":"(total_crime,41);(crimetype,prostitution)","chars":"(total_crime,41);(crimetype,prostitution)"},{"valueType":"STRING","string":"(total_crime,1);(crimetype,public-indecency)","chars":"(total_crime,1);(crimetype,public-indecency)"},{"valueType":"STRING","string":"(total_crime,190);(crimetype,public-peace-violation)","chars":"(total_crime,190);(crimetype,public-peace-violation)"},{"valueType":"STRING","string":"(total_crime,458);(crimetype,robbery)","chars":"(total_crime,458);(crimetype,robbery)"},{"valueType":"STRING","string":"(total_crime,37);(crimetype,sex-offense)","chars":"(total_crime,37);(crimetype,sex-offense)"},{"valueType":"STRING","string":"(total_crime,6);(crimetype,stalking)","chars":"(total_crime,6);(crimetype,stalking)"},{"valueType":"STRING","string":"(total_crime,8325);(crimetype,theft)","chars":"(total_crime,8325);(crimetype,theft)"},{"valueType":"STRING","string":"(total_crime,44);(crimetype,weapons-violation)","chars":"(total_crime,44);(crimetype,weapons-violation)"}] },
-		// 		{"plot-type":{"valueType":"STRING","string":"BAR","chars":"BAR"},"x-axis":{"valueType":"STRING","string":"locationtype","chars":"locationtype"},"y-axis":{"valueType":"STRING","string":"TOTAL_CRIME","chars":"TOTAL_CRIME"},"data-query":{"valueType":"STRING","string":"SELECT count(*) as TOTAL_CRIME,`locationtype` FROM chicagocrime WHERE `year`='2013' AND `neighborhood`='uic' GROUP BY locationtype","chars":"SELECT count(*) as TOTAL_CRIME,`locationtype` FROM chicagocrime WHERE `year`='2013' AND `neighborhood`='uic' GROUP BY locationtype"},"data-query-result":[{"valueType":"STRING","string":"(total_crime,4);(locationtype,)","chars":"(total_crime,4);(locationtype,)"},{"valueType":"STRING","string":"(total_crime,6);(locationtype,abandoned-building)","chars":"(total_crime,6);(locationtype,abandoned-building)"},{"valueType":"STRING","string":"(total_crime,46);(locationtype,alley)","chars":"(total_crime,46);(locationtype,alley)"},{"valueType":"STRING","string":"(total_crime,315);(locationtype,apartment)","chars":"(total_crime,315);(locationtype,apartment)"},{"valueType":"STRING","string":"(total_crime,2);(locationtype,appliance-store)","chars":"(total_crime,2);(locationtype,appliance-store)"},{"valueType":"STRING","string":"(total_crime,30);(locationtype,athletic-club)","chars":"(total_crime,30);(locationtype,athletic-club)"},{"valueType":"STRING","string":"(total_crime,10);(locationtype,atm-(automatic-teller-machine))","chars":"(total_crime,10);(locationtype,atm-(automatic-teller-machine))"},{"valueType":"STRING","string":"(total_crime,31);(locationtype,bank)","chars":"(total_crime,31);(locationtype,bank)"},{"valueType":"STRING","string":"(total_crime,19);(locationtype,bar-or-tavern)","chars":"(total_crime,19);(locationtype,bar-or-tavern)"},{"valueType":"STRING","string":"(total_crime,2);(locationtype,barbershop)","chars":"(total_crime,2);(locationtype,barbershop)"},{"valueType":"STRING","string":"(total_crime,1);(locationtype,car-wash)","chars":"(total_crime,1);(locationtype,car-wash)"},{"valueType":"STRING","string":"(total_crime,67);(locationtype,cha-apartment)","chars":"(total_crime,67);(locationtype,cha-apartment)"},{"valueType":"STRING","string":"(total_crime,15);(locationtype,cha-hallway/stairwell/elevator)","chars":"(total_crime,15);(locationtype,cha-hallway/stairwell/elevator)"},{"valueType":"STRING","string":"(total_crime,110);(locationtype,cha-parking-lot/grounds)","chars":"(total_crime,110);(locationtype,cha-parking-lot/grounds)"},{"valueType":"STRING","string":"(total_crime,13);(locationtype,church/synagogue/place-of-worship)","chars":"(total_crime,13);(locationtype,church/synagogue/place-of-worship)"},{"valueType":"STRING","string":"(total_crime,23);(locationtype,college/university-grounds)","chars":"(total_crime,23);(locationtype,college/university-grounds)"},{"valueType":"STRING","string":"(total_crime,69);(locationtype,commercial-/-business-office)","chars":"(total_crime,69);(locationtype,commercial-/-business-office)"},{"valueType":"STRING","string":"(total_crime,18);(locationtype,construction-site)","chars":"(total_crime,18);(locationtype,construction-site)"},{"valueType":"STRING","string":"(total_crime,28);(locationtype,convenience-store)","chars":"(total_crime,28);(locationtype,convenience-store)"},{"valueType":"STRING","string":"(total_crime,45);(locationtype,cta-bus)","chars":"(total_crime,45);(locationtype,cta-bus)"},{"valueType":"STRING","string":"(total_crime,15);(locationtype,cta-bus-stop)","chars":"(total_crime,15);(locationtype,cta-bus-stop)"},{"valueType":"STRING","string":"(total_crime,12);(locationtype,cta-garage-/-other-property)","chars":"(total_crime,12);(locationtype,cta-garage-/-other-property)"},{"valueType":"STRING","string":"(total_crime,39);(locationtype,cta-platform)","chars":"(total_crime,39);(locationtype,cta-platform)"},{"valueType":"STRING","string":"(total_crime,51);(locationtype,cta-train)","chars":"(total_crime,51);(locationtype,cta-train)"},{"valueType":"STRING","string":"(total_crime,11);(locationtype,currency-exchange)","chars":"(total_crime,11);(locationtype,currency-exchange)"},{"valueType":"STRING","string":"(total_crime,1);(locationtype,day-care-center)","chars":"(total_crime,1);(locationtype,day-care-center)"},{"valueType":"STRING","string":"(total_crime,2);(locationtype,delivery-truck)","chars":"(total_crime,2);(locationtype,delivery-truck)"},{"valueType":"STRING","string":"(total_crime,84);(locationtype,department-store)","chars":"(total_crime,84);(locationtype,department-store)"},{"valueType":"STRING","string":"(total_crime,5);(locationtype,driveway---residential)","chars":"(total_crime,5);(locationtype,driveway---residential)"},{"valueType":"STRING","string":"(total_crime,41);(locationtype,drug-store)","chars":"(total_crime,41);(locationtype,drug-store)"},{"valueType":"STRING","string":"(total_crime,9);(locationtype,factory/manufacturing-building)","chars":"(total_crime,9);(locationtype,factory/manufacturing-building)"},{"valueType":"STRING","string":"(total_crime,3);(locationtype,federal-building)","chars":"(total_crime,3);(locationtype,federal-building)"},{"valueType":"STRING","string":"(total_crime,1);(locationtype,fire-station)","chars":"(total_crime,1);(locationtype,fire-station)"},{"valueType":"STRING","string":"(total_crime,38);(locationtype,gas-station)","chars":"(total_crime,38);(locationtype,gas-station)"},{"valueType":"STRING","string":"(total_crime,46);(locationtype,government-building/property)","chars":"(total_crime,46);(locationtype,government-building/property)"},{"valueType":"STRING","string":"(total_crime,264);(locationtype,grocery-food-store)","chars":"(total_crime,264);(locationtype,grocery-food-store)"},{"valueType":"STRING","string":"(total_crime,1);(locationtype,highway/expressway)","chars":"(total_crime,1);(locationtype,highway/expressway)"},{"valueType":"STRING","string":"(total_crime,63);(locationtype,hospital-building/grounds)","chars":"(total_crime,63);(locationtype,hospital-building/grounds)"},{"valueType":"STRING","string":"(total_crime,6);(locationtype,hotel/motel)","chars":"(total_crime,6);(locationtype,hotel/motel)"},{"valueType":"STRING","string":"(total_crime,9);(locationtype,jail-/-lock-up-facility)","chars":"(total_crime,9);(locationtype,jail-/-lock-up-facility)"},{"valueType":"STRING","string":"(total_crime,4);(locationtype,library)","chars":"(total_crime,4);(locationtype,library)"},{"valueType":"STRING","string":"(total_crime,11);(locationtype,medical/dental-office)","chars":"(total_crime,11);(locationtype,medical/dental-office)"},{"valueType":"STRING","string":"(total_crime,5);(locationtype,nursing-home/retirement-home)","chars":"(total_crime,5);(locationtype,nursing-home/retirement-home)"},{"valueType":"STRING","string":"(total_crime,398);(locationtype,other)","chars":"(total_crime,398);(locationtype,other)"},{"valueType":"STRING","string":"(total_crime,59);(locationtype,other-commercial-transportation)","chars":"(total_crime,59);(locationtype,other-commercial-transportation)"},{"valueType":"STRING","string":"(total_crime,74);(locationtype,other-railroad-prop-/-train-depot)","chars":"(total_crime,74);(locationtype,other-railroad-prop-/-train-depot)"},{"valueType":"STRING","string":"(total_crime,56);(locationtype,park-property)","chars":"(total_crime,56);(locationtype,park-property)"},{"valueType":"STRING","string":"(total_crime,205);(locationtype,parking-lot/garage(non.resid.))","chars":"(total_crime,205);(locationtype,parking-lot/garage(non.resid.))"},{"valueType":"STRING","string":"(total_crime,28);(locationtype,police-facility/veh-parking-lot)","chars":"(total_crime,28);(locationtype,police-facility/veh-parking-lot)"},{"valueType":"STRING","string":"(total_crime,352);(locationtype,residence)","chars":"(total_crime,352);(locationtype,residence)"},{"valueType":"STRING","string":"(total_crime,54);(locationtype,residence-garage)","chars":"(total_crime,54);(locationtype,residence-garage)"},{"valueType":"STRING","string":"(total_crime,40);(locationtype,residence-porch/hallway)","chars":"(total_crime,40);(locationtype,residence-porch/hallway)"},{"valueType":"STRING","string":"(total_crime,65);(locationtype,residential-yard-(front/back))","chars":"(total_crime,65);(locationtype,residential-yard-(front/back))"},{"valueType":"STRING","string":"(total_crime,173);(locationtype,restaurant)","chars":"(total_crime,173);(locationtype,restaurant)"},{"valueType":"STRING","string":"(total_crime,157);(locationtype,school)","chars":"(total_crime,157);(locationtype,school)"},{"valueType":"STRING","string":"(total_crime,547);(locationtype,sidewalk)","chars":"(total_crime,547);(locationtype,sidewalk)"},{"valueType":"STRING","string":"(total_crime,103);(locationtype,small-retail-store)","chars":"(total_crime,103);(locationtype,small-retail-store)"},{"valueType":"STRING","string":"(total_crime,42);(locationtype,sports-arena/stadium)","chars":"(total_crime,42);(locationtype,sports-arena/stadium)"},{"valueType":"STRING","string":"(total_crime,1157);(locationtype,street)","chars":"(total_crime,1157);(locationtype,street)"},{"valueType":"STRING","string":"(total_crime,12);(locationtype,tavern/liquor-store)","chars":"(total_crime,12);(locationtype,tavern/liquor-store)"},{"valueType":"STRING","string":"(total_crime,11);(locationtype,taxicab)","chars":"(total_crime,11);(locationtype,taxicab)"},{"valueType":"STRING","string":"(total_crime,12);(locationtype,vacant-lot/land)","chars":"(total_crime,12);(locationtype,vacant-lot/land)"},{"valueType":"STRING","string":"(total_crime,12);(locationtype,vehicle-commercial)","chars":"(total_crime,12);(locationtype,vehicle-commercial)"},{"valueType":"STRING","string":"(total_crime,81);(locationtype,vehicle-non-commercial)","chars":"(total_crime,81);(locationtype,vehicle-non-commercial)"},{"valueType":"STRING","string":"(total_crime,6);(locationtype,warehouse)","chars":"(total_crime,6);(locationtype,warehouse)"},{"valueType":"STRING","string":"(total_crime,1);(locationtype,yard)","chars":"(total_crime,1);(locationtype,yard)"}]},
-		// 		{"plot-type":{"valueType":"STRING","string":"BAR","chars":"BAR"},"x-axis":{"valueType":"STRING","string":"crimetype","chars":"crimetype"},"y-axis":{"valueType":"STRING","string":"TOTAL_CRIME","chars":"TOTAL_CRIME"},"data-query":{"valueType":"STRING","string":"SELECT count(*) as TOTAL_CRIME,`crimetype` FROM chicagocrime WHERE `locationtype`='restaurant' GROUP BY crimetype","chars":"SELECT count(*) as TOTAL_CRIME,`crimetype` FROM chicagocrime WHERE `locationtype`='restaurant' GROUP BY crimetype"},"data-query-result":[{"valueType":"STRING","string":"(total_crime,2);(crimetype,arson)","chars":"(total_crime,2);(crimetype,arson)"},{"valueType":"STRING","string":"(total_crime,238);(crimetype,assault)","chars":"(total_crime,238);(crimetype,assault)"},{"valueType":"STRING","string":"(total_crime,302);(crimetype,battery)","chars":"(total_crime,302);(crimetype,battery)"},{"valueType":"STRING","string":"(total_crime,134);(crimetype,burglary)","chars":"(total_crime,134);(crimetype,burglary)"},{"valueType":"STRING","string":"(total_crime,1);(crimetype,crim-sexual-assault)","chars":"(total_crime,1);(crimetype,crim-sexual-assault)"},{"valueType":"STRING","string":"(total_crime,177);(crimetype,criminal-damage)","chars":"(total_crime,177);(crimetype,criminal-damage)"},{"valueType":"STRING","string":"(total_crime,447);(crimetype,criminal-trespass)","chars":"(total_crime,447);(crimetype,criminal-trespass)"},{"valueType":"STRING","string":"(total_crime,905);(crimetype,deceptive-practice)","chars":"(total_crime,905);(crimetype,deceptive-practice)"},{"valueType":"STRING","string":"(total_crime,2);(crimetype,gambling)","chars":"(total_crime,2);(crimetype,gambling)"},{"valueType":"STRING","string":"(total_crime,3);(crimetype,intimidation)","chars":"(total_crime,3);(crimetype,intimidation)"},{"valueType":"STRING","string":"(total_crime,1);(crimetype,kidnapping)","chars":"(total_crime,1);(crimetype,kidnapping)"},{"valueType":"STRING","string":"(total_crime,63);(crimetype,liquor-law-violation)","chars":"(total_crime,63);(crimetype,liquor-law-violation)"},{"valueType":"STRING","string":"(total_crime,2);(crimetype,motor-vehicle-theft)","chars":"(total_crime,2);(crimetype,motor-vehicle-theft)"},{"valueType":"STRING","string":"(total_crime,26);(crimetype,narcotics)","chars":"(total_crime,26);(crimetype,narcotics)"},{"valueType":"STRING","string":"(total_crime,1);(crimetype,obscenity)","chars":"(total_crime,1);(crimetype,obscenity)"},{"valueType":"STRING","string":"(total_crime,8);(crimetype,offense-involving-children)","chars":"(total_crime,8);(crimetype,offense-involving-children)"},{"valueType":"STRING","string":"(total_crime,104);(crimetype,other-offense)","chars":"(total_crime,104);(crimetype,other-offense)"},{"valueType":"STRING","string":"(total_crime,18);(crimetype,public-peace-violation)","chars":"(total_crime,18);(crimetype,public-peace-violation)"},{"valueType":"STRING","string":"(total_crime,63);(crimetype,robbery)","chars":"(total_crime,63);(crimetype,robbery)"},{"valueType":"STRING","string":"(total_crime,4);(crimetype,sex-offense)","chars":"(total_crime,4);(crimetype,sex-offense)"},{"valueType":"STRING","string":"(total_crime,2);(crimetype,stalking)","chars":"(total_crime,2);(crimetype,stalking)"},{"valueType":"STRING","string":"(total_crime,5150);(crimetype,theft)","chars":"(total_crime,5150);(crimetype,theft)"}] }
-		// ];
-
-		// I think these are the most recent tests I ran...
-		this.specificationObjects = [
-			{"horizontalAxis":"year","horizontalGroupAxis":"crimetype","verticalAxis":"TOTAL_CRIME","plotType":"LINE","dataQuery":"SELECT count(*) as TOTAL_CRIME,`year`,`crimetype` FROM chicagocrime GROUP BY year, crimetype","dataQueryResult":["(total_crime,16);(year,2010);(crimetype,arson)","(total_crime,1096);(year,2010);(crimetype,assault)","(total_crime,2611);(year,2010);(crimetype,battery)","(total_crime,883);(year,2010);(crimetype,burglary)","(total_crime,43);(year,2010);(crimetype,crim-sexual-assault)","(total_crime,2051);(year,2010);(crimetype,criminal-damage)","(total_crime,1129);(year,2010);(crimetype,criminal-trespass)","(total_crime,1289);(year,2010);(crimetype,deceptive-practice)","(total_crime,21);(year,2010);(crimetype,gambling)","(total_crime,4);(year,2010);(crimetype,homicide)","(total_crime,28);(year,2010);(crimetype,interference-with-public-officer)","(total_crime,12);(year,2010);(crimetype,intimidation)","(total_crime,3);(year,2010);(crimetype,kidnapping)","(total_crime,70);(year,2010);(crimetype,liquor-law-violation)","(total_crime,942);(year,2010);(crimetype,motor-vehicle-theft)","(total_crime,1561);(year,2010);(crimetype,narcotics)","(total_crime,4);(year,2010);(crimetype,obscenity)","(total_crime,62);(year,2010);(crimetype,offense-involving-children)","(total_crime,2);(year,2010);(crimetype,other-narcotic-violation)","(total_crime,918);(year,2010);(crimetype,other-offense)","(total_crime,209);(year,2010);(crimetype,prostitution)","(total_crime,3);(year,2010);(crimetype,public-indecency)","(total_crime,232);(year,2010);(crimetype,public-peace-violation)","(total_crime,828);(year,2010);(crimetype,robbery)","(total_crime,52);(year,2010);(crimetype,sex-offense)","(total_crime,8);(year,2010);(crimetype,stalking)","(total_crime,11450);(year,2010);(crimetype,theft)","(total_crime,78);(year,2010);(crimetype,weapons-violation)","(total_crime,9);(year,2011);(crimetype,arson)","(total_crime,1035);(year,2011);(crimetype,assault)","(total_crime,2363);(year,2011);(crimetype,battery)","(total_crime,781);(year,2011);(crimetype,burglary)","(total_crime,45);(year,2011);(crimetype,crim-sexual-assault)","(total_crime,1771);(year,2011);(crimetype,criminal-damage)","(total_crime,934);(year,2011);(crimetype,criminal-trespass)","(total_crime,1755);(year,2011);(crimetype,deceptive-practice)","(total_crime,27);(year,2011);(crimetype,gambling)","(total_crime,5);(year,2011);(crimetype,homicide)","(total_crime,36);(year,2011);(crimetype,interference-with-public-officer)","(total_crime,13);(year,2011);(crimetype,intimidation)","(total_crime,5);(year,2011);(crimetype,kidnapping)","(total_crime,81);(year,2011);(crimetype,liquor-law-violation)","(total_crime,902);(year,2011);(crimetype,motor-vehicle-theft)","(total_crime,1355);(year,2011);(crimetype,narcotics)","(total_crime,3);(year,2011);(crimetype,obscenity)","(total_crime,74);(year,2011);(crimetype,offense-involving-children)","(total_crime,1);(year,2011);(crimetype,other-narcotic-violation)","(total_crime,931);(year,2011);(crimetype,other-offense)","(total_crime,162);(year,2011);(crimetype,prostitution)","(total_crime,5);(year,2011);(crimetype,public-indecency)","(total_crime,184);(year,2011);(crimetype,public-peace-violation)","(total_crime,801);(year,2011);(crimetype,robbery)","(total_crime,70);(year,2011);(crimetype,sex-offense)","(total_crime,21);(year,2011);(crimetype,stalking)","(total_crime,10822);(year,2011);(crimetype,theft)","(total_crime,78);(year,2011);(crimetype,weapons-violation)","(total_crime,5);(year,2012);(crimetype,arson)","(total_crime,971);(year,2012);(crimetype,assault)","(total_crime,2350);(year,2012);(crimetype,battery)","(total_crime,814);(year,2012);(crimetype,burglary)","(total_crime,47);(year,2012);(crimetype,crim-sexual-assault)","(total_crime,1723);(year,2012);(crimetype,criminal-damage)","(total_crime,927);(year,2012);(crimetype,criminal-trespass)","(total_crime,1880);(year,2012);(crimetype,deceptive-practice)","(total_crime,24);(year,2012);(crimetype,gambling)","(total_crime,7);(year,2012);(crimetype,homicide)","(total_crime,56);(year,2012);(crimetype,interference-with-public-officer)","(total_crime,9);(year,2012);(crimetype,intimidation)","(total_crime,12);(year,2012);(crimetype,kidnapping)","(total_crime,73);(year,2012);(crimetype,liquor-law-violation)","(total_crime,820);(year,2012);(crimetype,motor-vehicle-theft)","(total_crime,1119);(year,2012);(crimetype,narcotics)","(total_crime,3);(year,2012);(crimetype,non-criminal)","(total_crime,2);(year,2012);(crimetype,obscenity)","(total_crime,97);(year,2012);(crimetype,offense-involving-children)","(total_crime,1);(year,2012);(crimetype,other-narcotic-violation)","(total_crime,791);(year,2012);(crimetype,other-offense)","(total_crime,119);(year,2012);(crimetype,prostitution)","(total_crime,1);(year,2012);(crimetype,public-indecency)","(total_crime,170);(year,2012);(crimetype,public-peace-violation)","(total_crime,669);(year,2012);(crimetype,robbery)","(total_crime,76);(year,2012);(crimetype,sex-offense)","(total_crime,17);(year,2012);(crimetype,stalking)","(total_crime,10961);(year,2012);(crimetype,theft)","(total_crime,84);(year,2012);(crimetype,weapons-violation)","(total_crime,5);(year,2013);(crimetype,arson)","(total_crime,878);(year,2013);(crimetype,assault)","(total_crime,2150);(year,2013);(crimetype,battery)","(total_crime,733);(year,2013);(crimetype,burglary)","(total_crime,50);(year,2013);(crimetype,crim-sexual-assault)","(total_crime,1394);(year,2013);(crimetype,criminal-damage)","(total_crime,1064);(year,2013);(crimetype,criminal-trespass)","(total_crime,1895);(year,2013);(crimetype,deceptive-practice)","(total_crime,17);(year,2013);(crimetype,gambling)","(total_crime,6);(year,2013);(crimetype,homicide)","(total_crime,38);(year,2013);(crimetype,interference-with-public-officer)","(total_crime,5);(year,2013);(crimetype,intimidation)","(total_crime,8);(year,2013);(crimetype,kidnapping)","(total_crime,47);(year,2013);(crimetype,liquor-law-violation)","(total_crime,693);(year,2013);(crimetype,motor-vehicle-theft)","(total_crime,933);(year,2013);(crimetype,narcotics)","(total_crime,2);(year,2013);(crimetype,obscenity)","(total_crime,96);(year,2013);(crimetype,offense-involving-children)","(total_crime,1);(year,2013);(crimetype,other-narcotic-violation)","(total_crime,738);(year,2013);(crimetype,other-offense)","(total_crime,107);(year,2013);(crimetype,prostitution)","(total_crime,3);(year,2013);(crimetype,public-indecency)","(total_crime,203);(year,2013);(crimetype,public-peace-violation)","(total_crime,552);(year,2013);(crimetype,robbery)","(total_crime,50);(year,2013);(crimetype,sex-offense)","(total_crime,9);(year,2013);(crimetype,stalking)","(total_crime,10051);(year,2013);(crimetype,theft)","(total_crime,69);(year,2013);(crimetype,weapons-violation)","(total_crime,7);(year,2014);(crimetype,arson)","(total_crime,850);(year,2014);(crimetype,assault)","(total_crime,2124);(year,2014);(crimetype,battery)","(total_crime,567);(year,2014);(crimetype,burglary)","(total_crime,1);(year,2014);(crimetype,concealed-carry-license-violation)","(total_crime,48);(year,2014);(crimetype,crim-sexual-assault)","(total_crime,1345);(year,2014);(crimetype,criminal-damage)","(total_crime,800);(year,2014);(crimetype,criminal-trespass)","(total_crime,1873);(year,2014);(crimetype,deceptive-practice)","(total_crime,4);(year,2014);(crimetype,gambling)","(total_crime,6);(year,2014);(crimetype,homicide)","(total_crime,40);(year,2014);(crimetype,interference-with-public-officer)","(total_crime,9);(year,2014);(crimetype,intimidation)","(total_crime,2);(year,2014);(crimetype,kidnapping)","(total_crime,40);(year,2014);(crimetype,liquor-law-violation)","(total_crime,524);(year,2014);(crimetype,motor-vehicle-theft)","(total_crime,610);(year,2014);(crimetype,narcotics)","(total_crime,2);(year,2014);(crimetype,non-criminal)","(total_crime,4);(year,2014);(crimetype,obscenity)","(total_crime,94);(year,2014);(crimetype,offense-involving-children)","(total_crime,1);(year,2014);(crimetype,other-narcotic-violation)","(total_crime,631);(year,2014);(crimetype,other-offense)","(total_crime,96);(year,2014);(crimetype,prostitution)","(total_crime,1);(year,2014);(crimetype,public-indecency)","(total_crime,143);(year,2014);(crimetype,public-peace-violation)","(total_crime,458);(year,2014);(crimetype,robbery)","(total_crime,43);(year,2014);(crimetype,sex-offense)","(total_crime,15);(year,2014);(crimetype,stalking)","(total_crime,9154);(year,2014);(crimetype,theft)","(total_crime,46);(year,2014);(crimetype,weapons-violation)"]},
-			{"horizontalAxis":"NON_UNIT","horizontalGroupAxis":"neighborhood","verticalAxis":"TOTAL_CRIME","plotType":"BAR","dataQuery":"SELECT count(*) as TOTAL_CRIME,`neighborhood` FROM chicagocrime WHERE (`location`='street') AND (`crimetype`='theft') GROUP BY neighborhood","dataQueryResult":["(total_crime,901);(neighborhood,loop)","(total_crime,4360);(neighborhood,near-west-side)","(total_crime,2429);(neighborhood,river-north)","(total_crime,2896);(neighborhood,uic)"]},
-			{"horizontalAxis":null,"horizontalGroupAxis":null,"verticalAxis":null,"plotType":null,"dataQuery":null,"dataQueryResult":[],"specType":"Layout","request":"close.01"}
+		this.currentTestCommand = 0;
+		this.listOfCommandsForTesting =
+		[
+			{text: "can I see a map of theft near UIC", targetAppId: null},//app 2
+			{text:	"show me theft by year", targetAppId: null},//app 3
+			{text: "can I see a map of theft near the Loop", targetAppId: null},//app 2
+			{text: "can you close the map", targetAppId: null},//app 2
+			{text: "can you close the map", targetAppId: null},//app 2
+			{text: "can I see theft by neighborhood", targetAppId: null}, //app 4
+			{text: "can I see theft by day", targetAppId: null},
+			{text: "can I see UIC by crime type", targetAppId: null}
+			//{text:"can you close this one", targetAppId: "app_4"},
+			//{text:"can you close the map", targetAppId: null}
 		];
+		//[
+		//	{text: "can I see theft by day", targetAppId: null},
+		//	 {text: "can I see theft by time", targetAppId: null},
+		//	{text: "can you close this one", targetAppId: "app_2"}
+	//	];
+
+		this.useMaster = true; //turn on and off using the isMaster function...
+
 
 		//in practice, I don't use colors well.  Ideally, we would want this to be 'smarter'
 		// now it just cycles through these colors, unless assigned by the nlp side
@@ -166,18 +169,47 @@ var articulate_ui = SAGE2_App.extend( {
 	//------------------------------------------//
 	event: function(eventType, position, user_id, data, date) {
 		if (eventType === "pointerPress" && (data.button === "left")) { //when I am debugging, I use pointer presses to launch example visualizations
-			if( isMaster && this.debugMode ){
+			//if( isMaster && this.debugMode ){
+
 
 				//this.readExample2(this.specificationObjects[this.counter], this.colors[this.counter]);
 				//this.contactArticulateHub("show me theft in loop by location type"); //or can use it to contact articulate hub with a dummy question
+			//}
+
+			if( this.debugMode ){
+				//I can't remember why this code is here...
+				//this.counter++;
+				if( this.currentTestCommand < this.listOfCommandsForTesting.length )
+				{
+
+					console.log("TEXT INPUT " + this.listOfCommandsForTesting[this.currentTestCommand]["text"]);
+					//console.log("targetApp " + this.orderedItems);
+					this.commands[this.commands.length-1] =this.listOfCommandsForTesting[this.currentTestCommand]["text"];
+					this.commands.push(">");
+					this.refresh();
+					this.systemInstruction = "";
+					this.refresh();
+					this.systemInstruction = ">> Sending Request . . ."
+					this.refresh();
+
+					//new logic to maintain the same sessionId
+					var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query?utterance=";
+					var requestIndex = this.requests.push(base_url + this.listOfCommandsForTesting[this.currentTestCommand]["text"]); //returns the number of elements
+					//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
+
+					//only send url and the index of the request
+				if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
+						console.log("ABOUT TO CONTACT ARTICULATE HUB")
+						orderedItems = [ this.listOfCommandsForTesting[this.currentTestCommand]["text"] ];
+						this.contactArticulateHub(base_url+this.listOfCommandsForTesting[this.currentTestCommand]["text"], requestIndex - 1, this.listOfCommandsForTesting[this.currentTestCommand]["targetAppId"]);  //send to the articulate hub
+				 }
+
+				 this.currentTestCommand++;
+
+				}
 			}
 
-			//I can't remember why this code is here...
-			this.counter++;
-			if( this.counter >= this.specificationObjects.length )
-			{
-				this.counter = 0;
-			}
+
 
 		}
 		else if (eventType === "pointerMove" && this.dragging) {
@@ -239,7 +271,7 @@ console.log("debugDatagram: "+ data);
 		//only send url and the index of the request
 		if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
 			console.log("ABOUT TO CONTACT ARTICULATE HUB")
-			this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID);  //send to the articulate hub
+			this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID["appId"]);  //send to the articulate hub
 		}
 		//----------------------------------------
 
@@ -279,7 +311,9 @@ console.log("debugDatagram: "+ data);
 			for(i = 0; i<this.childList.length;i++){
 				console.log("child:");
 				console.log(this.childList[i]);
-				if(this.childList[i].childId == targetAppID){
+				console.log("target:");
+				console.log(targetAppID);
+				if(this.childList[i]["childId"] == targetAppID){
 					console.log("FOUND THE TARGET");
 					targetHubId = this.childList[i]["initState"]["hub_id"];
 				}
@@ -333,6 +367,10 @@ console.log("debugDatagram: "+ data);
 		var dataType = type || "TEXT";
 
 		var xhr = new XMLHttpRequest();
+	//	var http = new XMLHttpRequest();
+	//	http.open("GET",url,false);
+	//	http.withCredentials = true;
+	//	http.send(null);
 
 		if(requestIndex >= 1){
 			//for (var i = 0; i < this.responces.length; i++){
@@ -341,9 +379,14 @@ console.log("debugDatagram: "+ data);
 			//final_url = url + ";jsessionid=" + this.responces[requestIndex-1].sessionId;
 			//}
 			console.log("supsequent call " + final_url);
+			xhr.withCredentials = true;
 			xhr.open("GET", final_url, true);
+
 		} else {
+			final_url = url + "&isnewsession=True";
+
 			console.log("first call " + url);
+			xhr.withCredentials = true;
 			xhr.open("GET", url, true);
 		}
 
@@ -395,18 +438,19 @@ console.log("debugDatagram: "+ data);
 				console.log(specObj);
 				this.responces[requestIndex] = specObj;
 				console.log("sess id all " + this.responces[requestIndex].sessionId);
-				this.sessionId = specObj.sessionId;
+				this.sessionId = specObj["sessionId"];
+				console.log(this.sessionId);
 				this.refresh();
 			//OLD
 			//this.handleResponse(specObj);
 				if( isMaster || !this.useMaster){
-					this.readExample2(specObj, this.colors[this.counter]); // call the parser
+					this.readExample3(specObj, this.colors[this.counter]); // call the parser
 				}
 			}
 			else if(specObj["dataQuery"] == null){
 
 				if( specObj["request"] == "close.01" ){
-					this.readExample2(specObj);
+					this.readExample3(specObj);
 				}
 				else{ //not sure what this is for
 					this.refresh();
@@ -421,6 +465,286 @@ console.log("debugDatagram: "+ data);
 			//broadcast( "handleResponse", {response:"responseTest"} );
 		},
 
+
+	readExample3: function(specificationObj, color){
+		//layout requests (close)
+
+		//vis requests
+		console.log("######################################")
+		console.log("NEW SPECIFICATION OBJ");
+		console.log(specificationObj);
+		console.log("######################################")
+
+		if( specificationObj["requestType"] == "Layout" ){
+			if( specificationObj["request"] == "close.01"){
+				console.log("CLOSE");
+				console.log(specificationObj["targetId"]);
+				hubId = specificationObj["targetId"];
+				this.closeChildByHubId(hubId);
+			}
+		}
+		else if(specificationObj["requestType"] == "Command Based on previous viz"
+								|| specificationObj["requestType"] == "Command Not based on an existing visualization") {
+
+			console.log("make a vis!");
+			plotTitle = specificationObj["plotHeadline"]["plotTitle"];
+			console.log(plotTitle);
+
+			type = specificationObj["plotHeadline"]["plotType"].toLowerCase(); //what kind of plot: bar chart, map, line chart
+			x = specificationObj["horizontalAxis"];//.toLowerCase();//changed: specificationObj["horizontalGroupAxis"].toLowerCase()
+			y = specificationObj["verticalAxis"];//.toLowerCase();
+			c =  specificationObj["horizontalGroupAxis"];
+			hub_id = specificationObj["plotHeadline"]["id"];
+			//id = null;//specificationObj["id"]; //not using right now...
+			//if( specificationObj["horizontalAxis"] ) // this  just required some additional parsing...
+			//	if( specificationObj["horizontalAxis"] == "NON_UNIT")
+			//		id = null;//specificationObj["id"];
+			//	else
+			//		id = specificationObj["horizontalAxis"].toLowerCase();
+			dataToVisualize = [];
+			maxVal = 0;
+
+			if( specificationObj["plotHeadline"]["plotType"] == "BAR"){
+				dataToVisualize = this.parseBar(specificationObj["dataQueryResult"]);
+
+				//launch app
+				applicationType ="custom",
+				application = "apps/vega_vis_app"; 	 //its a vega app
+				msg = "this is a message from articulate_ui", //not used so much, but could
+				console.log(dataToVisualize);
+
+				initState = {  // the vis app will get these values and use them to draw appropriately
+					value: 10,
+					hub_id: hub_id,
+					title: plotTitle,
+					type: type.toLowerCase(),  //what kind of chart: bar or line
+					x: x.toLowerCase(), //x axis for the bar chart
+					y: y.toLowerCase(), //y axis for the bar chart (usually counts in our case)
+					color: color, //what color to give the bars - at this point a single color- someday need multiple colors
+					visId: this.counter,  //unique id for the vis, based on the count
+					data: dataToVisualize //the data to visualize- like counts and labels
+					//title: "visualization response" //should make this better someday...
+				};
+			}
+			if( specificationObj["plotHeadline"]["plotType"] == "LINE"){
+				dataToVisualize = this.parseLine(specificationObj["dataQueryResult"], c);
+
+				//launch app
+				applicationType ="custom",
+				application = "apps/vega_vis_app"; 	 //its a vega app
+				msg = "this is a message from articulate_ui", //not used so much, but could
+				console.log(dataToVisualize);
+
+				initState = {  // the vis app will get these values and use them to draw appropriately
+					value: 10,
+					hub_id: hub_id,
+					title: plotTitle,
+					type: type.toLowerCase(),  //what kind of chart: bar or line
+					x: x.toLowerCase(), //x axis for the bar chart
+					y: y.toLowerCase(), //y axis for the bar chart (usually counts in our case)
+					color: color, //what color to give the bars - at this point a single color- someday need multiple colors
+					visId: this.counter,  //unique id for the vis, based on the count
+					data: dataToVisualize //the data to visualize- like counts and labels
+					//title: "visualization response" //should make this better someday...
+				};
+			}
+			if( specificationObj["plotHeadline"]["plotType"] == "MAP"){
+
+				for(i = 0; i < specificationObj["dataQueryResult"].length; i++){
+					line = specificationObj["dataQueryResult"][i];
+					console.log(line);
+
+					//"(latitude,41.859);(longitude,-87.687);1"
+					while( line.indexOf("(") != -1 )
+						line = line.replace("(", "#");
+					while( line.indexOf(")") != -1 )
+						line = line.replace(")", "#");
+					while( line.indexOf(";") != -1 )
+						line = line.replace(";", "#");
+					while( line.indexOf(",") != -1 )
+						line = line.replace(",", "#");
+					tokens = line.split("#");
+					console.log(tokens);
+					obj = new Object();
+
+					console.log(tokens);
+					obj["latitude"] = parseFloat(tokens[2]);
+					obj["longitude"] = parseFloat(tokens[6]);
+					val = parseFloat(tokens[8]);
+					obj["value"] = val;
+					if( val > maxVal )
+						maxVal = val;
+					//to do... maybe?
+
+					if( obj["latitude"] != -1 )
+						dataToVisualize.push(obj);
+				}//end look through data
+
+				// now launch the map in a separate sage2 app
+				applicationType ="custom", //its a custom app (as opposed to say video app)
+				application = "apps/heat_map"; //I called it 'heat map'
+				msg = "this is a message from articulate_ui", //not really used, but an option
+				console.log(dataToVisualize); //just for sanity
+
+				initState = {  // these values will load on child app init
+					value: 20,
+					data: dataToVisualize, //here is where I send the locations and number of crimes at this location, which came from the nlp smart hub
+					maxValue: maxVal,
+					title: plotTitle,
+					hub_id: hub_id
+				};
+
+
+			}//end maps
+
+			this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
+
+		}
+		else { //generic-
+			hub_id = specificationObj["plotHeadline"]["id"];
+			applicationType ="custom",
+			application = "apps/vega_vis_app"; 	 //its a vega app
+			msg = "this is a message from articulate_ui", //not used so much, but could
+
+			initState = {  // the vis app will get these values and use them to draw appropriately
+				value: 10,
+				hub_id: hub_id,
+				title: "plotTitle",
+				type: "line",  //what kind of chart: bar or line
+				x: "x", //x axis for the bar chart
+				y: "y", //y axis for the bar chart (usually counts in our case)
+				visId: this.counter,  //unique id for the vis, based on the count
+				data: [
+				    {"x": 1, "c":"id1", "value": 15},
+				    {"x": 1, "c":"id2", "value": 10},
+				    {"x": 1, "c":"id3", "value": 5},
+				    {"x": 1, "c":"id4", "value": 50},
+				  	{"x": 2, "c":"id1", "value": 22},
+				    {"x": 2, "c":"id2", "value": 13},
+				    {"x": 2, "c":"id3", "value": 16},
+				    {"x": 2, "c":"id4", "value": 55},
+				  	{"x": 3, "c":"id1", "value": 43},
+				    {"x": 3, "c":"id2", "value": 3},
+				    {"x": 3, "c":"id3", "value": 34},
+				    {"x": 3, "c":"id4", "value": 23},
+				  	{"x": 4, "c":"id1", "value": 27},
+				    {"x": 4, "c":"id2", "value": 14},
+				    {"x": 4, "c":"id3", "value": 10},
+				    {"x": 4, "c":"id4", "value": 2},
+				    {"x": 5, "c":"id1", "value": 47},
+				    {"x": 5, "c":"id2", "value": 4},
+				    {"x": 5, "c":"id3", "value": 18},
+				    {"x": 5, "c":"id4", "value": 22}
+				  ],
+				  "color": "steelblue"
+			};
+			this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
+		}
+	},
+
+	parseBar: function(dataQueryResult){
+		dataToVisualize = [];
+		for(i = 0; i < dataQueryResult.length; i++){ //same thing parse the data
+			line = dataQueryResult[i];
+			console.log(line);
+
+			while( line.indexOf("(") != -1 )
+				line = line.replace("(", "#");
+			while( line.indexOf(")") != -1 )
+				line = line.replace(")", "#");
+			while( line.indexOf(";") != -1 )
+				line = line.replace(";", "#");
+			while( line.indexOf(",") != -1 )
+				line = line.replace(",", "#");
+			tokens = line.split("#");
+			console.log(tokens);
+			obj = new Object();
+
+			console.log(tokens);
+			obj["y"] = parseInt(tokens[6]);
+			obj["x"] = tokens[2];
+			obj["c"] = "null";
+			dataToVisualize.push(obj);
+			// console.log(obj);
+		}
+		return dataToVisualize;
+	},
+
+	parseLine: function(dataQueryResult, c){
+		dataToVisualize = [];
+
+//		temp = id;
+//		id = y;
+//		y = id;
+		for(i = 0; i < dataQueryResult.length; i++){ //parsing...
+			line = dataQueryResult[i];
+			console.log(line);
+
+			while( line.indexOf("(") != -1 )
+				line = line.replace("(", "#");
+			while( line.indexOf(")") != -1 )
+				line = line.replace(")", "#");
+			while( line.indexOf(";") != -1 )
+				line = line.replace(";", "#");
+			while( line.indexOf(",") != -1 )
+				line = line.replace(",", "#");
+			tokens = line.split("#");
+			console.log(tokens);
+			obj = new Object();
+
+			if( c == null ){
+				console.log(tokens);
+				obj["x"] = parseInt(tokens[2]);
+				obj["y"] = tokens[6];
+				obj["c"] = "null";
+			}
+			else {
+				//to do
+				console.log(tokens);
+				obj["x"] = parseInt(tokens[6]);
+				obj["y"] = tokens[10];
+				obj["c"] = tokens[2];
+			}
+
+
+			dataToVisualize.push(obj);
+			// console.log(obj);
+		}
+		return dataToVisualize;
+	},
+
+//not using...
+	parseMap: function(specificationObj){
+		dataToVisualize = [];
+		for(i = 0; i < specificationObj["dataQueryResult"].length; i++){
+			line = specificationObj["dataQueryResult"][i];
+			console.log(line);
+
+			while( line.indexOf("(") != -1 )
+				line = line.replace("(", "#");
+			while( line.indexOf(")") != -1 )
+				line = line.replace(")", "#");
+			while( line.indexOf(";") != -1 )
+				line = line.replace(";", "#");
+			while( line.indexOf(",") != -1 )
+				line = line.replace(",", "#");
+			tokens = line.split("#");
+			console.log(tokens);
+			obj = new Object();
+
+			console.log(tokens);
+			obj["latitude"] = parseFloat(tokens[2]);
+			obj["longitude"] = parseFloat(tokens[6]);
+			val = parseFloat(tokens[8]);
+			obj["value"] = val;
+			if( val > maxVal )
+				maxVal = val;
+			//to do... maybe?
+
+
+			dataToVisualize.push(obj);
+		}
+	},
 
 	// parse the data
 	// the specification object is not nicely formatting- parsing is a pain!  =(
@@ -684,8 +1008,10 @@ console.log("debugDatagram: "+ data);
 		{
 			if(this.childList[key]["initState"]["hub_id"] == hubId){
 				var closeAppIndex = this.childList.indexOf(this.childList[key]);
-				this.closeChild(closeAppIndex);
+				//this.closeChild(closeAppIndex);
+				this.closeChildById(this.childList[key].childId);
 				console.log("Close "+this.childList[key].childId);
+				return;
 			}
 		}
 	},
@@ -716,7 +1042,7 @@ console.log("debugDatagram: "+ data);
 			//this.resizeChild(this.getNumberOfChildren()-1, 1600, 1200, false);
 			console.log("child open");
 			console.log(this.childList);
-
+			//this.childList[this.childList.length][""]
 			//
 
 			this.refresh(date);

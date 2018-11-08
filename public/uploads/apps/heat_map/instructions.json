@@ -15,6 +15,7 @@
 		    {"latitude": 41.873, "longitude": -87.625, "value": 82}
 		  ],
 		"maxValue": 100,
+		"hub_id": 0,
 		"title": "visualization response"
 	},
 	"title": "heat_map",

@@ -4,7 +4,7 @@
 	"width": 400,
 	"height": 200,
 	"resize": "free",
-	"animation": true,			
+	"animation": true,
 	"dependencies": [
 	],
 	"load": {

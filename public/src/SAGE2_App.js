@@ -1114,6 +1114,20 @@ var SAGE2_App = Class.extend({
 		//}
 	},
 
+	closeChildById: function( childId ){
+		//if( n >= this.childList.length )
+		//	return;
+		//child = this.childList[n];
+		data = {
+			childId: childId,
+			id: this.id
+		};
+		//if( isMaster ){
+			console.log("close child: " + data.childId);
+			closeLinkedChildApp(data); //defined in runtime
+		//}
+	},
+
 	moveChild: function( n, x, y ){
 		if( n >= this.childList.length )
 			return;
