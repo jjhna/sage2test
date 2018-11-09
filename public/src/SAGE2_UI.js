@@ -12,6 +12,7 @@
 
 /* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech */
 /* global removeAllChildren, SAGE2_copyToClipboard, parseBool */
+/* global SAGE2_webrtc_ui_tracker */
 
 /**
  * Web user interface
@@ -780,9 +781,22 @@ function setupListeners() {
 			uiDrawSetCurrentStateAndShow(data);
 		} else if (data.func === 'uiDrawMakeLine') {
 			uiDrawMakeLine(data);
+		} else if (data.func === 'webrtc_SignalMessageFromDisplay') {
+			if (data.message === "appStarted") {
+				// Make peer
+				SAGE2_webrtc_ui_tracker.makePeer(data);
+				// Reply back with offer will happen based off when it figures out turn response
+			} else {
+				for (let i = 0; i < SAGE2_webrtc_ui_tracker.allPeers.length; i++) {
+					if (SAGE2_webrtc_ui_tracker.allPeers[i].displayId == data.sourceId) {
+						SAGE2_webrtc_ui_tracker.allPeers[i].readMessage(data.message);
+					}
+				}
+			}
 		} else {
 			console.log("Error, data for client contained invalid function:" + data.func);
 		}
+
 	});
 
 	// Message from server reporting screenshot ability of display clients
