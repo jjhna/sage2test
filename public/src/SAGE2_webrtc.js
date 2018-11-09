@@ -315,7 +315,7 @@ class SAGE2WebrtcPeerConnection {
 	// Sends the stored up ice candidates, sending too early will cause silent errors within webrtc
 	sendStoredIceCandidates() {
 		this.debugprint("Detected rtc candidate connection in UI, stopping default share method.");
-		if (this.shouldHaltNormalUiScreenSendAfterRtcConnection) {
+		if (SAGE2_webrtc_ui_tracker.shouldHaltNormalUiScreenSendAfterRtcConnection) {
 			interactor.broadcasting = false;
 		}
 
