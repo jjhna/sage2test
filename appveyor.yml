@@ -5,7 +5,7 @@ image: Visual Studio 2017
 branches:
   only:
   - master
-  - peerNolibs
+  - v4
 
 shallow_clone: true
 
