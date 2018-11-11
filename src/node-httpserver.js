@@ -128,7 +128,7 @@ HttpServer.prototype.clearSiteData = function(res) {
 	var header = this.buildHeader();
 	// Use the Clear-Site-Data header:
 	// https://www.w3.org/TR/clear-site-data/
-	header["Clear-Site-Data"] = '"cache","cookies","storage","executionContexts"';
+	header["Clear-Site-Data"] = '"cache","cookies","storage"';
 	header.Location = "index.html";
 	res.writeHead(302, header);
 	res.end();
