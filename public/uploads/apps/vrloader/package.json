@@ -1,0 +1,14 @@
+{
+  "name": "vrloader",
+  "version": "1.0.0",
+  "main": "vrloader.js",
+  "devDependencies": {
+    "eslint": "latest"
+  },
+  "scripts": {
+    "lint": "eslint -c eslintrc vrloader.js"
+  },
+  "author": "Krishna Bharadwaj <kbhara5@uic.edu>",
+  "license": "BSD-2-Clause",
+  "description": "SAGE2 application vrloader"
+}

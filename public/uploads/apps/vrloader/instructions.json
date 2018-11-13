@@ -1,0 +1,26 @@
+{
+	"main_script": "vrloader.js",
+	"icon": "vrloader.png",
+	"width": 800,
+	"height": 600,
+	"resize": "free",
+	"animation": true,
+	"dependencies": [
+		"https://aframe.io/releases/0.7.0/aframe.min.js",
+		"scripts/util.js",
+		"scripts/multipleViews.js",
+		"scripts/browserView.js"
+	],
+	"load": {
+		"model": null,
+		"userAction": []
+	},
+	"fileTypes": [ "obj", "gltf", "dae", "json" ],
+	"directory": "models",
+	"title": "vrloader",
+	"version": "1.0.0",
+	"description": "SAGE2 application vrloader",
+	"keywords": [ "sage2", "vrloader" ],
+	"author": "Krishna Bharadwaj <kbhara5@uic.edu>",
+	"license": "SAGE2-Software-License"
+}

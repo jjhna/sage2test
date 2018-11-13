@@ -2174,8 +2174,10 @@ function FileManager(wsio, mydiv, uniqueID) {
 				(id.indexOf('Link:/') >= 0)  ||
 				(id.indexOf('Session:/') >= 0)) {
 				tmenu.disableItem('New folder');
+				tmenu.disableItem('Open');
 			} else {
 				tmenu.enableItem('New folder');
+				tmenu.enableItem('Open');
 			}
 			return true;
 		});

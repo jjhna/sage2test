@@ -318,12 +318,14 @@ function mouseCheck(event) {
 	function registerHandlers() {
 		if (standAloneApp) {
 			console.log("Registered event handlers");
-			document.addEventListener('mouseup',   standAloneApp.pointerRelease.bind(standAloneApp),  false);
-			document.addEventListener('mousedown', standAloneApp.pointerPress.bind(standAloneApp), false);
-			document.addEventListener('click',     standAloneApp.pointerClick.bind(standAloneApp), false);
-			document.addEventListener('mousemove', standAloneApp.pointerMove.bind(standAloneApp), false);
-			document.addEventListener('wheel',     standAloneApp.pointerScroll.bind(standAloneApp), false);
-			//document.addEventListener('dblclick',  standAloneApp.pointerDblClick.bind(standAloneApp), false);
+			document.addEventListener('mouseup',	standAloneApp.pointerRelease.bind(standAloneApp),	false);
+			document.addEventListener('mousedown',	standAloneApp.pointerPress.bind(standAloneApp),		false);
+			document.addEventListener('mousemove',	standAloneApp.pointerMove.bind(standAloneApp),		false);
+			document.addEventListener('wheel',		standAloneApp.pointerScroll.bind(standAloneApp),	false);
+			document.addEventListener('dblclick',	standAloneApp.pointerDblClick.bind(standAloneApp),	false);
+			document.addEventListener('keydown',	standAloneApp.keyDown.bind(standAloneApp),			false);
+			document.addEventListener('keyup',		standAloneApp.keyUp.bind(standAloneApp),			false);
+			document.addEventListener('keypress',	standAloneApp.keyPress.bind(standAloneApp),			false);
 			if (eventHandlerRegisterer !== null) {
 				clearInterval(eventHandlerRegisterer);
 			}

@@ -427,14 +427,9 @@ function StandAloneApp(id, wsio) {
 
 	this.pointerMove = function(event) {
 		var inside = false;
-		// var pointer_data = {
-		// 	id: this.user.id + "_pointer"
-		// };
 		if (event.x > this.appLeft && event.x < (this.appLeft + this.appWidth) &&
 			event.y > this.appTop && event.y < (this.appTop + this.appHeight)) {
 			inside = true;
-			// pointer_data.left = event.x;
-			// pointer_data.top = event.y;
 		}
 		if (inside) {
 			this.pointerMoveMethod(event);
@@ -452,22 +447,25 @@ function StandAloneApp(id, wsio) {
 			inside = true;
 		}
 		if (inside) {
-			var x = event.clientX;
-			var y = event.clientY;
-			var px = (x - this.appLeft) / this.appWidth * this.appPositionOnDisplay.width;
-			var py = (y - this.appTop) / this.appHeight * this.appPositionOnDisplay.height;
-			var pointerData = {
-				pointerX: this.appPositionOnDisplay.left + px,
-				pointerY: this.appPositionOnDisplay.actualTop + py
-			};
+			this.pointerX = event.clientX - this.appLeft;
+			this.pointerY = event.clientY - this.appTop;
 			if (this.application.standAloneAppEventSharing === true) {
-				this.wsio.emit('pointerPosition', {pointerX: pointerData.pointerX, pointerY: pointerData.pointerY});
+				var px = this.pointerX / this.appWidth * this.appPositionOnDisplay.width;
+				var py = this.pointerY / this.appHeight * this.appPositionOnDisplay.height;
+				var pointerData = {
+					pointerX: this.appPositionOnDisplay.left + px,
+					pointerY: this.appPositionOnDisplay.actualTop + py
+				};
+				this.wsio.emit('pointerPosition', pointerData);
 				this.wsio.emit('pointerPress', {button: btn});
 			} else {
-				var ePosition = {x: event.x - this.appLeft, y: event.y - this.appTop};
+				var ePosition = {x: this.pointerX, y: this.pointerY};
 				if (this.application) {
 					this.application.SAGE2Event("pointerPress", ePosition, this.user, {button: btn}, new Date());
 				}
+				this.user.left = ePosition.x;
+				this.user.top = ePosition.y;
+				this.ui.updateSagePointerPosition(this.user);
 			}
 
 		}
@@ -483,46 +481,31 @@ function StandAloneApp(id, wsio) {
 			inside = true;
 		}
 		if (inside) {
-			var x = event.clientX;
-			var y = event.clientY;
-			var px = (x - this.appLeft) / this.appWidth * this.appPositionOnDisplay.width;
-			var py = (y - this.appTop) / this.appHeight * this.appPositionOnDisplay.height;
-			var pointerData = {
-				pointerX: this.appPositionOnDisplay.left + px,
-				pointerY: this.appPositionOnDisplay.actualTop + py
-			};
+			this.pointerX = event.clientX - this.appLeft;
+			this.pointerY = event.clientY - this.appTop;
 			if (this.application.standAloneAppEventSharing === true) {
-				this.wsio.emit('pointerPosition', {pointerX: pointerData.pointerX, pointerY: pointerData.pointerY});
+				var px = this.pointerX / this.appWidth * this.appPositionOnDisplay.width;
+				var py = this.pointerY / this.appHeight * this.appPositionOnDisplay.height;
+				var pointerData = {
+					pointerX: this.appPositionOnDisplay.left + px,
+					pointerY: this.appPositionOnDisplay.actualTop + py
+				};
+				this.wsio.emit('pointerPosition', pointerData);
 				this.wsio.emit('pointerRelease', {button: btn});
 			} else {
-				var ePosition = {x: event.x - this.appLeft, y: event.y - this.appTop};
+				var ePosition =  {x: this.pointerX, y: this.pointerY};
 				if (this.application) {
 					this.application.SAGE2Event("pointerRelease", ePosition, this.user, {button: btn}, new Date());
 				}
-				this.user.left = x;
-				this.user.top = y;
+				this.user.left = ePosition.x;
+				this.user.top = ePosition.y;
 				this.ui.updateSagePointerPosition(this.user);
 			}
 		}
 	};
-	this.pointerClick = function(event) {
-		var inside = false;
-		var x = event.clientX;
-		var y = event.clientY;
-		if (x > this.appLeft && x < (this.appLeft + this.appWidth) &&
-			y > this.appTop && y < (this.appTop + this.appHeight)) {
-			inside = true;
-		}
-		if (inside) {
-			var btn = (event.button === 0) ? "left" : (event.button === 1) ? "middle" : "right";
-			var ePosition = {x: x - this.appLeft, y: y - this.appTop};
-			if (this.application) {
-				this.application.SAGE2Event("pointerClick", ePosition, this.user, {button: btn}, new Date());
-			}
-			this.user.left = x;
-			this.user.top = y;
-			this.ui.updateSagePointerPosition(this.user);
-		}
+	
+	this.pointerDblClick = function(event) {
+		this.wsio.emit('pointerDblClick');
 	};
 	this.pointerScroll = function(event) {
 		var inside = false;
@@ -531,17 +514,17 @@ function StandAloneApp(id, wsio) {
 			inside = true;
 		}
 		if (inside) {
-			var x = event.clientX;
-			var y = event.clientY;
-			var px = (x - this.appLeft) / this.appWidth * this.appPositionOnDisplay.width;
-			var py = (y - this.appTop) / this.appHeight * this.appPositionOnDisplay.height;
+			this.pointerX = event.clientX - this.appLeft;
+			this.pointerY = event.clientY - this.appTop;
+			var px = this.pointerX / this.appWidth * this.appPositionOnDisplay.width;
+			var py = this.pointerY / this.appHeight * this.appPositionOnDisplay.height;
 			var pointerData = {
 				pointerX: this.appPositionOnDisplay.left + px,
 				pointerY: this.appPositionOnDisplay.actualTop + py
 			};
 			if (this.application.standAloneAppEventSharing === true) {
 				if (this.scrollTimeId === null) {
-					this.wsio.emit('pointerPosition', {pointerX: pointerData.pointerX, pointerY: pointerData.pointerY});
+					this.wsio.emit('pointerPosition', pointerData);
 					this.wsio.emit('pointerScrollStart');
 				} else {
 					clearTimeout(this.scrollTimeId);
@@ -554,12 +537,12 @@ function StandAloneApp(id, wsio) {
 					_this.scrollTimeId = null;
 				}, 500);
 			} else {
-				var ePosition = {x: x - this.appLeft, y: y - this.appTop};
+				var ePosition = {x: this.pointerX, y: this.pointerY};
 				if (this.application) {
 					this.application.SAGE2Event("pointerScroll", ePosition, this.user, {wheelDelta: event.deltaY}, new Date());
 				}
-				this.user.left = x;
-				this.user.top = y;
+				this.user.left = ePosition.x;
+				this.user.top = ePosition.y;
 				this.ui.updateSagePointerPosition(this.user);
 			}
 		}
@@ -571,10 +554,10 @@ function StandAloneApp(id, wsio) {
 		var diff = now - this.now;
 
 		if (diff >= (1000 / this.sendFrequency)) {
-			var x = event.clientX;
-			var y = event.clientY;
-			var px = (x - this.appLeft) / this.appWidth * this.appPositionOnDisplay.width;
-			var py = (y - this.appTop) / this.appHeight * this.appPositionOnDisplay.height;
+			this.pointerX = event.clientX - this.appLeft;
+			this.pointerY = event.clientY - this.appTop;
+			var px = this.pointerX / this.appWidth * this.appPositionOnDisplay.width;
+			var py = this.pointerY / this.appHeight * this.appPositionOnDisplay.height;
 			var pointerData = {
 				pointerX: this.appPositionOnDisplay.left + px,
 				pointerY: this.appPositionOnDisplay.actualTop + py
@@ -583,12 +566,12 @@ function StandAloneApp(id, wsio) {
 			if (this.application.standAloneAppEventSharing === true) {
 				this.wsio.emit('pointerMove', pointerData);
 			} else {
-				var ePosition = {x: x - this.appLeft, y: y - this.appTop};
+				var ePosition = {x: this.pointerX, y: this.pointerY};
 				if (this.application) {
 					this.application.SAGE2Event("pointerMove", ePosition, this.user, pointerData, new Date());
 				}
-				this.user.left = x;
-				this.user.top = y;
+				this.user.left = ePosition.x;
+				this.user.top = ePosition.y;
 				this.ui.updateSagePointerPosition(this.user);
 			}
 
@@ -656,6 +639,7 @@ function StandAloneApp(id, wsio) {
 			event.stopPropagation();
 		}
 	};
+
 	this.touchEnd = function(event) {
 		var now = Date.now();
 		if ((now - touchTime) < 250) {
@@ -674,6 +658,60 @@ function StandAloneApp(id, wsio) {
 			event.stopPropagation();
 		}
 	};
+
+	this.keyDown = function(event) {
+		var keyCode = parseInt(event.keyCode, 10);
+		if (keyCode !== 27) { // not ESC key
+			this.pointerMove(this.pointerX, this.pointerY);
+			this.wsio.emit('keyDown', {code: keyCode});
+			if (keyCode === 9) { // tab is a special case - must emulate keyPress event
+				this.wsio.emit('keyPress', {code: keyCode, character: String.fromCharCode(keyCode)});
+			}
+			// if a special key - prevent default (otherwise let continue to keyPress)
+			if (keyCode <= 7 || (keyCode >= 10 && keyCode <= 15) || keyCode === 32 ||
+				(keyCode >= 47 && keyCode <= 90) || (keyCode >= 94 && keyCode <= 111) ||
+				keyCode >= 146) {
+				return false;
+			}
+		}
+		event.preventDefault();
+		return true;
+	};
+
+	/**
+	 * Handler for key up
+	 *
+	 * @method keyUp
+	 * @param keyCode {Number} character code
+	 */
+	this.keyUp = function(event) {
+		var keyCode = parseInt(event.keyCode, 10);
+		if (keyCode !== 27) { // not ESC key
+			this.pointerMove(this.pointerX, this.pointerY);
+			this.wsio.emit('keyUp', {code: keyCode});
+			event.preventDefault();
+		}
+		return true;
+	};
+
+	/**
+	 * Handler for key press
+	 *
+	 * @method keyPress
+	 * @param charCode {Number} character code
+	 */
+	this.keyPress = function(event) {
+		// space bar activates the pointer and stop there
+		// or process the event
+		var charCode = parseInt(event.charCode, 10);
+		if (charCode !== 32) {
+			this.pointerMove(this.pointerX, this.pointerY);
+			this.wsio.emit('keyPress', {code: charCode, character: String.fromCharCode(charCode)});
+			event.preventDefault();	
+		} 
+		return true;
+	};
+
 	this.startLocalSAGE2Pointer = function() {
 		if (hasMouse) {
 			this.main.addEventListener('pointerlockchange', function(e) {

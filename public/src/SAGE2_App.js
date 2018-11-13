@@ -565,7 +565,9 @@ var SAGE2_App = Class.extend({
 			});
 		} else if (isBrowser) {
 			wsio.emit('updateApplicationState', {
-				id: this.id, state: this.state, date: Date.now()
+				id: this.id,
+				state: this.state,
+				date: Date.now()
 			});
 		}
 	},
@@ -1249,7 +1251,7 @@ var SAGE2_App = Class.extend({
 	* @param {String} callback - function on app to give value. Could be a function ref and will convert to string.
 	*/
 	serverDataGetValue: function(nameOfValue, callback) {
-		if (isMaster) {
+		if (isMaster || isBrowser) {
 			var callbackName = this.getCallbackName(callback);
 			if (callbackName === undefined) {
 				throw "Missing callback for serverDataGetValue";
@@ -1273,7 +1275,7 @@ var SAGE2_App = Class.extend({
 	* @param {Boolean} shouldRemoveValueFromServerWhenAppCloses - Optional. If true, app quit will remove value from server.
 	*/
 	serverDataSetValue: function(nameOfValue, value, description, shouldRemoveValueFromServerWhenAppCloses = false) {
-		if (isMaster) {
+		if (isMaster || isBrowser) {
 			wsio.emit("serverDataSetValue", {
 				nameOfValue: nameOfValue,
 				value: value,
