@@ -4,6 +4,7 @@ function VRUser() {
 	this.vrMode = null;
 	this._avatar = null;
 	this._cameraModel = null;
+	this.visible = true;
 	this.setVRMode = function(mode) {
 		this.vrMode = (mode === true);
 		if (this._avatar && this._cameraModel) {
@@ -20,6 +21,19 @@ function VRUser() {
 			}
 		}
 	};
+	this.setVisibility = function(flag) {
+		if (this._avatar && this._cameraModel) {
+			var avatar3D = (this._avatar.isObject3D)? this._avatar : this._avatar.object3D;
+			var camera3D = (this._cameraModel.isObject3D)? this._cameraModel : this._cameraModel.object3D;
+			flag = (flag === true);
+			avatar3D.visible = flag;
+			camera3D.visible = flag;
+			this.visible = flag;
+			if (this.visible === true) {
+				this.setVRMode(this.vrMode);
+			}
+		}
+	}
 };
 
 function findBoundingBox(threeObj) {

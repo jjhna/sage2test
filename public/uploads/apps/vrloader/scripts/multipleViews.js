@@ -153,7 +153,7 @@ function MasterView(app) {
 			{
 				background: new THREE.Color(0.7, 0.5, 0.5),
 				eye: new THREE.Vector3(0, 100, 0),
-				up: [0, 0, -1],
+				up: [0, 0, 1],
 				fov: 60
 			},
 			{

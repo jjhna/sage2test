@@ -128,6 +128,7 @@ var vrloader = SAGE2_App.extend({
 		if (this.listOfUserIDs) {
 			var removeIdx = this.listOfUserIDs.findIndex(x => x === this.vruser.id);
 			this.listOfUserIDs.splice(removeIdx, 1);
+			console.log(this.listOfUserIDs);
 			this.serverDataSetValue(this.ancestorIdOfThisApp + ":destination:" + "users", this.listOfUserIDs, "List of users");
 		}
 	},
@@ -300,6 +301,10 @@ var vrloader = SAGE2_App.extend({
 		console.log(this.id, data);
 		var id = data.id;
 		if (this.users.hasOwnProperty(id)) {
+			if (this.users[id].object3D === null || this.users[id].object3D === undefined) {
+				this.view.addModelsForUser(this.users[id]);
+				return;
+			}
 			if (data.p) {
 				var position = stringToXyz(data.p);
 				this.users[id].object3D.position.set(position.x, position.y, position.z);
@@ -312,6 +317,9 @@ var vrloader = SAGE2_App.extend({
 			if (data.m) {
 				this.users[id].setVRMode(data.m === '1');
 			}
+		}
+		if (isBrowser && this.vruser.visible) {
+			this.vruser.setVisibility(false);
 		}
 	},
 	changeMode: function(mode) {
@@ -334,6 +342,7 @@ var vrloader = SAGE2_App.extend({
 	notifyOthersAboutUserCreationAndDeletion: function(data) {
 		console.log(this.id, data);
 		var userID;
+		var updateOthers = false;
 		//Removing deleted users from the scene
 		for (var i = this.listOfUserIDs.length - 1; i >= 0; i--) {
 			userID = this.listOfUserIDs[i];
@@ -346,20 +355,30 @@ var vrloader = SAGE2_App.extend({
 				}
 			}
 		}
+
 		// Adding new users to the scene
 		for (var i = data.length - 1; i >= 0; i--) {
 			userID = data[i];
 			if (this.listOfUserIDs.indexOf(userID) < 0) {
 				this.createNewUser(userID);
 				this.listOfUserIDs.push(userID);
+				if (userID !== this.vruser.id) {
+					updateOthers = true;	
+				}
 			}
 		}
+
 		// Adding this user to the others' scenes
 		if (data.indexOf(this.vruser.id) < 0) {
 			console.log(this.id + ": adding " + this.vruser.id + " to list of users");
 			data.push(this.vruser.id);
 			this.listOfUserIDs = data;
 			this.serverDataSetValue(this.ancestorIdOfThisApp + ":destination:" + "users", data, "List of users");
+		}
+
+		if (updateOthers === true) {
+			this.captureChange('p', this.vruser.object3D.position);
+			this.captureChange('r', this.vruser.object3D.rotation);
 		}		
 	},
 	setNewAncestor: function() {
