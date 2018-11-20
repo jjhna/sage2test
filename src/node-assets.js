@@ -732,6 +732,9 @@ var exifAsync = function(cmds, cb) {
 				if (err) {
 					console.log("internal error for file", file);
 					cb(err);
+					if (cmds.length > 0) {
+						execNext();
+					}
 				} else {
 					sageutils.log("EXIF", "Adding " + data.FileName);
 					addFile(data.SourceFile, data, function() {
