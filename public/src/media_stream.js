@@ -188,6 +188,18 @@ var media_stream = SAGE2_App.extend({
 		vid.style.height = "100%";
 
 		this.element.parentNode.appendChild(vid);
+
+		// Add information div to let user know about connection status
+		let statusDiv = document.createElement("div");
+		this.webrtcParts.status = statusDiv;
+		statusDiv.style.position = "absolute";
+		statusDiv.style.top = "0px";
+		statusDiv.style.left = "0px";
+		statusDiv.style.width = "100%";
+		statusDiv.style.height = "100%";
+		statusDiv.style.background = "white";
+		statusDiv.innerHTML = "<h1>Initializing WebRTC connection...</h1>";
+		this.element.parentNode.insertBefore(statusDiv, this.element);
 	},
 
 	// Request stream info from UI, give it the UID from wsio to uniquely identify display client
@@ -224,6 +236,7 @@ var media_stream = SAGE2_App.extend({
 				message: "appStarted"
 			});
 		}
+		this.webrtcParts.status.innerHTML += "<h1>Requesting Path from STUN server...</h1>";
 	},
 
 	webrtc_SignalMessageFromUi: function(responseObject) {
