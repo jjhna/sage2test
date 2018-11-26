@@ -18,7 +18,6 @@ var SAGE2_webrtc_ui_tracker = {
 	enabled: true,
 	stream: null, // Set after plugin gets screenshare stream
 	allPeers: [],
-	shouldHaltNormalUiScreenSendAfterRtcConnection: false, // Hard to detect when a new display fails to WebRTC connect.
 	streamSuccess: function(stream) {
 		SAGE2_webrtc_ui_tracker.debugprint("Success Got stream");
 		SAGE2_webrtc_ui_tracker.stream = stream;
@@ -48,9 +47,6 @@ var SAGE2_webrtc_ui_tracker = {
 		}
 	}
 };
-
-
-
 
 
 // While written in the public/src folder, this can be accessed by media_stream (screen share app)
@@ -315,7 +311,7 @@ class SAGE2WebrtcPeerConnection {
 	// Sends the stored up ice candidates, sending too early will cause silent errors within webrtc
 	sendStoredIceCandidates() {
 		this.debugprint("Detected rtc candidate connection in UI, stopping default share method.");
-		if (SAGE2_webrtc_ui_tracker.shouldHaltNormalUiScreenSendAfterRtcConnection) {
+		if (interactor && interactor.mediaUseRTC) {
 			interactor.broadcasting = false;
 		}
 
