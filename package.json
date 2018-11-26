@@ -1,6 +1,6 @@
 {
 	"name": "SAGE2",
-	"version": "3.0.0",
+	"version": "4.0.0",
 	"date": "2015-11-02",
 	"private": true,
 	"description": "A cluster-based html viewer used for displaying elements across multiple browser windows",
@@ -72,7 +72,7 @@
 		"sw-precache": "latest",
 		"websocketio": "https://github.com/renambot-uic/websocketio.git",
 		"rimraf": "latest",
-		"electron": "latest",
+		"electron": "beta",
 		"electron-squirrel-startup": "latest",
 		"systeminformation": "latest",
 		"ws": "^3.3.1",
