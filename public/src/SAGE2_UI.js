@@ -258,7 +258,6 @@ function setupFocusHandlers() {
  * @param      {<type>}  event   The event
  */
 function pasteHandler(event) {
-	console.log('TARGET', event.target);
 	// get the clipboard data
 	let items = event.clipboardData;
 	// Iterate over the various types
@@ -273,7 +272,7 @@ function pasteHandler(event) {
 			// handle as a string object
 			it.getAsString(function(str) {
 				// detect URLs
-				if (str.startsWith('httpss://') ||
+				if (str.startsWith('http://') ||
 					str.startsWith('https://')) {
 					// Note very secure, but assumes it is a valid URI
 					wsio.emit('openNewWebpage', {
