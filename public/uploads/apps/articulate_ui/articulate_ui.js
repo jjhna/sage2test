@@ -32,6 +32,19 @@ var articulate_ui = SAGE2_App.extend( {
 		this.debugMode = true;
 
 		this.currentTestCommand = 0;
+		this.listOfCommandsForTesting2 =
+		[
+			{text: "Could I look at crimes when crimes happen for each neighborhood", targetAppId: null},//app2
+			{text: "Lets start with the activity around UIC", targetAppId: null},//app2
+			{text:	"Could I take a look at when crimes happen", targetAppId: null},//app3
+			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//app4
+			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//app5
+			{text: "Ok so can you show me the number of crimes, for each hour in a day?", targetAppId: null},//app6
+			{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //app7
+			//{text: "can I see theft by day", targetAppId: null},//app8
+			//{text: "can I see UIC by crime type", targetAppId: null}//app9
+		];
+
 		this.listOfCommandsForTesting =
 		[
 			{text: "can I see a map of theft near UIC", targetAppId: null},//app 2
@@ -504,8 +517,8 @@ console.log("debugDatagram: "+ data);
 			dataToVisualize = [];
 			maxVal = 0;
 
-			if( specificationObj["plotHeadline"]["plotType"] == "BAR"){
-				dataToVisualize = this.parseBar(specificationObj["dataQueryResult"]);
+			if( specificationObj["plotHeadline"]["plotType"] == "BAR" && c == null ){
+				dataToVisualize = this.parseBar(specificationObj["dataQueryResult"], c);
 
 				//launch app
 				applicationType ="custom",
@@ -518,6 +531,28 @@ console.log("debugDatagram: "+ data);
 					hub_id: hub_id,
 					title: plotTitle,
 					type: type.toLowerCase(),  //what kind of chart: bar or line
+					x: x.toLowerCase(), //x axis for the bar chart
+					y: y.toLowerCase(), //y axis for the bar chart (usually counts in our case)
+					color: color, //what color to give the bars - at this point a single color- someday need multiple colors
+					visId: this.counter,  //unique id for the vis, based on the count
+					data: dataToVisualize //the data to visualize- like counts and labels
+					//title: "visualization response" //should make this better someday...
+				};
+			}
+			if( specificationObj["plotHeadline"]["plotType"] == "BAR" && c != null ){
+				dataToVisualize = this.parseBar(specificationObj["dataQueryResult"], c);
+
+				//launch app
+				applicationType ="custom",
+				application = "apps/vega_vis_app"; 	 //its a vega app
+				msg = "this is a message from articulate_ui", //not used so much, but could
+				console.log(dataToVisualize);
+
+				initState = {  // the vis app will get these values and use them to draw appropriately
+					value: 10,
+					hub_id: hub_id,
+					title: plotTitle,
+					type: "grouped-bar",  //what kind of chart: bar or line
 					x: x.toLowerCase(), //x axis for the bar chart
 					y: y.toLowerCase(), //y axis for the bar chart (usually counts in our case)
 					color: color, //what color to give the bars - at this point a single color- someday need multiple colors
@@ -642,7 +677,7 @@ console.log("debugDatagram: "+ data);
 		}
 	},
 
-	parseBar: function(dataQueryResult){
+	parseBar: function(dataQueryResult, c){
 		dataToVisualize = [];
 		for(i = 0; i < dataQueryResult.length; i++){ //same thing parse the data
 			line = dataQueryResult[i];
@@ -661,9 +696,16 @@ console.log("debugDatagram: "+ data);
 			obj = new Object();
 
 			console.log(tokens);
-			obj["y"] = parseInt(tokens[6]);
-			obj["x"] = tokens[2];
-			obj["c"] = "null";
+			if( c == null ){
+				obj["y"] = parseInt(tokens[6]);
+				obj["x"] = tokens[2];
+				obj["c"] = "null";
+			}
+			else {
+				obj["y"] = parseInt(tokens[10]);
+				obj["x"] = tokens[2];
+				obj["c"] = tokens[6];
+			}
 			dataToVisualize.push(obj);
 			// console.log(obj);
 		}
@@ -694,15 +736,15 @@ console.log("debugDatagram: "+ data);
 
 			if( c == null ){
 				console.log(tokens);
-				obj["x"] = parseInt(tokens[2]);
-				obj["y"] = tokens[6];
+				obj["x"] = tokens[2];
+				obj["y"] = parseInt(tokens[6]);
 				obj["c"] = "null";
 			}
 			else {
 				//to do
 				console.log(tokens);
-				obj["x"] = parseInt(tokens[6]);
-				obj["y"] = tokens[10];
+				obj["x"] = tokens[6];
+				obj["y"] = parseInt(tokens[10]);
 				obj["c"] = tokens[2];
 			}
 

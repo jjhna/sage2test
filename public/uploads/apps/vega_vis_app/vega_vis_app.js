@@ -431,9 +431,6 @@ var vega_vis_app = SAGE2_App.extend( {
 	},
 
 
-
-
-
 	initBarSpec: function(){
 		this.barSpec = {
 			  "width": 2000,
@@ -546,5 +543,14 @@ var vega_vis_app = SAGE2_App.extend( {
 			    }
 			  ]
 			};
+	},
+
+	initGroupedBarSpec: function (){
+		this.groupedBarSpec = {
+			  "width": 2000,
+			  "height": 800,
+			  "padding": {"top": 10, "left": 100, "bottom": 220, "right": 30},
+
+		};
 	}
 });

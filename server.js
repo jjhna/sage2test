@@ -7512,7 +7512,7 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 	}
 	*/
 }
-
+var recognizing = false;
 
 function wsAlexaVoiceSpeechInput(wsio, data){
 
