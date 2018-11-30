@@ -20,7 +20,13 @@
 'use strict';
 
 const electron = require('electron');
-electron.app.setAppPath(process.cwd());
+
+// Get platform and hostname
+var os = require('os');
+
+if (os.platform() === "win32" || os.platform() === "darwin") {
+	electron.app.setAppPath(process.cwd());
+}
 
 //
 // handle install/update for Windows
@@ -96,8 +102,6 @@ var commander = require('commander');
 var si = require('systeminformation');
 // Get the version from the package file
 var version = require('./package.json').version;
-// Get platform and hostname
-var os = require('os');
 
 /**
  * Setup the command line argument parsing (commander module)
@@ -411,12 +415,34 @@ function createWindow() {
 			memPercent: 0,
 			memResidentSet: 0
 		};
-		var procMem = process.getProcessMemoryInfo();
+
 		var procCPU = process.getCPUUsage();
-		displayLoad.memResidentSet = procMem.workingSetSize;
-		displayLoad.memPercent = procMem.workingSetSize / perfData.mem.total * 100;
 		displayLoad.cpuPercent = procCPU.percentCPUUsage;
-		//console.log(process.pid, mainWindow.webContents.pid);
+
+		// Get the version number for Electron
+		let electronVersion = process.versions.electron;
+		// Parse the string and get the Major version number
+		let majorVersion = parseInt(electronVersion.split('.')[0]);
+		if (majorVersion < 4) {
+			// for version 3 and below
+			let procMem = process.getProcessMemoryInfo();
+			displayLoad.memResidentSet = procMem.workingSetSize;
+			displayLoad.memPercent = procMem.workingSetSize / perfData.mem.total * 100;
+		} else {
+			// version 4 has new APIs
+			let metrics = app.getAppMetrics();
+			metrics.forEach(function(m) {
+				// pid Integer - Process id of the process.
+				// type String - Process type (Browser or Tab or GPU etc).
+				// memory MemoryInfo - Memory information for the process.
+				// cpu CPUUsage - CPU usage of the process.
+				if (m.pid === process.pid) {
+					// Not Yet Implemented in beta3
+					// console.log('V4', m.memory);
+				}
+			});
+		}
+
 		// CPU Load
 		si.currentLoad(function(data) {
 			perfData.cpuLoad = {

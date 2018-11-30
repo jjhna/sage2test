@@ -118,6 +118,23 @@ HttpServer.prototype.redirect = function(res, aurl) {
 };
 
 /**
+ * Clear the user's data caches and redirect to index.html
+ *
+ * @method clearSiteData
+ * @param res {Object} response
+ */
+HttpServer.prototype.clearSiteData = function(res) {
+	// Default header first
+	var header = this.buildHeader();
+	// Use the Clear-Site-Data header:
+	// https://www.w3.org/TR/clear-site-data/
+	header["Clear-Site-Data"] = '"cache","cookies","storage"';
+	header.Location = "index.html";
+	res.writeHead(302, header);
+	res.end();
+};
+
+/**
  * Build an HTTP header object
  *
  * @method buildHeader
@@ -248,6 +265,12 @@ HttpServer.prototype.onreq = function(req, res) {
 			return;
 		}
 
+		// Clear the user's cache and redirect to index.html
+		if (getName === "/logout") {
+			this.clearSiteData(res);
+			return;
+		}
+
 		// Get the actual path of the file
 		var pathname;
 
@@ -336,7 +359,9 @@ HttpServer.prototype.onreq = function(req, res) {
 			var header = this.buildHeader();
 
 			if (path.extname(pathname) === ".html") {
-				if (pathname.endsWith("public/index.html")) {
+				if (pathname === path.resolve("public/index.html") ||
+					pathname === path.resolve("public/session.html")
+				) {
 					// Allow embedding the UI page
 					delete header['X-Frame-Options'];
 				} else {

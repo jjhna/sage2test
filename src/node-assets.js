@@ -135,7 +135,28 @@ Asset.prototype.height = function() {
 
 
 var AllAssets = null;
-
+var MediaFolderRefreshStatus = {
+	total: 0,
+	completed: 0,
+	performedFinalClean: false,
+	reset: function(totalFolders) {
+		this.total = totalFolders;
+		this.completed = 0;
+		this.performedFinalClean = false;
+	},
+	completedOneFolderCheckIfShouldClean: function() {
+		this.completed++;
+		if ((this.completed >= this.total) && !this.performedFinalClean) {
+			this.performedFinalClean = true;
+			for (var item in AllAssets.list) {
+				if (AllAssets.list[item].valid === false) {
+					sageutils.log("Assets", "Removing old item", item);
+					delete AllAssets.list[item];
+				}
+			}
+		}
+	}
+};
 
 /**
  * Asset management
@@ -710,6 +731,9 @@ var exifAsync = function(cmds, cb) {
 				if (err) {
 					console.log("internal error for file", file);
 					cb(err);
+					if (cmds.length > 0) {
+						execNext();
+					}
 				} else {
 					sageutils.log("EXIF", "Adding " + data.FileName);
 					addFile(data.SourceFile, data, function() {
@@ -1031,6 +1055,9 @@ var initialize = function(mainFolder, mediaFolders, whenDone) {
 			AllAssets.rel  = relativePath;
 		}
 
+		//Reset the refresh status
+		MediaFolderRefreshStatus.reset(Object.keys(mediaFolders).length);
+
 		refreshApps(root, function() {
 			refreshAssets(root, function() {
 				// Finally, delete the elements which are not there anymore
@@ -1038,11 +1065,9 @@ var initialize = function(mainFolder, mediaFolders, whenDone) {
 					if (item.startsWith(root) && AllAssets.list[item].valid === false) {
 						sageutils.log("Assets", "Removing old item", item);
 						delete AllAssets.list[item];
-					} else {
-						// Just remove the valid flag
-						delete AllAssets.list[item].valid;
 					}
 				}
+				MediaFolderRefreshStatus.completedOneFolderCheckIfShouldClean();
 				saveAssets();
 				// callback when done
 				if (whenDone) {
@@ -1106,11 +1131,9 @@ var addAssetFolder = function(root, whenDone) {
 				if (item.startsWith(root) && AllAssets.list[item].valid === false) {
 					sageutils.log("Assets", "Removing old item", item);
 					delete AllAssets.list[item];
-				} else {
-					// Just remove the valid flag
-					delete AllAssets.list[item].valid;
 				}
 			}
+			MediaFolderRefreshStatus.completedOneFolderCheckIfShouldClean();
 			saveAssets();
 			// callback when done
 			if (whenDone) {

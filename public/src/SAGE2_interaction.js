@@ -13,7 +13,7 @@
 /* global showSAGE2PointerOverlayNoMouse, hideSAGE2PointerOverlayNoMouse */
 /* global pointerClick, sagePointerDisabled, sagePointerEnabled */
 /* global viewOnlyMode, deleteCookie */
-/* global displayUI, pointerX, pointerY */
+/* global displayUI, pointerX, pointerY, SAGE2_webrtc_ui_tracker */
 
 "use strict";
 
@@ -42,6 +42,9 @@ function SAGE2_interaction(wsio) {
 	this.mediaVideo  = null;
 	this.mediaResolution = 2;
 	this.mediaQuality    = 9;
+	// By default, do not use WebRTC
+	this.mediaUseRTC     = getCookie('SAGE2_useRTC') === "true" ? true : false;
+
 	this.chromeDesktopCaptureEnabled = false;
 	this.broadcasting  = false;
 	this.gotRequest    = false;
@@ -634,6 +637,10 @@ function SAGE2_interaction(wsio) {
 		// mediaVideo.src = window.URL.createObjectURL(this.mediaStream);
 		mediaVideo.srcObject = this.mediaStream;
 		mediaVideo.play();
+
+		if (SAGE2_webrtc_ui_tracker.enabled) {
+			SAGE2_webrtc_ui_tracker.streamSuccess(stream);
+		}
 	};
 
 	/**
@@ -1057,6 +1064,18 @@ function SAGE2_interaction(wsio) {
 	};
 
 	/**
+	* Handler to enable webrtc desktop sharing
+	*
+	* @method changeScreenShareWebRTCMethod
+	* @param value {Boolean} true/false for webrtc technique
+	*/
+	this.changeScreenShareWebRTCMethod = function(value) {
+		this.mediaUseRTC = value ? true : false;
+		console.log('WebRTC value changed', this.mediaUseRTC);
+		addCookie('SAGE2_useRTC', this.mediaUseRTC);
+	};
+
+	/**
 	* Handler for screen resolution selection
 	*
 	* @method changeScreenShareResolutionMethod
@@ -1383,6 +1402,12 @@ function SAGE2_interaction(wsio) {
 									{id: 7, value: "Medium"},
 									{id: 9, value: "High"}
 								]
+							},
+							{
+								view: "checkbox",
+								label: "Use WebRTC",
+								id:   "use_webrtc",
+								value: this.mediaUseRTC
 							}
 						]
 					},
@@ -1403,6 +1428,11 @@ function SAGE2_interaction(wsio) {
 
 		// change screen resolution
 		if (type === 'main') {
+			let rtc = $$("use_webrtc");
+			rtc.attachEvent("onChange", () => {
+				this.changeScreenShareWebRTC(rtc.getValue());
+			});
+
 			let res = $$("screen_resolution");
 			res.attachEvent("onChange", () => {
 				this.changeScreenShareResolution(res.getValue() - 1, res.getText());
@@ -1434,7 +1464,6 @@ function SAGE2_interaction(wsio) {
 		}
 	});
 
-
 	/**
 	* Getter for user name
 	*
@@ -1456,7 +1485,6 @@ function SAGE2_interaction(wsio) {
 			return userSettings.SAGE2_userEmail;
 		}
 	});
-
 
 	/**
 	* Getter for pointer color
@@ -1480,7 +1508,6 @@ function SAGE2_interaction(wsio) {
 		}
 	});
 
-
 	this.streamSuccess               = this.streamSuccessMethod.bind(this);
 	this.streamFail                  = this.streamFailMethod.bind(this);
 	this.streamEnded                 = this.streamEndedMethod.bind(this);
@@ -1501,10 +1528,8 @@ function SAGE2_interaction(wsio) {
 	this.changeSage2PointerColor     = this.changeSage2PointerColorMethod.bind(this);
 	this.changeScreenShareResolution = this.changeScreenShareResolutionMethod.bind(this);
 	this.changeScreenShareQuality    = this.changeScreenShareQualityMethod.bind(this);
+	this.changeScreenShareWebRTC     = this.changeScreenShareWebRTCMethod.bind(this);
 	this.step                        = this.stepMethod.bind(this);
-
-
-	/** init **/
 
 	// Check if a domain cookie exists for the name
 	var cookieName = getCookie('SAGE2_ptrName');

@@ -832,6 +832,7 @@ var pdf_viewer = SAGE2_App.extend({
 		entry.inputFieldSize = 3;
 		entry.voiceEntryOverload = true; // not visible on UI
 
+		entry = {};
 		entry.description = "separator";
 		entries.push(entry);
 
@@ -847,6 +848,17 @@ var pdf_viewer = SAGE2_App.extend({
 		entry.accelerator = "-";
 		entry.callback = "pageCallback";
 		entry.parameters = {operation: 'remove'};
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "Presentation Mode";
+		entry.accelerator = "p";
+		entry.callback = "presentationMode";
+		entry.parameters = {};
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "separator";
 		entries.push(entry);
 
 		// Special callback: dowload the file
@@ -866,6 +878,25 @@ var pdf_viewer = SAGE2_App.extend({
 		});
 
 		return entries;
+	},
+
+	/**
+	 * Show or hide the menu buttons below the pages
+	 *
+	 * @method     presentationMode
+	 * @param      {<type>}  responseObject  The response object
+	 */
+	presentationMode: function(responseObject) {
+		// show/hide the UI
+		this.showUI = !this.showUI;
+		// Reset the menu bar
+		this.createMenuBar();
+		// Update the current page to have a redraw
+		this.goToPage(this.state.currentPage);
+		// Recompute the size
+		let neww = this.baseWidthPage * this.state.numberOfPageToShow * this.resizeValue;
+		let newh = (this.baseHeightPage + this.commandBarG.height + this.thumbnailHeight) * this.resizeValue;
+		this.sendResize(neww, newh);
 	},
 
 	/**
@@ -1008,6 +1039,8 @@ var pdf_viewer = SAGE2_App.extend({
 				this.addPage(this);
 			} else if (data.character === "-") {
 				this.removePage(this);
+			} else if (data.character === "p") {
+				this.presentationMode({});
 			}
 		}
 
