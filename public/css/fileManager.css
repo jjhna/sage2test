@@ -41,3 +41,9 @@
 	height: 34px;
 	line-height: 34px;
 }
+
+/* Colorboard */
+.webix_color_selector {
+	border-color: #000000;
+	border-style: solid;
+}
