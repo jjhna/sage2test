@@ -1,0 +1,18 @@
+{
+	"main_script": "ReactApp.jsx",
+	"icon": "ReactApp.png",
+	"width": 600,
+	"height": 600,
+	"dependencies": [
+	],
+	"load": {
+		"mode": 0
+	},
+	"react": true,
+	"title": "React App",
+	"version": "0.0.1",
+	"description": "A sample React-based application for SAGE2",
+	"keywords": [ "react", "jsx" ],
+	"author": "Andrew Burks <aburks3@uic.edu>",
+	"license": "SAGE2-Software-License"
+}

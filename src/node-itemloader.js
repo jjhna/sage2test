@@ -1413,6 +1413,7 @@ AppLoader.prototype.readInstructionsFile = function(json_str, file, mime_type, e
 		id: null,
 		title: exif.metadata.title,
 		application: appName,
+		main_script: instructions.main_script,
 		icon: exif ? exif.SAGE2thumbnail : null,
 		type: mime_type,
 		url: external_url,
@@ -1435,6 +1436,7 @@ AppLoader.prototype.readInstructionsFile = function(json_str, file, mime_type, e
 		resizeMode: resizeMode,
 		sticky: instructions.sticky,
 		plugin: instructions.plugin,
+		isReactApp: instructions.react,
 		file: file,
 		sage2URL: s2url,
 		date: new Date()

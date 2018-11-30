@@ -20,6 +20,7 @@
 /* global SAGE2_Partition, require */
 /* global SAGE2RemoteSitePointer */
 /* global process */
+/* global Babel, SAGE2_ReactAppHelper, SAGE2_ReactAppLoader */
 
 "use strict";
 
@@ -1634,57 +1635,94 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 			init.customLaunchParams = data.customLaunchParams;
 		}
 
-		// load new app
-		if (window[data.application] === undefined) {
-			var js = document.createElement("script");
-			js.addEventListener('error', function(event) {
-				console.log("Error loading script: " + data.application + ".js");
-			}, false);
-			js.addEventListener('load', function(event) {
-				var newapp = new window[data.application]();
-				newapp.init(init);
-				newapp.refresh(date);
+		console.log("Pre-load", data);
+
+		// load application by type
+		let applicationLoadPromise = data.isReactApp ? readyReactApplication(data) : readyApplication(data);
+
+		applicationLoadPromise
+			.then(() => {
+				console.log("resolve");
+
+				// load existing app
+				var app;
+
+				// if it is a react app
+				if (data.isReactApp) {
+					console.log(window[data.application]);
+
+					app = new SAGE2_ReactAppHelper(data, url);
+
+					app.init(init);
+					app.draw();
+
+					console.log("React App", data.application);
+				} else {
+					app = new window[data.application]();
+					app.init(init);
+					app.refresh(date);
+				}
 
 				// Sending the context menu info to the server
 				if (isMaster) {
-					newapp.getFullContextMenuAndUpdate();
+					app.getFullContextMenuAndUpdate();
 				}
 
-				applications[data.id]   = newapp;
-				controlObjects[data.id] = newapp;
+				applications[data.id] = app;
+				controlObjects[data.id] = app;
 
 				if (data.animation === true) {
 					wsio.emit('finishedRenderingAppFrame', {id: data.id});
 				}
-			}, false);
-			js.type  = "text/javascript";
-			js.async = false;
-			js.src = url + "/" + data.application + ".js";
-			console.log("Loading>", data.id, url + "/" + data.application + ".js");
-			document.head.appendChild(js);
-		} else {
-			// load existing app
-			var app = new window[data.application]();
-			app.init(init);
-			app.refresh(date);
+				if (data.application === "movie_player") {
+					setTimeout(function() {
+						wsio.emit('requestVideoFrame', {id: data.id});
+					}, 500);
+				}
+			})
+			.catch(console.error);
 
-			// Sending the context menu info to the server
-			if (isMaster) {
-				app.getFullContextMenuAndUpdate();
-			}
-
-			applications[data.id] = app;
-			controlObjects[data.id] = app;
-
-			if (data.animation === true) {
-				wsio.emit('finishedRenderingAppFrame', {id: data.id});
-			}
-			if (data.application === "movie_player") {
-				setTimeout(function() {
-					wsio.emit('requestVideoFrame', {id: data.id});
-				}, 500);
-			}
+		function readyReactApplication(data) {
+			return SAGE2_ReactAppLoader.load(data, url);
 		}
+
+		// function to make sure application code is loaded, returns a new Promise
+		function readyApplication(data) {
+			return new Promise(function(resolve, reject) {
+				console.log(data);
+
+				if (window[data.application] !== undefined) {
+					resolve();
+				}
+
+				var js = document.createElement("script");
+				js.addEventListener("error", function(event) {
+					console.log("Error loading script: " + data.application + ".js");
+
+					reject(event);
+				}, false);
+				js.addEventListener("load", function(event) {
+					console.log("Loaded");
+
+					resolve();
+				}, false);
+
+				// support .jsx with main_script specification
+				js.src = url + "/" + data.main_script;
+
+				if (data.main_script.endsWith(".jsx")) {
+					js.type = "text/babel";
+				} else if (data.main_script.endsWith(".js")) {
+					js.type = "text/javascript";
+				}
+
+				js.async = false;
+
+				console.log("Loading>", data.id, url + "/" + data.main_script);
+				document.head.appendChild(js);
+			});
+		}
+
 	}
 
 	// load all dependencies
@@ -1710,7 +1748,7 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 			// Check the type
 			var loaderType;
-			if (resourceUrl.endsWith(".js")) {
+			if (resourceUrl.endsWith(".js") || resourceUrl.endsWith(".jsx")) {
 				loaderType = "script";
 			} else if (resourceUrl.endsWith(".css")) {
 				loaderType = "link";
@@ -1722,6 +1760,8 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 			if (loaderType) {
 				// Create the DOM element to laod the resource
 				var loader = document.createElement(loaderType);
+
+				console.log("Loader", loader);
 
 				// Place an error handler
 				loader.addEventListener('error', function(event) {
@@ -1751,7 +1791,13 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 				// is it a JS file
 				if (loaderType === "script") {
-					loader.type  = "text/javascript";
+					// handle jsx scripts using babel
+					if (resourceUrl.endsWith(".jsx")) {
+						loader.type = "text/babel";
+					} else {
+						loader.type = "text/javascript";
+					}
+
 					loader.async = false;
 					loader.src   = resourceUrl;
 				} else if (loaderType === "link") {
@@ -1765,6 +1811,7 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 				// Finally, add it to the document to trigger the laod
 				document.head.appendChild(loader);
+
 			}
 		};
 		// Start loading the first resource
