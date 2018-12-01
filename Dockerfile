@@ -32,8 +32,10 @@ ENV CONTAINER_TIMEZONE America/Chicago
 COPY    . /sage2
 
 RUN     /sage2/bin/docker_set_timezone.sh
+RUN     cd /sage2/keys;./GO-linux
 
 EXPOSE  9090
 EXPOSE  9292
 WORKDIR /sage2
 CMD ["nodejs", "/sage2/server.js", "-f", "/sage2/config/docker-cfg.json", "-i"]
+
