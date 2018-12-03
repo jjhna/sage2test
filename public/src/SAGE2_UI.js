@@ -12,6 +12,7 @@
 
 /* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech */
 /* global removeAllChildren, SAGE2_copyToClipboard, parseBool */
+/* global SAGE2_webrtc_ui_tracker */
 
 /**
  * Web user interface
@@ -250,6 +251,50 @@ function setupFocusHandlers() {
 	});
 }
 
+/**
+ * Event handler for the 'paste' event, which creates notes and opens webview
+ *
+ * @method     pasteHandler
+ * @param      {<type>}  event   The event
+ */
+function pasteHandler(event) {
+	// get the clipboard data
+	let items = event.clipboardData;
+	// Iterate over the various types
+	for (let i = items.types.length - 1; i >= 0; i--) {
+		let t = items.types[i];
+		if (t === "Files") {
+			// Chrome cannot deal with files yet (maybe with async clipboard API)
+			showSAGE2Message('Cannot paste files yet,<br>Only URLs and plain text.');
+			return;
+		} else if (t === "text/plain" || t === "text/html") {
+			let it = items.items[0];
+			// handle as a string object
+			it.getAsString(function(str) {
+				// detect URLs
+				if (str.startsWith('http://') ||
+					str.startsWith('https://')) {
+					// Note very secure, but assumes it is a valid URI
+					wsio.emit('openNewWebpage', {
+						id: interactor.uniqueID,
+						url: str
+					});
+				} else {
+					// Otherwise, use the text and create a quickNote
+					let qnote = {};
+					qnote.appName = "quickNote";
+					qnote.customLaunchParams = {};
+					qnote.customLaunchParams.clientName  = interactor.pointerLabel;
+					qnote.customLaunchParams.clientInput = str;
+					qnote.customLaunchParams.colorChoice = "#ffffe0";
+					// Send creation message to server
+					wsio.emit('launchAppWithValues', qnote);
+				}
+			});
+			return;
+		}
+	}
+}
 
 /**
  * Entry point of the user interface
@@ -373,6 +418,9 @@ function SAGE2_init() {
 	sage2UI.addEventListener('dragleave', fileDragLeave,  false);
 	sage2UI.addEventListener('drop',      fileDrop,       false);
 
+	// Handler for 'paste' event (as in copy/paste)
+	document.addEventListener("paste", pasteHandler, false);
+
 	// Force click for Safari, events:
 	//   webkitmouseforcewillbegin webkitmouseforcechanged
 	//   webkitmouseforcedown webkitmouseforceup
@@ -439,11 +487,32 @@ function SAGE2_init() {
 				url: event.data.url
 			});
 		}
+		// event coming from the extension ("create quickNote from..."")
+		if (event.data.cmd === "createnote") {
+			let qnote = {};
+			qnote.appName = "quickNote";
+			qnote.customLaunchParams = {};
+			qnote.customLaunchParams.clientName  = interactor.pointerLabel;
+			qnote.customLaunchParams.clientInput = event.data.text;
+			qnote.customLaunchParams.colorChoice = "#ffffe0";
+			// Send creation message to server
+			wsio.emit('launchAppWithValues', qnote);
+		}
+		// event coming from the extension
+		if (event.data.cmd === "openimage") {
+			// Open the image viewer
+			wsio.emit('addNewWebElement', {
+				url: event.data.url,
+				type: "image/jpeg",
+				id: interactor.uniqueID,
+				// Middle of the screen
+				position: [0.5, 0.5]
+			});
+		}
 	});
 
 	// This will startup the uiNote and uiDraw sections of the UI.
 	setupAppContextMenuDiv();
-	setupUiNoteMaker();
 	setupUiDrawCanvas();
 }
 
@@ -711,9 +780,22 @@ function setupListeners() {
 			uiDrawSetCurrentStateAndShow(data);
 		} else if (data.func === 'uiDrawMakeLine') {
 			uiDrawMakeLine(data);
+		} else if (data.func === 'webrtc_SignalMessageFromDisplay') {
+			if (data.message === "appStarted") {
+				// Make peer
+				SAGE2_webrtc_ui_tracker.makePeer(data);
+				// Reply back with offer will happen based off when it figures out turn response
+			} else {
+				for (let i = 0; i < SAGE2_webrtc_ui_tracker.allPeers.length; i++) {
+					if (SAGE2_webrtc_ui_tracker.allPeers[i].displayId == data.sourceId) {
+						SAGE2_webrtc_ui_tracker.allPeers[i].readMessage(data.message);
+					}
+				}
+			}
 		} else {
 			console.log("Error, data for client contained invalid function:" + data.func);
 		}
+
 	});
 
 	// Message from server reporting screenshot ability of display clients
@@ -1340,6 +1422,7 @@ function handleClick(element) {
 	// Menu Buttons
 	if (element.id === "sage2pointer"        || element.id === "sage2pointerContainer" || element.id === "sage2pointerLabel") {
 		interactor.startSAGE2Pointer(element.id);
+		displayUI.pointerMove(pointerX, pointerY);
 	} else if (element.id === "sharescreen"  || element.id === "sharescreenContainer"  || element.id === "sharescreenLabel") {
 		interactor.requestToStartScreenShare();
 	} else if (element.id === "applauncher"  || element.id === "applauncherContainer"  || element.id === "applauncherLabel") {
@@ -1441,6 +1524,8 @@ function handleClick(element) {
 							}
 							// close the form
 							this.getTopParentView().hide();
+							// Handler for 'paste' event (as in copy/paste)
+							document.addEventListener("paste", pasteHandler, false);
 						}}
 					]}
 				],
@@ -1455,6 +1540,8 @@ function handleClick(element) {
 			// ESC closes
 			if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 			// ENTER activates
@@ -1487,6 +1574,8 @@ function handleClick(element) {
 				}
 				// close the form
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 		});
@@ -1495,6 +1584,8 @@ function handleClick(element) {
 			// ESC closes
 			if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 			// ENTER activates
@@ -1512,9 +1603,13 @@ function handleClick(element) {
 				}
 				// close the form
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 		});
+		// Handler for 'paste' event (as in copy/paste)
+		document.removeEventListener("paste", pasteHandler, false);
 		// Focus the URL box
 		$$('browser_url').focus();
 
@@ -1550,8 +1645,7 @@ function handleClick(element) {
 		// Finally show the dialog
 		showDialog('infoDialog');
 	} else if (element.id === "ezNote" || element.id === "ezNoteContainer" || element.id === "ezNoteLabel") {
-		setNoteToMakeMode();
-		showDialog('uiNoteMaker');
+		noteMakerDialog('create');
 	} else if (element.id === "ezDraw" || element.id === "ezDrawContainer" || element.id === "ezDrawLabel") {
 		// clear drawzone
 		uiDrawCanvasBackgroundFlush('white');
@@ -2329,28 +2423,19 @@ function noBackspace(event) {
 		&& event.target.id.indexOf("Input") !== -1) {
 		// if a user hits enter within an appContextMenuEntry, it will cause the effect to happen
 		event.target.parentNode["buttonEffect" + event.target.id]();
-	} else if (event.ctrlKey && event.keyCode === 13 && event.target.id === "uiNoteMakerInputField") {
-		// ctrl + enter in note maker adds a line rather than send note
-		event.target.value += "\n";
-	} else if (event.shiftKey && event.keyCode === 13 && event.target.id === "uiNoteMakerInputField") {
-		// shift + enter adds a line
-	} else if (event.keyCode === 13 && event.target.id === "uiNoteMakerInputField") {
-		// if a user hits enter within an appContextMenuEntry, it will cause the effect to happen
-		sendMessageMakeNote();
-		event.preventDefault(); // prevent new line on next note
-	} else if (event.keyCode === 191 && event.shiftKey &&
-		(event.target.id === "uiNoteMakerInputField" || event.target.id.includes("appContextMenuEntry"))) {
-		// allow "?" within note creation and any of the right click menues
-	} else if (event.keyCode === 191 && event.shiftKey && event.type === "keydown" && !keyEvents) {
-		// if keystrokes not captured and pressing  down '?'
-		//    then show help
-		webix.modalbox({
-			title: "Mouse and keyboard operations",
-			buttons: ["Ok"],
-			text: "<img src=/images/cheat-sheet.jpg width=100%>",
-			width: "70%",
-			height: "50%"
-		});
+	} else if (event.key === '?' && event.type === "keydown" && !keyEvents) {
+		// if keystrokes not captured and pressing  down '?' then show help
+		// Dont do it for input elements and webix forms
+		if (!event.target.className.startsWith('webix') &&
+			event.target.nodeName !== "INPUT") {
+			webix.modalbox({
+				title: "Mouse and keyboard operations",
+				buttons: ["Ok"],
+				text: "<img src=/images/cheat-sheet.jpg width=100%>",
+				width: "70%",
+				height: "50%"
+			});
+		}
 	}
 	return true;
 }
@@ -2390,7 +2475,6 @@ function keyPress(event) {
 	// or process the event
 	if (event.keyCode === 32) {
 		interactor.startSAGE2Pointer("sage2pointer");
-		displayUI.pointerMove(pointerX, pointerY);
 	} else if (displayUI.keyPress(pointerX, pointerY, parseInt(event.charCode, 10))) {
 		event.preventDefault();
 	}
@@ -2425,6 +2509,378 @@ function loadSelectedFile() {
 	}
 }
 
+
+/**
+ * Open the quickNote form
+ * This function is activated in 2 ways.
+ * 1) User click the send button.
+ * 2) User hits enter when making a note. This check is done in the noBackspace function.
+ * When activated will make the packet to launch app. Collects values from tags on page.
+ *
+ * @method     noteMakerDialog
+ * @param      {String}  mode    create or edit mode
+ * @param      {Object}  params  current state of the note
+ * @param      {Object}  app     the app to update, i.e. the note
+ */
+function noteMakerDialog(mode, params, app) {
+	// Default mode is 'create' a new note
+	let okButton = "Make Note [Shift-Enter]";
+	// not anonymous
+	let isAnon = false;
+	// empty note
+	let noteText = '';
+	// default is yellow
+	let noteColor = "#ffffe0";
+
+	// If edit mode, use the parameters
+	if (mode === 'edit') {
+		okButton = "Save [Shift-Enter]";
+		if (params.currentContent) {
+			noteText = params.currentContent;
+		}
+		if (params.currentColorChoice) {
+			noteColor = params.currentColorChoice;
+		}
+	}
+
+	let helpText =
+		"Markdown Text" +
+		"\n" +
+		"\n" +
+		"Notes are written as Markdown syntax, a simple text-to-HTML conversion tool. " +
+		"Markdown allows you to write using an easy-to-read, easy-to-write plain text format" +
+		"then convert it to structurally valid HTML.\n" +
+		"\n" +
+		"# h1 Heading\n" +
+		"## h2 Heading\n" +
+		"### h3 Heading\n" +
+		"#### h4 Heading\n" +
+		"\n" +
+		"# Emphasis\n" +
+		"Emphasis, aka italics, with *asterisks* or _underscores_.\n" +
+		"Strong emphasis, aka bold, with **asterisks** or __underscores__.\n" +
+		"\n" +
+		"# Lists\n" +
+		"* Unordered list can use asterisks\n" +
+		"- Or minuses\n" +
+		"+ Or pluses\n" +
+		"\n" +
+		"Ordered list uses number\n" +
+		"1. First ordered list item\n" +
+		"2. Another item\n" +
+		"1. Actual numbers don't matter, just that it's a number\n" +
+		"\n" +
+		"# Links\n" +
+		"There are two ways to create links.\n" +
+		"[I'm an inline-style link](https://www.google.com)\n" +
+		"or just write a link http://www.google.com\n" +
+		"\n" +
+		"# Code\n" +
+		"Inline `code` has `back-ticks around` it.\n" +
+		"Blocks of code are either fenced by lines with three back-ticks:\n" +
+		"```javascript\n" +
+		"var s = \"Code \" +" +
+		"\n\"formatting \" +" +
+		"\n\"section\";\n" +
+		"alert(s);\n" +
+		"```\n";
+
+	let renderText = '<div style="font-family: \'Oxygen Mono\'; font-size: 10px;' +
+		'box-sizing: border-box; list-style-position: inside;">' +
+		'<p style="font-family:\'Oxygen Mono\'">Rendered View</p>' +
+		'<br>' +
+		'<p style="font-family:\'Oxygen Mono\'">Notes are written as Markdown syntax,' +
+		' a simple text-to-HTML conversion tool. Markdown allows you to write using an easy-to-read, ' +
+		'easy-to-write plain text formatthen convert it to structurally valid HTML.</p>' +
+		'<br>' +
+		'<h1 style="font-family:\'Oxygen Mono\'">h1 Heading</h1>' +
+		'<h2 style="font-size:1.75em; margin:auto; font-family:\'Oxygen Mono\'">h2 Heading</h2>' +
+		'<h3 style="font-size:1.5em; style="font-family:\'Oxygen Mono\'">h3 Heading</h3>' +
+		'<h4 style="font-size:1.25em; style="font-family:\'Oxygen Mono\'">h4 Heading</h4>' +
+		'<br>' +
+		'<h1 style="font-family:\'Oxygen Mono\'">Emphasis</h1>' +
+		'<p style="font-family:\'Oxygen Mono\'">Emphasis, aka italics, with ' +
+		'<em style="font-style: italic;">asterisks</em> or <em style="font-style: italic;">underscores</em>.<br>' +
+		'Strong emphasis, aka bold, with ' +
+		'<strong style="font-weight: bold;">asterisks</strong> or ' +
+		'<strong style="font-weight: bold;">underscores</strong>.</p>' +
+		'<br>' +
+		'<h1 id="lists" style="font-family:\'Oxygen Mono\'">Lists</h1>' +
+		'<ul>' +
+		'<li style="font-family:\'Oxygen Mono\'">Unordered list can use asterisks</li>' +
+		'<li style="font-family:\'Oxygen Mono\'">Or minuses</li>' +
+		'<li style="font-family:\'Oxygen Mono\'">Or pluses</li>' +
+		'</ul>' +
+		'<p style="font-family:\'Oxygen Mono\'">Ordered list uses number</p>' +
+		'<ol>' +
+		'<li style="font-family:\'Oxygen Mono\'">First ordered list item</li>' +
+		'<li style="font-family:\'Oxygen Mono\'">Another item</li>' +
+		'<li style="font-family:\'Oxygen Mono\'">Actual numbers don\'t matter, just that it\'s a number</li>' +
+		'</ol>' +
+		'<br>' +
+		'<h1 id="links" style="font-family:\'Oxygen Mono\'">Links</h1>' +
+		'<p style="font-family:\'Oxygen Mono\'">There are two ways to create links.<br>' +
+		'<a href="https://www.google.com" style="font-family:\'Oxygen Mono\'">I\'m an inline-style link</a><br>' +
+		'or just write a link <a href="http://www.google.com" style="font-family:\'Oxygen Mono\'">http://www.google.com</a></p>' +
+		'<br>' +
+		'<h1 style="font-family:\'Oxygen Mono\'">Code</h1>' +
+		'<p style="font-family:\'Oxygen Mono\'">Inline <code>code</code> has <code>back-ticks around</code> it.<br>' +
+		'Blocks of code are either fenced by lines with three back-ticks:</p>' +
+		'<pre style="font-family:\'Oxygen Mono\'">' +
+		'<code class="javascript language-javascript">var s = "Code " +' +
+		'<br>"formatting " +' +
+		'<br>"section";' +
+		'<br>alert(s);' +
+		'</code></pre></div>';
+
+	// Build a webix dialog
+	webix.ui({
+		view: "window",
+		id: "quicknote_window",
+		position: "center",
+		modal: true,
+		zIndex: "1999",
+		head: "Write a Quick Note <i>(text or markdown)</i>",
+		borderless: false,
+		body: {
+			view: "tabview",
+			id: "quicknote_tab",
+			multiview: { fitBiggest: true },
+			cells: [
+				{
+					header: "Note",
+					body: {
+						view: "form",
+						id: "quicknote_form",
+						width: 650,
+						padding: 5,
+						borderless: false,
+						elements: [
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Anonymous"
+									},
+									{
+										// Text box
+										view: "checkbox",
+										id: "quicknote_anon",
+										name: "anon",
+										value: isAnon
+									}
+								]
+							},
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Color"
+									},
+									{
+										view: "colorboard",
+										id: "quicknote_color",
+										name: "color",
+										value: noteColor,
+										width: 548,
+										height: 50,
+										cols: 6,
+										rows: 1,
+										palette: [
+											["#ffffe0", "#add8e6", "#ffb6c1", "#90ee90", "#ffa07a", "#f4f4f4"]
+										]
+									}
+								]
+							},
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Note"
+									},
+									{
+										// Text box
+										view: "textarea",
+										value: noteText,
+										id: "quicknote_text",
+										name: "text",
+										height: 200,
+										placeholder: "# Example\n* todo item 1\n* todo item 2\n* todo item 3"
+									}
+								]
+							},
+							{
+								cols: [
+									{
+										view: "button", value: "Close [ESC]", click: function() {
+											// Handler for 'paste' event (as in copy/paste)
+											document.addEventListener("paste", pasteHandler, false);
+											this.getTopParentView().hide();
+										}
+									},
+									{
+										view: "button",
+										value: okButton,
+										type: "form",
+										// Shift-enter activates the button
+										hotkey: "enter+shift",
+										// Callback
+										click: function() {
+											// get the values from the form
+											let values = this.getFormView().getValues();
+
+											if (mode === 'edit') {
+												let data = {};
+												// send update of note
+												data.app  = app;
+												data.func = "setMessage";
+												data.parameters = params;
+												data.parameters.clientInput = values.text;
+												data.parameters.clientId    = interactor.uniqueID;
+												data.parameters.clientName  = interactor.pointerLabel;
+												if (values.anon) {
+													data.parameters.clientName = "Anonymous";
+												}
+												data.parameters.colorChoice = values.color;
+												// Send update message to server
+												wsio.emit('callFunctionOnApp', data);
+											} else {
+												let data = {};
+												data.appName = "quickNote";
+												data.customLaunchParams = {};
+												data.customLaunchParams.clientName = interactor.pointerLabel;
+												data.customLaunchParams.clientInput = values.text;
+												if (values.anon) {
+													data.customLaunchParams.clientName = "Anonymous";
+												}
+												data.customLaunchParams.colorChoice = values.color;
+												// Send creation message to server
+												wsio.emit('launchAppWithValues', data);
+											}
+
+											// close the form
+											this.getTopParentView().hide();
+
+											// Handler for 'paste' event (as in copy/paste)
+											document.addEventListener("paste", pasteHandler, false);
+										}
+									}
+								]
+							}
+						]
+					}
+				},
+				{
+					header: "Syntax",
+					body: {
+						view: "form",
+						id: "quickhelp_form",
+						width: 650,
+						padding: 5,
+						borderless: false,
+						elements: [
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Help"
+									},
+									{
+										// Text box
+										view: "textarea",
+										id: "helparea_text",
+										name: "help_area",
+										borderless: true,
+										value: helpText,
+										readonly: true,
+										height: 320,
+										width: 240
+									},
+									{
+										view: "scrollview",
+										id: "render_view",
+										borderless: false,
+										scroll: "y",
+										margin: 5,
+										width: 300,
+										body: {
+											rows: [
+												{
+													id: "help_area_render_text",
+													template: renderText,
+													autoheight: true
+												}
+											]
+										}
+									}
+								]
+							}
+						]
+					}
+				}
+			]
+		}
+	}).show();
+
+	$$('quicknote_tab').getTabbar().attachEvent('onAfterTabClick', function(id) {
+		if (id === "quickhelp_form") {
+			let helparea = $$('helparea_text').getInputNode();
+			helparea.style.color = "black";
+			helparea.style.fontFamily = "Oxygen Mono";
+			helparea.style.fontSize = "14px";
+			helparea.style.backgroundColor = "#f4f4f4";
+			$$('helparea_text').focus();
+			// Show render view
+			let renderView = $$('help_area_render_text').getNode();
+			helparea.addEventListener("scroll", (e) => {
+				renderView.parentElement.parentElement.parentElement.scrollTop = e.target.scrollTop;
+			});
+			// Tweaks to line up the elements
+			let renderText = $$('render_view').getNode();
+			renderText.style.marginTop = "4px";
+			renderText.style.height = "310px";
+		} else {
+			// Focus the text box
+			$$('quicknote_text').focus();
+		}
+	});
+
+	// CSS tweaks on the text input area
+	$$('quicknote_text').getInputNode().style.color = "black";
+	$$('quicknote_text').getInputNode().style.fontFamily = "Oxygen Mono";
+	$$('quicknote_text').getInputNode().style.fontSize   = "14px";
+	$$('quicknote_text').getInputNode().style.backgroundColor = noteColor;
+	// Disable spellcheck, annoying underline
+	$$('quicknote_text').getInputNode().setAttribute("spellcheck", "false");
+	// Set color of textarea to mimick the note rendering
+	$$("quicknote_color").attachEvent("onSelect", function (val, control, ev) {
+		if (val) {
+			$$('quicknote_text').getInputNode().style.backgroundColor = val;
+		}
+	});
+
+	// Attach handlers for keyboard
+	$$("quicknote_text").attachEvent("onKeyPress", function(code, e) {
+		// ESC closes
+		if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+			// Handler for 'paste' event (as in copy/paste)
+			document.addEventListener("paste", pasteHandler, false);
+			this.getTopParentView().hide();
+			return false;
+		}
+	});
+
+	// Handler for 'paste' event (as in copy/paste)
+	document.removeEventListener("paste", pasteHandler, false);
+
+	// Focus the text box
+	$$('quicknote_text').focus();
+}
+
 /**
  * Show a given dialog
  *
@@ -2433,6 +2889,9 @@ function loadSelectedFile() {
  */
 function showDialog(id) {
 	openDialog = id;
+	// Remove 'paste' handler event
+	document.removeEventListener("paste", pasteHandler, false);
+	// Show the dialog
 	document.getElementById('blackoverlay').style.display = "block";
 	document.getElementById(id).style.display = "block";
 }
@@ -2452,6 +2911,8 @@ function hideDialog(id) {
 	if (id == 'uiDrawZone') {
 		uiDrawZoneRemoveSelfAsClient();
 	}
+	// Handler for 'paste' event (as in copy/paste)
+	document.addEventListener("paste", pasteHandler, false);
 }
 
 /**
@@ -2677,28 +3138,17 @@ function setAppContextMenuEntries(data) {
 					url = 'sage2StandAloneApp.html?appID=' + this.app;
 					var appWin = window.open(url, '_blank');
 					appWin.focus();
+				} else if (this.callback === "SAGE2_openPage") {
+					var appUrl; // Special case: open another tab with the given address.
+					if (this.parameters.url !== undefined && this.parameters.url !== null) {
+						appUrl = this.parameters.url + "?appId=" + this.app;
+						appUrl += "&pointerName=" + interactor.user.label;
+						appUrl += "&pointerColor='" + interactor.user.color + "'";
+						open(appUrl, "Page From App");
+					}
 				} else if (this.callback === "SAGE2_editQuickNote") {
 					// special case: reopen the QuickNote editor, but with a "save" button instead of "create"
-					var sendButton = document.getElementById('uiNoteMakerSendButton');
-					sendButton.textContent = "Save [Enter]";
-					sendButton.inSaveMode = true;
-					sendButton.app = this.app;
-					sendButton.callback = "setMessage";
-					sendButton.parameters = this.parameters;
-					// put current text into note
-					var inputForNote = document.getElementById('uiNoteMakerInputField');
-					inputForNote.value = this.parameters.currentContent;
-					// select current color
-					switch (this.parameters.currentColorChoice) {
-						case "lightyellow": setUiNoteColorSelect(1); break;
-						case "lightblue":   setUiNoteColorSelect(2); break;
-						case "lightpink":   setUiNoteColorSelect(3); break;
-						case "lightgreen":  setUiNoteColorSelect(4); break;
-						case "lightsalmon": setUiNoteColorSelect(5); break;
-						case "white":       setUiNoteColorSelect(6); break;
-						default: setUiNoteColorSelect(1); break; // default is yellow if unknown
-					}
-					showDialog('uiNoteMaker');
+					noteMakerDialog('edit', this.parameters, this.app);
 				} else if (this.callback === "SAGE2_copyURL") {
 					// special case: want to copy the URL of the file to clipboard
 					var dlurl = this.parameters.url;
@@ -3197,26 +3647,7 @@ function addMenuEntry(menuDiv, entry, id, app) {
 							}
 						} else if (this.callback === "SAGE2_editQuickNote") {
 							// special case: reopen the QuickNote editor, but with a "save" button instead of "create"
-							var sendButton = document.getElementById('uiNoteMakerSendButton');
-							sendButton.textContent = "Save [Enter]";
-							sendButton.inSaveMode = true;
-							sendButton.app = this.app;
-							sendButton.callback = "setMessage";
-							sendButton.parameters = this.parameters;
-							// put current text into note
-							var inputForNote = document.getElementById('uiNoteMakerInputField');
-							inputForNote.value = this.parameters.currentContent;
-							// select current color
-							switch (this.parameters.currentColorChoice) {
-								case "lightyellow": setUiNoteColorSelect(1); break;
-								case "lightblue": setUiNoteColorSelect(2); break;
-								case "lightpink": setUiNoteColorSelect(3); break;
-								case "lightgreen": setUiNoteColorSelect(4); break;
-								case "lightsalmon": setUiNoteColorSelect(5); break;
-								case "white": setUiNoteColorSelect(6); break;
-								default: setUiNoteColorSelect(1); break; // default is yellow if unknown
-							}
-							showDialog('uiNoteMaker');
+							noteMakerDialog('edit', this.parameters, this.app);
 						} else if (this.callback === "SAGE2_copyURL") {
 							// special case: want to copy the URL of the file to clipboard
 							var dlurl = this.parameters.url;
@@ -3291,133 +3722,6 @@ function addMenuEntry(menuDiv, entry, id, app) {
 	}
 }
 
-/**
-Called automatically as part of page setup.
-Fills out some of the field properties.
-*/
-function setupUiNoteMaker() {
-	var workingDiv = document.getElementById('uiNoteMaker');
-	var inputField = document.getElementById('uiNoteMakerInputField');
-	inputField.id = "uiNoteMakerInputField";
-	inputField.rows = 5;
-	inputField.cols = 24;
-	var sendButton = document.getElementById('uiNoteMakerSendButton');
-	// click effect to make a note on the display (app launch)
-	sendButton.addEventListener('click', function() {
-		sendMessageMakeNote();
-	});
-	var closeButton = document.getElementById('uiNoteMakerCloseButton');
-	// click effect to cancel making a note
-	closeButton.addEventListener('click', function() {
-		hideDialog(openDialog);
-	});
-	// Add Color fields.
-	for (var i = 1; i <= 6; i++) {
-		workingDiv = document.getElementById("uinmColorPick" + i);
-		workingDiv.colorNumber = i;
-		workingDiv.colorWasPicked = false;
-		workingDiv.addEventListener("click", function () {
-			setUiNoteColorSelect(this.colorNumber);
-		});
-		// This is necessary because for some strange reason, css values are not visible as properties.
-		switch (i) {
-			case 1: workingDiv.style.background = "lightyellow"; break;
-			case 2: workingDiv.style.background = "lightblue"; break;
-			case 3: workingDiv.style.background = "lightpink"; break;
-			case 4: workingDiv.style.background = "lightgreen"; break;
-			case 5: workingDiv.style.background = "lightsalmon"; break;
-			case 6: workingDiv.style.background = "white"; break;
-		}
-	}
-	setUiNoteColorSelect(1);
-}
-
-function setUiNoteColorSelect(colorNumber) {
-	var workingDiv;
-	// Adjust border size width
-	for (var i = 1; i <= 6; i++) {
-		workingDiv = document.getElementById("uinmColorPick" + i);
-		workingDiv.style.border = "1px solid black";
-		workingDiv.colorWasPicked = false;
-		workingDiv.style.width = (parseInt(workingDiv.style.width) + 8) + "px";
-		workingDiv.style.height = (parseInt(workingDiv.style.height) + 8) + "px";
-	}
-	workingDiv = document.getElementById("uinmColorPick" + colorNumber);
-	workingDiv.style.border = "3px solid black";
-	workingDiv.colorWasPicked = true;
-	workingDiv.style.width = (parseInt(workingDiv.style.width) - 8) + "px";
-	workingDiv.style.height = (parseInt(workingDiv.style.height) - 8) + "px";
-}
-
-/**
- * This sets the values of the note making button to make instead of save.
- *
- * @method setNoteToMakeMode
- */
-function setNoteToMakeMode() {
-	// get send button
-	var sendButton = document.getElementById('uiNoteMakerSendButton');
-	sendButton.inSaveMode = false;
-	sendButton.textContent = "Make Note [Enter]";
-	var workingDiv = document.getElementById('uiNoteMakerInputField');
-	workingDiv.value = "";
-}
-
-/**
- * This function is activated in 2 ways.
- * 1) User click the send button.
- * 2) User hits enter when making a note. This check is done in the noBackspace funciton.
- * When activated will make the packet to launch app. Collects values from tags on page.
- *
- * @method sendMessageMakeNote
- */
-function sendMessageMakeNote() {
-	// get send button
-	var sendButton = document.getElementById('uiNoteMakerSendButton');
-	var workingDiv = document.getElementById('uiNoteMakerInputField');
-	var data = {};
-	// if in save mode, instead of make mode, then need to revert and save.
-	if (sendButton.inSaveMode) {
-		// send update of note
-		data.app = sendButton.app;
-		data.func = sendButton.callback;
-		data.parameters = sendButton.parameters;
-		data.parameters.clientInput = workingDiv.value;
-		data.parameters.clientId   = interactor.uniqueID;
-		data.parameters.clientName = interactor.pointerLabel;
-		if (document.getElementById("uiNoteMakerCheckAnonymous").checked) {
-			data.parameters.clientName = "Anonymous";
-		}
-		data.parameters.colorChoice = "lightyellow";
-		for (let i = 1; i <= 6; i++) {
-			if (document.getElementById("uinmColorPick" + i).colorWasPicked) {
-				data.parameters.colorChoice = document.getElementById("uinmColorPick" + i).style.background;
-			}
-		}
-		wsio.emit('callFunctionOnApp', data);
-		// put back values
-		setNoteToMakeMode();
-		// hide the dialog, done editing
-		hideDialog(openDialog);
-		workingDiv.value = ""; // clear out the input field.
-	} else {
-		data.appName	= "quickNote";
-		data.customLaunchParams		= {};
-		data.customLaunchParams.clientName = interactor.pointerLabel;
-		data.customLaunchParams.clientInput = workingDiv.value;
-		if (document.getElementById("uiNoteMakerCheckAnonymous").checked) {
-			data.customLaunchParams.clientName = "Anonymous";
-		}
-		data.customLaunchParams.colorChoice = "lightyellow";
-		for (let i = 1; i <= 6; i++) {
-			if (document.getElementById("uinmColorPick" + i).colorWasPicked) {
-				data.customLaunchParams.colorChoice = document.getElementById("uinmColorPick" + i).style.background;
-			}
-		}
-		wsio.emit('launchAppWithValues', data);
-		workingDiv.value = ""; // clear out the input field.
-	}
-}
 
 /**
 Called automatically as part of the page setup.
@@ -3513,65 +3817,6 @@ function setupUiDrawCanvas() {
 			thicknessSelectBox.style.border = "3px solid red";
 		}
 	}
-	// var thicknessSelectBox = document.getElementById('uidztp1');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 1;
-	// 		uiDrawSelectThickness('uidztp1');
-	// 	});
-	// // start the with 1px selected
-	// uidzCanvas.lineWidth = 1;
-	// thicknessSelectBox.style.border = "3px solid red";
-	// // have to hard code each selection due to linewidth adjustment
-	// // 2
-	// thicknessSelectBox = document.getElementById('uidztp2');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 2;
-	// 		uiDrawSelectThickness('uidztp2');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp3');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 4;
-	// 		uiDrawSelectThickness('uidztp3');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp4');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 8;
-	// 		uiDrawSelectThickness('uidztp4');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp5');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 16;
-	// 		uiDrawSelectThickness('uidztp5');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp6');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 32;
-	// 		uiDrawSelectThickness('uidztp6');
-	// 	});
-	// // next
-	// thicknessSelectBox = document.getElementById('uidztp7');
-	// thicknessSelectBox.addEventListener('mousedown',
-	// 	function() {
-	// 		var workingDiv = document.getElementById('uiDrawZoneCanvas');
-	// 		workingDiv.lineWidth = 64;
-	// 		uiDrawSelectThickness('uidztp7');
-	// 	});
 }
 
 /**
@@ -3734,7 +3979,7 @@ function uiDrawSendLineCommand(xDest, yDest, xPrev, yPrev) {
 This function actually causes the line to appear on the canvas.
 Data packet sent by the doodle master app itself.
 
-This funciton activated by receiving that corresponding packet.
+This function activated by receiving that corresponding packet.
 
 Will need to be cleaned up later.
 data.params will match the doodle.js drawLined lineData parameter.

@@ -115,7 +115,14 @@ var scriptExecutionFunction		= require('./src/script').Script;
 var commandExecutionFunction	= require('./src/script').Command;
 var spawn = require('child_process').spawn;
 
-var currentSabiVersion = "20180419";
+var currentSabiVersion = "20180921";
+var detectedSabiVersion = "00000000";
+
+/*
+	Version list:
+		20180419 - Changed start process to use https
+		20180919 - Changed the off script, process renamed to SAGE2
+*/
 
 // ---------------------------------------------
 //  Parse command line arguments
@@ -222,36 +229,36 @@ if (ConfigFile.indexOf("sage2") >= 0) {
 	var sabiVersionIsUpToDate = isSabiVersionCurrent();
 
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "config", "sage2.json");
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("config", "sage2.json");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts");
-	if (!folderExists(sabiMediaCheck)) {
+	if (!folderExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		mkdirParent(sabiMediaCheck);
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts", "sage2_on.bat");
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("scripts", "sage2_on.bat");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts", "s2_on_electron.bat");
-	if (!sabiVersionIsUpToDate || !fileExists(sabiMediaCheck)) {
+	if ((!fileExists(sabiMediaCheck)) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("scripts", "s2_on_electron.bat");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts", "sage2_off.bat");
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("scripts", "sage2_off.bat");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToFindMonitorData);
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("scripts", "winScriptHelperWriteMonitorRes.exe");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts", "GO-windows.bat");
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("..", "keys", "GO-windows.bat");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
@@ -270,21 +277,22 @@ if (ConfigFile.indexOf("sage2") >= 0) {
  * Checks if sabi version file exists in SAGE2_Media
  * If it does returns the contents which should be a date
  *
- * @method checkSabiVersion
- * @return {String} null or date as yyyymmdd
+ * @method isSabiVersionCurrent
+ * @return {Bool} null or date as yyyymmdd
  */
 function isSabiVersionCurrent(dirPath) {
 	// Check if version file exists
 	var pathToSabiVersionFile = path.join(pathToSabiConfigFolder, "version");
-	var detectedVersion = null;
+	var readVersion = null;
 	// If it doesn't exist write it
 	if (!fileExists(pathToSabiVersionFile)) {
 		fs.writeFileSync(pathToSabiVersionFile, currentSabiVersion);
 	} else {
-		detectedVersion = fs.readFileSync(pathToSabiVersionFile);
+		readVersion = fs.readFileSync(pathToSabiVersionFile);
+		detectedSabiVersion = readVersion;
 	}
 
-	if (detectedVersion != currentSabiVersion) {
+	if (readVersion != currentSabiVersion) {
 		fs.writeFileSync(pathToSabiVersionFile, currentSabiVersion);
 		return false;
 	}
@@ -814,11 +822,14 @@ function process_request(cfg, req, res) {
 			let filename   = cfg.actions[action].editor;
 			filename = path.resolve(untildify(filename));
 			var wstream    = fs.createWriteStream(filename);
+			var selfSign   = params.selfSign;
 
 			wstream.on('finish', function() {
 				// stream closed
 				console.log('HTTP>		PUT file has been written', filename, fileLength, 'bytes');
-				updateCertificates(); // keeping this if someone edits with basic / advanced
+				if (selfSign == "true") { // values from querystring will be a string, false will be "false" the string, not bool false
+					updateCertificates(); // keeping this if someone edits with basic / advanced
+				}
 			});
 			// Getting data
 			req.on('data', function(chunk) {

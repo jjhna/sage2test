@@ -822,34 +822,6 @@ The z-index is very important.
 	background:lightgray !important;
 }
 
-#uiNoteMaker {
-    border: 1px solid black;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-    -moz-transform: translate(-50%, -50%);
-    -ms-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
-    text-align: center;
-}
-
-#uiNoteMakerInputField {
-    resize: none;
-    font-size: 20px;
-    font-family: Lucidia Console, Monaco, monospace;
-}
-
-.uinmColorPickColumn {
-    height: 71px;
-    width: 101px;
-}
-
-.uinmColorPickBlock {
-    width: 95px;
-    height: 65px;
-    border: 1px solid black;
-}
-
 #uiDrawZone {
     top: 50%;
     left: 50%;

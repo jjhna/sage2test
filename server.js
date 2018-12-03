@@ -381,18 +381,28 @@ function initializeSage2Server() {
 		sageutils.log("Secure", "Saved to file name", passwordFile);
 		// the session is protected
 		config.passwordProtected = true;
+		// New password, regenerate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
 	} else if (sageutils.fileExists(passwordFile)) {
-		// If a password file exists, load it
-		var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
-		var passwordFileJson       = JSON.parse(passwordFileJsonString);
-		if (passwordFileJson.pwd !== null) {
-			global.__SESSION_ID = passwordFileJson.pwd;
-			sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
-			// the session is protected
-			config.passwordProtected = true;
-		} else {
-			sageutils.log("Secure", "Invalid hash file", passwordFile);
-		}
+		// remove pasword file, if option not specified
+		fs.unlinkSync(passwordFile);
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
+
+		// // If a password file exists, load it
+		// var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
+		// var passwordFileJson       = JSON.parse(passwordFileJsonString);
+		// if (passwordFileJson.pwd !== null) {
+		// 	global.__SESSION_ID = passwordFileJson.pwd;
+		// 	sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
+		// 	// the session is protected
+		// 	config.passwordProtected = true;
+		// } else {
+		// 	sageutils.log("Secure", "Invalid hash file", passwordFile);
+		// }
+	} else {
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
 	}
 
 	/*
@@ -1214,8 +1224,7 @@ function setupListeners(wsio) {
 
 	wsio.on('createFolder',                         wsCreateFolder);
 
-	// Jupyper messages
-	wsio.on('startJupyterSharing',                  wsStartJupyterSharing);
+	// Jupyter messages
 	wsio.on('updateJupyterSharing',                 wsUpdateJupyterSharing);
 
 	// message passing between clients
@@ -1258,10 +1267,14 @@ function setupListeners(wsio) {
 	wsio.on('performanceData',                      wsPerformanceData);
 
 	// message from performance page
-	wsio.on('requestClientUpdate',					wsRequestClientUpdate);
+	wsio.on('requestClientUpdate',			        		wsRequestClientUpdate);
 
 	// message from stand alone app
-	wsio.on('setSagePointerToAppInteraction', 		wsSetSagePointerToAppInteraction);
+	wsio.on('setSagePointerToAppInteraction', 	  	wsSetSagePointerToAppInteraction);
+
+	// Message from a ScreenShare needing to connect with original ScreenShare client
+	wsio.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
+	wsio.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
 }
 
 /**
@@ -1397,6 +1410,8 @@ function initializeExistingApps(wsio, appID) {
 			// does this cause issues?
 			appCopy = Object.assign({}, SAGE2Items.applications.list[key]);
 			delete appCopy.partition;
+			delete appCopy.backgroundItem;
+			delete appCopy.foregroundItems;
 
 			wsio.emit('createAppWindow', appCopy);
 			if (SAGE2Items.renderSync.hasOwnProperty(key)) {
@@ -2774,7 +2789,7 @@ function saveSession(filename) {
 	// add gray background
 	svg += "<rect width=\"" + width +
 		"\" height=\"" + height +
-		"\" style=\"fill: #666666;\"" + "></rect>";
+		"\" style=\"fill: #AAAAAA;\"" + "></rect>";
 
 	for (var ptn of states.partitions) {
 		// partition areas
@@ -2801,7 +2816,7 @@ function saveSession(filename) {
 			"\" height=\"" + ap.height +
 			"\" x=\"" + ap.left +
 			"\" y=\"" + ap.top +
-			"\" style=\"fill: " + "#AAAAAA; fill-opacity: 0.5; stroke: black; stroke-width: 5;\">" + "</rect>";
+			"\" style=\"fill: " + "#474747; fill-opacity: 1.0; stroke: black; stroke-width: 5;\">" + "</rect>";
 
 		var iconPath;
 		if (ap.icon) {
@@ -3308,6 +3323,18 @@ function deleteAllApplications(wsio) {
 
 	// Reset the app_id counter to 0
 	getUniqueAppId(-1);
+
+	// Reset structure to handle automated placement of apps
+	appLaunchPositioning = {
+		xStart: 10,
+		yStart: 50,
+		xLast: -1,
+		yLast: -1,
+		widthLast: -1,
+		heightLast: -1,
+		tallestInRow: -1,
+		padding: 20
+	};
 }
 
 /**
@@ -3386,7 +3413,7 @@ function wsLoadApplication(wsio, data) {
 		}
 
 		// Get the drop position and convert it to wall coordinates
-		var position = data.position || [0, 0];
+		var position = data.position || [0, config.ui.titleBarHeight];
 
 		if (position[0] > 1) {
 			// value in pixels, used as origin
@@ -3503,7 +3530,7 @@ function wsLoadImageFromBuffer(wsio, data) {
 		data.mime, "", data.url, data.title, {},
 		function(appInstance) {
 			// Get the drop position and convert it to wall coordinates
-			var position = data.position || [0, 0];
+			var position = data.position || [0, config.ui.titleBarHeight];
 			if (position[0] > 1) {
 				// value in pixels, used as origin
 				appInstance.left = position[0];
@@ -3555,7 +3582,7 @@ function wsLoadFileFromServer(wsio, data) {
 	} else {
 		var fileLoadCallBack = function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
-			var position = data.position || [0, 0];
+			var position = data.position || [0, config.ui.titleBarHeight];
 			if (position[0] > 1) {
 				// value in pixels, used as origin
 				appInstance.left = position[0];
@@ -3864,7 +3891,7 @@ function wsAddNewWebElement(wsio, data) {
 		broadcast('storedFileList', getSavedFilesList());
 
 		// Get the drop position and convert it to wall coordinates
-		var position = data.position || [0, 0];
+		var position = data.position || [0, config.ui.titleBarHeight];
 
 		if (position[0] > 1) {
 			// value in pixels, used as origin
@@ -3939,7 +3966,7 @@ function wsCommand(wsio, data) {
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
 	// use the window position if specified
-	let position   = data.position || [0, 0];
+	let position   = data.position || [0, config.ui.titleBarHeight];
 	// use the window size if specified
 	let dimensions = data.dimensions || null;
 	wsLoadApplication(wsio, {
@@ -5414,7 +5441,7 @@ function sendConfig(req, res) {
 function uploadForm(req, res) {
 	var form     = new formidable.IncomingForm();
 	// Drop position
-	var position = [0, 0];
+	var position = [0, config.ui.titleBarHeight];
 	// Open or not the file after upload
 	var openAfter = true;
 	// User information
@@ -5694,6 +5721,10 @@ function manageRemoteConnection(remote, site, index) {
 	remote.on('updateApplicationState',                 wsUpdateApplicationState);
 	remote.on('updateApplicationStateOptions',          wsUpdateApplicationStateOptions);
 
+	// Message from a ScreenShare needing to connect with original ScreenShare client
+	remote.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
+	remote.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
+
 	remote.emit('addClient', clientDescription);
 	clients.push(remote);
 
@@ -5870,6 +5901,12 @@ function processInputCommand(line) {
 			sageutils.log('Console', 'perfsampling\tset performance metric sampling rate');
 			sageutils.log('Console', 'saveperfdata\tsave performance data to file');
 			sageutils.log('Console', 'hardware\tget an summary of the hardware running the server');
+			sageutils.log('Console', 'enabletouch\tEnable touch events in oMicron');
+			sageutils.log('Console', 'disabletouch\tDisable touch events in oMicron');
+			sageutils.log('Console', 'enablemocap\tEnable mocap events in oMicron');
+			sageutils.log('Console', 'disablemocap\tDisable mocap events in oMicron');
+			sageutils.log('Console', 'enablewand\tEnable 3D wand events in oMicron');
+			sageutils.log('Console', 'disablewand\tDisable 3D events in oMicron');
 			sageutils.log('Console', 'update\t\trun a git update');
 			sageutils.log('Console', 'version\tprint SAGE2 version');
 			sageutils.log('Console', 'exit\t\tstop SAGE2');
@@ -5912,7 +5949,7 @@ function processInputCommand(line) {
 		}
 		case 'open': {
 			if (command[1] !== undefined) {
-				var pos  = [0.0, 0.0];
+				var pos  = [0, config.ui.titleBarHeight];
 				var file = command[1];
 				if (command.length === 4) {
 					pos = [parseFloat(command[2]), parseFloat(command[3])];
@@ -5925,9 +5962,14 @@ function processInputCommand(line) {
 						position: pos
 					});
 				} else {
-					wsLoadFileFromServer({id: "127.0.0.1:42"}, {
-						application: "something",
-						filename: file,
+					// wsLoadFileFromServer({id: "127.0.0.1:42"}, {
+					// 	application: "something",
+					// 	filename: file,
+					// 	user: "127.0.0.1:42",
+					// 	position: pos
+					// });
+					wsLoadApplication({id: "127.0.0.1:42"}, {
+						application: file,
 						user: "127.0.0.1:42",
 						position: pos
 					});
@@ -10770,7 +10812,7 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 					name: fname
 				}],
 				// position and size
-				[0, 0, config.totalWidth / 4],
+				[0, config.ui.titleBarHeight, config.totalWidth / 4],
 				// username and color
 				"screenshot", "#B4B4B4",
 				// to be opened afterward
@@ -10791,7 +10833,7 @@ function wsWallScreenshotFromDisplay(wsio, data) {
 			// file name
 			name: fileSaveObject.fileName}],
 		// position and size
-		[0, 0, config.totalWidth / 4],
+		[0, config.ui.titleBarHeight, config.totalWidth / 4],
 		// username and color
 		"screenshot", "#B4B4B4",
 		// to be opened afterward
@@ -10829,57 +10871,31 @@ function wsPerformanceData(wsio, data) {
 }
 
 
-/**
- * Start a jupyter connection
- *
- * @method     wsStartJupyterSharing
- * @param      {Object}  wsio    The websocket
- * @param      {Object}  data    The data
- */
-function wsStartJupyterSharing(wsio, data) {
-	sageutils.log('Jupyter', "received new stream:", data.id);
-
-	/*var i;
-	SAGE2Items.renderSync[data.id] = {clients: {}, chunks: []};
-	for (i = 0; i < clients.length; i++) {
-		if (clients[i].clientType === "display") {
-			SAGE2Items.renderSync[data.id].clients[clients[i].id] = {wsio: clients[i], readyForNextFrame: false, blocklist: []};
-		}
-	}
-	*/
-
-	console.log(data.width, data.height);
-
-	// forcing 'int' type for width and height
-	data.width  = parseInt(data.width,  10);
-	data.height = parseInt(data.height, 10);
-
-	// appLoader.createJupyterApp(data.src, data.type, data.encoding, data.title, data.color, 800, 1200,
-	// 	function(appInstance) {
-	// 		appInstance.id = data.id;
-	// 		handleNewApplication(appInstance, null);
-	// 	}
-	// );
-
-	console.log(data.id);
-
-	console.log("createJupyterApp: ", data.src, data.type, data.encoding, data.title, data.color, data.width, data.height);
-
-	appLoader.createJupyterApp(data.src, data.type, data.encoding, data.title, data.color, data.width, data.height,
-		function (appInstance) {
-			appInstance.id = data.id;
-			handleNewApplication(appInstance, null);
-
-			console.log(appInstance.id);
-		}
-	);
-}
-
+// /**
+//  * Update data from a JupyterLab connection, starting a new application if necessary.
+//  *
+//  * @method     wsUpdateJupyterSharing
+//  * @param      {Object}  wsio    The websocket
+//  * @param      {Object}  data    The data
+//  */
 function wsUpdateJupyterSharing(wsio, data) {
 	sageutils.log('Jupyter', "received update from:", data.id);
 
-	// pass data into app by ID
-	sendApplicationDataUpdate(data);
+	let existingApp = Object.values(SAGE2Items.applications.list).find(app => app.id === data.id);
+
+	// create an app if one does not already exist for this connection+cell
+	if (!existingApp) {
+		appLoader.createJupyterApp(data.src, data.mime, "base64", data.title, "#F27729", data.width, data.height,
+			function (appInstance) {
+				appInstance.id = data.id;
+
+				handleNewApplication(appInstance, null);
+			}
+		);
+	} else {
+		// only update -- pass data into app by ID
+		sendApplicationDataUpdate(data);
+	}
 }
 
 function sendApplicationDataUpdate(data) {
@@ -10897,28 +10913,6 @@ function sendApplicationDataUpdate(data) {
 	broadcast('eventInItem', event);
 }
 
-/*
-function wsUpdateJupyterSharing(wsio, data) {
-	sageutils.log('Jupyter', "received update from:", data.id);
-	sendJupyterUpdates(data);
-}
-
-function sendJupyterUpdates(data) {
-	// var ePosition = {x: 0, y: 0};
-	var eUser = {id: 1, label: "Touch", color: "none"};
-
-	var event = {
-		id: data.id,
-		type: "imageUpload",
-		position: 0,
-		user: eUser,
-		data: data,
-		date: Date.now()
-	};
-
-	broadcast('eventInItem', event);
-}
-*/
 
 /**
  * Method handling a file save request from a SAGE2_App
@@ -10991,7 +10985,7 @@ function appFileSaveRequest(wsio, data) {
 					path: fullpath
 				};
 				// Add the file to the asset library and not open it (false)
-				manageUploadedFiles(fileObject, [0, 0], data.app, "#B4B4B4", false);
+				manageUploadedFiles(fileObject, [0, config.ui.titleBarHeight], data.app, "#B4B4B4", false);
 			}
 		} catch (err) {
 			sageutils.log('File', "error while saving to", fullpath + ":" + err);
@@ -11271,3 +11265,89 @@ function wsSetSagePointerToAppInteraction(wsio, data) {
 		broadcast('changeSagePointerMode', {id: sagePointers[wsio.id].id, mode: remoteInteraction[wsio.id].interactionMode});
 	}
 }
+
+/**
+ * Received from a remote screen share for making a webrtc connection.
+ * One message per display.
+ *
+ * @method wsWebRtcRemoteScreenShareSendingDisplayMessage
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain words.
+ */
+function wsWebRtcRemoteScreenShareSendingDisplayMessage(wsio, data) {
+	// Contents of packet
+	// clientDest: this.webrtcParts.streamerId,
+	// func: "webrtc_SignalMessageFromDisplay",
+	// appId: this.id,
+	// destinationId: this.webrtcParts.streamerId,
+	// sourceId: wsio.UID,
+	// message: "appStarted"
+
+	// Keep sending to this function until finding the application
+	var sender = {wsio: null, serverId: null, clientId: null, streamId: null};
+	var mediaStreamData = data.appId.split("|"); // remote stream --> remote_server | client | stream_id
+	if (mediaStreamData.length > 3) {
+		console.log("ERROR with wsWebRtcRemoteScreenShareSendingDisplayMessage parsing source failed: " + data.appId);
+	} else if (!data.goingToSourceServer) {
+		sender.serverId = mediaStreamData[0];
+		sender.clientId = mediaStreamData[1];
+		sender.streamId = mediaStreamData[2];
+		for (let i = 0; i < clients.length; i++) {
+			if (clients[i].id === sender.serverId) {
+				sender.wsio = clients[i];
+				break;
+			}
+		}
+		if (sender.wsio !== null) {
+			data.goingToSourceServer = sender.serverId;
+			sender.wsio.emit('webRtcRemoteScreenShareSendingDisplayMessage', data);
+		} else {
+			console.log("Error with WebRTC message passing unable to find destination remote site " + sender.serverId);
+		}
+	} else {
+		// Has a value for goingToSourceServer
+		// Normally directly from application goes to wsio.emit("sendDataToClient", data);
+		data.remoteDisplayServer = wsio.id;
+		wsSendDataToClient(null, data);
+	}
+}
+
+/**
+ * Receives offer from UI, then passes to remote servers.
+ *
+ * @method wsWebRtcRemoteScreenShareSendingUiMessage
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain words.
+ */
+function wsWebRtcRemoteScreenShareSendingUiMessage(wsio, data) {
+	// Keep sending to this function until finding the application
+	var sender = {wsio: null, serverId: null, clientId: null, streamId: null};
+	var mediaStreamData = data.app.split("|"); // data.app --> remote_server | client | stream_id
+	if (mediaStreamData.length > 3) {
+		console.log("ERROR with wsWebRtcRemoteScreenShareSendingUiMessage parsing source failed: " + data.app);
+	} else if (!data.cameFromSourceServer) {
+		sender.serverId = data.remoteDisplayServer;
+		sender.clientId = mediaStreamData[1];
+		sender.streamId = mediaStreamData[2];
+		for (let i = 0; i < clients.length; i++) {
+			if (clients[i].id === sender.serverId) {
+				sender.wsio = clients[i];
+				break;
+			}
+		}
+		if (sender.wsio !== null) {
+			data.cameFromSourceServer = sender.serverId;
+			data.clientId = wsio.id;
+			sender.wsio.emit('webRtcRemoteScreenShareSendingUiMessage', data);
+		} else {
+			console.log("Error, unable to find remote site " + sender.serverId);
+		}
+	} else {
+		// Has a value for cameFromSourceServer
+		// Normally directly from UI goes to wsio.emit("wsCallFunctionOnApp", data);
+		// This should get offer back to the display, need to provide id of original wsio for normal wsCallFunctionOnApp work
+		data.parameters.cameFromSourceServer = data.cameFromSourceServer;
+		wsCallFunctionOnApp({id: data.clientId}, data);
+	}
+}
+

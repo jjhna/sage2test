@@ -20,7 +20,13 @@
 'use strict';
 
 const electron = require('electron');
-electron.app.setAppPath(process.cwd());
+
+// Get platform and hostname
+var os = require('os');
+
+if (os.platform() === "win32" || os.platform() === "darwin") {
+	electron.app.setAppPath(process.cwd());
+}
 
 //
 // handle install/update for Windows
@@ -146,10 +152,9 @@ if (commander.plugins) {
 }
 
 // Reset the desktop scaling
-const os = require('os');
-if (os.platform() === "win32") {
-	app.commandLine.appendSwitch("force-device-scale-factor", "1");
-}
+//if (os.platform() === "win32") {
+app.commandLine.appendSwitch("force-device-scale-factor", "1");
+//}
 
 // Remove the limit on the number of connections per domain
 //  the usual value is around 6
@@ -386,6 +391,18 @@ function createWindow() {
 		// ev.preventDefault();
 	});
 
+	var partitionNumber = 0;
+	mainWindow.webContents.on('will-attach-webview', function(event, webPreferences, params) {
+		// New webview going to be added
+		// Each partition has a distinct context, ie partition
+		params.partition = 'partition_' + partitionNumber;
+		partitionNumber = partitionNumber + 1;
+	});
+
+	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {
+		// New webview added and completed
+	});
+
 	ipcMain.on('getPerformanceData', function() {
 		var perfData = {};
 		var mem = process.getSystemMemoryInfo();
@@ -398,12 +415,34 @@ function createWindow() {
 			memPercent: 0,
 			memResidentSet: 0
 		};
-		var procMem = process.getProcessMemoryInfo();
+
 		var procCPU = process.getCPUUsage();
-		displayLoad.memResidentSet = procMem.workingSetSize;
-		displayLoad.memPercent = procMem.workingSetSize / perfData.mem.total * 100;
 		displayLoad.cpuPercent = procCPU.percentCPUUsage;
-		//console.log(process.pid, mainWindow.webContents.pid);
+
+		// Get the version number for Electron
+		let electronVersion = process.versions.electron;
+		// Parse the string and get the Major version number
+		let majorVersion = parseInt(electronVersion.split('.')[0]);
+		if (majorVersion < 4) {
+			// for version 3 and below
+			let procMem = process.getProcessMemoryInfo();
+			displayLoad.memResidentSet = procMem.workingSetSize;
+			displayLoad.memPercent = procMem.workingSetSize / perfData.mem.total * 100;
+		} else {
+			// version 4 has new APIs
+			let metrics = app.getAppMetrics();
+			metrics.forEach(function(m) {
+				// pid Integer - Process id of the process.
+				// type String - Process type (Browser or Tab or GPU etc).
+				// memory MemoryInfo - Memory information for the process.
+				// cpu CPUUsage - CPU usage of the process.
+				if (m.pid === process.pid) {
+					// Not Yet Implemented in beta3
+					// console.log('V4', m.memory);
+				}
+			});
+		}
+
 		// CPU Load
 		si.currentLoad(function(data) {
 			perfData.cpuLoad = {
@@ -415,6 +454,38 @@ function createWindow() {
 		});
 	});
 }
+
+/**
+ * Dealing with certificate issues
+ * used to be done in Webview app but seems to work better here now
+ */
+app.on('certificate-error', function(event, webContent, url, error, certificate, callback) {
+	// This doesnt seem like a security risk yet
+	if (error === "net::ERR_CERTIFICATE_TRANSPARENCY_REQUIRED") {
+		// console.log('Webview> certificate error ERR_CERTIFICATE_TRANSPARENCY_REQUIRED', url);
+		// we ignore the certificate error
+		event.preventDefault();
+		callback(true);
+	} else if (error === "net::ERR_CERT_COMMON_NAME_INVALID") {
+		// self-signed certificate
+		// console.log('Webview> certificate error ERR_CERT_COMMON_NAME_INVALID', url)
+		// we ignore the certificate error
+		event.preventDefault();
+		callback(true);
+	} else if (error === "net::ERR_CERT_AUTHORITY_INVALID") {
+		// self-signed certificate
+		// console.log('Webview> certificate error ERR_CERT_AUTHORITY_INVALID', url)
+		// we ignore the certificate error
+		event.preventDefault();
+		callback(true);
+	} else {
+		// More troubling error
+		console.log('Webview> certificate error', error, url);
+		// Denied
+		callback(false);
+	}
+});
+
 
 /**
  * This method will be called when Electron has finished
