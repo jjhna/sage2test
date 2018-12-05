@@ -402,7 +402,7 @@ function SAGE2_init() {
 	// socket close event (i.e. server crashed)
 	wsio.on('close', function(evt) {
 		// show a popup
-		showSAGE2Message("Server offline");
+		showSAGE2Message("Server unreachable: you are offline or the server is down");
 		// try to reload every few seconds
 		var refresh = setInterval(function() {
 			reloadIfServerRunning(function() {
