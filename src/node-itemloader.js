@@ -26,7 +26,7 @@ var Unzip        = require('decompress-zip');
 var gm           = require('gm');
 var request      = require('request');
 var ytdl         = require('ytdl-core');
-var Videodemuxer = (process.arch !== 'arm') ? require('node-demux') : null;
+var Videodemuxer = null;
 var mv           = require('mv');
 var sanitize     = require("sanitize-filename");
 
@@ -374,7 +374,7 @@ AppLoader.prototype.loadImageFromFile = function(file, mime_type, aUrl, external
 
 AppLoader.prototype.loadVideoFromFile = function(file, mime_type, aUrl, external_url, name, callback) {
 	// load video module, except on ARM processor (raspberry pi)
-	if (process.arch !== 'arm') {
+	if (false) {
 		var _this = this;
 		var video = new Videodemuxer();
 		video.on('metadata', function(data) {

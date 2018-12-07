@@ -284,7 +284,7 @@ function initializeSage2Server() {
 	//     pass parameter `true` for devel packages also
 	if (process.arch !== 'arm') {
 		// seems very slow to do on ARM processor (Raspberry PI)
-		sageutils.checkPackages();
+		// sageutils.checkPackages();
 	}
 
 	// Setup binaries path

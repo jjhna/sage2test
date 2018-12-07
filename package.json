@@ -79,9 +79,6 @@
 		"ytdl-core": "latest",
 		"jszip": "latest"
 	},
-	"optionalDependencies": {
-		"node-demux": "https://github.com/renambot-uic/node-demux.git"
-	},
 	"devDependencies": {
 		"grunt": "latest",
 		"grunt-cli": "latest",
