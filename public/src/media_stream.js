@@ -58,13 +58,17 @@ var media_stream = SAGE2_App.extend({
 		this.bufferId = 0;
 		this.img1IsLoaded = true;
 		this.draw(this.date);
+		this.webrtc_fallbackStatusHideCheck();
 	},
 
 	img2Loaded: function() {
 		this.img2IsLoaded = true;
 		this.bufferId = 1;
 		this.draw(this.date);
+		this.webrtc_fallbackStatusHideCheck();
 	},
+
+
 
 	/**
 	* Loads the app from a previous state
@@ -180,6 +184,7 @@ var media_stream = SAGE2_App.extend({
 	webrtc_addParts: function() {
 		let vid = document.createElement("video");
 		this.webrtcParts.videoElement = vid;
+		this.webrtcParts.fallbackStatusHideCounter = 0;
 		vid.style.position = "absolute";
 		vid.style.left = "0px";
 		vid.style.top = "0px";
@@ -255,7 +260,30 @@ var media_stream = SAGE2_App.extend({
 				);
 			}
 			// Otherwise, let it get handled
-			this.webrtcParts.s2wpc.readMessage(responseObject.message);
+			this.webrtcParts.s2wpc.readMessage(responseObject.message, () => {
+				// This function triggers when a connection is detected
+				this.webrtcParts.status.style.visibility = "hidden";
+				this.showModeInTitle("WebRTC mode");
+			});
+		}
+	},
+
+	webrtc_fallbackStatusHideCheck: function() {
+		this.webrtcParts.fallbackStatusHideCounter++;
+		// If the img1Loaded or 2 is triggered more than three times, the client is sending frames outside of webrtc.
+		if (this.webrtcParts.fallbackStatusHideCounter > 2) {
+			this.webrtcParts.status.style.visibility = "hidden";
+			this.showModeInTitle();
+			// this.showModeInTitle("Default mode");
+		}
+	},
+
+	showModeInTitle: function(mode) {
+		if (mode) {
+			var titleText = document.getElementById(this.id + "_text").textContent;
+			titleText = titleText.substring(0, titleText.indexOf("een"));
+			titleText += "een (" + mode + ")";
+			document.getElementById(this.id + "_text").textContent = titleText;
 		}
 	}
 

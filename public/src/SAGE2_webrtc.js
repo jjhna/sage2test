@@ -261,7 +261,7 @@ class SAGE2WebrtcPeerConnection {
 	}
 
 	// This assumes the app properly figures out where it should go
-	readMessage(message) {
+	readMessage(message, callback) {
 		this.debugprint("Got message " + message);
 		let mConverted = message;
 		if (typeof message !== "object") {
@@ -299,9 +299,13 @@ class SAGE2WebrtcPeerConnection {
 					this.debugprint("sent answer to UI");
 					this.sendStoredIceCandidates();
 					this.debugprint("sent stored ice candidates");
+					if (callback) {
+						// Callback for Display Client to hide the status div, then show WebRTC mode in title.
+						callback();
+					}
 				})
-				.catch(() => {
-					console.log("SAGE2_webrtc> offer handling error");
+				.catch((e) => {
+					console.log("SAGE2_webrtc> offer handling error:", e);
 				});
 		} else {
 			this.debugprint(" ERROR unknown message (not ice, answer or offer): " + message);
@@ -310,9 +314,13 @@ class SAGE2WebrtcPeerConnection {
 
 	// Sends the stored up ice candidates, sending too early will cause silent errors within webrtc
 	sendStoredIceCandidates() {
-		this.debugprint("Detected rtc candidate connection in UI, stopping default share method.");
-		if (interactor && interactor.mediaUseRTC) {
-			interactor.broadcasting = false;
+		try {
+			// Interactor only exists in the UI client
+			if (interactor && interactor.mediaUseRTC) {
+				interactor.broadcasting = false;
+			}
+		} catch (e) {
+			// Skipping to here if this is the display
 		}
 
 		this.completedOfferAnswerResponse = true;
