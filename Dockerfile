@@ -1,12 +1,11 @@
-FROM    ubuntu:16.04
+FROM    ubuntu:18.04
 MAINTAINER	EVL avatar <evl.avatar@gmail.com>
-RUN     apt-get update && apt-get install -y \
+RUN	apt-get update && apt-get install -y apt-utils iproute2
+RUN	DEBIAN_FRONTEND=noninteractive TERM=xterm apt-get install -y tzdata
+RUN     apt-get install -y \
 		software-properties-common build-essential \
-		git \
-		curl \
-		bzip2
-RUN     add-apt-repository -y ppa:jonathonf/ffmpeg-3
-RUN     curl -sL https://deb.nodesource.com/setup_10.x | bash -
+		git curl bzip2
+RUN     curl -sL https://deb.nodesource.com/setup_11.x | bash -
 RUN     apt-get update && apt-get install -y \
 		ffmpeg \
 		libavcodec-dev libavutil-dev libswresample-dev \
@@ -17,8 +16,8 @@ RUN     apt-get update && apt-get install -y \
 		imagemagick \
 		nodejs \
 		ntp \
-		tzdata \
 	&& rm -rf /var/lib/apt/lists/*
+
 
 COPY    package.json /tmp/package.json
 RUN     cd /tmp; npm install --production
@@ -28,6 +27,9 @@ RUN     mkdir -p /sage2; cp -a /tmp/node_modules /sage2/
 ENV SET_CONTAINER_TIMEZONE true
 # Default container timezone as found under the directory /usr/share/zoneinfo/.
 ENV CONTAINER_TIMEZONE America/Chicago
+
+# Fix imagemagick processing PDF
+RUN	sed -i 's/<policy domain="coder" rights="none" pattern="PDF" \/>/<policy domain="coder" rights="read|write" pattern="PDF" \/>/g' /etc/ImageMagick-6/policy.xml
 
 COPY    . /sage2
 
