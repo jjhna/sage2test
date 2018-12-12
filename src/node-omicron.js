@@ -1262,8 +1262,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Remove from touchgroup list only if multi/single touch event (not gestures)
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
-
-			/*
 			lastTouchGroupPoints = omicronManager.touchGroups.get(sourceID);
 			if (lastTouchGroupPoints !== undefined) {
 				for (childID of lastTouchGroupPoints.keys()) {
@@ -1272,7 +1270,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				}
 			}
 			omicronManager.touchGroups.delete(sourceID);
-			*/
 		}
 	} else if (e.type === 15 && omicronManager.enableTwoFingerZoom) {
 		// zoom
