@@ -160,6 +160,8 @@ function OmicronManager(sysConfig) {
 	this.enableWand =  this.config.enableWand === undefined ? false : this.config.enableWand;
 	console.log(sageutils.header('Omicron') + 'Wand Enabled: ', this.enableWand);
 
+	this.wandNames =  this.config.wandNames === undefined ? {} : this.config.wandNames;
+
 	if (this.config.touchOffset) {
 		this.touchOffset =  this.config.touchOffset;
 		console.log(sageutils.header('Omicron') + 'Touch points offset by: ', this.touchOffset);
@@ -700,6 +702,11 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		var wandID = address;
 		var updateWandPosition = (e.flags & movePointerHold) === movePointerHold;
 
+		var wandName = omicronManager.wandNames[wandID] === undefined ?
+			omicronManager.wandLabel : omicronManager.wandNames[wandID].label;
+		var wandColor = omicronManager.wandNames[wandID] === undefined ?
+			omicronManager.wandColor : omicronManager.wandNames[wandID].color;
+
 		if (omicronManager.wandState[wandID] === undefined) {
 			sageutils.log('Omicron', "New Wand Pointer " + sourceID);
 
@@ -709,7 +716,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 
 			if (omicronManager.wandState[wandID].visible === true) {
 				omicronManager.showPointer(wandID, {
-					label: wandID, color: omicronManager.wandColor
+					label: wandName, color: wandColor
 				});
 			}
 		}
@@ -730,7 +737,7 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 				omicronManager.wandState[wandID].visible = false;
 			} else {
 				omicronManager.showPointer(wandID, {
-					label: wandID, color: omicronManager.wandColor
+					label: wandName, color: wandColor
 				});
 				omicronManager.wandState[wandID].visible = true;
 
@@ -1255,8 +1262,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Remove from touchgroup list only if multi/single touch event (not gestures)
 		if (e.flags === FLAG_MULTI_TOUCH || e.flags === FLAG_SINGLE_TOUCH) {
-
-			/*
 			lastTouchGroupPoints = omicronManager.touchGroups.get(sourceID);
 			if (lastTouchGroupPoints !== undefined) {
 				for (childID of lastTouchGroupPoints.keys()) {
@@ -1265,7 +1270,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				}
 			}
 			omicronManager.touchGroups.delete(sourceID);
-			*/
 		}
 	} else if (e.type === 15 && omicronManager.enableTwoFingerZoom) {
 		// zoom

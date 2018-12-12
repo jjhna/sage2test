@@ -24,9 +24,10 @@ const electron = require('electron');
 // Get platform and hostname
 var os = require('os');
 
-if (os.platform() === "win32" || os.platform() === "darwin") {
-	electron.app.setAppPath(process.cwd());
-}
+// Lets do it on all platforms
+// if (os.platform() === "win32" || os.platform() === "darwin") {
+electron.app.setAppPath(process.cwd());
+// }
 
 //
 // handle install/update for Windows
@@ -154,6 +155,7 @@ if (commander.plugins) {
 // Reset the desktop scaling
 //if (os.platform() === "win32") {
 app.commandLine.appendSwitch("force-device-scale-factor", "1");
+app.commandLine.appendSwitch("ignore-gpu-blacklist");
 //}
 
 // Remove the limit on the number of connections per domain
