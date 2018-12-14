@@ -10,6 +10,9 @@
 
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
+
 let SnippetsManager = (function() {
 	return function(communication, sysConfig) {
 		// private
@@ -24,8 +27,21 @@ let SnippetsManager = (function() {
 				apps: [],
 				links: []
 			},
-			status: []
+			status: [],
+
+			logging: false // true
 		};
+
+		init();
+
+		function init() {
+			if (self.logging) {
+				let logpath = sysConfig.folders.user.path;
+				let filename = `snippetlog-${Date.now()}.txt`;
+
+				self.logfile = path.join(logpath, filename);
+			}
+		}
 
 		function getDependencies() {
 			return self.config.libraries || [];
@@ -41,6 +57,8 @@ let SnippetsManager = (function() {
 
 		function updateSnippetAssociations(associations) {
 			self.associations = associations;
+
+			self.logging && log();
 		}
 
 		function getSnippetAssociations() {
@@ -49,6 +67,8 @@ let SnippetsManager = (function() {
 
 		function updateFunctionStatus(status) {
 			self.status = status;
+
+			self.logging && log();
 		}
 
 		function displayClientConnect(wsio) {
@@ -63,6 +83,22 @@ let SnippetsManager = (function() {
 
 		function sageUIClientConnect(wsio) {
 			wsio.emit("editorReceiveSnippetStates", self.status);
+		}
+
+		function log() {
+			let logentry = {
+				timestamp: Date.now(),
+				assocations: self.associations,
+				snippets: self.status
+			};
+
+			fs.appendFile(self.logfile, JSON.stringify(logentry) + "\n", err => {
+				if (err) {
+					throw err;
+				}
+
+				// file written successfully
+			});
 		}
 
 		// public

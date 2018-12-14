@@ -996,11 +996,21 @@ let SAGE2_CodeSnippets = (function() {
 				};
 			}
 
+			let child = link.getChild();
+
+			let position = {
+				x: child.sage2_x,
+				y: child.sage2_y,
+				width: child.sage2_width,
+				height: child.sage2_height
+			};
+
 			return {
 				linkID,
-				appID: link.getChild().state.snippetsID,
+				appID: child.state.snippetsID,
+				position: position,
 				snippetID: link.getSnippetID(),
-				children: link.getChild().childLinks.map((child) => {
+				children: child.childLinks.map((child) => {
 					return createSubtree(child, Object.keys(self.links).find(id => self.links[id] === child));
 				}),
 				inputs
