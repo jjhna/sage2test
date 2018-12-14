@@ -32,7 +32,7 @@ var articulate_ui = SAGE2_App.extend( {
 		this.debugMode = true;
 
 		this.currentTestCommand = 0;
-		this.listOfCommandsForTesting2 =
+		this.listOfCommandsForTesting =
 		[
 			{text: "Could I look at crimes when crimes happen for each neighborhood", targetAppId: null},//app2
 			{text: "Lets start with the activity around UIC", targetAppId: null},//app2
@@ -45,7 +45,7 @@ var articulate_ui = SAGE2_App.extend( {
 			//{text: "can I see UIC by crime type", targetAppId: null}//app9
 		];
 
-		this.listOfCommandsForTesting =
+		this.listOfCommandsForTesting2 =
 		[
 			{text: "can I see a map of theft near UIC", targetAppId: null},//app 2
 			{text:	"show me theft by year", targetAppId: null},//app 3
