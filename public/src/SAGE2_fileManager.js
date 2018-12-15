@@ -1962,7 +1962,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				});
 			} else if (f.exif.MIMEType.indexOf('sage2/session') >= 0) {
 				// It's a SAGE2 session
-				mm = moment(f.exif.FileDate, 'YYYY/MM/DD HH:mm:ssZ');
+				mm = moment(f.exif.FileDate);
 				f.exif.FileModifyDate = mm;
 				this.allTable.data.add({id: f.id,
 					name: f.exif.FileName,
@@ -1974,7 +1974,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				});
 			} else if (f.exif.MIMEType.indexOf('sage2/url') >= 0) {
 				// It's a URL
-				mm = moment(f.exif.FileDate, 'YYYY/MM/DD HH:mm:ssZ');
+				mm = moment(f.exif.FileDate);
 				f.exif.FileModifyDate = mm;
 				this.allTable.data.add({id: f.id,
 					name: f.exif.FileName,
@@ -1991,10 +1991,10 @@ function FileManager(wsio, mydiv, uniqueID) {
 						f.exif.DateTimeOriginal ||
 						f.exif.ModifyDate ||
 						f.exif.FileModifyDate;
-				mm = moment(createDate, 'YYYY:MM:DD HH:mm:ssZ');
+				mm = moment(createDate);
 				if (!mm.isValid()) {
 					// sometimes a value is not valid
-					mm = moment(f.exif.FileModifyDate, 'YYYY:MM:DD HH:mm:ssZ');
+					mm = moment(f.exif.FileModifyDate);
 				}
 				f.exif.FileModifyDate = mm;
 				this.allTable.data.add({id: f.id,

@@ -77,6 +77,7 @@
 		"systeminformation": "latest",
 		"ws": "^3.3.1",
 		"ytdl-core": "latest",
+		"exiftool-vendored": "latest",
 		"jszip": "latest"
 	},
 	"optionalDependencies": {

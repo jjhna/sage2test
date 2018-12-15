@@ -2574,12 +2574,6 @@ function listSessions() {
 		if (stat.isFile()) {
 			// doest it ends in .json
 			if (filename.indexOf(".json", filename.length - 5) >= 0) {
-				// use its change time (creation, update, ...)
-				var ad = new Date(stat.mtime);
-				var strdate = sprint("%4d/%02d/%02d %02d:%02d:%02s",
-					ad.getFullYear(), ad.getMonth() + 1, ad.getDate(),
-					ad.getHours(), ad.getMinutes(), ad.getSeconds()
-				);
 				// create path to thumbnail
 				var thumbPath = path.join(path.join(path.join("", "user"), "sessions"), ".previews");
 				// replace .json with .svg in filename
@@ -2589,7 +2583,7 @@ function listSessions() {
 					sage2URL: '/uploads/' + file,
 					exif: { FileName: file.slice(0, -5),
 						FileSize: stat.size,
-						FileDate: strdate,
+						FileDate: new Date(stat.mtime),
 						MIMEType: 'sage2/session',
 						SAGE2thumbnail: thumbPathFull
 					}
