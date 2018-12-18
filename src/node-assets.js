@@ -32,6 +32,8 @@ var json5     = require('json5');
 var mv        = require('mv');
 var chalk     = require('chalk');
 
+const sharp   = require('sharp');  // Image processing lib
+
 var exiftool  = require('../src/node-exiftool'); // gets exif tags for images
 var sageutils = require('../src/node-utils');    // provides utility functions
 var registry  = require('../src/node-registry');
@@ -231,11 +233,16 @@ var generateImageThumbnails = function(infile, outfile, sizes, index, callback) 
 		return;
 	}
 
-	imageMagick(infile + "[0]").bitdepth(8).flatten().command("convert").in("-resize", sizes[index] + "x" + sizes[index])
-		.in("-gravity", "center").in("-background", "rgb(71,71,71)")
-		.in("-extent", sizes[index] + "x" + sizes[index])
-		.in("-auto-orient")
-		.out("-quality", "70").write(outfile + '_' + sizes[index] + '.jpg', function(err) {
+	sharp(infile)
+		.resize({
+			width:  sizes[index],
+			height: sizes[index],
+			fit: "contain",
+			position: "center",
+			background: {r: 71, g: 71, b: 71, alpha: 1},
+			kernel: "lanczos2"
+		})
+		.toFile(outfile + '_' + sizes[index] + '.jpg', function(err, info) {
 			if (err) {
 				sageutils.log("Assets", "cannot generate " + sizes[index] +
 					"x" + sizes[index] + " thumbnail for:", infile);
@@ -280,7 +287,6 @@ var generatePdfThumbnails = function(infile, outfile, width, height, sizes, inde
 				sageutils.log("Assets", "cannot generate thumbnails for:" + infile + ' -- ' + err);
 				return;
 			}
-
 			generatePdfThumbnailsHelper(tmpfile, infile, outfile, sizes, index, callback);
 		});
 };
@@ -349,7 +355,7 @@ var generateAppThumbnails = function(infile, outfile, acolor, sizes, index, call
 	var corner = Math.round(sizes[index] / 6.5641);
 	var width  = Math.round(sizes[index] / 1.4382);
 	var circle = radius + " " + radius + " " + edge + " " + radius;
-	var img = corner + " " + corner + " " + width + " " + width;
+	var img    = corner + " " + corner + " " + width + " " + width;
 
 	imageMagick(sizes[index], sizes[index], "rgb(71,71,71)").command("convert")
 		.in("-fill", "rgb(" + acolor.r + "," + acolor.g + "," + acolor.b + ")")
