@@ -278,9 +278,13 @@ function pasteHandler(event) {
 				if (str.startsWith('http://') ||
 					str.startsWith('https://')) {
 					// Note very secure, but assumes it is a valid URI
-					wsio.emit('openNewWebpage', {
+					wsio.emit('addNewWebElement', {
+						type: "application/url",
+						url: str,
+						position: [0, 0],
 						id: interactor.uniqueID,
-						url: str
+						SAGE2_ptrName:  localStorage.SAGE2_ptrName,
+						SAGE2_ptrColor: localStorage.SAGE2_ptrColor
 					});
 				} else {
 					// Otherwise, use the text and create a quickNote
@@ -405,7 +409,7 @@ function SAGE2_init() {
 	// socket close event (i.e. server crashed)
 	wsio.on('close', function(evt) {
 		// show a popup
-		showSAGE2Message("Server offline");
+		showSAGE2Message("Server unreachable: you are offline or the server is down");
 		// try to reload every few seconds
 		var refresh = setInterval(function() {
 			reloadIfServerRunning(function() {
@@ -485,9 +489,13 @@ function SAGE2_init() {
 		}
 		// event coming from the extension icon ("send webpage to..."")
 		if (event.data.cmd === "openlink") {
-			wsio.emit('openNewWebpage', {
+			wsio.emit('addNewWebElement', {
+				type: "application/url",
+				url: event.data.url,
+				position: [0, 0],
 				id: interactor.uniqueID,
-				url: event.data.url
+				SAGE2_ptrName:  localStorage.SAGE2_ptrName,
+				SAGE2_ptrColor: localStorage.SAGE2_ptrColor
 			});
 		}
 		// event coming from the extension ("create quickNote from..."")
@@ -1538,9 +1546,13 @@ function handleClick(element) {
 							}
 							// if we have something valid, open a webview
 							if (url) {
-								wsio.emit('openNewWebpage', {
+								wsio.emit('addNewWebElement', {
+									type: "application/url",
+									url: url,
+									position: [0, 0],
 									id: interactor.uniqueID,
-									url: url
+									SAGE2_ptrName:  localStorage.SAGE2_ptrName,
+									SAGE2_ptrColor: localStorage.SAGE2_ptrColor
 								});
 							}
 							// close the form
@@ -1581,10 +1593,6 @@ function handleClick(element) {
 				}
 				// if we have something valid, open a webview
 				if (url) {
-					// wsio.emit('openNewWebpage', {
-					// 	id: interactor.uniqueID,
-					// 	url: url
-					// });
 					wsio.emit('addNewWebElement', {
 						type: "application/url",
 						url: url, position: [0, 0],

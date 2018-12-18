@@ -356,6 +356,19 @@ function initializeSage2Server() {
 	});
 	qr_png.pipe(fs.createWriteStream(qr_out));
 
+	// Update the web manifest for PWA support
+	var manifestFilename = path.join(__dirname, "public", "manifest.webmanifest");
+	if (sageutils.fileExists(path.resolve(manifestFilename))) {
+		// Load the existing manifest file
+		let manifest = fs.readFileSync(manifestFilename, 'utf8');
+		// Parse it
+		let parsed   = JSON.parse(manifest);
+		// Update the name with the local information
+		parsed.name  = "SAGE2 - " + (config.name || config.host);
+		// Save it back
+		fs.writeFileSync(manifestFilename, JSON.stringify(parsed, null, 4));
+	}
+
 	// Setup tmp directory for SAGE2 server
 	process.env.TMPDIR = path.join(__dirname, "tmp");
 	sageutils.log("SAGE2", "Temp folder:", chalk.yellow.bold(process.env.TMPDIR));
