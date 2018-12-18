@@ -1126,7 +1126,42 @@ var SAGE2_App = Class.extend({
 			console.log("close child: " + data.childId);
 			closeLinkedChildApp(data); //defined in runtime
 		//}
+
+
 	},
+
+	moveChildById: function (childId, x, y){
+
+		data = {
+			childId: childId,
+			id: this.id,
+			x: x,
+			y: y
+		};
+		//if( isMaster ){
+			console.log("move child");
+			moveLinkedChildApp(data); //defined in runtime
+		//}
+	},
+
+	moveAndResizeChildById: function (childId, x, y, w, h){
+
+		data = {
+			childId: childId,
+			id: this.id,
+			x: x,
+			y: y, 
+			w: w,
+			h: h, 			
+			aspectKeep: aspectKeep
+
+		};
+		//if( isMaster ){
+			console.log("move child");
+			moveAndResizeLinkedChildApp(data); //defined in runtime
+		//}
+	},
+
 
 	moveChild: function( n, x, y ){
 		if( n >= this.childList.length )
@@ -1190,7 +1225,7 @@ var SAGE2_App = Class.extend({
 
 	//convenience function: could also just look at list directly
 	getChildByIdx: function(idx){
-		console.log("" + this.getNumberOfChildren() + " " + idx);
+		//console.log("" + this.getNumberOfChildren() + " " + idx);
 		if( idx >= this.getNumberOfChildren() )
 			return null;
 		return this.childList[idx];
@@ -1198,13 +1233,24 @@ var SAGE2_App = Class.extend({
 
 	//convenience function: could also just look at list directly
 	getChildIdByIdx: function(idx){
-		console.log(idx);
+		//console.log(idx);
 		if( idx >= this.getNumberOfChildren() )
 			return null;
 		return this.childList[idx].childId;
 	},
 
-
+	getChildIdxById: function(id){
+		//console.log(this.childList);
+		//console.log(id);
+		for( i = 0; i < this.childList.length; i++){
+			//console.log(this.childList[i].childId);
+			if( this.childList[i].childId == id){
+				//console.log(i);
+				return i;
+			}
+		}
+		return null;
+	},
 
 	/**
 	* SAGE2MessageEvent method called for communication between children or parents
@@ -1228,7 +1274,8 @@ var SAGE2_App = Class.extend({
 		console.log("sage2 monitoring event");
 
 		if( data.whichType == "childMonitoring"){
-			console.log("child monitoring " + data);
+			console.log("child monitoring ")
+			console.log(data);
 
 			if( data.type == "childCloseEvent" ){//remove child
 				for(i = 0; i < this.childList.length; i++)
@@ -1239,8 +1286,13 @@ var SAGE2_App = Class.extend({
 				console.log("child open event");
 				if( data.data.success ){
 					console.log("child app launch success " + data.childId);
-					console.log(this.childList[this.childList.length-1]);
+					//console.log(this.childList[this.childList.length-1]);
 					this.childList[this.childList.length-1].childId = data.childId; //put the id into the obj
+					this.childList[this.childList.length-1].x = data.data.xPos;
+					this.childList[this.childList.length-1].y = data.data.yPos;
+					this.childList[this.childList.length-1].width = data.data.width;
+					this.childList[this.childList.length-1].height = data.data.height;
+
 				}
 				else{
 					console.log("child app launch failure " + data.childId + " success: " + data.data.success );
@@ -1248,6 +1300,35 @@ var SAGE2_App = Class.extend({
 					//remove the child
 					this.childList.splice(this.childList.length-1, 1);
 				}
+			}
+			if (data.type == "childMoveEvent") {
+				console.log("child move event");
+				
+				idx = this.getChildIdxById(data.childId); 
+				this.childList[idx].x = data.data.xPos;
+				this.childList[idx].y = data.data.yPos;
+				this.childList[idx].width = data.data.width;
+				this.childList[idx].height = data.data.height;
+			}
+			if (data.type == "childResizeEvent") {
+				console.log("child resize event");
+				
+				idx = this.getChildIdxById(data.childId); 
+				this.childList[idx].x = data.data.x;
+				this.childList[idx].y = data.data.y;
+				this.childList[idx].width = data.data.w;
+				this.childList[idx].height = data.data.h;
+			}
+			if (data.type == "childMoveAndResizeEvent") {
+				console.log("child move and resize event");
+				
+				idx = this.getChildIdxById(data.childId); 
+				console.log(idx);
+				console.log(this.childList[idx]);
+				this.childList[idx].x = data.data.x;
+				this.childList[idx].y = data.data.y;
+				this.childList[idx].width = data.data.w;
+				this.childList[idx].height = data.data.h;
 			}
 			if( data.type == "childReopenedEvent"){
 				console.log("reopened children ");

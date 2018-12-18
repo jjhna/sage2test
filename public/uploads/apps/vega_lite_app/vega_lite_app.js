@@ -10,11 +10,8 @@ var vega_lite_app = SAGE2_App.extend( {
 		// Create div into the DOM
 		this.SAGE2Init("div", data);
 
-		this.vis = d3.select(this.element).append("vis"+this.id); //needed to make the vis app and make it unique
-			//wothout the vis+this.id it would overwrite a single vis app with new data
-
 		// Set the background to black
-		this.element.style.backgroundColor = '#111111';//'ghostwhite';//'#f2f2f2';
+		this.element.style.backgroundColor = "#FFFFFF";//'#111111';//'ghostwhite';//'#f2f2f2';
 
 		// move and resize callbacks
 		this.resizeEvents = "continuous"; //sometimes resizing doesn't work
@@ -28,17 +25,15 @@ var vega_lite_app = SAGE2_App.extend( {
 		this.controls.finishedAddingControls();
 		this.enableControls = true;
 
-		this.view = null;//where we will put the view object
-
 
 		//with data
-		this.vegaCallbackFuncBar = this.vegaCallbackBar.bind(this);
-		this.vegaCallbackFuncLine = this.vegaCallbackLine.bind(this);
+	//	this.vegaCallbackFuncBar = this.vegaCallbackBar.bind(this);
+	//	this.vegaCallbackFuncLine = this.vegaCallbackLine.bind(this);
 
 		//these are default specs that we overwrite with the data from the articulate ui
-		this.initBarSpec();
-		this.initLineSpec();
-		console.log(this.state.title);
+	//	this.initBarSpec();
+	//	this.initLineSpec();
+	//	console.log(this.state.title);
 		this.updateTitle(this.state.title);
 
 		//access the data from the articualte ui that we need to draw this properly
@@ -66,29 +61,35 @@ var vega_lite_app = SAGE2_App.extend( {
 		//VEGA LITE APPROACH
 
 		var vlSpec = {
-     "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
-     "data": {
-       "values": [
-         {"a": "C", "b": 2}, {"a": "C", "b": 7}, {"a": "C", "b": 4},
-         {"a": "D", "b": 1}, {"a": "D", "b": 2}, {"a": "D", "b": 6},
-         {"a": "E", "b": 8}, {"a": "E", "b": 4}, {"a": "E", "b": 7}
-       ]
-     },
-     "mark": "bar",
-     "encoding": {
-       "y": {"field": "a", "type": "nominal"},
-       "x": {
-         "aggregate": "average", "field": "b", "type": "quantitative",
-         "axis": {
-           "title": "Average of b"
-         }
-       }
-     }
+		 "width": this.element.clientWidth,
+		 "height": this.element.clientHeight,
+		 "autosize": {
+			 "type": "fit",
+			 "contains": "padding"
+		 },
+		 "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
+		   "description": "A simple bar chart with embedded data.",
+		   "data": {
+		     "values": [
+		       {"a": "A","b": 28}, {"a": "B","b": 55}, {"a": "C","b": 43},
+		       {"a": "D","b": 91}, {"a": "E","b": 81}, {"a": "F","b": 53},
+		       {"a": "G","b": 19}, {"a": "H","b": 87}, {"a": "I","b": 52}
+		     ]
+		   },
+		   "mark": "bar",
+		   "encoding": {
+		     "x": {"field": "a", "type": "ordinal"},
+		     "y": {"field": "b", "type": "quantitative"}
+		   }
+
    };
 
-	 this.vega = d3.select(this.element).append('div').attr('id', "vega"+this.id);
+	 this.vega = d3.select(this.element).append('div')
+	 											.attr('id', "vega"+this.id)
+												.style("width", this.element.clientWidth+"px")
+												.style("height", this.element.clientHeight+"px");
 
-   vegaEmbed("#vega"+this.id, vlSpec);
+   vegaEmbed(this.vega, vlSpec);
 
 	},
 

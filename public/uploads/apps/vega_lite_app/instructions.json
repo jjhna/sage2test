@@ -1,7 +1,7 @@
 {
 	"main_script": "vega_lite_app.js",
 	"icon": "vega_lite_app.png",
-	"width": 2000,
+	"width": 1000,
 	"height": 800,
 	"resize": "free",
 	"dependencies": [

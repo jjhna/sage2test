@@ -46,6 +46,19 @@ var vega_vis_app = SAGE2_App.extend( {
 			this.barSpec.axes[0].title = this.state.x;
 			this.barSpec.axes[1].title = this.state.y;
 			this.barSpec.data[0].values = this.state.data;
+
+			if( this.barSpec.data[0].values.length < 2 )
+			{
+				this.sendResize(300, this.element.clientHeight);
+			}			
+			else if( this.barSpec.data[0].values.length < 3 )
+			{
+				this.sendResize(500, this.element.clientHeight);
+			}
+			else if( this.barSpec.data[0].values.length < 10 )
+			{
+				this.sendResize(1000, this.element.clientHeight);
+			}
 			this.parseBar(this.barSpec);
 
 		}

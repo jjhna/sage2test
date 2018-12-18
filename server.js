@@ -1230,6 +1230,8 @@ function setupListeners(wsio) {
 	wsio.on('closeLinkedChildApp',									wsCloseLinkedChildApp);
 	wsio.on('moveLinkedChildApp',										wsMoveLinkedChildApp);
 	wsio.on('resizeLinkedChildApp',									wsResizeLinkedChildApp);
+	wsio.on('moveAndResizeLinkedChildApp',							wsMoveAndResizeLinkedChildApp);
+
 
 	//articulate input service
 	//voice command from VoiceUI
@@ -2558,6 +2560,56 @@ function wsAppMoveTo(wsio, data) {
 	}
 }
 
+function wsAppMoveAndesize(wsio, data){
+	if (SAGE2Items.applications.list.hasOwnProperty(data.id)) {
+		var app = SAGE2Items.applications.list[data.id];
+		// Values in percent if smaller than 1
+		if (data.x > 0 && data.x <= 1) {
+			data.x = Math.round(data.x * config.totalWidth);
+		}
+		if (data.y > 0 && data.y <= 1) {
+			data.y = Math.round(data.y * config.totalHeight);
+		}
+		app.left = data.x;
+		app.top  = data.y;
+
+
+		// Values in percent if smaller than 1
+		if (data.width > 0 && data.width <= 1) {
+			data.width = Math.round(data.width * config.totalWidth);
+		}
+		if (data.height > 0 && data.height <= 1) {
+			data.height = Math.round(data.height * config.totalHeight);
+		}
+
+		// Update the width height and aspect ratio
+		if (sageutils.isTrue(data.keepRatio)) {
+			// we use the width as leading the calculation
+			app.width  = data.width;
+			app.height = data.width / app.aspect;
+		} else {
+			app.width  = data.width;
+			app.height = data.height;
+			app.aspect = app.width / app.height;
+			app.native_width  = data.width;
+			app.native_height = data.height;
+		}
+
+		// build the object to be sent
+		var updateItem = {
+			elemId: app.id,
+			elemLeft: app.left,
+			elemTop: app.top,
+			elemWidth: app.width,
+			elemHeight: app.height,
+			force: true,
+			date: Date.now()
+		};
+		moveAndResizeApplicationWindow(updateItem);
+	}
+}
+
+
 //
 // Application request fullscreen
 //
@@ -3232,7 +3284,7 @@ function wsLaunchLinkedChildApp(wsio, data) {
 		}
 
 		// send message to parent that child created
-		sendChildMonitoringEvent(data.id, appInstance.id, "childOpenEvent", {success: true});
+		sendChildMonitoringEvent(data.id, appInstance.id, "childOpenEvent", {success: true, xPos: position[0], yPos: position[1], width: appInstance.width, height: appInstance.height});
 
 		// copied from wsLoadApplication
 		addEventToUserLog(data.user, {type: "openApplication", data:
@@ -3295,6 +3347,31 @@ function wsResizeLinkedChildApp(wsio, data) {
 
 	if( canContinue ){
 		wsAppResize(null, {id: childId, width: data.w, height: data.h, keepRatio: data.aspectKeep});
+
+		var im = findInteractableManager(childId);
+		im.moveObjectToFront(childId, "applications", ["portals"]);
+		var stickyList = stickyAppHandler.getStickingItems(childId);
+		for (var idx in stickyList) {
+			im.moveObjectToFront(stickyList[idx].id, obj.layerId);
+		}
+		var newOrder = im.getObjectZIndexList("applications", ["portals"]);
+		broadcast('updateItemOrder', newOrder);
+
+	}
+}
+
+// this function is called when a parent app wants to launch a child app
+function wsMoveAndResizeLinkedChildApp(wsio, data) {
+	//make sure this is a valid parent
+	console.log("more and resize child " + data.childId + " x:" + data.x + " y:" + data.y + " w:" + data.w + " h:" + data.h);
+	// get id of child and parent from data passed from the parent
+	var parentId = data.id; // from
+	var childId = data.childId; // to
+
+	var canContinue = validParentChildPair(parentId, childId);
+
+	if( canContinue ){
+		wsAppMoveAndResize(null, {id: childId, x: data.x, y: data.y, width: data.w, height: data.h, keepRatio: data.aspectKeep});
 
 		var im = findInteractableManager(childId);
 		im.moveObjectToFront(childId, "applications", ["portals"]);
@@ -8797,7 +8874,7 @@ function moveApplicationWindow(uniqueID, moveApp, portalId) {
 		// check parent monitoring
 		if (isAChildApp(moveApp.elemId)) {
 			sendChildMonitoringEvent(getParentApp(moveApp.elemId), moveApp.elemId, "childMoveEvent",
-				{x: moveApp.elemLeft, y: moveApp.elemTop});
+				{x: moveApp.elemLeft, y: moveApp.elemTop, w: moveApp.elemWidth, h: moveApp.elemHeight});
 		}
 
 		if (portalId !== undefined && portalId !== null) {
