@@ -314,10 +314,17 @@ var generateVideoThumbnails = function(infile, outfile, width, height, sizes, in
 		})
 		.on('end', function() {
 			var tmpImg = outfile + '_' + size + '_1.jpg';
-			imageMagick(tmpImg).command("convert").in("-resize", sizes[index] + "x" + sizes[index])
-				.in("-gravity", "center").in("-background", "rgb(71,71,71)")
-				.in("-extent", sizes[index] + "x" + sizes[index])
-				.out("-quality", "70").write(outfile + '_' + sizes[index] + '.jpg', function(err) {
+
+			sharp(tmpImg)
+				.resize({
+					width:  sizes[index],
+					height: sizes[index],
+					fit: "contain",
+					position: "center",
+					background: {r: 71, g: 71, b: 71, alpha: 1},
+					kernel: "lanczos2"
+				})
+				.toFile(outfile + '_' + sizes[index] + '.jpg', function(err, info) {
 					if (err) {
 						sageutils.log("Assets", "cannot generate " + sizes[index] + "x" +
 							sizes[index] + " thumbnail for:", infile);
