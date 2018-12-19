@@ -4,18 +4,54 @@
 //
 // Copyright (c) 2015
 //
-
+"use strict";
 var vega_lite_app = SAGE2_App.extend( {
 	init: function(data) {
 		// Create div into the DOM
 		this.SAGE2Init("div", data);
 
+		this.element.id = "div_" + data.id;
 		// Set the background to black
-		this.element.style.backgroundColor = "#FFFFFF";//'#111111';//'ghostwhite';//'#f2f2f2';
+		this.element.style.backgroundColor = 'white';
 
 		// move and resize callbacks
-		this.resizeEvents = "continuous"; //sometimes resizing doesn't work
-		this.moveEvents   = "continuous";
+		this.resizeEvents = "onfinish"; // continuous
+
+		this.content = document.createElement("div");
+		this.content.style.width = "100%";
+		this.content.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+		this.content.style.position = "absolute";
+		this.content.style.boxSizing = "border-box";
+		this.content.style.left = "0";
+		this.content.style.top = ui.titleBarHeight * 1.5 + "px";
+		this.content.style.overflow = "hidden";
+
+		this.element.appendChild(this.content);
+
+		let inputs = document.createElement("div");
+		inputs.className = "snippetsInputWrapper";
+		inputs.style.position = "absolute";
+		inputs.style.left = this.sage2_width + "px";
+		inputs.style.top = "0";
+		inputs.style.width = "300px";
+		inputs.style.minHeight = "100%";
+		inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
+		inputs.style.boxSizing = "border-box";
+		inputs.style.background = "lightgray";
+
+		this.inputs = inputs;
+		this.element.appendChild(inputs);
+
+		// move and resize callbacks
+		this.resizeEvents = "onfinish"; // continuous
+
+	
+		// Set the background to black
+		//this.element.style.backgroundColor = "#FFFFFF";//'#111111';//'ghostwhite';//'#f2f2f2';
+
+		// move and resize callbacks
+		//this.resizeEvents = "continuous"; //sometimes resizing doesn't work
+		//this.moveEvents   = "continuous";
 
 		// SAGE2 Application Settings
 		//
@@ -61,35 +97,70 @@ var vega_lite_app = SAGE2_App.extend( {
 		//VEGA LITE APPROACH
 
 		var vlSpec = {
-		 "width": this.element.clientWidth,
-		 "height": this.element.clientHeight,
+			      "$schema": "https://vega.github.io/schema/vega-lite/v2.json",
+
+		 "width": 200,
+		 "height": 200,
 		 "autosize": {
 			 "type": "fit",
 			 "contains": "padding"
 		 },
-		 "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
-		   "description": "A simple bar chart with embedded data.",
-		   "data": {
-		     "values": [
-		       {"a": "A","b": 28}, {"a": "B","b": 55}, {"a": "C","b": 43},
-		       {"a": "D","b": 91}, {"a": "E","b": 81}, {"a": "F","b": 53},
-		       {"a": "G","b": 19}, {"a": "H","b": 87}, {"a": "I","b": 52}
-		     ]
-		   },
-		   "mark": "bar",
-		   "encoding": {
-		     "x": {"field": "a", "type": "ordinal"},
-		     "y": {"field": "b", "type": "quantitative"}
-		   }
-
+      "description": "A simple bar chart with embedded data.",
+      "data": {
+        "values": [
+          {"a": "A","b": 28}, {"a": "B","b": 55}, {"a": "C","b": 43},
+          {"a": "D","b": 91}, {"a": "E","b": 81}, {"a": "F","b": 53},
+          {"a": "G","b": 19}, {"a": "H","b": 87}, {"a": "I","b": 52}
+        ]
+      },
+      "mark": "bar",
+      "encoding": {
+        "x": {"field": "a", "type": "ordinal"},
+        "y": {"field": "b", "type": "quantitative"}
+      }
    };
 
-	 this.vega = d3.select(this.element).append('div')
-	 											.attr('id', "vega"+this.id)
-												.style("width", this.element.clientWidth+"px")
-												.style("height", this.element.clientHeight+"px");
+   var v2Spec = {
+  "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
+  "description": "A simple bar chart with embedded data.",
+  "width": 360,
+  "data": {
+    "values": [
+      {"a": "A","b": 28}, {"a": "B","b": 55}, {"a": "C","b": 43},
+      {"a": "D","b": 91}, {"a": "E","b": 81}, {"a": "F","b": 53},
+      {"a": "G","b": 19}, {"a": "H","b": 87}, {"a": "I","b": 52}
+    ]
+  },
+  "mark": "bar",
+  "encoding": {
+    "x": {"field": "a", "type": "ordinal"},
+    "y": {"field": "b", "type": "quantitative"},
+    "tooltip": {"field": "b", "type": "quantitative"}
+  }
+};
 
-   vegaEmbed(this.vega, vlSpec);
+	// this.vega = d3.select(this.element).append('div')
+	 											//.attr('id', "vega"+this.id);
+												//.style("width", this.element.clientWidth+"px")
+												//.style("height", this.element.clientHeight+"px")
+												//.style("display", "inline-block")
+												//.style("background", "white")
+												//.style("overflow", "hidden")
+												//.style("margin","10px")
+												//.style("order", "-1");
+
+
+		//this.vega.style.width = "100%";
+		//this.vega.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+		//this.vega.style.position = "absolute";
+		//this.vega.style.boxSizing = "border-box";
+		//this.vega.style.left = "0";
+		//this.vega.style.top = ui.titleBarHeight * 1.5 + "px";
+		//this.vega.style.overflow = "hidden";
+		
+		
+
+   		vegaEmbed(this.element, v2Spec);
 
 	},
 

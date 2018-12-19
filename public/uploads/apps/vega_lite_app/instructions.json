@@ -5,11 +5,12 @@
 	"height": 800,
 	"resize": "free",
 	"dependencies": [
-		"scripts/vega.js",
-		"scripts/embed.js",
-		"scripts/vegalite.js",
+		"scripts/vega@4.3.0.js",
+		"scripts/vega-lite@3.0.0-rc8.js",
+
+		"scripts/vega-embed@3.js",
 		"scripts/d3.min.js"
-	],
+			],
 	"load": {
 		"value": 4,
 		"type": "bar",

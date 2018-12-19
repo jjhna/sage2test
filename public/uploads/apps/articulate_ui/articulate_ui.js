@@ -562,7 +562,7 @@ console.log("debugDatagram: "+ data);
 					this.systemInstruction = ">> Cannot understand the request! Try again . . .";
 					console.log("Cannot understand the request! Try again");
 					this.refresh();
-			}
+				}
 			}
 			//then broadcast the results to display nodes!
 			//broadcast( "handleResponse", {response:"responseTest"} );
