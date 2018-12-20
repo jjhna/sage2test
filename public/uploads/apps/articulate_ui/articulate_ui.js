@@ -476,19 +476,19 @@ console.log("debugDatagram: "+ data);
 			this.final_url = url + "&jsessionid=" + this.sessionId;
 			//final_url = url + ";jsessionid=" + this.responces[requestIndex-1].sessionId;
 			//}
-			console.log("supsequent call " + final_url);
+			console.log("supsequent call " + this.final_url);
 			xhr.withCredentials = true;
 			if( isMaster || !this.useMaster){
-					xhr.open("GET", final_url, true);
+					xhr.open("GET", this.final_url, true);
 			}
 
 		} else {
 			this.final_url = url + "&isnewsession=True";
 
-			console.log("first call " + final_url);
+			console.log("first call " + this.final_url);
 			xhr.withCredentials = true;
 			if( isMaster || !this.useMaster){
-					xhr.open("GET", final_url, true);
+					xhr.open("GET", this.final_url, true);
 			}
 		}
 
