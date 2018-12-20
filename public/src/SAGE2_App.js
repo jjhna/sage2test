@@ -1088,7 +1088,7 @@ var SAGE2_App = Class.extend({
 			childId: "",
 			initState: initState,  //note: doesn't get updated as child's state changes...
 		};
-		this.childList.push( data );
+		//this.childList.push( data );
 		if( isMaster ){
 			launchLinkedChildApp(data); //defined in runtime
 		}
@@ -1286,12 +1286,16 @@ var SAGE2_App = Class.extend({
 				console.log("child open event");
 				if( data.data.success ){
 					console.log("child app launch success " + data.childId);
+					console.log("child data:");
+					console.log(data);
+					childInfo = { childId: data.childId, x: data.data.xPos, y: data.data.yPos, w:  data.data.width, h:  data.data.height, initState: data.data };
+					this.childList.push( childInfo );
 					//console.log(this.childList[this.childList.length-1]);
-					this.childList[this.childList.length-1].childId = data.childId; //put the id into the obj
-					this.childList[this.childList.length-1].x = data.data.xPos;
-					this.childList[this.childList.length-1].y = data.data.yPos;
-					this.childList[this.childList.length-1].width = data.data.width;
-					this.childList[this.childList.length-1].height = data.data.height;
+					//this.childList[this.childList.length-1].childId = data.childId; //put the id into the obj
+					//this.childList[this.childList.length-1].x = data.data.xPos;
+					//this.childList[this.childList.length-1].y = data.data.yPos;
+					//this.childList[this.childList.length-1].width = data.data.width;
+					//this.childList[this.childList.length-1].height = data.data.height;
 
 				}
 				else{
@@ -1307,8 +1311,8 @@ var SAGE2_App = Class.extend({
 				idx = this.getChildIdxById(data.childId); 
 				this.childList[idx].x = data.data.xPos;
 				this.childList[idx].y = data.data.yPos;
-				this.childList[idx].width = data.data.width;
-				this.childList[idx].height = data.data.height;
+				this.childList[idx].w = data.data.width;
+				this.childList[idx].w = data.data.height;
 			}
 			if (data.type == "childResizeEvent") {
 				console.log("child resize event");
@@ -1316,8 +1320,8 @@ var SAGE2_App = Class.extend({
 				idx = this.getChildIdxById(data.childId); 
 				this.childList[idx].x = data.data.x;
 				this.childList[idx].y = data.data.y;
-				this.childList[idx].width = data.data.w;
-				this.childList[idx].height = data.data.h;
+				this.childList[idx].w = data.data.w;
+				this.childList[idx].w = data.data.h;
 			}
 			if (data.type == "childMoveAndResizeEvent") {
 				console.log("child move and resize event");
@@ -1327,21 +1331,21 @@ var SAGE2_App = Class.extend({
 				console.log(this.childList[idx]);
 				this.childList[idx].x = data.data.x;
 				this.childList[idx].y = data.data.y;
-				this.childList[idx].width = data.data.w;
-				this.childList[idx].height = data.data.h;
+				this.childList[idx].w = data.data.w;
+				this.childList[idx].w = data.data.h;
 			}
 			if( data.type == "childReopenedEvent"){
 				console.log("reopened children ");
-				childData = {
-					applicationType: data.childAppType,
-					application: data.childAppName,
-					user: "parentApp", //would be nice to have actual app name... or sth
-					id: this.id,
-					msg: data.msg,
-					childId: data.childId,
-					initState: data.initState
-				};
-				this.childList.push(childData);
+				//childData = {
+				//	applicationType: data.childAppType,
+				//		application: data.childAppName,
+				//	user: "parentApp", //would be nice to have actual app name... or sth
+				//	id: this.id,
+				//	msg: data.msg,
+				//	childId: data.childId,
+				//	initState: data.initState
+				//};
+				//this.childList.push(childData);
 			}
 			if( typeof this.childMonitorEvent != "undefined") {
     			this.childMonitorEvent(data.childId, data.type, data.data, data.date);

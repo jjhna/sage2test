@@ -18,8 +18,8 @@ var vega_lite_app = SAGE2_App.extend( {
 		this.resizeEvents = "onfinish"; // continuous
 
 		this.content = document.createElement("div");
-		this.content.style.width = "100%";
-		this.content.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+		this.content.style.width = 400 + "px";
+		this.content.style.height = 400 + "px";
 		this.content.style.position = "absolute";
 		this.content.style.boxSizing = "border-box";
 		this.content.style.left = "0";
@@ -31,14 +31,13 @@ var vega_lite_app = SAGE2_App.extend( {
 		let inputs = document.createElement("div");
 		inputs.className = "snippetsInputWrapper";
 		inputs.style.position = "absolute";
-		inputs.style.left = this.sage2_width + "px";
-		inputs.style.top = "0";
-		inputs.style.width = "300px";
+		inputs.style.left = "0px";
+		inputs.style.top = "0px";
+		inputs.style.width = "100%";
 		inputs.style.minHeight = "100%";
 		inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 		inputs.style.boxSizing = "border-box";
-		inputs.style.background = "lightgray";
-
+		
 		this.inputs = inputs;
 		this.element.appendChild(inputs);
 
@@ -123,7 +122,12 @@ var vega_lite_app = SAGE2_App.extend( {
    var v2Spec = {
   "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
   "description": "A simple bar chart with embedded data.",
-  "width": 360,
+  "width": 800,
+  "height": 600,
+ "autosize": {
+    "type": "fit",
+    "contains": "padding"
+  },
   "data": {
     "values": [
       {"a": "A","b": 28}, {"a": "B","b": 55}, {"a": "C","b": 43},
@@ -160,7 +164,7 @@ var vega_lite_app = SAGE2_App.extend( {
 		
 		
 
-   		vegaEmbed(this.element, v2Spec);
+   		vegaEmbed(this.inputs, v2Spec);
 
 	},
 

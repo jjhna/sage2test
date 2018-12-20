@@ -3284,7 +3284,7 @@ function wsLaunchLinkedChildApp(wsio, data) {
 		}
 
 		// send message to parent that child created
-		sendChildMonitoringEvent(data.id, appInstance.id, "childOpenEvent", {success: true, xPos: position[0], yPos: position[1], width: appInstance.width, height: appInstance.height});
+		sendChildMonitoringEvent(data.id, appInstance.id, "childOpenEvent", {success: true, xPos: position[0], yPos: position[1], width: appInstance.width, height: appInstance.height, initState: appInstance.data});
 
 		// copied from wsLoadApplication
 		addEventToUserLog(data.user, {type: "openApplication", data:
