@@ -312,15 +312,15 @@ var generatePdfThumbnail = function(infile, outfile, width, height, sizes, index
 	// 		generatePdfThumbnailsHelper(tmpfile, infile, outfile, sizes, index, callback);
 	// 	});
 
-	// Read the PDF file into a typed array so PDF.js can load it.
+	// Read the PDF file into a typed array so PDF.js can load it
 	var rawData = new Uint8Array(fs.readFileSync(infile));
 
-	// Load the PDF file.
+	// Load the PDF file
 	var loadingTask = pdfjsLib.getDocument(rawData);
 	loadingTask.promise.then(function(pdfDocument) {
-		// Get the first page.
+		// Get the first page
 		pdfDocument.getPage(1).then(function (page) {
-			// Render the page on a Node canvas with 100% scale.
+			// Render the page on a Node canvas with 100% scale
 			var viewport = page.getViewport(1.0);
 			var canvasFactory = new NodeCanvasFactory();
 			var canvasAndContext =
@@ -328,12 +328,12 @@ var generatePdfThumbnail = function(infile, outfile, width, height, sizes, index
 			var renderContext = {
 				canvasContext: canvasAndContext.context,
 				viewport: viewport,
-				canvasFactory: canvasFactory,
+				canvasFactory: canvasFactory
 			};
 
 			var renderTask = page.render(renderContext);
 			renderTask.promise.then(function() {
-				// Convert the canvas to an image buffer.
+				// Convert the canvas to an image buffer
 				var image = canvasAndContext.canvas.toBuffer();
 
 				fs.writeFileSync(tmpfile, image);
@@ -1245,32 +1245,28 @@ var moveAsset = function(source, destination, callback) {
 function NodeCanvasFactory() {}
 NodeCanvasFactory.prototype = {
 	create: function NodeCanvasFactory_create(width, height) {
-		// assert(width > 0 && height > 0, 'Invalid canvas size');
 		var canvas = new Canvas.createCanvas(width, height);
 		var context = canvas.getContext('2d');
 		return {
 			canvas: canvas,
-			context: context,
+			context: context
 		};
 	},
 
 	reset: function NodeCanvasFactory_reset(canvasAndContext, width, height) {
-		// assert(canvasAndContext.canvas, 'Canvas is not specified');
-		// assert(width > 0 && height > 0, 'Invalid canvas size');
 		canvasAndContext.canvas.width  = width;
 		canvasAndContext.canvas.height = height;
 	},
 
 	destroy: function NodeCanvasFactory_destroy(canvasAndContext) {
-		// assert(canvasAndContext.canvas, 'Canvas is not specified');
 
 		// Zeroing the width and height cause Firefox to release graphics
-		// resources immediately, which can greatly reduce memory consumption.
+		// resources immediately, which can greatly reduce memory consumption
 		canvasAndContext.canvas.width  = 0;
 		canvasAndContext.canvas.height = 0;
 		canvasAndContext.canvas  = null;
 		canvasAndContext.context = null;
-	},
+	}
 };
 
 exports.initialize     = initialize;
