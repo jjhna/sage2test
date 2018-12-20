@@ -81,8 +81,8 @@ var articulate_ui = SAGE2_App.extend( {
 
 			//{text: "PART 2b", targetAppId: null},//Q4, app7
 
-			{text: "Can you show the same chart for days of the week?", targetAppId: "app_2"},  // app 8
-			{text: "Can you show this graph for months of year?", targetAppId: "app_2"}, // app 9
+			//{text: "Can you show the same chart for days of the week?", targetAppId: "app_2"},  // app 8
+			//{text: "Can you show this graph for months of year?", targetAppId: "app_2"}, // app 9
 
 			{text: "Can you move it", targetAppId: "app_2"}, 
 			{text: "Can you minimize it?", targetAppId: "app_2"},
@@ -413,7 +413,9 @@ console.log("debugDatagram: "+ data);
 				console.log(targetAppID);
 				if(this.childList[i]["childId"] == targetAppID){
 					console.log("FOUND THE TARGET");
-					targetHubId = this.childList[i]["initState"]["hub_id"];
+					console.log(this.childList[i]);
+					targetHubId = this.childList[i]["initState"]["initState"]["hub_id"];
+					console.log(targetHubId);
 				}
 			}
 		}
@@ -554,7 +556,7 @@ console.log("debugDatagram: "+ data);
 			}
 			else if(specObj["dataQuery"] == null){
 
-				if( specObj["request"] == "close.01" ){
+				if( specObj["request"] == "close.01" || specObj["request"] == "need.01"){
 					console.log("close");
 					this.readExample3(specObj);
 				}
@@ -590,7 +592,7 @@ console.log("debugDatagram: "+ data);
 		console.log("######################################")
 
 		if( specificationObj["requestType"] == "Layout" ){
-			if( specificationObj["request"] == "close.01"){
+			if( specificationObj["request"] == "close.01" || specObj["request"] == "need.01"){
 				console.log("CLOSE");
 				console.log(specificationObj["targetId"]);
 				hubId = specificationObj["targetId"];
@@ -1204,7 +1206,7 @@ console.log("debugDatagram: "+ data);
 	closeChildByHubId: function(hubId){
 		for(var key in this.childList)
 		{
-			if(this.childList[key]["initState"]["hub_id"] == hubId){
+			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
 				var closeAppIndex = this.childList.indexOf(this.childList[key]);
 				//this.closeChild(closeAppIndex);
 				this.closeChildById(this.childList[key].childId);
@@ -1217,11 +1219,11 @@ console.log("debugDatagram: "+ data);
 	moveChildByHubId: function(hubId){
 		for(var key in this.childList)
 		{
-			if(this.childList[key]["initState"]["hub_id"] == hubId){
+			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
 				var moveAppIndex = this.childList.indexOf(this.childList[key]);
 				//this.closeChild(closeAppIndex);
-				newX = this.childList[key].x+200;
-				newY = this.childList[key].y+200;
+				newX = this.childList[key].x+400;
+				newY = this.childList[key].y+400;
 
 				this.moveChildById(this.childList[key].childId, newX, newY);
 				console.log("Move "+this.childList[key].childId);
@@ -1233,7 +1235,7 @@ console.log("debugDatagram: "+ data);
 	minimizeChildByHubId: function(hubId){
 		for(var key in this.childList)
 		{
-			if(this.childList[key]["initState"]["hub_id"] == hubId){
+			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
 				var moveAppIndex = this.childList.indexOf(this.childList[key]);
 				//this.closeChild(closeAppIndex);
 				newX = 5000;//this.childList[key].x+200;
