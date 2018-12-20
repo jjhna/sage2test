@@ -759,7 +759,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 										// if it is from a session
 										return "<img src='" + obj.image + "' style='width:100%;'></img>";
 									}
-									return "<img src='" + obj.image + "_256.jpg' style='width:100%;'></img>";
+									return "<img src='" + obj.image + "_512.jpg' style='width:100%;'></img>";
 								}
 								return "";
 							}
@@ -1068,7 +1068,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			context.html = "<div style='padding:8px;background:#d3e3ef'>";
 			if (context.source.length === 1) {
 				elt = _this.allFiles[context.start];
-				context.html += '<img width=96 src="' + elt.exif.SAGE2thumbnail + '_256.jpg" />';
+				context.html += '<img width=96 src="' + elt.exif.SAGE2thumbnail + '_512.jpg" />';
 				context.html += '<br>' + elt.exif.FileName;
 			} else {
 				for (var i = 0; i < Math.min(context.source.length, 35); i++) {

@@ -962,7 +962,7 @@ AppLoader.prototype.loadApplicationFromRemoteServer = function(application, call
 
 AppLoader.prototype.loadFileFromWebURL = function(file, callback) {
 	// Add the URL in the asset DB
-	var appIcon = path.resolve('public', 'images', 'link_256.png');
+	var appIcon = path.resolve('public', 'images', 'link_512.png');
 	var urlName = file.url;
 	// build a fake EXIF structure
 	var exif = {FileName: urlName, icon: appIcon, MIMEType: "sage2/url",

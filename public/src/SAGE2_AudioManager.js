@@ -325,9 +325,9 @@ function setupListeners() {
 			icon.setAttribute("rowspan", 2);
 			var link = document.createElement("img");
 			if (data.icon) {
-				link.src = data.icon + '_256.jpg';
+				link.src = data.icon + '_512.jpg';
 			} else {
-				link.src = "images/unknownapp_256.jpg";
+				link.src = "images/unknownapp_512.jpg";
 			}
 			link.width = 120;
 			icon.appendChild(link);

@@ -709,7 +709,7 @@ function setupListeners() {
 				appIcon.id = "available_app_icon_" + appname;
 				appIcon.setAttribute("application", appname);
 				appIcon.setAttribute("appfullpath", fullpath);
-				appIcon.src = data[i + j].exif.SAGE2thumbnail + "_256.jpg";
+				appIcon.src = data[i + j].exif.SAGE2thumbnail + "_512.jpg";
 				appIcon.width = parseInt(size * 0.8, 10);
 				appIcon.height = parseInt(size * 0.8, 10);
 				var appName = document.createElement('p');
@@ -1780,7 +1780,7 @@ function handleClick(element) {
 		var metadata = document.getElementById('metadata');
 		var size = Math.min(parseInt(metadata.style.width, 10), parseInt(metadata.style.height, 10)) * 0.9 - 32;
 		var thumbnail = document.getElementById('thumbnail');
-		thumbnail.src = selectedFileEntry.getAttribute("thumbnail") + "_256.jpg";
+		thumbnail.src = selectedFileEntry.getAttribute("thumbnail") + "_512.jpg";
 		thumbnail.width = size;
 		thumbnail.height = size;
 		var metadata_text = document.getElementById('metadata_text');

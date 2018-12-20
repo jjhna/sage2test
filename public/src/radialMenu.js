@@ -875,10 +875,6 @@ function RadialMenu() {
 					if (thumbButton.isPositionOver(user.id, thumbEventPos)) {
 						this.hoverOverText = thumbButton.getData().shortname;
 						this.hoverOverThumbnail = thumbButton.buttonImage;
-
-						if (thumbButton.buttonImage.lsrc) {
-							this.hoverOverThumbnail.src = thumbButton.buttonImage.lsrc;
-						}
 						this.hoverOverMeta = thumbButton.getData().meta;
 					}
 					// Only occurs on first pointerMove event over button
@@ -1065,8 +1061,7 @@ function RadialMenu() {
 					// Thumbnail image
 					if (imageList[i].exif.SAGE2thumbnail !== null) {
 						customIcon = new Image();
-						customIcon.lsrc = imageList[i].exif.SAGE2thumbnail + "_512.jpg";
-						customIcon.src = imageList[i].exif.SAGE2thumbnail + "_256.jpg";
+						customIcon.src = imageList[i].exif.SAGE2thumbnail + "_512.jpg";
 						thumbnailButton.setButtonImage(customIcon);
 						thumbnailButton.setDefaultImage(radialMenuIcons["images/ui/images.svg"]);
 					} else {
@@ -1105,8 +1100,7 @@ function RadialMenu() {
 				// Thumbnail image
 				if (pdfList[i].exif.SAGE2thumbnail !== null) {
 					customIcon = new Image();
-					customIcon.lsrc = pdfList[i].exif.SAGE2thumbnail + "_512.jpg";
-					customIcon.src = pdfList[i].exif.SAGE2thumbnail + "_256.jpg";
+					customIcon.src = pdfList[i].exif.SAGE2thumbnail + "_.jpg";
 					thumbnailButton.setButtonImage(customIcon);
 					thumbnailButton.setDefaultImage(radialMenuIcons["images/ui/pdfs.svg"]);
 				} else {
@@ -1142,8 +1136,7 @@ function RadialMenu() {
 				// Thumbnail image
 				if (videoList[i].exif.SAGE2thumbnail !== null) {
 					customIcon = new Image();
-					customIcon.lsrc = videoList[i].exif.SAGE2thumbnail + "_512.jpg";
-					customIcon.src  = videoList[i].exif.SAGE2thumbnail + "_256.jpg";
+					customIcon.src  = videoList[i].exif.SAGE2thumbnail + "_512.jpg";
 					thumbnailButton.setButtonImage(customIcon);
 					thumbnailButton.setDefaultImage(radialMenuIcons["images/ui/videos.svg"]);
 				} else {
@@ -1178,8 +1171,7 @@ function RadialMenu() {
 
 				if (appList[i].exif.SAGE2thumbnail !== null) {
 					customIcon = new Image();
-					customIcon.lsrc = appList[i].exif.SAGE2thumbnail + "_512.jpg";
-					customIcon.src = appList[i].exif.SAGE2thumbnail + "_256.jpg";
+					customIcon.src = appList[i].exif.SAGE2thumbnail + "_512.jpg";
 					thumbnailButton.setButtonImage(customIcon);
 					thumbnailButton.setDefaultImage(radialMenuIcons["images/ui/applauncher.svg"]);
 				} else {

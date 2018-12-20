@@ -2787,8 +2787,8 @@ function saveSession(filename) {
 		height = config.totalHeight,
 		box = "0,0," + width + "," + height;
 
-	var svg = "<svg width=\"" + 256 +
-		"\" height=\"" + 256 +
+	var svg = "<svg width=\"" + 512 +
+		"\" height=\"" + 512 +
 		"\" viewBox=\"" + box +
 		"\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" " +
 		"xmlns:xlink=\"http://www.w3.org/1999/xlink\">";
@@ -2828,10 +2828,10 @@ function saveSession(filename) {
 		var iconPath;
 		if (ap.icon) {
 			// the application has a icon defined
-			iconPath = path.join(mainFolder.path, path.relative("/user", ap.icon)) + "_256.jpg";
+			iconPath = path.join(mainFolder.path, path.relative("/user", ap.icon)) + "_512.jpg";
 		} else {
 			// application does not have an icon (for instance, shared applciation)
-			iconPath = path.join(mainFolder.path, "assets/apps/unknownapp") + "_256.jpg";
+			iconPath = path.join(mainFolder.path, "assets/apps/unknownapp") + "_512.jpg";
 		}
 
 		var iconImageData = "";
