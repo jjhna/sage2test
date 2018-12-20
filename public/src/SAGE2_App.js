@@ -1153,7 +1153,7 @@ var SAGE2_App = Class.extend({
 			y: y, 
 			w: w,
 			h: h, 			
-			aspectKeep: aspectKeep
+			aspectKeep: true
 
 		};
 		//if( isMaster ){

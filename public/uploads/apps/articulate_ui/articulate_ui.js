@@ -63,31 +63,30 @@ var articulate_ui = SAGE2_App.extend( {
 
 		this.listOfCommandsForTesting = 
 		[
-			//{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
-			//{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
-			//{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
-			//{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q4, app5
-			//{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //Q5, app6
-			//{text: "Of the theft in the Near West Side, are you able to kind of show it by month", targetAppId: null},//Q6, app7
+			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
+			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
+			{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
+			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q4, app5
+			{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //Q5, app6
+			{text: "Of the theft in the Near West Side, are you able to kind of show it by month", targetAppId: null},//Q6, app7
 			
-			//{text: "PART 2a", targetAppId: null},//delete
+			{text: "PART 2a", targetAppId: null},//delete
 
-			//{text: "I would just like to see the total amount of crimes that happened divided by the three main areas, UIC, River North and Near West Side", targetAppId: null},//Q1, app8
-			//{text:	"Are you able to show like the entire percentage of crime in each neighborhood", targetAppId: null},//Q2, app9
-			//{text: "Is there any way to kind of show theft by location type", targetAppId: null},//Q3, app10
-			//{text: "Can you show the location type for the crimes that occur between noon and 6 and 6 and midnight", targetAppId: null},//Q5, app11
+			{text: "I would just like to see the total amount of crimes that happened divided by the three main areas, UIC, River North and Near West Side", targetAppId: null},//Q1, app8
+			{text:	"Are you able to show like the entire percentage of crime in each neighborhood", targetAppId: null},//Q2, app9
+			{text: "Is there any way to kind of show theft by location type", targetAppId: null},//Q3, app10
+			{text: "Can you show the location type for the crimes that occur between noon and 6 and 6 and midnight", targetAppId: null},//Q5, app11
 			{text: "I am wondering around the bus lines if there are more public intoxication or fighting or verbal harassment in the summer", targetAppId: null}, //Q6, app12
 			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app13
 
-			//{text: "PART 2b", targetAppId: null},//Q4, app7
+			{text: "PART 2b", targetAppId: null},//Q4, app7
 
-			//{text: "Can you show the same chart for days of the week?", targetAppId: "app_2"},  // app 8
-			//{text: "Can you show this graph for months of year?", targetAppId: "app_2"}, // app 9
-
-			{text: "Can you move it", targetAppId: "app_2"}, 
-			{text: "Can you minimize it?", targetAppId: "app_2"},
-			{text: "Yeah don't need this one here", targetAppId: "app_2"}, 
-			{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_3"}			
+			{text: "Can you show the same chart for days of the week?", targetAppId: "app_12"},  // app 8
+			{text: "Can you show this graph for months of year?", targetAppId: "app_12"}, // app 9
+			{text: "Can you move it", targetAppId: "app_12"}, 
+			{text: "Can you minimize it?", targetAppId: "app_12"},
+			{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_12"},			
+			{text: "Yeah don't need this one here", targetAppId: "app_12"}
 
 		];
 
@@ -187,7 +186,8 @@ var articulate_ui = SAGE2_App.extend( {
 		//console.log('articulate_ui> Draw with state value', this.state.value);
 
 		this.ctx.clearRect(0, 0, this.element.width, this.element.height);
-
+		this.ctx.fillStyle = "rgba(0,0,0,1)";
+		this.ctx.fillRect(0,0,this.element.width, this.element.height);
 		this.fontSize = 32;
 		this.ctx.font = "32px Helvetica";
 		this.ctx.textAlign="left";
@@ -591,8 +591,8 @@ console.log("debugDatagram: "+ data);
 		console.log(specificationObj);
 		console.log("######################################")
 
-		if( specificationObj["requestType"] == "Layout" ){
-			if( specificationObj["request"] == "close.01" || specObj["request"] == "need.01"){
+		if( specificationObj["requestType"] == "Layout" ||  specificationObj["requestType"] == "Preference Expression"  ){
+			if( specificationObj["request"] == "close.01" || specificationObj["request"] == "need.01"){
 				console.log("CLOSE");
 				console.log(specificationObj["targetId"]);
 				hubId = specificationObj["targetId"];
