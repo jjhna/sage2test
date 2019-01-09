@@ -3,7 +3,7 @@
 */
 {
 	name: "mysite",
-	host: "localhost",
+	host: "jillian",
 	port: 9090,
 	index_port: 9292,
 	background: {
