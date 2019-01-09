@@ -392,6 +392,9 @@ function resizeLinkedChildApp(dataObject){
 	wsio.emit('resizeLinkedChildApp', dataObject);
 }
 
+function moveAndResizeLinkedChildApp(dataObject){
+	wsio.emit('moveAndResizeLinkedChildApp', dataObject);
+}
 
 /**
  * Ask the server to send a message to a specified child app

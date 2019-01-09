@@ -17,7 +17,7 @@ var articulate_ui = SAGE2_App.extend( {
 		// move and resize callbacks
 		this.resizeEvents = "continuous";
 		this.moveEvents   = "continuous";
-    this.systemInstruction = ">> Begin Speaking . . .";
+    	this.systemInstruction = ">> Begin Speaking . . .";
 		// SAGE2 Application Settings
 		//
 		// Control the frame rate for an animation application
@@ -34,18 +34,97 @@ var articulate_ui = SAGE2_App.extend( {
 		this.currentTestCommand = 0;
 		this.listOfCommandsForTesting2 =
 		[
-			{text: "Could I look at crimes when crimes happen for each neighborhood", targetAppId: null},//app2
-			{text: "Lets start with the activity around UIC", targetAppId: null},//app2
-			{text:	"Could I take a look at when crimes happen", targetAppId: null},//app3
-			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//app4
-			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//app5
-			{text: "Ok so can you show me the number of crimes, for each hour in a day?", targetAppId: null},//app6
-			{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //app7
+			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
+			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
+			{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
+			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app5
+			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q5, app6
+			{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //Q6, app7
 			//{text: "can I see theft by day", targetAppId: null},//app8
 			//{text: "can I see UIC by crime type", targetAppId: null}//app9
+						//{text: "Ok so can you show me the number of crimes, for each hour in a day?", targetAppId: null},//app6
+
 		];
 
-		this.listOfCommandsForTesting =
+
+		//PART 1
+
+		this.part1Commands = //this.listOfCommandsForTesting = //this.part1Commands = 
+		[
+			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
+			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
+			{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
+			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q5, app6
+			{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //Q6, app7
+			{text: "Of the theft in the Near West Side, are you able to kind of show it by month", targetAppId: null},//Q4, app7
+
+		];
+
+
+		this.listOfCommandsForTesting = 
+		[
+			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
+			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
+			{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
+			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q4, app5
+			{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //Q5, app6
+			{text: "Of the theft in the Near West Side, are you able to kind of show it by month", targetAppId: null},//Q6, app7
+			
+			{text: "PART 2a", targetAppId: null},//delete
+
+			{text: "I would just like to see the total amount of crimes that happened divided by the three main areas, UIC, River North and Near West Side", targetAppId: null},//Q1, app8
+			{text:	"Are you able to show like the entire percentage of crime in each neighborhood", targetAppId: null},//Q2, app9
+			{text: "Is there any way to kind of show theft by location type", targetAppId: null},//Q3, app10
+			{text: "Can you show the location type for the crimes that occur between noon and 6 and 6 and midnight", targetAppId: null},//Q5, app11
+			{text: "I am wondering around the bus lines if there are more public intoxication or fighting or verbal harassment in the summer", targetAppId: null}, //Q6, app12
+			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app13
+
+			{text: "PART 2b", targetAppId: null},//Q4, app7
+
+			{text: "Can you show the same chart for days of the week?", targetAppId: "app_12"},  // app 8
+			{text: "Can you show this graph for months of year?", targetAppId: "app_12"}, // app 9
+			{text: "Can you move it", targetAppId: "app_12"}, 
+			{text: "Can you minimize it?", targetAppId: "app_12"},
+			{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_12"},			
+			{text: "Yeah don't need this one here", targetAppId: "app_12"}
+
+		];
+
+		//PART 2
+		this.listOfCommandsForTesting3 = //this.part2Commands = 
+		[
+					//{text: "I'm wondering around the bus lines if there are more public intoxication or fighting or verbal harassment in the summer", targetAppId: null}, //Q6, app6
+			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app5
+			{text: "Can you move this graph", targetAppId: "app_1"}, // app 9
+			{text: "Can you show this graph for months", targetAppId: "app_1"}, // app 9
+			{text: "Can you show the same graph for days of the week", targetAppId: "app_1"},  // app 8
+
+			{text: "I would just like to see the total amount of crimes that happened divided by the three main areas, UIC, River North and Near West Side", targetAppId: null},//Q1, app2
+			{text:	"Are you able to show like the entire percentage of crime in each neighborhood", targetAppId: null},//Q2, app3
+			{text: "Is there any way to kind of show theft by location type", targetAppId: null},//Q3, app4
+			{text: "Can you show the location type for the crimes that occur between noon and 6 and 6 and midnight", targetAppId: null},//Q5, app5
+			{text: "I am wondering around the bus lines if there are more public intoxication or fighting or verbal harassment in the summer", targetAppId: null}, //Q6, app6
+			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app5
+
+			{text: "Can you show the same chart for days of the week?", targetAppId: "6"},  // app 8
+			{text: "Can you show this graph for months of year?", targetAppId: "6"}, // app 9
+			{text: "Can you move it", targetAppId: "2"}, 
+			{text: "Can you minimize it?", targetAppId: "2"},
+			{text: "Yeah don't need this one here", targetAppId: "2"}, 
+			{text: "Can you bring up this pic that has been hidden?", targetAppId: "5"}, 
+			 
+
+
+
+
+
+		];
+
+
+
+
+		//BASIC
+		this.listOfCommandsForTesting2 =
 		[
 			{text: "can I see a map of theft near UIC", targetAppId: null},//app 2
 			{text:	"show me theft by year", targetAppId: null},//app 3
@@ -107,7 +186,8 @@ var articulate_ui = SAGE2_App.extend( {
 		//console.log('articulate_ui> Draw with state value', this.state.value);
 
 		this.ctx.clearRect(0, 0, this.element.width, this.element.height);
-
+		this.ctx.fillStyle = "rgba(0,0,0,1)";
+		this.ctx.fillRect(0,0,this.element.width, this.element.height);
 		this.fontSize = 32;
 		this.ctx.font = "32px Helvetica";
 		this.ctx.textAlign="left";
@@ -150,6 +230,10 @@ var articulate_ui = SAGE2_App.extend( {
 			this.ctx.fillText( this.commands[i], this.userInputArea.x+this.gap, theY);
 			theY += 32;
 		}
+
+			this.ctx.fillStyle = "rgba(200, 200, 200, 1.0)";
+			this.ctx.font = 24 + "px Ariel";
+			this.ctx.fillText( this.final_url, this.userInputArea.x+this.gap+20, theY);
 
 		// synced data
 		// this.ctx.fillStyle = "rgba(189, 148, 255, 1.0)";
@@ -207,15 +291,16 @@ var articulate_ui = SAGE2_App.extend( {
 
 					//new logic to maintain the same sessionId
 					var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query?utterance=";
-					var requestIndex = this.requests.push(base_url + this.listOfCommandsForTesting[this.currentTestCommand]["text"]); //returns the number of elements
+					var requestIndex = this.requests.push(base_url + this.listOfCommandsForTesting[this.currentTestCommand]["text"]+"&gesturetargetid="+this.listOfCommandsForTesting[this.currentTestCommand]["targetAppId"]); //returns the number of elements
 					//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
 
 					//only send url and the index of the request
-				if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
+				//if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
 						console.log("ABOUT TO CONTACT ARTICULATE HUB")
 						orderedItems = [ this.listOfCommandsForTesting[this.currentTestCommand]["text"] ];
+						console.log( this.listOfCommandsForTesting[this.currentTestCommand]["targetAppId"] );  //send to the articulate hub
 						this.contactArticulateHub(base_url+this.listOfCommandsForTesting[this.currentTestCommand]["text"], requestIndex - 1, this.listOfCommandsForTesting[this.currentTestCommand]["targetAppId"]);  //send to the articulate hub
-				 }
+				 //}
 
 				 this.currentTestCommand++;
 
@@ -320,7 +405,7 @@ console.log("debugDatagram: "+ data);
 		//debugging
 		console.log(this.childList);
 		targetHubId = null;
-		if( this.childList.length > 1 ){
+		if( this.childList.length >= 1 ){
 			for(i = 0; i<this.childList.length;i++){
 				console.log("child:");
 				console.log(this.childList[i]);
@@ -328,7 +413,9 @@ console.log("debugDatagram: "+ data);
 				console.log(targetAppID);
 				if(this.childList[i]["childId"] == targetAppID){
 					console.log("FOUND THE TARGET");
-					targetHubId = this.childList[i]["initState"]["hub_id"];
+					console.log(this.childList[i]);
+					targetHubId = this.childList[i]["initState"]["initState"]["hub_id"];
+					console.log(targetHubId);
 				}
 			}
 		}
@@ -388,49 +475,56 @@ console.log("debugDatagram: "+ data);
 		if(requestIndex >= 1){
 			//for (var i = 0; i < this.responces.length; i++){
 			//	if(this.responces[i].sessionId != null)
-			final_url = url + "&jsessionid=" + this.sessionId;
+			this.final_url = url + "&jsessionid=" + this.sessionId;
 			//final_url = url + ";jsessionid=" + this.responces[requestIndex-1].sessionId;
 			//}
-			console.log("supsequent call " + final_url);
+			console.log("supsequent call " + this.final_url);
 			xhr.withCredentials = true;
-			xhr.open("GET", final_url, true);
+			if( isMaster || !this.useMaster){
+					xhr.open("GET", this.final_url, true);
+			}
 
 		} else {
-			final_url = url + "&isnewsession=True";
+			this.final_url = url + "&isnewsession=True";
 
-			console.log("first call " + url);
+			console.log("first call " + this.final_url);
 			xhr.withCredentials = true;
-			xhr.open("GET", url, true);
+			if( isMaster || !this.useMaster){
+					xhr.open("GET", this.final_url, true);
+			}
 		}
 
-		xhr.onreadystatechange = function() {
-			if (xhr.readyState === 4) {
-				if (xhr.status === 200) {
-					if (dataType === "TEXT") {
-						callback(null, xhr.responseText);
-					} else if (dataType === "JSON") {
+		if( isMaster || !this.useMaster){
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState === 4) {
+					if (xhr.status === 200) {
+						if (dataType === "TEXT") {
+							callback(null, xhr.responseText);
+						} else if (dataType === "JSON") {
 
-						callback(null, JSON.parse(xhr.responseText), requestIndex);
+							callback(null, JSON.parse(xhr.responseText), requestIndex);
 
 
-					} else if (dataType === "CSV") {
-						callback(null, csvToArray(xhr.responseText));
-					} else if (dataType === "SVG") {
-						callback(null, xhr.responseXML.getElementsByTagName('svg')[0]);
+						} else if (dataType === "CSV") {
+							callback(null, csvToArray(xhr.responseText));
+						} else if (dataType === "SVG") {
+							callback(null, xhr.responseXML.getElementsByTagName('svg')[0]);
+						} else {
+							callback(null, xhr.responseText);
+						}
 					} else {
-						callback(null, xhr.responseText);
+						callback("Error: File Not Found", null);
 					}
-				} else {
-					callback("Error: File Not Found", null);
 				}
-			}
-		};
-		xhr.send();
+			};
+			xhr.send();
+		}
 	},
 
 	//this gets the data from the smart hub, in a callback
 	callback: function(err, specObj, requestIndex) {
 		console.log("IN CALLBACK");
+		console.log(specObj);
 			if (err){
 				console.log("error connecting to articulate smart hub" + err);
 				this.refresh();
@@ -462,7 +556,16 @@ console.log("debugDatagram: "+ data);
 			}
 			else if(specObj["dataQuery"] == null){
 
-				if( specObj["request"] == "close.01" ){
+				if( specObj["request"] == "close.01" || specObj["request"] == "need.01"){
+					console.log("close");
+					this.readExample3(specObj);
+				}
+				else if( specObj["request"] == "move.01"){
+					console.log("move");
+					this.readExample3(specObj);
+				}
+				else if( specObj["request"] == "minimize.01"){
+					console.log("minimize");
 					this.readExample3(specObj);
 				}
 				else{ //not sure what this is for
@@ -472,7 +575,7 @@ console.log("debugDatagram: "+ data);
 					this.systemInstruction = ">> Cannot understand the request! Try again . . .";
 					console.log("Cannot understand the request! Try again");
 					this.refresh();
-			}
+				}
 			}
 			//then broadcast the results to display nodes!
 			//broadcast( "handleResponse", {response:"responseTest"} );
@@ -488,19 +591,31 @@ console.log("debugDatagram: "+ data);
 		console.log(specificationObj);
 		console.log("######################################")
 
-		if( specificationObj["requestType"] == "Layout" ){
-			if( specificationObj["request"] == "close.01"){
+		if( specificationObj["requestType"] == "Layout" ||  specificationObj["requestType"] == "Preference Expression"  ){
+			if( specificationObj["request"] == "close.01" || specificationObj["request"] == "need.01"){
 				console.log("CLOSE");
 				console.log(specificationObj["targetId"]);
 				hubId = specificationObj["targetId"];
 				this.closeChildByHubId(hubId);
+			}
+			else if( specificationObj["request"] == "move.01"){
+				console.log("MOVE");
+				console.log(specificationObj["targetId"]);
+				hubId = specificationObj["targetId"];
+				this.moveChildByHubId(hubId);
+			}
+			else if( specificationObj["request"] == "minimize.01"){
+				console.log("MINIMIZE");
+				console.log(specificationObj["targetId"]);
+				hubId = specificationObj["targetId"];
+				this.minimizeChildByHubId(hubId);
 			}
 		}
 		else if(specificationObj["requestType"] == "Command Based on previous viz"
 								|| specificationObj["requestType"] == "Command Not based on an existing visualization") {
 
 			console.log("make a vis!");
-			plotTitle = specificationObj["plotHeadline"]["plotTitle"];
+			plotTitle = specificationObj["plotHeadline"]["shortSummary"];
 			console.log(plotTitle);
 
 			type = specificationObj["plotHeadline"]["plotType"].toLowerCase(); //what kind of plot: bar chart, map, line chart
@@ -531,8 +646,8 @@ console.log("debugDatagram: "+ data);
 					hub_id: hub_id,
 					title: plotTitle,
 					type: type.toLowerCase(),  //what kind of chart: bar or line
-					x: x.toLowerCase(), //x axis for the bar chart
-					y: y.toLowerCase(), //y axis for the bar chart (usually counts in our case)
+					x: x, //x axis for the bar chart
+					y: y, //y axis for the bar chart (usually counts in our case)
 					color: color, //what color to give the bars - at this point a single color- someday need multiple colors
 					visId: this.counter,  //unique id for the vis, based on the count
 					data: dataToVisualize //the data to visualize- like counts and labels
@@ -575,8 +690,8 @@ console.log("debugDatagram: "+ data);
 					hub_id: hub_id,
 					title: plotTitle,
 					type: type.toLowerCase(),  //what kind of chart: bar or line
-					x: x.toLowerCase(), //x axis for the bar chart
-					y: y.toLowerCase(), //y axis for the bar chart (usually counts in our case)
+					x: x, //x axis for the bar chart
+					y: y, //y axis for the bar chart (usually counts in our case)
 					color: color, //what color to give the bars - at this point a single color- someday need multiple colors
 					visId: this.counter,  //unique id for the vis, based on the count
 					data: dataToVisualize //the data to visualize- like counts and labels
@@ -587,7 +702,7 @@ console.log("debugDatagram: "+ data);
 
 				for(i = 0; i < specificationObj["dataQueryResult"].length; i++){
 					line = specificationObj["dataQueryResult"][i];
-					console.log(line);
+					//console.log(line);
 
 					//"(latitude,41.859);(longitude,-87.687);1"
 					while( line.indexOf("(") != -1 )
@@ -599,10 +714,10 @@ console.log("debugDatagram: "+ data);
 					while( line.indexOf(",") != -1 )
 						line = line.replace(",", "#");
 					tokens = line.split("#");
-					console.log(tokens);
+					//console.log(tokens);
 					obj = new Object();
 
-					console.log(tokens);
+					//console.log(tokens);
 					obj["latitude"] = parseFloat(tokens[2]);
 					obj["longitude"] = parseFloat(tokens[6]);
 					val = parseFloat(tokens[8]);
@@ -631,7 +746,7 @@ console.log("debugDatagram: "+ data);
 
 
 			}//end maps
-
+			console.log("launch");
 			this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
 
 		}
@@ -679,9 +794,9 @@ console.log("debugDatagram: "+ data);
 
 	parseBar: function(dataQueryResult, c){
 		dataToVisualize = [];
-		for(i = 0; i < dataQueryResult.length; i++){ //same thing parse the data
-			line = dataQueryResult[i];
-			console.log(line);
+
+		if( dataQueryResult.length == 1 ){
+			line = dataQueryResult[0];
 
 			while( line.indexOf("(") != -1 )
 				line = line.replace("(", "#");
@@ -692,22 +807,53 @@ console.log("debugDatagram: "+ data);
 			while( line.indexOf(",") != -1 )
 				line = line.replace(",", "#");
 			tokens = line.split("#");
-			console.log(tokens);
+			//console.log(tokens);
 			obj = new Object();
 
-			console.log(tokens);
 			if( c == null ){
-				obj["y"] = parseInt(tokens[6]);
-				obj["x"] = tokens[2];
+				obj["y"] = parseInt(tokens[2]);
+				obj["x"] = "";
 				obj["c"] = "null";
 			}
 			else {
-				obj["y"] = parseInt(tokens[10]);
-				obj["x"] = tokens[2];
-				obj["c"] = tokens[6];
+				obj["y"] = parseInt(tokens[2]);
+				obj["x"] = "";//tokens[2];
+				obj["c"] = "";//tokens[6];
 			}
 			dataToVisualize.push(obj);
-			// console.log(obj);
+
+		}
+		else {
+			for(i = 0; i < dataQueryResult.length; i++){ //same thing parse the data
+				line = dataQueryResult[i];
+				//console.log(line);
+
+				while( line.indexOf("(") != -1 )
+					line = line.replace("(", "#");
+				while( line.indexOf(")") != -1 )
+					line = line.replace(")", "#");
+				while( line.indexOf(";") != -1 )
+					line = line.replace(";", "#");
+				while( line.indexOf(",") != -1 )
+					line = line.replace(",", "#");
+				tokens = line.split("#");
+				//console.log(tokens);
+				obj = new Object();
+
+				//console.log(tokens);
+				if( c == null ){
+					obj["y"] = parseInt(tokens[6]);
+					obj["x"] = tokens[2];
+					obj["c"] = "null";
+				}
+				else {
+					obj["y"] = parseInt(tokens[10]);
+					obj["x"] = tokens[2];
+					obj["c"] = tokens[6];
+				}
+				dataToVisualize.push(obj);
+				// console.log(obj);
+			}
 		}
 		return dataToVisualize;
 	},
@@ -720,7 +866,7 @@ console.log("debugDatagram: "+ data);
 //		y = id;
 		for(i = 0; i < dataQueryResult.length; i++){ //parsing...
 			line = dataQueryResult[i];
-			console.log(line);
+			//console.log(line);
 
 			while( line.indexOf("(") != -1 )
 				line = line.replace("(", "#");
@@ -731,21 +877,33 @@ console.log("debugDatagram: "+ data);
 			while( line.indexOf(",") != -1 )
 				line = line.replace(",", "#");
 			tokens = line.split("#");
-			console.log(tokens);
+			//console.log(tokens);
 			obj = new Object();
 
 			if( c == null ){
-				console.log(tokens);
+				//console.log(tokens);
 				obj["x"] = tokens[2];
 				obj["y"] = parseInt(tokens[6]);
 				obj["c"] = "null";
 			}
 			else {
 				//to do
-				console.log(tokens);
-				obj["x"] = tokens[6];
-				obj["y"] = parseInt(tokens[10]);
-				obj["c"] = tokens[2];
+				//console.log(tokens.length);
+				//console.log(tokens);
+				if( tokens.length <= 14 ){
+					obj["x"] = tokens[2];
+					obj["y"] = parseInt(tokens[10]);
+					obj["c"] = tokens[6];
+				}
+				else // month and year 
+				{
+					//obj["x"] = " ";
+					//if( tokens[2] == "january")
+						//obj["x"] = tokens[6];
+					obj["x"] = tokens[6]+","+tokens[2];
+					obj["y"] = parseInt(tokens[14]);
+					obj["c"] = tokens[10];
+				}
 			}
 
 
@@ -760,7 +918,7 @@ console.log("debugDatagram: "+ data);
 		dataToVisualize = [];
 		for(i = 0; i < specificationObj["dataQueryResult"].length; i++){
 			line = specificationObj["dataQueryResult"][i];
-			console.log(line);
+			//console.log(line);
 
 			while( line.indexOf("(") != -1 )
 				line = line.replace("(", "#");
@@ -771,10 +929,10 @@ console.log("debugDatagram: "+ data);
 			while( line.indexOf(",") != -1 )
 				line = line.replace(",", "#");
 			tokens = line.split("#");
-			console.log(tokens);
+			//console.log(tokens);
 			obj = new Object();
 
-			console.log(tokens);
+			//console.log(tokens);
 			obj["latitude"] = parseFloat(tokens[2]);
 			obj["longitude"] = parseFloat(tokens[6]);
 			val = parseFloat(tokens[8]);
@@ -1048,7 +1206,7 @@ console.log("debugDatagram: "+ data);
 	closeChildByHubId: function(hubId){
 		for(var key in this.childList)
 		{
-			if(this.childList[key]["initState"]["hub_id"] == hubId){
+			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
 				var closeAppIndex = this.childList.indexOf(this.childList[key]);
 				//this.closeChild(closeAppIndex);
 				this.closeChildById(this.childList[key].childId);
@@ -1057,6 +1215,41 @@ console.log("debugDatagram: "+ data);
 			}
 		}
 	},
+
+	moveChildByHubId: function(hubId){
+		for(var key in this.childList)
+		{
+			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
+				var moveAppIndex = this.childList.indexOf(this.childList[key]);
+				//this.closeChild(closeAppIndex);
+				newX = this.childList[key].x+400;
+				newY = this.childList[key].y+400;
+
+				this.moveChildById(this.childList[key].childId, newX, newY);
+				console.log("Move "+this.childList[key].childId);
+				return;
+			}
+		}
+	},
+
+	minimizeChildByHubId: function(hubId){
+		for(var key in this.childList)
+		{
+			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
+				var moveAppIndex = this.childList.indexOf(this.childList[key]);
+				//this.closeChild(closeAppIndex);
+				newX = 5000;//this.childList[key].x+200;
+				newY = this.childList[key].y;
+				newW = this.childList[key].w/2;
+				newH = this.childList[key].w/2;
+
+				this.moveAndResizeChildById(this.childList[key].childId, newX, newY, newW, newH, true);
+				console.log("Move and Resize "+this.childList[key].childId);
+				return;
+			}
+		}
+	},
+
 
 
 	childMonitorEvent: function(childId, type, data, date){
@@ -1082,6 +1275,7 @@ console.log("debugDatagram: "+ data);
 			//}
 			//this.moveChild(this.getNumberOfChildren()-1, 2000, 750); //center
 			//this.resizeChild(this.getNumberOfChildren()-1, 1600, 1200, false);
+			this.childList[ this.childList.length-1].hub_id = data.data.initState.hub_id;
 			console.log("child open");
 			console.log(this.childList);
 			//this.childList[this.childList.length][""]

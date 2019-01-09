@@ -4,21 +4,53 @@
 //
 // Copyright (c) 2015
 //
-
-var vega_vis_app = SAGE2_App.extend( {
+"use strict";
+var vega_lite_app = SAGE2_App.extend( {
 	init: function(data) {
 		// Create div into the DOM
 		this.SAGE2Init("div", data);
 
-		this.vis = d3.select(this.element).append("vis"+this.id); //needed to make the vis app and make it unique
-			//wothout the vis+this.id it would overwrite a single vis app with new data
-
+		this.element.id = "div_" + data.id;
 		// Set the background to black
-		this.element.style.backgroundColor = '#111111';//'ghostwhite';//'#f2f2f2';
+		this.element.style.backgroundColor = 'white';
 
 		// move and resize callbacks
-		this.resizeEvents = "continuous"; //sometimes resizing doesn't work
-		this.moveEvents   = "continuous";
+		this.resizeEvents = "onfinish"; // continuous
+
+		this.content = document.createElement("div");
+		this.content.style.width = 400 + "px";
+		this.content.style.height = 400 + "px";
+		this.content.style.position = "absolute";
+		this.content.style.boxSizing = "border-box";
+		this.content.style.left = "0";
+		this.content.style.top = ui.titleBarHeight * 1.5 + "px";
+		this.content.style.overflow = "hidden";
+
+		this.element.appendChild(this.content);
+
+		let inputs = document.createElement("div");
+		inputs.className = "snippetsInputWrapper";
+		inputs.style.position = "absolute";
+		inputs.style.left = "0px";
+		inputs.style.top = "0px";
+		inputs.style.width = "100%";
+		inputs.style.minHeight = "100%";
+		inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
+		inputs.style.boxSizing = "border-box";
+		
+		this.inputs = inputs;
+		this.element.appendChild(inputs);
+
+		// move and resize callbacks
+		this.resizeEvents = "onfinish"; // continuous
+
+	
+		// Set the background to black
+		//this.element.style.backgroundColor = "#FFFFFF";//'#111111';//'ghostwhite';//'#f2f2f2';
+
+		// move and resize callbacks
+		//this.resizeEvents = "continuous"; //sometimes resizing doesn't work
+		//this.moveEvents   = "continuous";
 
 		// SAGE2 Application Settings
 		//
@@ -28,60 +60,111 @@ var vega_vis_app = SAGE2_App.extend( {
 		this.controls.finishedAddingControls();
 		this.enableControls = true;
 
-		this.view = null;//where we will put the view object
 
-		this.vegaCallbackFuncBar = this.vegaCallbackBar.bind(this);
-		this.vegaCallbackFuncLine = this.vegaCallbackLine.bind(this);
+		//with data
+	//	this.vegaCallbackFuncBar = this.vegaCallbackBar.bind(this);
+	//	this.vegaCallbackFuncLine = this.vegaCallbackLine.bind(this);
 
 		//these are default specs that we overwrite with the data from the articulate ui
-		this.initBarSpec();
-		this.initLineSpec();
-		console.log(this.state.title);
+	//	this.initBarSpec();
+	//	this.initLineSpec();
+	//	console.log(this.state.title);
 		this.updateTitle(this.state.title);
+
 		//access the data from the articualte ui that we need to draw this properly
 		//and then overwrite the default values in the app
-		if(this.state.type == "bar"){
+		//OLD
+//		if(this.state.type == "bar"){
+//
+//			this.barSpec.marks[0].properties.update.fill.value = this.state.color;
+//			this.barSpec.axes[0].title = this.state.x;
+//			this.barSpec.axes[1].title = this.state.y;
+//			this.barSpec.data[0].values = this.state.data;
+//			this.parseBar(this.barSpec);
 
-			this.barSpec.marks[0].properties.update.fill.value = this.state.color;
-			this.barSpec.axes[0].title = this.state.x;
-			this.barSpec.axes[1].title = this.state.y;
-			this.barSpec.data[0].values = this.state.data;
-
-			if( this.barSpec.data[0].values.length < 2 )
-			{
-				this.sendResize(300, this.element.clientHeight);
-			}			
-			else if( this.barSpec.data[0].values.length < 3 )
-			{
-				this.sendResize(500, this.element.clientHeight);
-			}
-			else if( this.barSpec.data[0].values.length < 10 )
-			{
-				this.sendResize(1000, this.element.clientHeight);
-			}
-			this.parseBar(this.barSpec);
-
-		}
-		if( this.state.type == "line"){
+//		}
+//		if( this.state.type == "line"){
 
 			//this.linSpec.marks[0]
-			this.lineSpec.axes[0].title = this.state.x;
-			this.lineSpec.axes[1].title = this.state.y;
-			this.lineSpec.data[0].values = this.state.data;
-			this.parseLine(this.lineSpec);
-		}
+//			this.lineSpec.axes[0].title = this.state.x;
+//			this.lineSpec.axes[1].title = this.state.y;
+//			this.lineSpec.data[0].values = this.state.data;
+//			this.parseLine(this.lineSpec);
+//		}
 
-		// stuff I tried and didn't work...
 
-		//updated = true;
+		//VEGA LITE APPROACH
 
-		//this.spec = "uploads/apps/vega_vis_app/data/spec.json";
-		//this.parse(this.spec); //moved this elsewhere///
+		var vlSpec = {
+			      "$schema": "https://vega.github.io/schema/vega-lite/v2.json",
 
-  		// this.sendResize(spec.width, spec.height); //nightmare- resizing problems
+		 "width": 200,
+		 "height": 200,
+		 "autosize": {
+			 "type": "fit",
+			 "contains": "padding"
+		 },
+      "description": "A simple bar chart with embedded data.",
+      "data": {
+        "values": [
+          {"a": "A","b": 28}, {"a": "B","b": 55}, {"a": "C","b": 43},
+          {"a": "D","b": 91}, {"a": "E","b": 81}, {"a": "F","b": 53},
+          {"a": "G","b": 19}, {"a": "H","b": 87}, {"a": "I","b": 52}
+        ]
+      },
+      "mark": "bar",
+      "encoding": {
+        "x": {"field": "a", "type": "ordinal"},
+        "y": {"field": "b", "type": "quantitative"}
+      }
+   };
 
-		//this.updateTitle("title");	//this didn't work in the past, but might work now...
+   var v2Spec = {
+  "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
+  "description": "A simple bar chart with embedded data.",
+  "width": 800,
+  "height": 600,
+ "autosize": {
+    "type": "fit",
+    "contains": "padding"
+  },
+  "data": {
+    "values": [
+      {"a": "A","b": 28}, {"a": "B","b": 55}, {"a": "C","b": 43},
+      {"a": "D","b": 91}, {"a": "E","b": 81}, {"a": "F","b": 53},
+      {"a": "G","b": 19}, {"a": "H","b": 87}, {"a": "I","b": 52}
+    ]
+  },
+  "mark": "bar",
+  "encoding": {
+    "x": {"field": "a", "type": "ordinal"},
+    "y": {"field": "b", "type": "quantitative"},
+    "tooltip": {"field": "b", "type": "quantitative"}
+  }
+};
 
+	// this.vega = d3.select(this.element).append('div')
+	 											//.attr('id', "vega"+this.id);
+												//.style("width", this.element.clientWidth+"px")
+												//.style("height", this.element.clientHeight+"px")
+												//.style("display", "inline-block")
+												//.style("background", "white")
+												//.style("overflow", "hidden")
+												//.style("margin","10px")
+												//.style("order", "-1");
+
+
+		//this.vega.style.width = "100%";
+		//this.vega.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+		//this.vega.style.position = "absolute";
+		//this.vega.style.boxSizing = "border-box";
+		//this.vega.style.left = "0";
+		//this.vega.style.top = ui.titleBarHeight * 1.5 + "px";
+		//this.vega.style.overflow = "hidden";
+		
+		
+
+   		vegaEmbed(this.inputs, v2Spec);
 
 	},
 
