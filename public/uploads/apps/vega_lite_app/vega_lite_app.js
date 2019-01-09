@@ -16,10 +16,10 @@ var vega_lite_app = SAGE2_App.extend( {
 
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
-
+		
 		this.content = document.createElement("div");
-		this.content.style.width = 400 + "px";
-		this.content.style.height = 400 + "px";
+		this.content.style.width = "100%";//400 + "px";
+		this.content.style.height = this.sage2_height - ui.titleBarHeight*1.5 + "px";  //400 + "px";
 		this.content.style.position = "absolute";
 		this.content.style.boxSizing = "border-box";
 		this.content.style.left = "0";
@@ -31,10 +31,11 @@ var vega_lite_app = SAGE2_App.extend( {
 		let inputs = document.createElement("div");
 		inputs.className = "snippetsInputWrapper";
 		inputs.style.position = "absolute";
-		inputs.style.left = "0px";
+		inputs.style.left ="0px"; // this.sage2_width + "px";//"0px";
 		inputs.style.top = "0px";
-		inputs.style.width = "100%";
-		inputs.style.minHeight = "100%";
+		inputs.style.width ="200px";// this.sage2_width;//"100%";//"300px";//"100%";
+		inputs.style.height = "200px";
+		//inputs.style.minHeight = "100%";
 		inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 		inputs.style.boxSizing = "border-box";
 		
@@ -44,6 +45,7 @@ var vega_lite_app = SAGE2_App.extend( {
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
 
+		
 	
 		// Set the background to black
 		//this.element.style.backgroundColor = "#FFFFFF";//'#111111';//'ghostwhite';//'#f2f2f2';
@@ -119,14 +121,15 @@ var vega_lite_app = SAGE2_App.extend( {
       }
    };
 
-   var v2Spec = {
+   this.v2Spec = {
   "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
   "description": "A simple bar chart with embedded data.",
-  "width": 800,
-  "height": 600,
- "autosize": {
-    "type": "fit",
-    "contains": "padding"
+  "width": this.sage2_width,
+  "height": this.sage2_height - ui.titleBarHeight*1.5 - 100,
+   "autosize": {
+    "type": "pad",
+    "contains": "padding",
+    "resize": true
   },
   "data": {
     "values": [
@@ -142,6 +145,36 @@ var vega_lite_app = SAGE2_App.extend( {
     "tooltip": {"field": "b", "type": "quantitative"}
   }
 };
+
+
+		this.v3Spec =	 {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
+		    "description": "Stock prices of 5 Tech Companies over Time.",
+		    "width": this.sage2_width,
+		    "height": this.sage2_height - ui.titleBarHeight*1.5 - 100,
+		    "data": {"values": [
+		{"year": "2010", "y": 100, "symbol": "UIC"},
+		{"year": "2011", "y": 200, "symbol": "UIC"},
+		{"year": "2012", "y": 320, "symbol": "UIC"},
+		{"year": "2013", "y": 450, "symbol": "UIC"},
+		{"year": "2014", "y": 120, "symbol": "UIC"},
+		{"year": "2010", "y": 340, "symbol": "Loop"},
+		{"year": "2011", "y": 150, "symbol": "Loop"},
+		{"year": "2012", "y": 630, "symbol": "Loop"},
+		{"year": "2013", "y": 540, "symbol": "Loop"},
+		{"year": "2014", "y": 520, "symbol": "Loop"}
+					]
+		    },
+		    "mark": {
+			"type": "line",
+			"point": true
+		    },
+		    "encoding": {
+			"x": {"timeUnit": "year", "field": "year", "type": "temporal", "axis": {"ticks": true, "tickCount": 5}},
+			"y": {"field": "y", "type": "quantitative"},
+			"color": {"field": "symbol"}
+		    }
+                };
 
 	// this.vega = d3.select(this.element).append('div')
 	 											//.attr('id', "vega"+this.id);
@@ -164,7 +197,7 @@ var vega_lite_app = SAGE2_App.extend( {
 		
 		
 
-   		vegaEmbed(this.inputs, v2Spec);
+   		vegaEmbed(this.inputs, this.v3Spec);
 
 	},
 
@@ -198,9 +231,58 @@ var vega_lite_app = SAGE2_App.extend( {
 
 	},
 
+	resize: function(date) {
+
+	    // Called when window is resized
+	    let contentWidth = this.sage2_width;
+	    this.content.style.width = contentWidth + "px";
+	    this.content.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+
+	    //this.inputs.style.left = "0px";// contentWidth + "px";
+	    //this.inputs.style.width = this.sage2_width;
+	    //this.inputs.style.height = this.sage2_height;
+    
+	    this.element.removeChild(this.inputs);
+
+	    let inputs = document.createElement("div");
+	    inputs.className = "snippetsInputWrapper";
+	    inputs.style.position = "absolute";
+	    inputs.style.left ="0px"; // this.sage2_width + "px";//"0px";                                                                             
+	    inputs.style.top = "0px";
+	    inputs.style.width =this.sage2_width + "px";// this.sage2_width;//"100%";//"300px";//"100%";                                                              
+	    inputs.style.height = (this.sage2_height - ui.titleBarHeight * 1.5 - 100) + "px";
+	    //inputs.style.minHeight = "100%";                                                                                                        
+	    inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
+	    inputs.style.boxSizing = "border-box";
+
+	    this.v3Spec["width"] - this.sage2_width;
+	    this.v3Spec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
+
+	    this.inputs = inputs;
+	    vegaEmbed(this.inputs, this.v3Spec);
+
+            this.element.appendChild(inputs);
+
+
+
+	    console.log(this.inputs);
+
+	    // update ancestor list size
+	    //this.ancestry.attr("width", this.sage2_width);
+	    //this.createAncestorList();
+
+	    //if (this.parentLink) {
+	    //	this.parentLink.update(); // redraw
+	    //}
+
+	    this.refresh(date);
+	},
+
+
+
 	//reszing is a BIG problem with line charts
 	// no fun trying to fix!!!
-	resize: function(date) {
+	resizeOld: function(date) {
 		if( this.state.type == "bar"){
 			// updated = false;
 			if( this.element.clientWidth > 400 ){
@@ -217,15 +299,10 @@ var vega_lite_app = SAGE2_App.extend( {
   		else if( this.state.type == "line"){
 			this.svg.attr('width',  this.element.clientWidth + "px");
 			this.svg.attr('height', this.element.clientHeight + "px");
-			//this.view.renderer('svg').update();
+			
 			this.refresh(date);
-  		}
-  // 		console.log(this.view);
-
-  // 		this.svg.attr('width',  this.element.clientWidth + "px");
-		// this.svg.attr('height', this.element.clientHeight + "px");
-		// this.view.renderer('svg').update();
-		// this.refresh(date);
+			 		}
+ 
 	},
 
 
