@@ -64,11 +64,11 @@ var articulate_ui = SAGE2_App.extend( {
 		this.listOfCommandsForTesting = 
 		[
 			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
-			{text: "Can you move it", targetAppId: "app_1"}, 
-			{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_1"},			
-			{text: "Can you minimize it?", targetAppId: "app_1"},
-			{text: "Can you maximize it?", targetAppId: "app_1"},
-			{text: "Yeah don't need this one here", targetAppId: "app_1"},
+			//{text: "Can you move it", targetAppId: "app_1"}, 
+			//{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_1"},			
+			//{text: "Can you minimize it?", targetAppId: "app_1"},
+			//{text: "Can you maximize it?", targetAppId: "app_1"},
+			//{text: "Yeah don't need this one here", targetAppId: "app_1"},
 
 
 			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
@@ -91,9 +91,10 @@ var articulate_ui = SAGE2_App.extend( {
 			{text: "Can you show the same chart for days of the week?", targetAppId: "app_12"},  // app 8
 			{text: "Can you show this graph for months of year?", targetAppId: "app_12"}, // app 9
 			{text: "Can you move it", targetAppId: "app_12"}, 
+			{text: "Can you maximize it?", targetAppId: "app_12"},
 			{text: "Can you minimize it?", targetAppId: "app_12"},
-			{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_12"},			
-			{text: "Yeah don't need this one here", targetAppId: "app_12"}
+			{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_2"},			
+			{text: "Yeah don't need this one here", targetAppId: "app_2"}
 
 		];
 
@@ -238,9 +239,9 @@ var articulate_ui = SAGE2_App.extend( {
 			theY += 32;
 		}
 
-			this.ctx.fillStyle = "rgba(200, 200, 200, 1.0)";
-			this.ctx.font = 24 + "px Ariel";
-			this.ctx.fillText( this.final_url, this.userInputArea.x+this.gap+20, theY);
+			//this.ctx.fillStyle = "rgba(200, 200, 200, 1.0)";
+			//this.ctx.font = 24 + "px Ariel";
+			//this.ctx.fillText( this.final_url, this.userInputArea.x+this.gap+20, theY);
 
 		// synced data
 		// this.ctx.fillStyle = "rgba(189, 148, 255, 1.0)";
@@ -605,8 +606,8 @@ console.log("debugDatagram: "+ data);
 		if( specificationObj["requestType"] == "Layout" ||  specificationObj["requestType"] == "Preference Expression"  ){
 			if( specificationObj["request"] == "close.01" || specificationObj["request"] == "need.01"){
 				console.log("CLOSE");
-				console.log(specificationObj["targetId"]);
-				hubId = specificationObj["targetId"];
+				console.log(specificationObj["gestureTargetId"]);//** CHANGED!
+				hubId = specificationObj["gestureTargetId"];
 				this.closeChildByHubId(hubId);
 			}
 			else if( specificationObj["request"] == "move.01"){
