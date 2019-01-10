@@ -127,8 +127,7 @@ var vega_lite_app = SAGE2_App.extend( {
   "width": this.sage2_width,
   "height": this.sage2_height - ui.titleBarHeight*1.5 - 100,
    "autosize": {
-    "type": "pad",
-    "contains": "padding",
+    "type": "fit",
     "resize": true
   },
   "data": {
@@ -196,13 +195,49 @@ var vega_lite_app = SAGE2_App.extend( {
 		//this.vega.style.overflow = "hidden";
 		
 		
-
-   		vegaEmbed(this.inputs, this.v3Spec);
+		this.vLSpec  = this.state.vegaLiteSpec; 
+		   		vegaEmbed(this.inputs, this.v2Spec);
 
 	},
 
 	load: function(date) {
-		console.log('vega_vis_app> Load with state value', this.state.value);
+		console.log('vega_vis_app Load with state value', this.state.value);
+		//this.vLSpec = this.state.vegaLiteSpec;
+		//this.vLSpec["width"] = this.sage2_width;
+		//this.vLSpec["height"] = this.sage2_height -  ui.titleBarHeight*1.5- 100;
+		this.content.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+
+		//this.inputs.style.left = "0px";// contentWidth + "px";                                                                                      
+		//this.inputs.style.width = this.sage2_width;                                                                                                 
+		//this.inputs.style.height = this.sage2_height;                                                                                               
+
+		this.element.removeChild(this.inputs);
+
+		let inputs = document.createElement("div");
+		inputs.className = "snippetsInputWrapper";
+		inputs.style.position = "absolute";
+		inputs.style.left ="0px"; // this.sage2_width + "px";//"0px";                                                                                 
+		inputs.style.top = "0px";
+		inputs.style.width =this.sage2_width + "px";// this.sage2_width;//"100%";//"300px";//"100%";                                                 \
+                                                                                                                                                          
+		inputs.style.height = (this.sage2_height - ui.titleBarHeight * 1.5 - 100) + "px";
+		//inputs.style.minHeight = "100%";                                                                                                            
+		inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
+		inputs.style.boxSizing = "border-box";
+
+		this.v2Spec["width"] - this.sage2_width;
+		this.v2Spec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
+
+		this.inputs = inputs;
+		vegaEmbed(this.inputs, this.v2Spec)
+
+		this.element.appendChild(inputs);
+
+
+
+		console.log(this.inputs);
+
+
 		this.refresh(date);
 	},
 
@@ -255,11 +290,11 @@ var vega_lite_app = SAGE2_App.extend( {
 	    inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 	    inputs.style.boxSizing = "border-box";
 
-	    this.v3Spec["width"] - this.sage2_width;
-	    this.v3Spec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
+	    this.v2Spec["width"] - this.sage2_width;
+	    this.v2Spec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
 
 	    this.inputs = inputs;
-	    vegaEmbed(this.inputs, this.v3Spec);
+	    vegaEmbed(this.inputs, this.v2Spec);
 
             this.element.appendChild(inputs);
 
