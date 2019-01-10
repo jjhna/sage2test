@@ -2560,7 +2560,7 @@ function wsAppMoveTo(wsio, data) {
 	}
 }
 
-function wsAppMoveAndesize(wsio, data){
+function wsAppMoveAndResize(wsio, data){
 	if (SAGE2Items.applications.list.hasOwnProperty(data.id)) {
 		var app = SAGE2Items.applications.list[data.id];
 		// Values in percent if smaller than 1

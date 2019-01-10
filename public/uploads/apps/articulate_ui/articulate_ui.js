@@ -64,6 +64,13 @@ var articulate_ui = SAGE2_App.extend( {
 		this.listOfCommandsForTesting = 
 		[
 			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
+			{text: "Can you move it", targetAppId: "app_1"}, 
+			{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_1"},			
+			{text: "Can you minimize it?", targetAppId: "app_1"},
+			{text: "Can you maximize it?", targetAppId: "app_1"},
+			{text: "Yeah don't need this one here", targetAppId: "app_1"},
+
+
 			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
 			{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
 			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q4, app5
@@ -568,6 +575,10 @@ console.log("debugDatagram: "+ data);
 					console.log("minimize");
 					this.readExample3(specObj);
 				}
+				else if( specObj["request"] == "maximize.01"){
+					console.log("maximize");
+					this.readExample3(specObj);
+				}
 				else{ //not sure what this is for
 					this.refresh();
 					this.systemInstruction = "";
@@ -609,6 +620,12 @@ console.log("debugDatagram: "+ data);
 				console.log(specificationObj["targetId"]);
 				hubId = specificationObj["targetId"];
 				this.minimizeChildByHubId(hubId);
+			}
+			else if( specificationObj["request"] == "maximize.01"){
+				console.log("MAXIMIZE");
+				console.log(specificationObj["targetId"]);
+				hubId = specificationObj["targetId"];
+				this.maximizeChildByHubId(hubId);
 			}
 		}
 		else if(specificationObj["requestType"] == "Command Based on previous viz"
@@ -1238,11 +1255,31 @@ console.log("debugDatagram: "+ data);
 			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
 				var moveAppIndex = this.childList.indexOf(this.childList[key]);
 				//this.closeChild(closeAppIndex);
-				newX = 5000;//this.childList[key].x+200;
+				newW = this.childList[key].w;
+				newH = this.childList[key].h;
+				newX = 5440 - newW;//this.childList[key].x+200;
 				newY = this.childList[key].y;
-				newW = this.childList[key].w/2;
-				newH = this.childList[key].w/2;
+				this.moveAndResizeChildById(this.childList[key].childId, newX, newY, newW, newH, true);
+				console.log("Move and Resize "+this.childList[key].childId);
+				return;
+			}
+		}
+	},
 
+
+	maximizeChildByHubId: function(hubId){
+		for(var key in this.childList)
+		{
+			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
+				var moveAppIndex = this.childList.indexOf(this.childList[key]);
+				//this.closeChild(closeAppIndex);
+				newW = this.childList[key].w*1.5;
+				newH = this.childList[key].h*1.5;
+				newX = 5440/2.0 - newW;//this.childList[key].x+200;
+				newY = (3000 - newH)/2;
+
+				console.log(newW);
+				console.log(newH);
 				this.moveAndResizeChildById(this.childList[key].childId, newX, newY, newW, newH, true);
 				console.log("Move and Resize "+this.childList[key].childId);
 				return;

@@ -1309,10 +1309,10 @@ var SAGE2_App = Class.extend({
 				console.log("child move event");
 				
 				idx = this.getChildIdxById(data.childId); 
-				this.childList[idx].x = data.data.xPos;
-				this.childList[idx].y = data.data.yPos;
-				this.childList[idx].w = data.data.width;
-				this.childList[idx].w = data.data.height;
+				this.childList[idx].x = data.data.x;
+				this.childList[idx].y = data.data.y;
+				this.childList[idx].w = data.data.w;
+				this.childList[idx].w = data.data.h;
 			}
 			if (data.type == "childResizeEvent") {
 				console.log("child resize event");
@@ -1321,10 +1321,11 @@ var SAGE2_App = Class.extend({
 				this.childList[idx].x = data.data.x;
 				this.childList[idx].y = data.data.y;
 				this.childList[idx].w = data.data.w;
-				this.childList[idx].w = data.data.h;
+				this.childList[idx].h = data.data.h;
 			}
 			if (data.type == "childMoveAndResizeEvent") {
-				console.log("child move and resize event");
+				console.log("child move and resize event ");
+				console.log( data.data);
 				
 				idx = this.getChildIdxById(data.childId); 
 				console.log(idx);
@@ -1332,7 +1333,7 @@ var SAGE2_App = Class.extend({
 				this.childList[idx].x = data.data.x;
 				this.childList[idx].y = data.data.y;
 				this.childList[idx].w = data.data.w;
-				this.childList[idx].w = data.data.h;
+				this.childList[idx].h = data.data.h;
 			}
 			if( data.type == "childReopenedEvent"){
 				console.log("reopened children ");

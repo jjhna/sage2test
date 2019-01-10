@@ -196,7 +196,7 @@ var vega_lite_app = SAGE2_App.extend( {
 		
 		
 		this.vLSpec  = this.state.vegaLiteSpec; 
-		   		vegaEmbed(this.inputs, this.v2Spec);
+		   		vegaEmbed(this.inputs, this.vLSpec);
 
 	},
 
@@ -225,11 +225,11 @@ var vega_lite_app = SAGE2_App.extend( {
 		inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 		inputs.style.boxSizing = "border-box";
 
-		this.v2Spec["width"] - this.sage2_width;
-		this.v2Spec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
+		this.vLSpec["width"] - this.sage2_width;
+		this.vLSpec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
 
 		this.inputs = inputs;
-		vegaEmbed(this.inputs, this.v2Spec)
+		vegaEmbed(this.inputs, this.vLSpec)
 
 		this.element.appendChild(inputs);
 
@@ -290,11 +290,11 @@ var vega_lite_app = SAGE2_App.extend( {
 	    inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 	    inputs.style.boxSizing = "border-box";
 
-	    this.v2Spec["width"] - this.sage2_width;
-	    this.v2Spec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
+	    this.vLSpec["width"] - this.sage2_width;
+	    this.vLSpec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
 
 	    this.inputs = inputs;
-	    vegaEmbed(this.inputs, this.v2Spec);
+	    vegaEmbed(this.inputs, this.vLSpec);
 
             this.element.appendChild(inputs);
 

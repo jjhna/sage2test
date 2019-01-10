@@ -73,7 +73,7 @@ var vega_vis_app = SAGE2_App.extend( {
 
 		// stuff I tried and didn't work...
 
-		//updated = true;
+		updated = true;
 
 		//this.spec = "uploads/apps/vega_vis_app/data/spec.json";
 		//this.parse(this.spec); //moved this elsewhere///
