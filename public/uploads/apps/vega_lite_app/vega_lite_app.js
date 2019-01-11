@@ -196,6 +196,19 @@ var vega_lite_app = SAGE2_App.extend( {
 		
 		
 		this.vLSpec  = this.state.vegaLiteSpec; 
+		this.vLSpec["config"] = {
+					    "axis": {
+					      "labelFont": "Arial",
+					      "labelFontSize": 20,
+					      "titleFont": "Arial",
+					      "titleFontSize": 30,
+					      "titlePadding": 20
+					    },
+					    "legend": {
+					    	"labelFont": "Arial",
+					    	"labelFontSize": 20
+					    }
+					 };
 		   		vegaEmbed(this.inputs, this.vLSpec);
 
 	},
@@ -220,13 +233,31 @@ var vega_lite_app = SAGE2_App.extend( {
 		inputs.style.top = "0px";
 		inputs.style.width =this.sage2_width + "px";// this.sage2_width;//"100%";//"300px";//"100%";                                                 \
                                                                                                                                                           
-		inputs.style.height = (this.sage2_height - ui.titleBarHeight * 1.5 - 100) + "px";
+		inputs.style.height = (this.sage2_height - ui.titleBarHeight * 1.5 - 250) + "px";
 		//inputs.style.minHeight = "100%";                                                                                                            
 		inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 		inputs.style.boxSizing = "border-box";
 
 		this.vLSpec["width"] - this.sage2_width;
-		this.vLSpec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
+		this.vLSpec["height"] = this.sage2_height - ui.titleBarHeight*1.5-250;
+
+		this.vLSpec["config"] = {
+					    "axis": {
+					      "labelFont": "Arial",
+					      "labelFontSize": 20,
+					      "titleFont": "Arial",
+					      "titleFontSize": 30,
+					      "titlePadding": 20
+					    },
+					    "legend": {
+					    	"labelFont": "Arial",
+					    	"labelFontSize": 20
+					    }
+					 };
+
+		this.vLSpec["legend"] = {
+       		 "title": "Case Ageing"
+     	 };
 
 		this.inputs = inputs;
 		vegaEmbed(this.inputs, this.vLSpec)
@@ -285,13 +316,27 @@ var vega_lite_app = SAGE2_App.extend( {
 	    inputs.style.left ="0px"; // this.sage2_width + "px";//"0px";                                                                             
 	    inputs.style.top = "0px";
 	    inputs.style.width =this.sage2_width + "px";// this.sage2_width;//"100%";//"300px";//"100%";                                                              
-	    inputs.style.height = (this.sage2_height - ui.titleBarHeight * 1.5 - 100) + "px";
+	    inputs.style.height = (this.sage2_height - ui.titleBarHeight * 1.5 - 250) + "px";
 	    //inputs.style.minHeight = "100%";                                                                                                        
 	    inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 	    inputs.style.boxSizing = "border-box";
 
 	    this.vLSpec["width"] - this.sage2_width;
-	    this.vLSpec["height"] = this.sage2_height - ui.titleBarHeight*1.5-100;
+	    this.vLSpec["height"] = this.sage2_height - ui.titleBarHeight*1.5-250;
+
+	    this.vLSpec["config"] = {
+					    "axis": {
+					      "labelFont": "Arial",
+					      "labelFontSize": 26,
+					      "titleFont": "Arial",
+					      "titleFontSize": 30,
+					      "titlePadding": 20
+					    },
+					    "legend": {
+					    	"labelFont": "Arial",
+					    	"labelFontSize": 26
+					    }
+					 };
 
 	    this.inputs = inputs;
 	    vegaEmbed(this.inputs, this.vLSpec);
