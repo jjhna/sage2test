@@ -95,6 +95,13 @@ var Webview = SAGE2_App.extend({
 			this.contentType = "youtube";
 			// ask for a HD resize
 			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
+		} else if (view_url.startsWith('https://www.ted.com/talks')) {
+			// Handler for TED talks
+			let talk = view_url.replace('https://www.ted.com/talks', 'https://embed.ted.com/talks');
+			this.contentType = "tedtalk";
+			view_url = talk;
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.startsWith('https://youtu.be')) {
 			// youtube short URL (used in sharing)
 			video_id = view_url.split('/').pop();
