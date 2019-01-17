@@ -19,8 +19,8 @@
 		"vegaLiteSpec" : {
 		    "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
    		    "description": "Title",
-    		    "width": 1000,
-    		    "height": 800,
+    		    "width": 700,
+    		    "height": 500,
     		    "data": {
       		    "values": [
         	    {

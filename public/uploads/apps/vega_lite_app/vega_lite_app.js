@@ -45,6 +45,9 @@ var vega_lite_app = SAGE2_App.extend( {
 		// move and resize callbacks
 		this.resizeEvents = "onfinish"; // continuous
 
+		this.updateTitle(this.state.plotTitle);
+
+		console.log( this.state.plotTitle);
 		
 	
 		// Set the background to black
@@ -71,7 +74,9 @@ var vega_lite_app = SAGE2_App.extend( {
 	//	this.initBarSpec();
 	//	this.initLineSpec();
 	//	console.log(this.state.title);
-		this.updateTitle(this.state.title);
+
+	    this.updateTitle(this.state.plotTitle);
+		console.log(this.state.plotTitle);
 
 		//access the data from the articualte ui that we need to draw this properly
 		//and then overwrite the default values in the app
@@ -207,9 +212,14 @@ var vega_lite_app = SAGE2_App.extend( {
 					    "legend": {
 					    	"labelFont": "Arial",
 					    	"labelFontSize": 20
-					    }
+					    }//,
+					    //"title" : {
+					    //	"font": "Arial",
+					    //	"fontSize": 40
+					    //}
 					 };
 		   		vegaEmbed(this.inputs, this.vLSpec);
+		//this.refresh(date);
 
 	},
 
@@ -252,9 +262,12 @@ var vega_lite_app = SAGE2_App.extend( {
 					    "legend": {
 					    	"labelFont": "Arial",
 					    	"labelFontSize": 20
-					    }
+					    }//,
+					    //"title" : {
+					    //	"font": "Arial",
+					    //	"fontSize": 40
+					    //}
 					 };
-
 		this.vLSpec["legend"] = {
        		 "title": "Case Ageing"
      	 };
@@ -265,6 +278,8 @@ var vega_lite_app = SAGE2_App.extend( {
 		this.element.appendChild(inputs);
 
 
+	    this.updateTitle(this.state.plotTitle);
+		console.log(this.state.plotTitle);
 
 		console.log(this.inputs);
 
@@ -321,23 +336,27 @@ var vega_lite_app = SAGE2_App.extend( {
 	    inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
 	    inputs.style.boxSizing = "border-box";
 
-	    this.vLSpec["width"] - this.sage2_width;
-	    this.vLSpec["height"] = this.sage2_height - ui.titleBarHeight*1.5-250;
+	    this.vLSpec["width"] = this.sage2_width - 300;
+	    this.vLSpec["height"] = this.sage2_height - 300;//ui.titleBarHeight*1.5-250;
 
-	    this.vLSpec["config"] = {
+
+		this.vLSpec["config"] = {
 					    "axis": {
 					      "labelFont": "Arial",
-					      "labelFontSize": 26,
+					      "labelFontSize": 20,
 					      "titleFont": "Arial",
 					      "titleFontSize": 30,
 					      "titlePadding": 20
 					    },
 					    "legend": {
 					    	"labelFont": "Arial",
-					    	"labelFontSize": 26
-					    }
+					    	"labelFontSize": 20
+					    }//,
+					    //"title" : {
+					    //	"font": "Arial",
+					    //	"fontSize": 40
+					    //}
 					 };
-
 	    this.inputs = inputs;
 	    vegaEmbed(this.inputs, this.vLSpec);
 
@@ -355,9 +374,11 @@ var vega_lite_app = SAGE2_App.extend( {
 	    //	this.parentLink.update(); // redraw
 	    //}
 
+	    this.updateTitle(this.state.plotTitle);
+		console.log(this.state.plotTitle);
+
 	    this.refresh(date);
 	},
-
 
 
 	//reszing is a BIG problem with line charts

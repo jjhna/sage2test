@@ -81,7 +81,7 @@ var vega_vis_app = SAGE2_App.extend( {
   		// this.sendResize(spec.width, spec.height); //nightmare- resizing problems
 
 		//this.updateTitle("title");	//this didn't work in the past, but might work now...
-
+		
 
 	},
 
