@@ -1,0 +1,18 @@
+{
+	"main_script": "articulate_ui_v2.js",
+	"icon": "articulate_ui_v2.png",
+	"width": 3000,
+	"height": 2000,
+	"resize": "free",
+	"dependencies": [
+	],
+	"load": {
+		"value": 4
+	},
+	"title": "articulate_ui_v2",
+	"version": "1.0.0",
+	"description": "SAGE2 application articulate_ui",
+	"keywords": [ "sage2", "articulate_ui" ],
+	"author": "Jillian Aurisano <jillian.aurisano@gmail.com>",
+	"license": "SAGE2-Software-License"
+}

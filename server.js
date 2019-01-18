@@ -1241,11 +1241,14 @@ function setupListeners(wsio) {
 	//status of capturing gesture or not (true/false)
 	wsio.on('gestureRecognitionStatus',             wsGestureRecognitionStatus);
 	//pointing gesture position from kinect App
+
+
+	//JILLIAN CHECK HERE
 	wsio.on('pointingGesturePosition',              wsPointingGesturePosition);
 	wsio.on('leftHandPosition',             			  wsLeftHandPosition);
 	wsio.on('stopPointingGesturePosition',          wsStopPointingGesturePosition);
-	wsio.on('gestureZoomOut',          							wsGestureZoomOut);
-	wsio.on('gestureZoomIn',          							wsGestureZoomIn);
+	//wsio.on('gestureZoomOut',          							wsGestureZoomOut);
+	//wsio.on('gestureZoomIn',          							wsGestureZoomIn);
 
 }
 // } //NOTE SECOND ONE OF THESE
@@ -3519,7 +3522,7 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 										"mostOccurantItems": orderedItems };
 
 	//find articulate app (just articulate app for now)
-	var app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui");
+	var app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui_v2");
 	//console.log(app);
 
 	if( app != null ){
@@ -3843,7 +3846,7 @@ function wsPointingGesturePosition(wsio, data){
 
 	for (var key in SAGE2Items.applications.list){
 		var app = SAGE2Items.applications.list[key];
-		if(app.title != "machineLearning" && app.title != "articulate_ui" && app.title != "background"){
+		if(app.title != "machineLearning" && app.title != "articulate_ui"  && app.title != "articulate_ui_v2" && app.title != "background"){
 			if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){//*****
 				rightPointing = true;
 				if( data.recognitionStatus ){
@@ -3951,6 +3954,11 @@ function wsLeftHandPosition(wsio, data){
 				if (sagePointers[data.id] === undefined) {
 					createSagePointer(data.id);
 					showPointer(data.id, {label: data.id, color: data.color, sourceType: "kinect"});
+
+					// if (remoteInteraction[data.id].appInteractionMode()) {
+					// 	remoteInteraction[data.id].toggleModes();
+					// 	broadcast('changeSagePointerMode', {id: sagePointers[data.id].id, mode: remoteInteraction[data.id].interactionMode});
+					// }
 
 					// remoteInteraction[data.id].saveMode();
 					// if (remoteInteraction[data.id].appInteractionMode()) {
