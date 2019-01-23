@@ -5,8 +5,164 @@
 // Copyright (c) 2015
 //
 
-var articulate_ui_v2 = SAGE2_App.extend( {
+var articulate_ui_chat = SAGE2_App.extend( {
 	init: function(data) {
+		this.SAGE2Init("div", data);
+
+		this.passSAGE2PointerAsMouseEvents = true;
+		this.debugMode = true;
+		this.chatData = [];
+
+		this.listOfCommandsForTesting2 = [
+		    {"who": "chat friend", "message": "What is up?"},
+		    //{"who": "chat friend", "message": "What is up?"},
+
+		    {"who": "chat self", "message": "Nothing much, you?"},
+		    {"who": "chat friend", "message": "I'm going out, want to come?"},
+		    {"who": "chat self", "message": "sounds great!"},
+		    {"who": "chat friend", "message": "ok see you at 10"},
+		    {"who": "chat self", "message": "Order a burger for me"},
+		    {"who": "chat friend", "message": "Do you want a milkshake too?"},
+		    {"who": "chat self", "message": "sure"},
+		    {"who": "chat friend", "message": "can you bring that book you mentioned last time? the one about cats?"},
+		    {"who": "chat self", "message": "Yeah, let me see if I can find it."},
+		    {"who": "chat friend", "message": "No worries if it isn't available"},
+		    {"who": "chat self", "message": "No it should be ok."}
+		];
+
+		this.listOfCommandsForTesting = 
+		[
+			{"who": "chat friend", "message": "Lets start with the activity around UIC", "targetAppId": null},//Q1, app2
+			{"who": "chat friend", "message":	"Could I take a look at when crimes happen",  "targetAppId": null},//Q2, app3
+			{"who": "chat friend", "message": "Could I look at when crimes happen for each neighborhood",  "targetAppId": null},//Q3, app4
+			{"who": "chat friend", "message": "Show me the months where the most number of crimes occur around school areas",  "targetAppId": null},//Q4, app5
+			{"who": "chat friend", "message": "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery",  "targetAppId": null}, //Q5, app6
+			{"who": "chat friend", "message": "Of the theft in the Near West Side, are you able to kind of show it by month",  "targetAppId": null},//Q6, app7
+			
+			{"who": "chat friend", "message": "PART 2a",  "targetAppId": null},//delete
+
+			{"who": "chat friend", "message": "I would just like to see the total amount of crimes that happened divided by the three main areas, UIC, River North and Near West Side",  "targetAppId": null},//Q1, app8
+			{"who": "chat friend", "message":	"Are you able to show like the entire percentage of crime in each neighborhood",  "targetAppId": null},//Q2, app9
+			{"who": "chat friend", "message": "Is there any way to kind of show theft by location type",  "targetAppId": null},//Q3, app10
+			{"who": "chat friend", "message": "Can you show the location type for the crimes that occur between noon and 6 and 6 and midnight",  "targetAppId": null},//Q5, app11
+			{"who": "chat friend", "message": "I am wondering around the bus lines if there are more public intoxication or fighting or verbal harassment in the summer",  "targetAppId": null}, //Q6, app12
+			{"who": "chat friend", "message": "Show me the crime reported with respect to the location specifically in River North and UIC by year",  "targetAppId": null},//Q4, app13
+
+			{"who": "chat friend", "message": "PART 2b",  "targetAppId": null},//Q4, app7
+
+			{"who": "chat friend", "message": "Can you show the same chart for days of the week?",  "targetAppId": "app_12"},  // app 8
+			{"who": "chat friend", "message": "Can you show this graph for months of year?",  "targetAppId": "app_12"}, // app 9
+			{"who": "chat friend", "message": "Can you move it",  "targetAppId": "app_12"}, 
+			{"who": "chat friend", "message": "Can you minimize it?",  "targetAppId": "app_12"},
+			{"who": "chat friend", "message": "Can you bring up this pic that has been hidden?",  "targetAppId": "app_12"},			
+			{"who": "chat friend", "message": "Yeah don't need this one here",  "targetAppId": "app_12"}
+
+		];
+
+		this.currentTestCommand = 0;
+
+		this.targetAppID = null;
+		this.requests = new Array();
+		this.responces = new Array();
+		this.sessionId = null;
+
+
+		this.resizeEvents = "onfinish";
+		this.svg = null;
+
+		this.element.id = "div" + data.id;
+
+		// Get width height from the supporting div
+		var myWidth  = this.element.clientWidth;
+		var myHeight = this.element.clientHeight;
+
+		var mainDiv = d3.select(this.element).append("div")
+			.attr("width",   myWidth)
+			.attr("height",  myHeight);
+
+		this.chatbox = mainDiv.append('div')
+					.attr('class', 'chatbox')
+					.style('width', "100%")
+					.style('min-width', '390px')
+					.style('height',"100%")
+					.style('background', '#fff')
+					.style('padding', '25px')
+					.style('margin', '20px auto')
+					.style('box-shadow', '0 3px #ccc');
+
+		this.chatlogs = this.chatbox.append('div')
+				.attr('class', 'chatlogs')
+				.style('padding', '10px')
+				.style('width', '100%')
+				.style('height', '100%')
+				.style('overflow-x', 'hidden')
+				.style('overflow-y', 'scroll');
+
+
+
+		this.update();
+
+	},
+
+	update: function(){
+		console.log(this.chatData);
+
+
+		var rows = d3.select('.chatlogs')
+			.selectAll('div')
+			.data(this.chatData)
+			.enter()
+			.append('div')
+			.attr('class', function (d) { return d.who });
+
+		var chat = d3.selectAll('.chat')
+			.style("display", "flex")
+			.style("flex-flow", "row wrap")
+			.style("align-items", "flex-start")
+			.style("margin-bottom", "10px");
+			
+
+		rows.append('div')
+			.attr('class', 'user-photo')
+			.style('width', '60px')
+			.style('height', '60px')
+			.style('background', '#ccc')
+			.style('border-radius', '50%');
+
+		rows.append('p')
+			.attr('class', 'chat-message')
+			.text( function(d) { return d.message } )
+			.style('background', function(d){ 
+				if( d["who"] == "chat friend")
+					return "#1adda4";
+				else
+					return "#1ddced";
+			})
+			.style('order', function(d){ 
+				if( d["who"] == "chat self")
+					return -1;
+				else
+					return 1;
+			})
+			.style('width', '80%')
+			.style('padding', '15px')
+			.style('margin', '5px 10px 0')
+			.style('border-radius', '10px')
+			.style('color', '#fff')
+			.style('font-size', '20px');
+
+
+			//this.refresh(date);
+
+
+	},
+
+	// update: function(data){
+
+
+	// },
+
+	init2: function(data){
 		// Create div into the DOM
 		this.SAGE2Init("canvas", data);
 		// Set the background to black
@@ -64,13 +220,6 @@ var articulate_ui_v2 = SAGE2_App.extend( {
 		this.listOfCommandsForTesting = 
 		[
 			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
-			//{text: "Can you move it", targetAppId: "app_1"}, 
-			//{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_1"},			
-			//{text: "Can you minimize it?", targetAppId: "app_1"},
-			//{text: "Can you maximize it?", targetAppId: "app_1"},
-			//{text: "Yeah don't need this one here", targetAppId: "app_1"},
-
-
 			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
 			{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
 			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q4, app5
@@ -183,13 +332,16 @@ var articulate_ui_v2 = SAGE2_App.extend( {
 	},
 
 
+	draw: function(data) {
+
+	},
 
 	//----------------------------------------//
 	//---------- DRAWING FUNCTIONS ----------//
 	//---------------------------------------//
 	//I used the canvas to draw because I find it preferable for text, and I am more accustumed to it
 	//but this isn't necessary
-	draw: function(date) {
+	draw2: function(date) {
 		//console.log('articulate_ui> Draw with state value', this.state.value);
 
 		this.ctx.clearRect(0, 0, this.element.width, this.element.height);
@@ -272,7 +424,53 @@ var articulate_ui_v2 = SAGE2_App.extend( {
 	//--------------EVENT FUNCTIONS-------------//
 	//------------------------------------------//
 	event: function(eventType, position, user_id, data, date) {
-		if (eventType === "pointerPress" && (data.button === "left")) { //when I am debugging, I use pointer presses to launch example visualizations
+		if (eventType === "pointerPress" && (data.button === "left")) { 
+			console.log('pointer press');
+
+			if( this.debugMode )
+			{
+				if( this.currentTestCommand < this.listOfCommandsForTesting.length )
+				{
+					this.chatData.push( this.listOfCommandsForTesting[this.currentTestCommand] );
+					this.currentTestCommand = this.currentTestCommand + 1;
+				}
+			}
+
+
+			var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query?utterance=";
+			var requestIndex = this.requests.push(base_url + this.chatData[this.chatData.length-1]["message"]+"&gesturetargetid="+this.chatData[this.chatData.length-1]["targetAppId"]); //returns the number of elements
+					//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
+
+					//only send url and the index of the request
+			//if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
+				console.log("ABOUT TO CONTACT ARTICULATE HUB")
+				//orderedItems = [ this.listOfCommandsForTesting[this.currentTestCommand]["text"] ];
+				console.log( this.chatData[this.chatData.length-1]["targetAppId"] );  //send to the articulate hub
+				this.contactArticulateHub(base_url+ this.chatData[this.chatData.length-1]["message"], requestIndex - 1, this.chatData[this.chatData.length-1]["targetAppId"]);  //send to the articulate hub
+			//}
+
+
+			this.update(date);
+
+			this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
+
+			this.chatData.push({"who": "chat self", "message": "processing...."});
+
+			this.update(date);
+
+			this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
+
+			this.refresh(date);
+
+			
+		}
+
+
+
+	},
+
+	event2 : function(eventType, position, user_id, data, date) {
+		//when I am debugging, I use pointer presses to launch example visualizations
 			//if( isMaster && this.debugMode ){
 
 
@@ -296,7 +494,10 @@ var articulate_ui_v2 = SAGE2_App.extend( {
 					this.systemInstruction = ">> Sending Request . . ."
 					this.refresh();
 
-					//new logic to maintain the same sessionId
+					
+		// }
+		// else if (eventType === "pointerMove" && this.dragging) {
+		// }//new logic to maintain the same sessionId
 					var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query?utterance=";
 					var requestIndex = this.requests.push(base_url + this.listOfCommandsForTesting[this.currentTestCommand]["text"]+"&gesturetargetid="+this.listOfCommandsForTesting[this.currentTestCommand]["targetAppId"]); //returns the number of elements
 					//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
@@ -316,36 +517,33 @@ var articulate_ui_v2 = SAGE2_App.extend( {
 
 
 
-		}
-		else if (eventType === "pointerMove" && this.dragging) {
-		}
-		else if (eventType === "pointerRelease" && (data.button === "left")) {
-		}
+		// else if (eventType === "pointerRelease" && (data.button === "left")) {
+		// }
 
-		// Scroll events for zoom
-		else if (eventType === "pointerScroll") {
-		}
-		else if (eventType === "widgetEvent"){
-		}
-		else if (eventType === "keyboard") {
-			if (data.character === "m") {
-				this.refresh(date);
-			}
-		}
-		else if (eventType === "specialKey") {
-			if (data.code === 37 && data.state === "down") { // left
-				this.refresh(date);
-			}
-			else if (data.code === 38 && data.state === "down") { // up
-				this.refresh(date);
-			}
-			else if (data.code === 39 && data.state === "down") { // right
-				this.refresh(date);
-			}
-			else if (data.code === 40 && data.state === "down") { // down
-				this.refresh(date);
-			}
-		}
+		// // Scroll events for zoom
+		// else if (eventType === "pointerScroll") {
+		// }
+		// else if (eventType === "widgetEvent"){
+		// }
+		// else if (eventType === "keyboard") {
+		// 	if (data.character === "m") {
+		// 		this.refresh(date);
+		// 	}
+		// }
+		// else if (eventType === "specialKey") {
+		// 	if (data.code === 37 && data.state === "down") { // left
+		// 		this.refresh(date);
+		// 	}
+		// 	else if (data.code === 38 && data.state === "down") { // up
+		// 		this.refresh(date);
+		// 	}
+		// 	else if (data.code === 39 && data.state === "down") { // right
+		// 		this.refresh(date);
+		// 	}
+		// 	else if (data.code === 40 && data.state === "down") { // down
+		// 		this.refresh(date);
+		// 	}
+		// }
 	},
 
 articulateDebugInfo: function(data, date){
