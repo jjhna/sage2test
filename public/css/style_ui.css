@@ -1347,6 +1347,77 @@ The z-index is very important.
     align-items: stretch;
 }
 
+#codeSnippetEditor #snippetLoggingWrapper {
+    display: flex;
+    flex-basis: 400px;
+    flex-direction: column;
+
+    margin: 15px;
+    margin-left: 0px;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper {
+    flex: 1 0;
+    display: flex;
+    flex-direction: column;
+
+    border: 1px solid #888;
+    background: #e0e0e0;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper:not(:last-of-type) {
+    margin-bottom: 5px;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper .log-title {
+    width: 100%;
+
+    padding-left: 15px;
+    box-sizing: border-box;
+    background-color: #aaa;
+    border-bottom: 1px solid #999;
+    
+    line-height: 24px;
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper .log-items {
+    flex: 1;
+    box-shadow: inset 0 0 5px #aaa;
+    overflow: auto;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper .log-items .message {
+    font-size: 14px;
+    padding: 3px;
+
+    font-family: monospace;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper #errorMessages .message {
+    background: #ffefef;
+    color: red;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper #errorMessages .message:nth-child(even) {
+    background: #ffe0e0;
+    color: red;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper #consoleMessages .message {
+    background: #fefefe;
+    color: black;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper #consoleMessages .message:nth-child(even) {
+    background: #f0f0f0;
+    color: black;
+}
+
+
+
 /* ===================================== */
 /* ====== Editor Controls Styling ====== */
 /* ===================================== */
@@ -1654,6 +1725,14 @@ The z-index is very important.
     border-radius: 0 0 10px 10px;
     margin: 15px;
     box-sizing: border-box;
+}
+
+#codeSnippetEditor #editorContentWrapper {
+    display: flex;
+    flex: 1 0;
+
+    flex-direction: row;
+    flex-wrap: nowrap;
 }
 
 #codeSnippetEditor .overlay {
