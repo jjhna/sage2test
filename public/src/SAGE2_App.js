@@ -1282,7 +1282,7 @@ var SAGE2_App = Class.extend({
 					if( this.childList[i].childId == data.childId )
 						this.childList.splice(i, 1);
 			}
-			if (data.type == "childOpenEvent") {
+			else if (data.type == "childOpenEvent") {
 				console.log("child open event");
 				if( data.data.success ){
 					console.log("child app launch success " + data.childId);
@@ -1305,7 +1305,7 @@ var SAGE2_App = Class.extend({
 					this.childList.splice(this.childList.length-1, 1);
 				}
 			}
-			if (data.type == "childMoveEvent") {
+			else if (data.type == "childMoveEvent") {
 				console.log("child move event");
 				
 				idx = this.getChildIdxById(data.childId); 
@@ -1314,7 +1314,7 @@ var SAGE2_App = Class.extend({
 				this.childList[idx].w = data.data.w;
 				this.childList[idx].w = data.data.h;
 			}
-			if (data.type == "childResizeEvent") {
+			else if (data.type == "childResizeEvent") {
 				console.log("child resize event");
 				
 				idx = this.getChildIdxById(data.childId); 
@@ -1323,7 +1323,7 @@ var SAGE2_App = Class.extend({
 				this.childList[idx].w = data.data.w;
 				this.childList[idx].h = data.data.h;
 			}
-			if (data.type == "childMoveAndResizeEvent") {
+			else if (data.type == "childMoveAndResizeEvent") {
 				console.log("child move and resize event ");
 				console.log( data.data);
 				
@@ -1335,7 +1335,7 @@ var SAGE2_App = Class.extend({
 				this.childList[idx].w = data.data.w;
 				this.childList[idx].h = data.data.h;
 			}
-			if( data.type == "childReopenedEvent"){
+			else if( data.type == "childReopenedEvent"){
 				console.log("reopened children ");
 				//childData = {
 				//	applicationType: data.childAppType,
@@ -1348,9 +1348,12 @@ var SAGE2_App = Class.extend({
 				//};
 				//this.childList.push(childData);
 			}
+
 			if( typeof this.childMonitorEvent != "undefined") {
+				console.log(data.data);
     			this.childMonitorEvent(data.childId, data.type, data.data, data.date);
     		}
+
 		} else if( data.whichType == "parentMonitoring"){
 			if( data.type == "parentClose" ){//remove child
 				this.parentApp = null;

@@ -102,7 +102,6 @@ var articulate_ui_chat = SAGE2_App.extend( {
 				.style('overflow-y', 'scroll');
 
 
-
 		this.update();
 
 	},
@@ -118,12 +117,13 @@ var articulate_ui_chat = SAGE2_App.extend( {
 			.append('div')
 			.attr('class', function (d) { return d.who });
 
+
 		var chat = d3.selectAll('.chat')
 			.style("display", "flex")
 			.style("flex-flow", "row wrap")
 			.style("align-items", "flex-start")
 			.style("margin-bottom", "10px");
-			
+		
 
 		rows.append('div')
 			.attr('class', 'user-photo')
@@ -460,7 +460,8 @@ var articulate_ui_chat = SAGE2_App.extend( {
 				if( this.currentTestCommand < this.listOfCommandsForTesting.length )
 				{
 					this.chatData.push( this.listOfCommandsForTesting[this.currentTestCommand] );
-					this.update();
+					//this.update();
+					//this.refresh(date);
 					this.currentTestCommand = this.currentTestCommand + 1;
 				}
 			}
@@ -471,12 +472,12 @@ var articulate_ui_chat = SAGE2_App.extend( {
 					//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
 
 					//only send url and the index of the request
-			//if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
+			if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
 				console.log("ABOUT TO CONTACT ARTICULATE HUB")
 				//orderedItems = [ this.listOfCommandsForTesting[this.currentTestCommand]["text"] ];
 				console.log( this.chatData[this.chatData.length-1]["targetAppId"] );  //send to the articulate hub
 				this.contactArticulateHub(base_url+ this.chatData[this.chatData.length-1]["message"], requestIndex - 1, this.chatData[this.chatData.length-1]["targetAppId"]);  //send to the articulate hub
-			//}
+			}
 
 			this.waitingForResponse = true;
 
@@ -826,12 +827,7 @@ console.log("debugDatagram: "+ data);
 		//layout requests (close)
 		//this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
 
-		this.chatData.push({"who": "chat self", "message": "done!"});
-
-		this.update();
-
-		this.waitingForResponse = false;
-		this.refresh();
+		
 
 		//vis requests
 		console.log("######################################")
@@ -1741,6 +1737,7 @@ console.log("debugDatagram: "+ data);
 
 
 	childMonitorEvent: function(childId, type, data, date){
+		console.log("child monitoring event in chat")
 		if( type == "childMoveEvent"){
 			console.log(data);
 			console.log("child move");
@@ -1768,8 +1765,12 @@ console.log("debugDatagram: "+ data);
 			console.log(this.childList);
 			//this.childList[this.childList.length][""]
 			//
+			this.chatData.push({"who": "chat self", "message": "done!"});
 
-			this.refresh(date);
+			this.update();
+
+			this.waitingForResponse = false;
+			this.refresh();
 		}
 		if( type == "childReopenEvent"){
 			console.log("child reopen");
