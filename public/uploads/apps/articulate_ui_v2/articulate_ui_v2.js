@@ -376,7 +376,13 @@ console.log("debugDatagram: "+ data);
 		//only send url and the index of the request
 		if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
 			console.log("ABOUT TO CONTACT ARTICULATE HUB")
-			this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID["appId"]);  //send to the articulate hub
+				if( data.targetAppID) {
+					this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID["appId"]);  //send to the articulate hub
+				}
+				else {
+					this.contactArticulateHub(base_url+data.text, requestIndex - 1, "null");  //send to the articulate hub
+	
+				}
 		}
 		//----------------------------------------
 

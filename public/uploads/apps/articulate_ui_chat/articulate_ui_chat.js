@@ -9,6 +9,9 @@ var articulate_ui_chat = SAGE2_App.extend( {
 	init: function(data) {
 		this.SAGE2Init("div", data);
 
+		this.element.style.backgroundColor = '#FFFFFF';
+		this.element.style.opacity = 1.0;
+
 		this.passSAGE2PointerAsMouseEvents = true;
 		this.debugMode = true;
 		this.chatData = [];
@@ -150,8 +153,8 @@ var articulate_ui_chat = SAGE2_App.extend( {
 			.style('border-radius', '10px')
 			.style('color', '#fff')
 			.style('font-size', '20px');
-
-
+			
+		this.refresh();
 			//this.refresh(date);
 
 
@@ -324,7 +327,19 @@ var articulate_ui_chat = SAGE2_App.extend( {
 		this.responces = new Array();
 		this.sessionId = null;
 
+		this.waitingForResponse = false;
+
 	},
+
+	// checkWaiting: function(date){
+	// 	this.waitingForResponse = true;
+	// 	this.refresh(date);
+	// },
+
+	// stopWaiting: function(date){
+	// 	this.waitingForResponse = false;
+	// 	this.refresh(date);
+	// }
 
 	load: function(date) {
 		console.log('articulate_ui> Load with state value', this.state.value);
@@ -333,6 +348,19 @@ var articulate_ui_chat = SAGE2_App.extend( {
 
 
 	draw: function(data) {
+		//console.log("draw");
+		if( this.waitingForResponse ){
+			this.element.style.backgroundColor = '#AAAAAA';
+			//console.log(this.chatData);
+			//this.chatData[this.chatData.length-2]["message"] = this.chatData[this.chatData.length-2]["message"] + ".";
+			//this.update();
+			this.refresh();
+		}
+		else {
+			this.element.style.backgroundColor = '#FFFFFF';
+
+		}
+
 
 	},
 
@@ -432,6 +460,7 @@ var articulate_ui_chat = SAGE2_App.extend( {
 				if( this.currentTestCommand < this.listOfCommandsForTesting.length )
 				{
 					this.chatData.push( this.listOfCommandsForTesting[this.currentTestCommand] );
+					this.update();
 					this.currentTestCommand = this.currentTestCommand + 1;
 				}
 			}
@@ -449,17 +478,19 @@ var articulate_ui_chat = SAGE2_App.extend( {
 				this.contactArticulateHub(base_url+ this.chatData[this.chatData.length-1]["message"], requestIndex - 1, this.chatData[this.chatData.length-1]["targetAppId"]);  //send to the articulate hub
 			//}
 
+			this.waitingForResponse = true;
 
-			this.update(date);
+			//this.update(date);
 
-			this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
+			//this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
 
 			this.chatData.push({"who": "chat self", "message": "processing...."});
 
-			this.update(date);
+			this.update();
 
-			this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
+			//this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
 
+			//this.checkWaiting();
 			this.refresh(date);
 
 			
@@ -756,7 +787,7 @@ console.log("debugDatagram: "+ data);
 			//OLD
 			//this.handleResponse(specObj);
 				if( isMaster || !this.useMaster){
-					this.readExample3(specObj, this.colors[this.counter]); // call the parser
+					this.readExample3(specObj, "null"); // call the parser
 				}
 			}
 			else if(specObj["dataQuery"] == null){
@@ -793,6 +824,14 @@ console.log("debugDatagram: "+ data);
 
 	readExample3: function(specificationObj, color){
 		//layout requests (close)
+		//this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
+
+		this.chatData.push({"who": "chat self", "message": "done!"});
+
+		this.update();
+
+		this.waitingForResponse = false;
+		this.refresh();
 
 		//vis requests
 		console.log("######################################")

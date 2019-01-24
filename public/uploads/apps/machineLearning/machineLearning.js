@@ -1135,7 +1135,7 @@ drawSkeletonLines: function(){
 		else if(dropping){
 			droppingInProgress = true;
 		}
-		sim = setInterval(() =>{this.grappingInterval();}, 5);
+		sim = setInterval(() =>{this.grappingInterval();}, 7);
 		console.log("sim " + sim);
 	},
 

@@ -731,7 +731,7 @@ var voiceHandler = new VoiceActionManager(variablesUsedInVoiceHandler);
 //
 process.on('uncaughtException', function(err) {
 	// handle the error safely
-	console.trace("SAGE2>	", err);
+	//console.trace("SAGE2>	", err);
 });
 
 
@@ -3523,6 +3523,8 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 
 	//find articulate app (just articulate app for now)
 	var app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui_v2");
+	//var app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui_chat");
+
 	//console.log(app);
 
 	if( app != null ){
@@ -3531,6 +3533,7 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 		console.log("targetAppID in server " + targetAppID);
 		var data = {id: app.id, data: {text: data.text, orderedItems: orderedItems, targetAppID: targetAppID}, date: Date.now()};
 		broadcast('textInputEvent', data);
+		console.log(data);
 
 		var data = {id: app.id, data: {timestamp: debugDatagram.timestamp, commandText: debugDatagram.commandText, currentApps: debugDatagram.currentApps, mostOccurantItems: debugDatagram.mostOccurantItems}};
 		broadcast('articulateDebugInfo', data);
@@ -3556,6 +3559,11 @@ function wsGoogleVoiceSpeechInput2(wsio, data){
 		var appId = targetInfo.appId;
 		var pointerId = targetInfo.pointerId;
 		var app =  SAGE2Items.applications.list[appId];
+	}
+	else {
+		var appId = "null"; //targetInfo.appId;
+		var pointerId = "null"; //targetInfo.pointerId;
+		var app =  "null"; //SAGE2Items.applications.list[appId];
 	}
 	//console.log("Command Text2:", commandText);
 	var appList = SAGE2Items.applications.list;
@@ -3861,7 +3869,7 @@ function wsPointingGesturePosition(wsio, data){
 				var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
 				if( ml != null ){
 					var data = {id: ml.id, data: app, date: Date.now()};
-					broadcast('pointedToApp', data);
+					//broadcast('pointedToApp', data);// turn this on to drag and drop JILLIAN
 				}
 			}
 		}
@@ -3955,10 +3963,10 @@ function wsLeftHandPosition(wsio, data){
 					createSagePointer(data.id);
 					showPointer(data.id, {label: data.id, color: data.color, sourceType: "kinect"});
 
-					// if (remoteInteraction[data.id].appInteractionMode()) {
-					// 	remoteInteraction[data.id].toggleModes();
-					// 	broadcast('changeSagePointerMode', {id: sagePointers[data.id].id, mode: remoteInteraction[data.id].interactionMode});
-					// }
+					if (remoteInteraction[data.id].appInteractionMode()) {
+						remoteInteraction[data.id].toggleModes();
+						broadcast('changeSagePointerMode', {id: sagePointers[data.id].id, mode: remoteInteraction[data.id].interactionMode});
+					}
 
 					// remoteInteraction[data.id].saveMode();
 					// if (remoteInteraction[data.id].appInteractionMode()) {
