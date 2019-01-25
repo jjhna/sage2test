@@ -737,13 +737,7 @@ var Webview = SAGE2_App.extend({
 
 console.log(JSON.stringify({ youTubeMessage: true, status: "beginning page evaluation"}));
 
-let videos = document.getElementsByTagName("video");
-// If there are video elements, on a youtube page that can play videos
-if (videos.length > 0) {
-	addVideoEventHandlers();
-}
-
-function addVideoEventHandlers() {
+var addVideoEventHandlers = function() {
 	// First check if there are ads
 	if (document.getElementsByClassName("ytp-ad-text").length > 0) {
 		// If ad, then wait a bit
@@ -781,6 +775,12 @@ function addVideoEventHandlers() {
 			console.log(JSON.stringify(print_data));
 		}
 	}
+}
+
+var videos = document.getElementsByTagName("video");
+// If there are video elements, on a youtube page that can play videos
+if (videos.length > 0) {
+	addVideoEventHandlers();
 }
 
 `
@@ -843,9 +843,11 @@ function addVideoEventHandlers() {
 		if (convertedMessage.status == "pause") {
 			console.log("youTubeMessage pause: ", convertedMessage);
 			this.state.url = this.element.src + "&s2_yt_pause=true&s2_yt_currentTime=" + convertedMessage.currentTime;
+			this.SAGE2Sync(true);
 		} else if (convertedMessage.status == "play") {
 			console.log("youTubeMessage play: ", convertedMessage);
 			this.state.url = this.element.src + "&s2_yt_play=true&s2_yt_currentTime=" + convertedMessage.currentTime;
+			this.SAGE2Sync(true);
 		} else {
 			console.log("youTubeMessage OTHER: ", convertedMessage);
 		}
