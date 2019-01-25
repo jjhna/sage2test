@@ -585,7 +585,7 @@ var Webview = SAGE2_App.extend({
 		if (this.element.src != this.state.url) {
 			// First check if YouTube view modification (play / pause)
 			if (this.checkIfYouTubeLoadEvent()) {
-				this.handleYouTubeLoadEvent()
+				this.handleYouTubeLoadEvent();
 			} else {
 				// If not YouTube event sync the change
 				this.element.src = this.state.url;
@@ -781,8 +781,7 @@ var Webview = SAGE2_App.extend({
 		if (this.state.url.includes("youtube.com") || this.state.url.includes("youtu.be")) {
 			console.log("erase me, IS youtube");
 			this.element.executeJavaScript(
-`
-
+				`
 console.log(JSON.stringify({ youTubeMessage: true, status: "beginning page evaluation"}));
 
 var addVideoEventHandlers = function() {
