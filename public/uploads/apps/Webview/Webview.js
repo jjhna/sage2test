@@ -95,6 +95,13 @@ var Webview = SAGE2_App.extend({
 			this.contentType = "youtube";
 			// ask for a HD resize
 			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
+		} else if (view_url.startsWith('https://www.ted.com/talks')) {
+			// Handler for TED talks
+			let talk = view_url.replace('https://www.ted.com/talks', 'https://embed.ted.com/talks');
+			this.contentType = "tedtalk";
+			view_url = talk;
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.startsWith('https://youtu.be')) {
 			// youtube short URL (used in sharing)
 			video_id = view_url.split('/').pop();
@@ -184,12 +191,30 @@ var Webview = SAGE2_App.extend({
 
 		// Intent to navigate: allows quick sync when the webview is shared
 		this.element.addEventListener("will-navigate", function(evt) {
-			// save the url
-			_this.state.url = evt.url;
-			// set the zoom value
-			_this.element.setZoomFactor(_this.state.zoom);
-			// sync the state object
-			_this.SAGE2Sync(true);
+			if (evt.url && evt.url.endsWith('.pdf') && isMaster) {
+				// Dont try to download a PDF
+				evt.preventDefault();
+				_this.element.stop();
+				_this.element.getWebContents().stop();
+
+				// calculate a position right next to the parent view
+				let pos = [_this.sage2_x + _this.sage2_width + 5,
+					_this.sage2_y - _this.config.ui.titleBarHeight];
+				// Open the PDF viewer
+				wsio.emit('addNewWebElement', {
+					url: evt.url,
+					type: "application/pdf",
+					id: _this.id,
+					position: pos
+				});
+			} else {
+				// save the url
+				_this.state.url = evt.url;
+				// set the zoom value
+				_this.element.setZoomFactor(_this.state.zoom);
+				// sync the state object
+				_this.SAGE2Sync(true);
+			}
 		});
 
 		// done loading
@@ -230,7 +255,7 @@ var Webview = SAGE2_App.extend({
 			let pos = [_this.sage2_x + _this.sage2_width + 5,
 				_this.sage2_y - _this.config.ui.titleBarHeight];
 			// if it's an image, open the link in a new webview
-			if (params.mediaType === "image" && params.hasImageContents) {
+			if (params.mediaType === "image" && params.hasImageContents && isMaster) {
 				// Open the image viewer
 				wsio.emit('addNewWebElement', {
 					url: params.srcURL,
@@ -238,7 +263,7 @@ var Webview = SAGE2_App.extend({
 					id: _this.id,
 					position: pos
 				});
-			} else if (params.linkURL && params.linkURL.endsWith('.pdf')) {
+			} else if (params.linkURL && params.linkURL.endsWith('.pdf') && isMaster) {
 				// Open the PDF viewer
 				wsio.emit('addNewWebElement', {
 					url: params.linkURL,
@@ -246,7 +271,17 @@ var Webview = SAGE2_App.extend({
 					id: _this.id,
 					position: pos
 				});
-			} else if (params.mediaType === "none" && params.linkURL) {
+			} else if (params.linkURL && isMaster &&
+				(params.linkURL.endsWith('.jpg') || params.linkURL.endsWith('.jpeg') ||
+				params.linkURL.endsWith('.gif') || params.linkURL.endsWith('.png'))) {
+				// Open the image viewer
+				wsio.emit('addNewWebElement', {
+					url: params.linkURL,
+					type: "image/jpeg",
+					id: _this.id,
+					position: pos
+				});
+			} else if (params.mediaType === "none" && params.linkURL && isMaster) {
 				// It's a link with a URL
 				wsio.emit('openNewWebpage', {
 					id: _this.id,
@@ -340,7 +375,8 @@ var Webview = SAGE2_App.extend({
 				let pos = [_this.sage2_x + _this.sage2_width + 5,
 					_this.sage2_y - _this.config.ui.titleBarHeight];
 				// Check if it's a PDF
-				if (event.url && event.url.endsWith('.pdf')) {
+				console.log('new-window', event.url);
+				if (event.url && event.url.endsWith('.pdf') && isMaster) {
 					// Open the PDF viewer
 					wsio.emit('addNewWebElement', {
 						url: event.url,
@@ -348,16 +384,28 @@ var Webview = SAGE2_App.extend({
 						id: this.id,
 						position: pos
 					});
-				} else {
-					// Request a new webview application
-					wsio.emit('openNewWebpage', {
-						// should be uniqueID, but no interactor object here
-						id: this.id,
-						// send the new URL
+				} else if (event.url && isMaster &&
+					(event.url.endsWith('.jpg') || event.url.endsWith('.jpeg') ||
+					event.url.endsWith('.gif') || event.url.endsWith('.png'))) {
+					// Open the image viewer
+					wsio.emit('addNewWebElement', {
 						url: event.url,
-						// position to the left
+						type: "image/jpeg",
+						id: this.id,
 						position: pos
 					});
+				} else {
+					if (isMaster) {
+						// Request a new webview application
+						wsio.emit('openNewWebpage', {
+							// should be uniqueID, but no interactor object here
+							id: this.id,
+							// send the new URL
+							url: event.url,
+							// position to the left
+							position: pos
+						});
+					}
 				}
 			} else {
 				console.log('Webview>	Not a HTTP URL, not opening [', event.url, ']', event);
