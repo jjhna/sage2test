@@ -373,9 +373,12 @@ console.log("debugDatagram: "+ data);
 		var requestIndex = this.requests.push(base_url + data.text); //returns the number of elements
 		//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
 
-		//only send url and the index of the request
-		if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
 			console.log("ABOUT TO CONTACT ARTICULATE HUB")
+		console.log("targetID: " + data.targetAppID);
+
+		//only send url and the index of the request
+		//if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
+
 				if( data.targetAppID) {
 					this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID["appId"]);  //send to the articulate hub
 				}
@@ -383,7 +386,7 @@ console.log("debugDatagram: "+ data);
 					this.contactArticulateHub(base_url+data.text, requestIndex - 1, "null");  //send to the articulate hub
 	
 				}
-		}
+		//}
 		//----------------------------------------
 
 		//if( isMaster ){

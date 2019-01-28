@@ -16,22 +16,11 @@ var articulate_ui_chat = SAGE2_App.extend( {
 		this.debugMode = true;
 		this.chatData = [];
 
-		this.listOfCommandsForTesting2 = [
-		    {"who": "chat friend", "message": "What is up?"},
-		    //{"who": "chat friend", "message": "What is up?"},
+		this.useMaster = true;
 
-		    {"who": "chat self", "message": "Nothing much, you?"},
-		    {"who": "chat friend", "message": "I'm going out, want to come?"},
-		    {"who": "chat self", "message": "sounds great!"},
-		    {"who": "chat friend", "message": "ok see you at 10"},
-		    {"who": "chat self", "message": "Order a burger for me"},
-		    {"who": "chat friend", "message": "Do you want a milkshake too?"},
-		    {"who": "chat self", "message": "sure"},
-		    {"who": "chat friend", "message": "can you bring that book you mentioned last time? the one about cats?"},
-		    {"who": "chat self", "message": "Yeah, let me see if I can find it."},
-		    {"who": "chat friend", "message": "No worries if it isn't available"},
-		    {"who": "chat self", "message": "No it should be ok."}
-		];
+		console.log("Am I master? " + isMaster );
+		console.log("using master? " + this.useMaster);
+
 
 		this.listOfCommandsForTesting = 
 		[
@@ -69,6 +58,13 @@ var articulate_ui_chat = SAGE2_App.extend( {
 		this.responces = new Array();
 		this.sessionId = null;
 
+		this.waitingForResponse = false;
+		this.animCount = 0; 
+
+		this.previousDate = new Date();
+		this.percentage = 50; 
+		this.increment = 1;
+		this.loaderColor = 'green'; 
 
 		this.resizeEvents = "onfinish";
 		this.svg = null;
@@ -79,15 +75,35 @@ var articulate_ui_chat = SAGE2_App.extend( {
 		var myWidth  = this.element.clientWidth;
 		var myHeight = this.element.clientHeight;
 
-		var mainDiv = d3.select(this.element).append("div")
+		this.mainDiv = d3.select(this.element).append("div")
 			.attr("width",   myWidth)
 			.attr("height",  myHeight);
 
-		this.chatbox = mainDiv.append('div')
+		// this.loader = this.mainDiv.append('div')
+		// 						.style('width', myWidth+"px")
+		// 						.style('height', '10%')
+		// 						.style('position', 'absolute')
+		// 						//.style('display', 'inline-block')
+		// 						.style('top', '0%');
+
+		// this.ball = this.loader.append('div');
+		// this.ball.style('width', '120px')
+		// 			.style('height', '120px')
+		// 			.style('background', '#ccc')
+		// 			.style('border-radius', '50%')
+		// 			.style('position', 'absolute')
+		// 			.style('left', '50%')
+		// 			.style('top', '20%');
+
+
+		this.chatbox = this.mainDiv.append('div')
 					.attr('class', 'chatbox')
 					.style('width', "100%")
 					.style('min-width', '390px')
-					.style('height',"100%")
+					.style('height', "100%")
+					.style('position', 'absolute')
+					.style('top', '00%')
+					//.style('display', 'inline-block')
 					.style('background', '#fff')
 					.style('padding', '25px')
 					.style('margin', '20px auto')
@@ -101,45 +117,65 @@ var articulate_ui_chat = SAGE2_App.extend( {
 				.style('overflow-x', 'hidden')
 				.style('overflow-y', 'scroll');
 
+		this.chatData.push({"message": "hello. I'm ready to answer your questions", "who": "chat self"});
+
+
+		// this.rows = d3.select('.chatlogs')
+		// 	.selectAll('div')
+		// 	.data(this.chatData)
 
 		this.update();
 
 	},
 
 	update: function(){
-		console.log(this.chatData);
+		//console.log(this.chatData);
 
+		// this.savedChatData = this.chatData; 
+		// this.chatData = [];
 
-		var rows = d3.select('.chatlogs')
+		// this.rows.exit().remove();
+
+		// this.chatData = this.savedChatData;
+
+		this.rows = d3.select('.chatlogs')
 			.selectAll('div')
-			.data(this.chatData)
+			.data(this.chatData );
+
+		if( this.chatData.length > 1 ){
+				d3.selectAll("#newChats")
+					.attr('id', "oldChats");
+					//.style("background", "black");
+		}
+
+		this.rows
 			.enter()
 			.append('div')
-			.attr('class', function (d) { return d.who });
+			.attr('class', function (d) { return d.who })
+			.attr('id', 'newChats');
+
+		// this.newChats = d3.selectAll('#newChats');
 
 
-		var chat = d3.selectAll('.chat')
-			.style("display", "flex")
-			.style("flex-flow", "row wrap")
-			.style("align-items", "flex-start")
-			.style("margin-bottom", "10px");
-		
+		// 	this.newChats.append('div')
+		// 	.attr('class', 'user-photo')
+		// 	.style('width', '60px')
+		// 	.style('height', '60px')
+		// 	.style('background', '#ccc')
+		// 	.style('border-radius', '50%');
 
-		rows.append('div')
-			.attr('class', 'user-photo')
-			.style('width', '60px')
-			.style('height', '60px')
-			.style('background', '#ccc')
-			.style('border-radius', '50%');
+		var	gradText = "linear-gradient(to right, #1ddced 0%, #1ddced, " + (this.animCount%100) + "%, #ffffff 100%)";
+			//console.log(gradText);
 
-		rows.append('p')
+		d3.selectAll("#newChats")
+			.append('p')
 			.attr('class', 'chat-message')
 			.text( function(d) { return d.message } )
 			.style('background', function(d){ 
 				if( d["who"] == "chat friend")
 					return "#1adda4";
 				else
-					return "#1ddced";
+					return "#1ddced"; //gradText;//"linear-gradient(to right, #ffffff 0%, #1ddced, 30%, #ffffff 100%)";//"#1ddced";
 			})
 			.style('order', function(d){ 
 				if( d["who"] == "chat self")
@@ -147,17 +183,56 @@ var articulate_ui_chat = SAGE2_App.extend( {
 				else
 					return 1;
 			})
-			.style('width', '80%')
+			.style('width', "80%")
+			// .style('width',  function(d) {
+			// 	if( d["who"] == "chat self")
+			// 		return "100%";
+			// 	else
+			// 		return "80%";
+			// })
 			.style('padding', '15px')
-			.style('margin', '5px 10px 0')
+			.style('margin', function(d) {
+				if( d["who"] == "chat self")
+					return '5px 200px 0px 10px';
+				else
+					return '5px 0px 0px 200px';
+			})
+			// .style('text-align', function(d) {
+			// 	if( d["who"] == "chat self")
+			// 		return 'left';
+			// 	else
+			// 		return 'right';
+			// })
 			.style('border-radius', '10px')
 			.style('color', '#fff')
-			.style('font-size', '20px');
+			.style('font-size', '40px');
 			
+		// this.msg = d3.selectAll(".chat-message")
+		// 	.text( function(d) { return d.message } );
+		// 					.style('background', function(d){ 
+		// 		if( d["who"] == "chat friend")
+		// 			return "#1adda4";
+		// 		else
+		// 			return gradText;//"linear-gradient(to right, #ffffff 0%, #1ddced, 30%, #ffffff 100%)";//"#1ddced";
+		// 	});
+
+
+
+		this.chat = d3.selectAll('.chat')
+			.style("display", "flex")
+			.style("flex-flow", "row wrap")
+			.style("align-items", "flex-start")
+			.style("margin-bottom", "10px");
+
 		this.refresh();
 			//this.refresh(date);
 
 
+	},
+
+	updateMessage: function(){
+		this.msg = d3.selectAll(".chat-message")
+			.text( function(d) { return d.message } );
 	},
 
 	// update: function(data){
@@ -165,171 +240,93 @@ var articulate_ui_chat = SAGE2_App.extend( {
 
 	// },
 
-	init2: function(data){
-		// Create div into the DOM
-		this.SAGE2Init("canvas", data);
-		// Set the background to black
-		this.element.style.backgroundColor = '#404040';
-		this.element.style.opacity = 1.0;
-		//this.element.width = 5464;
-		//this.element.height = 2304;
-		// move and resize callbacks
-		this.resizeEvents = "continuous";
-		this.moveEvents   = "continuous";
-    	this.systemInstruction = ">> Begin Speaking . . .";
-		// SAGE2 Application Settings
-		//
-		// Control the frame rate for an animation application
-		this.maxFPS = 2.0;
-		// Not adding controls but making the default buttons available
-		this.controls.finishedAddingControls();
-		this.enableControls = true;
+	// init2: function(data){
+	// 	// Create div into the DOM
+	// 	this.SAGE2Init("canvas", data);
+	// 	// Set the background to black
+	// 	this.element.style.backgroundColor = '#404040';
+	// 	this.element.style.opacity = 1.0;
+	// 	//this.element.width = 5464;
+	// 	//this.element.height = 2304;
+	// 	// move and resize callbacks
+	// 	this.resizeEvents = "continuous";
+	// 	this.moveEvents   = "continuous";
+ //    	this.systemInstruction = ">> Begin Speaking . . .";
+	// 	// SAGE2 Application Settings
+	// 	//
+	// 	// Control the frame rate for an animation application
+	// 	this.maxFPS = 2.0;
+	// 	// Not adding controls but making the default buttons available
+	// 	this.controls.finishedAddingControls();
+	// 	this.enableControls = true;
 
-		this.ctx = this.element.getContext('2d');
+	// 	this.ctx = this.element.getContext('2d');
 
-		this.counter = 0;
-		this.debugMode = true;
+	// 	this.counter = 0;
+	// 	this.debugMode = true;
 
-		this.currentTestCommand = 0;
-		this.listOfCommandsForTesting2 =
-		[
-			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
-			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
-			{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
-			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app5
-			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q5, app6
-			{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //Q6, app7
-			//{text: "can I see theft by day", targetAppId: null},//app8
-			//{text: "can I see UIC by crime type", targetAppId: null}//app9
-						//{text: "Ok so can you show me the number of crimes, for each hour in a day?", targetAppId: null},//app6
+	// 	this.currentTestCommand = 0;
 
-		];
-
-
-		//PART 1
-
-		this.part1Commands = //this.listOfCommandsForTesting = //this.part1Commands = 
-		[
-			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
-			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
-			{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
-			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q5, app6
-			{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //Q6, app7
-			{text: "Of the theft in the Near West Side, are you able to kind of show it by month", targetAppId: null},//Q4, app7
-
-		];
-
-
-		this.listOfCommandsForTesting = 
-		[
-			{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
-			{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
-			{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
-			{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q4, app5
-			{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //Q5, app6
-			{text: "Of the theft in the Near West Side, are you able to kind of show it by month", targetAppId: null},//Q6, app7
+	// 	this.listOfCommandsForTesting = 
+	// 	[
+	// 		{text: "Lets start with the activity around UIC", targetAppId: null},//Q1, app2
+	// 		{text:	"Could I take a look at when crimes happen", targetAppId: null},//Q2, app3
+	// 		{text: "Could I look at when crimes happen for each neighborhood", targetAppId: null},//Q3, app4
+	// 		{text: "Show me the months where the most number of crimes occur around school areas", targetAppId: null},//Q4, app5
+	// 		{text: "If I was walking to the EL, would there be any areas that are particularly dangerous to walk through due to theft or battery", targetAppId: null}, //Q5, app6
+	// 		{text: "Of the theft in the Near West Side, are you able to kind of show it by month", targetAppId: null},//Q6, app7
 			
-			{text: "PART 2a", targetAppId: null},//delete
+	// 		{text: "PART 2a", targetAppId: null},//delete
 
-			{text: "I would just like to see the total amount of crimes that happened divided by the three main areas, UIC, River North and Near West Side", targetAppId: null},//Q1, app8
-			{text:	"Are you able to show like the entire percentage of crime in each neighborhood", targetAppId: null},//Q2, app9
-			{text: "Is there any way to kind of show theft by location type", targetAppId: null},//Q3, app10
-			{text: "Can you show the location type for the crimes that occur between noon and 6 and 6 and midnight", targetAppId: null},//Q5, app11
-			{text: "I am wondering around the bus lines if there are more public intoxication or fighting or verbal harassment in the summer", targetAppId: null}, //Q6, app12
-			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app13
+	// 		{text: "I would just like to see the total amount of crimes that happened divided by the three main areas, UIC, River North and Near West Side", targetAppId: null},//Q1, app8
+	// 		{text:	"Are you able to show like the entire percentage of crime in each neighborhood", targetAppId: null},//Q2, app9
+	// 		{text: "Is there any way to kind of show theft by location type", targetAppId: null},//Q3, app10
+	// 		{text: "Can you show the location type for the crimes that occur between noon and 6 and 6 and midnight", targetAppId: null},//Q5, app11
+	// 		{text: "I am wondering around the bus lines if there are more public intoxication or fighting or verbal harassment in the summer", targetAppId: null}, //Q6, app12
+	// 		{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app13
 
-			{text: "PART 2b", targetAppId: null},//Q4, app7
+	// 		{text: "PART 2b", targetAppId: null},//Q4, app7
 
-			{text: "Can you show the same chart for days of the week?", targetAppId: "app_12"},  // app 8
-			{text: "Can you show this graph for months of year?", targetAppId: "app_12"}, // app 9
-			{text: "Can you move it", targetAppId: "app_12"}, 
-			{text: "Can you minimize it?", targetAppId: "app_12"},
-			{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_12"},			
-			{text: "Yeah don't need this one here", targetAppId: "app_12"}
+	// 		{text: "Can you show the same chart for days of the week?", targetAppId: "app_12"},  // app 8
+	// 		{text: "Can you show this graph for months of year?", targetAppId: "app_12"}, // app 9
+	// 		{text: "Can you move it", targetAppId: "app_12"}, 
+	// 		{text: "Can you minimize it?", targetAppId: "app_12"},
+	// 		{text: "Can you bring up this pic that has been hidden?", targetAppId: "app_12"},			
+	// 		{text: "Yeah don't need this one here", targetAppId: "app_12"}
 
-		];
-
-		//PART 2
-		this.listOfCommandsForTesting3 = //this.part2Commands = 
-		[
-					//{text: "I'm wondering around the bus lines if there are more public intoxication or fighting or verbal harassment in the summer", targetAppId: null}, //Q6, app6
-			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app5
-			{text: "Can you move this graph", targetAppId: "app_1"}, // app 9
-			{text: "Can you show this graph for months", targetAppId: "app_1"}, // app 9
-			{text: "Can you show the same graph for days of the week", targetAppId: "app_1"},  // app 8
-
-			{text: "I would just like to see the total amount of crimes that happened divided by the three main areas, UIC, River North and Near West Side", targetAppId: null},//Q1, app2
-			{text:	"Are you able to show like the entire percentage of crime in each neighborhood", targetAppId: null},//Q2, app3
-			{text: "Is there any way to kind of show theft by location type", targetAppId: null},//Q3, app4
-			{text: "Can you show the location type for the crimes that occur between noon and 6 and 6 and midnight", targetAppId: null},//Q5, app5
-			{text: "I am wondering around the bus lines if there are more public intoxication or fighting or verbal harassment in the summer", targetAppId: null}, //Q6, app6
-			{text: "Show me the crime reported with respect to the location specifically in River North and UIC by year", targetAppId: null},//Q4, app5
-
-			{text: "Can you show the same chart for days of the week?", targetAppId: "6"},  // app 8
-			{text: "Can you show this graph for months of year?", targetAppId: "6"}, // app 9
-			{text: "Can you move it", targetAppId: "2"}, 
-			{text: "Can you minimize it?", targetAppId: "2"},
-			{text: "Yeah don't need this one here", targetAppId: "2"}, 
-			{text: "Can you bring up this pic that has been hidden?", targetAppId: "5"}, 
-			 
+	// 	];
 
 
+	// 	this.useMaster = true; //turn on and off using the isMaster function...
 
 
-
-		];
-
-
-
-
-		//BASIC
-		this.listOfCommandsForTesting2 =
-		[
-			{text: "can I see a map of theft near UIC", targetAppId: null},//app 2
-			{text:	"show me theft by year", targetAppId: null},//app 3
-			{text: "can I see a map of theft near the Loop", targetAppId: null},//app 2
-			{text: "can you close the map", targetAppId: null},//app 2
-			{text: "can you close the map", targetAppId: null},//app 2
-			{text: "can I see theft by neighborhood", targetAppId: null}, //app 4
-			{text: "can I see theft by day", targetAppId: null},
-			{text: "can I see UIC by crime type", targetAppId: null}
-			//{text:"can you close this one", targetAppId: "app_4"},
-			//{text:"can you close the map", targetAppId: null}
-		];
-		//[
-		//	{text: "can I see theft by day", targetAppId: null},
-		//	 {text: "can I see theft by time", targetAppId: null},
-		//	{text: "can you close this one", targetAppId: "app_2"}
-	//	];
-
-		this.useMaster = true; //turn on and off using the isMaster function...
+	// 	//in practice, I don't use colors well.  Ideally, we would want this to be 'smarter'
+	// 	// now it just cycles through these colors, unless assigned by the nlp side
+	// 	this.colors = ["steelblue", "mediumseagreen", "cadetblue", "lightskyblue"];
 
 
-		//in practice, I don't use colors well.  Ideally, we would want this to be 'smarter'
-		// now it just cycles through these colors, unless assigned by the nlp side
-		this.colors = ["steelblue", "mediumseagreen", "cadetblue", "lightskyblue"];
+	// 	//this stores the commands that are visible and displayed to the user
+	// 	// the text of the spoken commands
+	// 	this.commands = [];
+	// 	this.commands.push(">");
+
+	// 	//vis parameters used to draw stuff
+	// 	this.gap = 10;
+	// 	this.statusBar = {x: this.gap, y: this.gap, w: this.element.width-this.gap*2.0, h: 50};
+	// 	this.userInputArea = {x: this.gap, y: this.statusBar.h+this.gap+this.statusBar.y, w:this.statusBar.w/2.0-this.gap/2.0, h: this.element.height-this.statusBar.h-this.gap*3.0};
+	// 	this.systemInputArea = {x: this.userInputArea.x+this.userInputArea.w+this.gap, y: this.userInputArea.y, w: this.userInputArea.w, h:this.userInputArea.h};
+
+	// 	//this.contactArticulateHub("https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/show me thefts in the loop by crime types", 0);
+	// 	this.targetAppID = null;
+	// 	this.requests = new Array();
+	// 	this.responces = new Array();
+	// 	this.sessionId = null;
+
+	// 	this.waitingForResponse = false;
+	// 	this.animCount = 0; 
 
 
-		//this stores the commands that are visible and displayed to the user
-		// the text of the spoken commands
-		this.commands = [];
-		this.commands.push(">");
-
-		//vis parameters used to draw stuff
-		this.gap = 10;
-		this.statusBar = {x: this.gap, y: this.gap, w: this.element.width-this.gap*2.0, h: 50};
-		this.userInputArea = {x: this.gap, y: this.statusBar.h+this.gap+this.statusBar.y, w:this.statusBar.w/2.0-this.gap/2.0, h: this.element.height-this.statusBar.h-this.gap*3.0};
-		this.systemInputArea = {x: this.userInputArea.x+this.userInputArea.w+this.gap, y: this.userInputArea.y, w: this.userInputArea.w, h:this.userInputArea.h};
-
-		//this.contactArticulateHub("https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query/show me thefts in the loop by crime types", 0);
-		this.targetAppID = null;
-		this.requests = new Array();
-		this.responces = new Array();
-		this.sessionId = null;
-
-		this.waitingForResponse = false;
-
-	},
+	// },
 
 	// checkWaiting: function(date){
 	// 	this.waitingForResponse = true;
@@ -347,19 +344,41 @@ var articulate_ui_chat = SAGE2_App.extend( {
 	},
 
 
-	draw: function(data) {
-		//console.log("draw");
-		if( this.waitingForResponse ){
-			this.element.style.backgroundColor = '#AAAAAA';
-			//console.log(this.chatData);
-			//this.chatData[this.chatData.length-2]["message"] = this.chatData[this.chatData.length-2]["message"] + ".";
-			//this.update();
-			this.refresh();
-		}
-		else {
-			this.element.style.backgroundColor = '#FFFFFF';
+	draw: function(date) {
 
-		}
+		// if( this.waitingForResponse ){
+		// 		this.ball.style('left', this.percentage + "%");
+		// 		//this.ball.style('top', this.percentage + "%")
+		// 		this.ball.style('background', 'lightsalmon');
+		// 		this.changeBy = this.increment * (date.getTime() - this.previousDate.getTime()) / 50;
+		// 		this.percentage = this.percentage +  this.changeBy;
+		// 		//console.log( this.changeBy );
+				
+		// 		if( this.percentage > 75)
+		// 			this.increment = -1;
+		// 		if( this.percentage < 25 )
+		// 			this.increment = 1; 
+		// } else {
+		// 		this.ball.style('left', this.percentage + "%");
+		// 		//this.ball.style('top', this.percentage + "%")
+		// 		this.ball.style('background', 'lightsteelblue');
+		// 		this.changeBy = this.increment * (date.getTime() - this.previousDate.getTime()) / 300;
+		// 		this.percentage = this.percentage +  this.changeBy;
+		// 		//console.log( this.changeBy );
+				
+		// 		if( this.percentage > 75)
+		// 			this.increment = -1;
+		// 		if( this.percentage < 25 )
+		// 			this.increment = 1; 
+
+		// }
+
+
+			// this.previousDate = date;
+
+
+			//  this.refresh(new Date());
+
 
 
 	},
@@ -437,6 +456,14 @@ var articulate_ui_chat = SAGE2_App.extend( {
 	resize: function(date) {
 		this.statusBar = {x: this.gap, y: this.gap, w: this.element.width-this.gap*2.0, h: 50};
 
+			myWidth = this.element.clientWidth;
+			myHeight = this.element.clientHeight;
+
+
+		this.mainDiv.attr("width",   myWidth)
+			.attr("height",  myHeight);
+
+		//this.loader	.style('width', myWidth+"px");
 		this.refresh(date);
 	},
 	move: function(date) {
@@ -466,19 +493,6 @@ var articulate_ui_chat = SAGE2_App.extend( {
 				}
 			}
 
-
-			var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query?utterance=";
-			var requestIndex = this.requests.push(base_url + this.chatData[this.chatData.length-1]["message"]+"&gesturetargetid="+this.chatData[this.chatData.length-1]["targetAppId"]); //returns the number of elements
-					//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
-
-					//only send url and the index of the request
-			if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
-				console.log("ABOUT TO CONTACT ARTICULATE HUB")
-				//orderedItems = [ this.listOfCommandsForTesting[this.currentTestCommand]["text"] ];
-				console.log( this.chatData[this.chatData.length-1]["targetAppId"] );  //send to the articulate hub
-				this.contactArticulateHub(base_url+ this.chatData[this.chatData.length-1]["message"], requestIndex - 1, this.chatData[this.chatData.length-1]["targetAppId"]);  //send to the articulate hub
-			}
-
 			this.waitingForResponse = true;
 
 			//this.update(date);
@@ -493,6 +507,23 @@ var articulate_ui_chat = SAGE2_App.extend( {
 
 			//this.checkWaiting();
 			this.refresh(date);
+
+				// this.update();
+				// this.refresh();
+
+			var base_url = "https://articulate.evl.uic.edu:8443/smarthub/webapi/myresource/query?utterance=";
+			var requestIndex = this.requests.push(base_url + this.chatData[this.chatData.length-2]["message"]+"&gesturetargetid="+this.chatData[this.chatData.length-2]["targetAppId"]); //returns the number of elements
+					//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
+
+					//only send url and the index of the request
+			//if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
+				console.log("ABOUT TO CONTACT ARTICULATE HUB")
+				//orderedItems = [ this.listOfCommandsForTesting[this.currentTestCommand]["text"] ];
+				console.log( this.chatData[this.chatData.length-2]["targetAppId"] );  //send to the articulate hub
+				this.contactArticulateHub(base_url+ this.chatData[this.chatData.length-2]["message"], requestIndex - 1, this.chatData[this.chatData.length-2]["targetAppId"]);  //send to the articulate hub
+			//}//
+
+			
 
 			
 		}
@@ -587,15 +618,17 @@ console.log("debugDatagram: "+ data);
 	//orderedItems Array[name: appId, count: Occurances]
 	textInputEvent: function(data, date){
 		//console.log("in articulate");
-		this.orderedItems = data.orderedItems;
-		//console.log("targetApp " + this.orderedItems);
-		this.commands[this.commands.length-1] = data.text;
-		this.commands.push(">");
-		this.refresh();
-		this.systemInstruction = "";
-		this.refresh();
-		this.systemInstruction = ">> Sending Request . . ."
-		this.refresh();
+		// this.orderedItems = data.orderedItems;
+		// //console.log("targetApp " + this.orderedItems);
+		// this.commands[this.commands.length-1] = data.text;
+		// this.commands.push(">");
+		// this.refresh();
+		// this.systemInstruction = "";
+		// this.refresh();
+		// this.systemInstruction = ">> Sending Request . . ."
+		// this.refresh();
+
+
 
 		console.log("TEXT INPUT " + data.text);
 		//new logic to maintain the same sessionId
@@ -603,10 +636,41 @@ console.log("debugDatagram: "+ data);
 		var requestIndex = this.requests.push(base_url + data.text); //returns the number of elements
 		//this.contactArticulateHub(base_url+data.text, data.orderedItems, requestIndex - 1);  //send to the articulate hub
 
+
+		if( data.targetAppID) {
+			this.chatData.push( {"message": data.text, "who": "chat friend", "targetAppID":  data.targetAppID["appId"] } );
+		}
+		else {
+			this.chatData.push( {"message": data.text, "who": "chat friend", "targetAppID": "null" } );
+		}
+
+
+		this.waitingForResponse = true;
+
+
+		this.chatData.push({"who": "chat self", "message": "processing...."});
+
+		this.update();
+
+			//this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
+
+			//this.checkWaiting();
+		this.refresh(date);
+		// this.update();
+		// this.refresh();
+
+		
 		//only send url and the index of the request
 		if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
-			console.log("ABOUT TO CONTACT ARTICULATE HUB")
-			this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID["appId"]);  //send to the articulate hub
+			console.log("ABOUT TO CONTACT ARTICULATE HUB");
+				if( data.targetAppID) {
+						this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID["appId"]);  //send to the articulate hub
+				}
+				else {
+
+						this.contactArticulateHub(base_url+data.text, requestIndex - 1, "null");  //send to the articulate hub
+
+				}
 		}
 		//----------------------------------------
 
@@ -626,7 +690,6 @@ console.log("debugDatagram: "+ data);
 
 		// }
 
-		this.refresh(date);
 	},
 
 	//---------------------------------------------
@@ -731,7 +794,7 @@ console.log("debugDatagram: "+ data);
 			}
 		}
 
-		if( isMaster || !this.useMaster){
+		//if( isMaster || !this.useMaster){
 			xhr.onreadystatechange = function() {
 				if (xhr.readyState === 4) {
 					if (xhr.status === 200) {
@@ -754,8 +817,10 @@ console.log("debugDatagram: "+ data);
 					}
 				}
 			};
-			xhr.send();
-		}
+
+			if(isMaster || !this.useMaster )
+					xhr.send();
+		//}
 	},
 
 	//this gets the data from the smart hub, in a callback
@@ -764,21 +829,19 @@ console.log("debugDatagram: "+ data);
 		console.log(specObj);
 			if (err){
 				console.log("error connecting to articulate smart hub" + err);
-				this.refresh();
-				this.systemInstruction = "";
-				this.refresh();
-				this.systemInstruction = ">> Error connecting to articulate smart hub";
-				this.refresh();
+				// this.systemInstruction = ">> Error connecting to articulate smart hub";
+				this.chatData[this.chatData.length-1]["message"] = "Error connecting to articulate smart hub";
+				this.update();
 				this.refresh();
 				//return;
 				}
 
 			if(specObj != null && specObj["dataQuery"] != null){
 				console.log("GOT THE RESPONSE: ");
-				this.refresh();
-				this.systemInstruction = "";
-				this.refresh();
-				this.systemInstruction = ">> Response Recieved . . .";
+				//this.refresh();
+				//this.systemInstruction = "";
+				//this.refresh();
+				//this.systemInstruction = ">> Response Recieved . . .";
 				console.log(specObj);
 				this.responces[requestIndex] = specObj;
 				console.log("sess id all " + this.responces[requestIndex].sessionId);
@@ -787,9 +850,9 @@ console.log("debugDatagram: "+ data);
 				this.refresh();
 			//OLD
 			//this.handleResponse(specObj);
-				if( isMaster || !this.useMaster){
+				//if( isMaster || !this.useMaster){
 					this.readExample3(specObj, "null"); // call the parser
-				}
+				//}
 			}
 			else if(specObj["dataQuery"] == null){
 
@@ -810,12 +873,17 @@ console.log("debugDatagram: "+ data);
 					this.readExample3(specObj);
 				}
 				else{ //not sure what this is for
-					this.refresh();
-					this.systemInstruction = "";
-					this.refresh();
-					this.systemInstruction = ">> Cannot understand the request! Try again . . .";
+					// this.refresh();
+					// this.systemInstruction = "";
+					// this.refresh();
+					// this.systemInstruction = ">> Cannot understand the request! Try again . . .";
 					console.log("Cannot understand the request! Try again");
-					this.refresh();
+					// this.refresh();
+
+						// this.systemInstruction = ">> Error connecting to articulate smart hub"; 
+						this.chatData[this.chatData.length-1]["message"] = "Cannot understand the request. Please try again.";
+						this.update();
+						this.refresh();
 				}
 			}
 			//then broadcast the results to display nodes!
@@ -1103,7 +1171,8 @@ console.log("debugDatagram: "+ data);
 
 			}//end maps
 			console.log("launch");
-			this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
+			if( isMaster || !this.useMaster )
+					this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
 
 		}
 		else { //generic-
@@ -1144,7 +1213,8 @@ console.log("debugDatagram: "+ data);
 				  ],
 				  "color": "steelblue"
 			};
-			this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
+			if( isMaster || !this.useMaster )
+					this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
 		}
 	},
 
@@ -1653,8 +1723,10 @@ console.log("debugDatagram: "+ data);
 			// launch the app we created!
 
 			console.log("LAUNCH!");
-			this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
+			if( isMaster || !this.useMaster ){
 
+					this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
+			}
 			//console.log(hub_id);
 			//console.log(this.childList[this.getNumberOfChildren()-1]);
 			//this.childList[this.getNumberOfChildren()-1].hub_id_YO = hub_id;
@@ -1749,7 +1821,7 @@ console.log("debugDatagram: "+ data);
 		if( type == "childCloseEvent" )
 			console.log("child close");
 
-			//IS CHILD OFF LIST?
+			//IS CHILD OFF LIST?   
 			//NEED TO TELL ARTICULATE HUB?
 
 		if( type == "childOpenEvent") {
@@ -1760,14 +1832,20 @@ console.log("debugDatagram: "+ data);
 			//}
 			//this.moveChild(this.getNumberOfChildren()-1, 2000, 750); //center
 			//this.resizeChild(this.getNumberOfChildren()-1, 1600, 1200, false);
-			this.childList[ this.childList.length-1].hub_id = data.data.initState.hub_id;
+			this.childList[ this.childList.length-1].hub_id = data.initState.hub_id;
 			console.log("child open");
 			console.log(this.childList);
 			//this.childList[this.childList.length][""]
 			//
-			this.chatData.push({"who": "chat self", "message": "done!"});
-
-			this.update();
+			//this.chatData.push({"who": "chat nobody", "message": "done!"});
+			//this.chatData.push({"who": "chat self", "message": "done!"});
+			// 			this.chatData.push({"who": "chat nobody", "message": "done!"});
+			// // this.chatData.push({"who": "chat self", "message": "done!"});
+			// 			this.chatData.push({"who": "chat nobody", "message": "done!"});
+			// this.chatData.push({"who": "chat self", "message": "done!"});
+			this.chatData[ this.chatData.length-1]['message'] = "done!";
+			console.log(this.chatData);
+			this.updateMessage();
 
 			this.waitingForResponse = false;
 			this.refresh();

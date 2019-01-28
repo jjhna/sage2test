@@ -3522,8 +3522,14 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 										"mostOccurantItems": orderedItems };
 
 	//find articulate app (just articulate app for now)
-	var app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui_v2");
 	//var app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui_chat");
+	var app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui_v2");
+
+	if( app == null )
+	{
+		app = SAGE2Items.applications.getFirstItemWithTitle("articulate_ui_chat");
+	
+	}
 
 	//console.log(app);
 
@@ -3854,7 +3860,7 @@ function wsPointingGesturePosition(wsio, data){
 
 	for (var key in SAGE2Items.applications.list){
 		var app = SAGE2Items.applications.list[key];
-		if(app.title != "machineLearning" && app.title != "articulate_ui"  && app.title != "articulate_ui_v2" && app.title != "background"){
+		if(app.title != "machineLearning" && app.title != "articulate_ui_chat" && app.title != "articulate_ui"  && app.title != "articulate_ui_v2" && app.title != "background"){
 			if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){//*****
 				rightPointing = true;
 				if( data.recognitionStatus ){
@@ -3878,7 +3884,7 @@ function wsPointingGesturePosition(wsio, data){
 		var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
 		if( ml != null ){
 			var data = {id: ml.id, data: null, date: Date.now()};
-			broadcast('leftHandPointingToApp', data);
+			//broadcast('leftHandPointingToApp', data); //JILLIAN TURNED OFF
 		}
 	}
 }
@@ -3954,7 +3960,7 @@ function wsLeftHandPosition(wsio, data){
 
 	for (var key in SAGE2Items.applications.list){
 		var app = SAGE2Items.applications.list[key];
-		if(app.title != "machineLearning" && app.title != "articulate_ui" && app.title != "background"){
+		if(app.title != "machineLearning" && app.title != "articulate_ui_chat" && app.title != "articulate_ui" && app.title != "background"){
 			if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){
 				pointing = true;
 
@@ -3983,7 +3989,7 @@ function wsLeftHandPosition(wsio, data){
 				var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
 				if( ml != null ){
 					var data = {id: ml.id, data: app, date: Date.now()};
-					broadcast('leftHandPointingToApp', data);
+					//broadcast('leftHandPointingToApp', data);//JILLIAN TURNED OFF
 				}
 			}
 		}
