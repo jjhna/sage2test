@@ -605,12 +605,29 @@ var Webview = SAGE2_App.extend({
 
 	handleYouTubeLoadEvent: function(date) {
 		let needToUpdate = true;
-		if (this.element.lastYouTubeSrc) {
-			if (this.element.lastYouTubeSrc == this.state.url) {
+		if (this.element.youTubeLastSrc) {
+			if (this.element.youTubeLastSrc == this.state.url) {
 				needToUpdate = false;
 			}
 		}
 		if (needToUpdate) {
+			if (!this.element.youTubeClickedAfterLoad) {
+				this.element.youTubeClickedAfterLoad = true;
+				this.element.sendInputEvent({
+					type: "mouseDown",
+					x: 1, y: 1,
+					button: "left",
+					modifiers: null,
+					clickCount: 1
+				});
+				this.element.sendInputEvent({
+					type: "mouseUp",
+					x: 1, y: 1,
+					button: "left",
+					modifiers: null,
+					clickCount: 1
+				});
+			}
 			// Get the time to jump to
 			let currentTime = this.state.url;
 			currentTime = currentTime.substring(currentTime.indexOf("s2_yt_currentTime"));
@@ -630,7 +647,7 @@ var Webview = SAGE2_App.extend({
 				);
 			}
 			// Keep the last action
-			this.element.lastYouTubeSrc = this.state.url;
+			this.element.youTubeLastSrc = this.state.url;
 		}
 	},
 
@@ -777,9 +794,8 @@ var Webview = SAGE2_App.extend({
 				"outline: none; " +
 			"}");
 
-		console.log("erase me, checking if youtube");
 		if (this.state.url.includes("youtube.com") || this.state.url.includes("youtu.be")) {
-			console.log("erase me, IS youtube");
+			this.element.youTubeClickedAfterLoad = false;
 			this.element.executeJavaScript(
 				`
 console.log(JSON.stringify({ youTubeMessage: true, status: "beginning page evaluation"}));
