@@ -98,22 +98,25 @@ var articulate_ui_chat = SAGE2_App.extend( {
 
 		this.chatbox = this.mainDiv.append('div')
 					.attr('class', 'chatbox')
-					.style('width', "100%")
+					.style('width', "90%")
 					.style('min-width', '390px')
-					.style('height', "100%")
+					.style('height', "90%")
 					.style('position', 'absolute')
-					.style('top', '00%')
+					.style('top', '5%')
+					.style('left', '5%')
 					//.style('display', 'inline-block')
 					.style('background', '#fff')
-					.style('padding', '25px')
-					.style('margin', '20px auto')
-					.style('box-shadow', '0 3px #ccc');
+					// .style('padding', '25px')
+					// .style('margin', '20px auto')
+					.style('box-shadow', '0 0px #fff');
 
 		this.chatlogs = this.chatbox.append('div')
 				.attr('class', 'chatlogs')
-				.style('padding', '10px')
+				// .style('padding', '10px')
 				.style('width', '100%')
 				.style('height', '100%')
+				.style('top', '0%')
+				.style('left', '0%')
 				.style('overflow-x', 'hidden')
 				.style('overflow-y', 'scroll');
 
@@ -661,7 +664,7 @@ console.log("debugDatagram: "+ data);
 
 		
 		//only send url and the index of the request
-		if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
+		//if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
 			console.log("ABOUT TO CONTACT ARTICULATE HUB");
 				if( data.targetAppID) {
 						this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID["appId"]);  //send to the articulate hub
@@ -671,7 +674,7 @@ console.log("debugDatagram: "+ data);
 						this.contactArticulateHub(base_url+data.text, requestIndex - 1, "null");  //send to the articulate hub
 
 				}
-		}
+		//}
 		//----------------------------------------
 
 		//if( isMaster ){
@@ -830,8 +833,10 @@ console.log("debugDatagram: "+ data);
 			if (err){
 				console.log("error connecting to articulate smart hub" + err);
 				// this.systemInstruction = ">> Error connecting to articulate smart hub";
-				this.chatData[this.chatData.length-1]["message"] = "Error connecting to articulate smart hub";
-				this.update();
+				this.chatData[this.chatData.length-1]["message"] = "Sorry, we had trouble with this request. Can you try again?";
+				this.updateMessage();
+
+				this.waitingForResponse = false;
 				this.refresh();
 				//return;
 				}
@@ -881,8 +886,9 @@ console.log("debugDatagram: "+ data);
 					// this.refresh();
 
 						// this.systemInstruction = ">> Error connecting to articulate smart hub"; 
-						this.chatData[this.chatData.length-1]["message"] = "Cannot understand the request. Please try again.";
-						this.update();
+						this.chatData[this.chatData.length-1]["message"] = "Something has gone wrong. Please try again!";
+						this.updateMessage();
+						this.waitingForResponse = false;
 						this.refresh();
 				}
 			}
@@ -1046,7 +1052,9 @@ console.log("debugDatagram: "+ data);
 				};
 			}
 			if( specificationObj["plotHeadline"]["plotType"] == "LINE"){
-				dataToVisualize = this.parseLine(specificationObj["dataQueryResult"], c, specificationObj["horizontalAxis"]);
+
+
+				dataToVisualize = this.parseLine(specificationObj["dataQueryResult"], c, specificationObj["horizontalAxis"], plotTitle);
 
 				//launch app
 				applicationType ="custom",
@@ -1073,6 +1081,8 @@ console.log("debugDatagram: "+ data);
 					timeUnit = "hours";
 				if( specificationObj["horizontalAxis"]  == "month")
 					timeUnit = "month";
+				if( specificationObj["horizontalAxis"] == "day")
+					timeUnit = "day";
 
 				console.log("time unit = " + timeUnit)
 
@@ -1109,10 +1119,11 @@ console.log("debugDatagram: "+ data);
 				    "transform": [{"timeUnit": timeUnit, "field": "x", "as": timeUnit}],
 				    "encoding": {
 						// "x": { "field": "x", "type": type, "axis": {"ticks": true, "tickCount": 5}, "sort": sort },
-						"x": { "field": "time", "type": "temporal", "timeUnit": timeUnit,  "axis": {"ticks": true, "tickCount": 5} },
+						"x": { "field": "time", "type": "ordinal", "timeUnit": timeUnit,  "axis": {"ticks": true, "tickCount": 5} },
 						"y": {"field": "number of crimes", "type": "quantitative"},
-						"color": {"field": "c", "type": "nominal"}
-				    }
+						"color": {"field": "legend", "type": "nominal"}
+				    },
+				      "config": {"point": {"size": 100}}
                 };
 
 				initState = {  // the vis app will get these values and use them to draw appropriately
@@ -1284,12 +1295,17 @@ console.log("debugDatagram: "+ data);
 		return dataToVisualize;
 	},
 
-	parseLine: function(dataQueryResult, c, horizontalAxis){
+	parseLine: function(dataQueryResult, c, horizontalAxis, plotTitle){
 		dataToVisualize = [];
 
 //		temp = id;
 //		id = y;
 //		y = id;
+		var name = "all";
+		if( plotTitle.includes(" by ") ){
+			name = plotTitle.split(" by ")[0];
+		}
+
 		for(i = 0; i < dataQueryResult.length; i++){ //parsing...
 			line = dataQueryResult[i];
 			//console.log(line);
@@ -1310,7 +1326,7 @@ console.log("debugDatagram: "+ data);
 				//console.log(tokens);
 				obj["time"] = this.parseDateTime(tokens[2], horizontalAxis);//tokens[2];
 				obj["number of crimes"] = parseInt(tokens[6]);
-				obj["c"] = "";
+				obj["legend"] = name;
 			}
 			else {
 				//to do
@@ -1319,7 +1335,7 @@ console.log("debugDatagram: "+ data);
 				if( tokens.length <= 14 ){
 					obj["time"] = this.parseDateTime(tokens[2], horizontalAxis); // tokens[2];
 					obj["number of crimes"] = parseInt(tokens[10]);
-					obj["c"] = tokens[6];
+					obj["legend"] = tokens[6];
 				}
 				else // month and year 
 				{
@@ -1328,7 +1344,7 @@ console.log("debugDatagram: "+ data);
 						//obj["x"] = tokens[6];
 					obj["time"] = tokens[6]+","+tokens[2];
 					obj["number of crimes"] = parseInt(tokens[14]);
-					obj["c"] = tokens[10];
+					obj["legend"] = tokens[10];
 				}
 			}
 
@@ -1441,6 +1457,22 @@ console.log("debugDatagram: "+ data);
 		if(xValue ==  "midnight")
 			return "December 1, 1995 24:00:00";
 		
+	}
+	if( horizontalAxis == "day" ){
+		if(xValue == "sunday")
+			return "January 27, 2019 12:00:00";
+		if(xValue == "monday")
+			return "January 28, 2019 12:00:00";
+		if(xValue == "tuesday")
+			return "January 29, 2019 12:00:00";
+		if(xValue == "wednesday")
+			return "January 30, 2019 12:00:00";
+		if(xValue == "thursday")
+			return "January 31, 2019 12:00:00";
+		if(xValue == "friday")
+			return "February 1, 2019 12:00:00";
+		if(xValue == "saturday")
+			return "February 2, 2019 12:00:00";
 	}
 
 
