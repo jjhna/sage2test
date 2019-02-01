@@ -113,6 +113,7 @@ var articulate_ui_chat = SAGE2_App.extend( {
 		this.chatlogs = this.chatbox.append('div')
 				.attr('class', 'chatlogs')
 				// .style('padding', '10px')
+				.style("flex-direction", "column-reverse")
 				.style('width', '100%')
 				.style('height', '100%')
 				.style('top', '0%')
@@ -201,8 +202,10 @@ var articulate_ui_chat = SAGE2_App.extend( {
 			.style("display", "flex")
 			.style("flex-flow", "row wrap")
 			.style("align-items", "flex-start")
+			.style("flex-direction", "column-reverse")
 			.style("margin-bottom", "10px");
 
+		this.updateScroll();
 		this.refresh();
 
 	},
@@ -210,6 +213,15 @@ var articulate_ui_chat = SAGE2_App.extend( {
 	updateMessage: function(){
 		this.msg = d3.selectAll(".chat-message")
 			.text( function(d) { return d.message } );
+	},
+
+	updateScroll: function(){
+		// console.log("test");
+		// console.log(this.chatlogs.scrollTop);
+		// console.log(this.chatlogs.scrollHeight);
+		// this.chatlogs.scrollTop = this.chatlogs.scrollHeight;
+		// console.log(this.chatlogs.scrollTop);
+		// console.log(this.chatlogs.scrollHeight);
 	},
 
 	
@@ -308,6 +320,7 @@ var articulate_ui_chat = SAGE2_App.extend( {
 			this.chatData.push({"who": "chat self", "message": "processing...."});
 
 			this.update();
+			this.updateScroll(); 
 
 			//this.chatData.push({"who": "chat nobody", "message": "empty"});//not sure why
 
@@ -371,6 +384,7 @@ articulateDebugInfo: function(data, date){
 		this.chatData.push({"who": "chat self", "message": "processing...."});
 
 		this.update();
+		this.updateScroll();
 
 		//this.checkWaiting();
 		this.refresh(date);
@@ -381,6 +395,7 @@ articulateDebugInfo: function(data, date){
 		//only send url and the index of the request
 		//if( isMaster || !this.useMaster ){ //THIS SEEMES BUGGY- should be on, but sometimes then the message doesn't go through
 			console.log("ABOUT TO CONTACT ARTICULATE HUB");
+			console.log(data);
 				if( data.targetAppID) {
 						this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID["appId"]);  //send to the articulate hub
 				}

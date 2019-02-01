@@ -66,11 +66,20 @@ var vega_lite_app = SAGE2_App.extend( {
 		inputs.style.position = "absolute";
 		inputs.style.left ="0px"; // this.sage2_width + "px";//"0px";
 		inputs.style.top = "0px";
-		inputs.style.width ="200px";// this.sage2_width;//"100%";//"300px";//"100%";
-		inputs.style.height = "200px";
+		inputs.style.width = "100%";//"200px";// this.sage2_width;//"100%";//"300px";//"100%";
+		inputs.style.height = "100%";//"200px";
 		//inputs.style.minHeight = "100%";
-		inputs.style.padding = "10px 10px";//ui.titleBarHeight * 1.5 + 8 + "px 10px";
-		inputs.style.boxSizing = "border-box";
+
+		if(this.state.vegaLiteSpec["mark"] != "bar" ){
+			inputs.style.padding = "10px 10px";//ui.titleBarHeight * 1.5 + 8 + "px 10px";
+			inputs.style.boxSizing = "border-box";
+			this.state.vegaLiteSpec["width"] = this.sage2_width-400; 
+			this.state.vegaLiteSpec["height"] = this.sage2_height-200;
+		}
+		else {
+			this.state.vegaLiteSpec["width"] = this.sage2_width-40; 
+			this.state.vegaLiteSpec["height"] = this.sage2_height-40;
+		}
 		
 		this.inputs = inputs;
 		this.element.appendChild(inputs);
@@ -99,6 +108,8 @@ var vega_lite_app = SAGE2_App.extend( {
 					    }
 					 };
 		   		vegaEmbed(this.inputs, this.vLSpec);
+
+
 
 	},
 
@@ -192,8 +203,15 @@ var vega_lite_app = SAGE2_App.extend( {
 	    // this.content.style.width = contentWidth + "px";
 	    // this.content.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
 
-	    this.content.style.width = "100%";//400 + "px";
+	    //this.content.style.width = "100%";//400 + "px";
+		//this.content.style.height = "100%";//this.sage2_height - ui.titleBarHeight*1.5 + "px";  //400 + "px";
+		this.content.style.width = "100%";//400 + "px";
 		this.content.style.height = "100%";//this.sage2_height - ui.titleBarHeight*1.5 + "px";  //400 + "px";
+		this.content.style.position = "absolute";
+		this.content.style.boxSizing = "border-box";
+		this.content.style.left = "0";
+		this.content.style.top = "0";//ui.titleBarHeight * 1.5 + "px";
+		this.content.style.overflow = "hidden";
     
 	    this.element.removeChild(this.inputs);
 

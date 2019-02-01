@@ -584,8 +584,8 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 		// Kinect v2.0 data has 29 extra data fields
 		if (this.kinectInput != undefined && e.extraDataItems == 29) {
 			if (omicronManager.eventDebug) {
-				sageutils.log('Omicron', "Kinect body " + sourceID +
-					" head Pos: (" + e.posx + ", " + e.posy + "," + e.posz + ") orientation? (" + 	e.orx + "," + e.ory + "," + e.orz + "," + e.orw  + ")" );
+				//sageutils.log('Omicron', "Kinect body " + sourceID +
+				//	" head Pos: (" + e.posx + ", " + e.posy + "," + e.posz + ") orientation? (" + 	e.orx + "," + e.ory + "," + e.orz + "," + e.orw  + ")" );
 			}
 
 			var extraData = [];

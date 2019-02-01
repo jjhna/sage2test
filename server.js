@@ -3505,7 +3505,8 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 
 
 	var orderedItems = mostItems(pointedToApps);
-
+	console.log("ordered items: ");
+	console.log(orderedItems);
 
 	var commandText = data.text.toUpperCase();
 	var appList = SAGE2Items.applications.list;
@@ -3825,6 +3826,7 @@ function wsGestureRecognitionStatus(wsio, data){
 	//	var obj = interactMgr.searchGeometry({x: pointerX, y: pointerY}); //object on top pointed at given an x and y coordinate HERE!
 	var app = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
 	if( app != null ){
+		console.log("start gesture recognition");
 		var data = {id: app.id, data: data.text, date: Date.now()};
 		broadcast('startGestureRecognition', data);
 	}
@@ -3834,6 +3836,7 @@ function wsGestureRecognitionStatus(wsio, data){
 //receiving pointing positions and finding pointed to apps
 let cur_app_id;
 function wsPointingGesturePosition(wsio, data){
+	//console.log("tracking the pointing gesture....")
 	var rightPointing = false;
 	//make a pointer on screen
 	//  see if kinect pointer exists (for now just one)
@@ -3861,10 +3864,16 @@ function wsPointingGesturePosition(wsio, data){
 	for (var key in SAGE2Items.applications.list){
 		var app = SAGE2Items.applications.list[key];
 		if(app.title != "machineLearning" && app.title != "articulate_ui_chat" && app.title != "articulate_ui"  && app.title != "articulate_ui_v2" && app.title != "background"){
+			//console.log("data.x " + data.x + " data.y " + data.y );
+			//console.log("app.left " + app.left + " app.y " + app.y + "app.width" + app.width + " app.height " + app.height );
 			if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){//*****
 				rightPointing = true;
+				console.log("data recognition status: " + data.recognitionStatus);
 				if( data.recognitionStatus ){
 					// pointedToApps[pointedToApps.length]= {appId: app.id, pointerId: data.id};
+
+					console.log("pointing to the app!");
+
 					pointedToApps.push({appId: app.id, pointerId: data.id});
 					if(app.id !== cur_app_id){
 						cur_app_id = app.id;
