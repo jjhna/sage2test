@@ -1390,15 +1390,19 @@ The z-index is very important.
 }
 
 #codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper .log-items .message {
-    font-size: 14px;
+    font-size: 12px;
     padding: 3px;
 
     font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
 #codeSnippetEditor #snippetLoggingWrapper #errorMessages .message {
     background: #ffefef;
     color: red;
+
+    border: 1px solid #eecdcd;
 }
 
 #codeSnippetEditor #snippetLoggingWrapper #errorMessages .message:nth-child(even) {
@@ -1409,6 +1413,8 @@ The z-index is very important.
 #codeSnippetEditor #snippetLoggingWrapper #consoleMessages .message {
     background: #fefefe;
     color: black;
+
+    border: 1px solid #cdcdcd;
 }
 
 #codeSnippetEditor #snippetLoggingWrapper #consoleMessages .message:nth-child(even) {
@@ -1664,6 +1670,23 @@ The z-index is very important.
   color: #333;
 }
 
+#codeSnippetEditor #snippetEditorClose.unsaved {
+    color: red;
+    /* #eecdcd
+    #ffe0e0 */
+    background: linear-gradient(#e79e9e, #ffe0e0 50%, #e79e9e 90%);
+}
+
+#codeSnippetEditor #snippetEditorClose:hover {
+    color: white;
+}
+
+
+#codeSnippetEditor #snippetEditorClose:hover.unsaved {
+    background: linear-gradient(#ffe0e0, #e79e9e 50%, #ffe0e0 90%);
+    color: white;
+}
+
 #codeSnippetEditor #exportProject {
     /* margin-right: 8px; */
 }
@@ -1674,13 +1697,6 @@ The z-index is very important.
     font-size: 14px;
     padding: 4px;
     display: inline-block;
-}
-
-#codeSnippetEditor #snippetEditorClose:hover {
-    /* background: linear-gradient(#fcbba1, #fc9272 80%); */
-    /* background: linear-gradient(#fc9272, #fcbba1 50%, #fc9272 90%); */
-    /* color: black; */
-    color: white;
 }
 
 #codeSnippetEditor #createNewScriptWrapper {

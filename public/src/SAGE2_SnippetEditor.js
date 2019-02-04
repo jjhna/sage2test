@@ -52,6 +52,9 @@ let SAGE2_SnippetEditor = (function () {
 			editorDiv: null,
 			editor: null,
 
+			changed: false,
+			closeButton: null,
+
 			saveButton: null,
 			descInput: null,
 
@@ -59,6 +62,9 @@ let SAGE2_SnippetEditor = (function () {
 			loadButton: null,
 
 			scriptDropdown: null,
+
+			errorLogContainer: null,
+			consoleLogContainer: null,
 
 			loadedSnippet: "new",
 			loadedSnippetType: null,
@@ -104,9 +110,16 @@ let SAGE2_SnippetEditor = (function () {
 				}
 			});
 
+			self.editor.on("change", function(e) {
+				if (!self.changed) {
+					updateIsChanged(true);
+				}
+			});
+
 			// bind hide and close button
 			// self.div.querySelector("#snippetEditorHide").onclick = hideEditor; // remove hide function
-			self.div.querySelector("#snippetEditorClose").onclick = closeScript;
+			self.closeButton = self.div.querySelector("#snippetEditorClose");
+			self.closeButton.onclick = closeScript;
 
 			// bind hide action to click on overlay
 			self.div.querySelector(".overlay").onclick = hideEditor;
@@ -140,6 +153,12 @@ let SAGE2_SnippetEditor = (function () {
 			// ready script selector dropdown
 			self.scriptDropdown = self.div.querySelector("#loadSnippetOptions");
 
+			self.errorLogContainer = self.div.querySelector("#errorMessages");
+			self.consoleLogContainer = self.div.querySelector("#consoleMessages");
+
+			self.errorLogContainer.innerHTML = "";
+			self.consoleLogContainer.innerHTML = "";
+
 			// api helper element
 			self.apiHelper = self.div.querySelector("#snippetApiOptions");
 			addApiHelperOptions(apiExamples, self.apiHelper);
@@ -158,15 +177,39 @@ let SAGE2_SnippetEditor = (function () {
 			self.div.classList.remove("open");
 		}
 
+
+		/**
+		 * Handles setting the state value regarding whether there are unsaved changes to the snippet,
+		 * then updates the interface visually reflecting the state.
+		 *
+		 * @method updateIsChanged
+		 */
+		function updateIsChanged(isChanged) {
+			self.changed = isChanged;
+
+			// update UI
+
+			if (isChanged) {
+				self.closeButton.classList.add("unsaved");
+				// self.closeButton.style.color = "red";
+			} else {
+				self.closeButton.classList.remove("unsaved");
+				// self.closeButton.style.color = "white";
+			}
+		}
+
 		/**
 		 * Handles unloading a script when the close button is clicked
 		 *
 		 * @method closeScript
 		 */
 		function closeScript() {
-			unloadScript();
-			startNewScript(self.loadedSnippetType);
-			hideEditor();
+			let close = !self.changed || confirm("Your Snippet has unsaved changes. Close anyway?");
+			if (close) {
+				unloadScript();
+				startNewScript(self.loadedSnippetType);
+				hideEditor();
+			}
 		}
 
 		/**
@@ -188,8 +231,17 @@ let SAGE2_SnippetEditor = (function () {
 					desc: self.descInput.value ? self.descInput.value : self.loadedSnippetType + " snippet",
 					scriptID: self.loadedSnippet
 				});
+
+				updateIsChanged(false);
+
 			} catch (err) {
-				console.error(err);
+				self.errorLogContainer.innerHTML = "";
+
+				let errorDiv = document.createElement("div");
+				errorDiv.className = "message";
+				errorDiv.innerText = `${err}`;
+
+				self.errorLogContainer.append(errorDiv);
 			}
 		}
 
@@ -283,6 +335,7 @@ let SAGE2_SnippetEditor = (function () {
 			self.loadedSnippetType = type;
 
 			self.descInput.value = '';
+			updateIsChanged(false);
 		}
 
 		/**
@@ -401,6 +454,7 @@ let SAGE2_SnippetEditor = (function () {
 
 			// if the editor is closed, open it
 			openEditor();
+			updateIsChanged(false);
 		}
 
 		/**
@@ -433,6 +487,17 @@ let SAGE2_SnippetEditor = (function () {
 			);
 		}
 
+
+		/**
+		 * Recieves and updates the error and console logs from a snippet
+		 *
+		 * @method receiveSnippetLog
+		 * @param {Object} data - The log from a snippet's execution
+		 */
+		function receiveSnippetLog(data) {
+
+		}
+
 		return {
 			open: openEditor,
 			hide: hideEditor,
@@ -440,6 +505,7 @@ let SAGE2_SnippetEditor = (function () {
 			updateSnippetStates,
 			receiveLoadedSnippet,
 			receiveProjectExport,
+			receiveSnippetLog,
 
 			browserClose
 		};

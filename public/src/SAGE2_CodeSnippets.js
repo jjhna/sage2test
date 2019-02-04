@@ -220,8 +220,8 @@ let SAGE2_CodeSnippets = (function() {
 			snippetInfo.code = CodeSnippetCompiler.createFunction(type, code);
 			snippetInfo.text = code.replace(/`/gi, "\\`").replace(/\$/gi, "\\$");
 		} catch (err) {
-			// console.log("Error parsing code", err);
-			throwErrorToUser(scriptID, err, uniqueID);
+			console.log("Error parsing code", err);
+			// throwErrorToUser(scriptID, err, uniqueID);
 		}
 
 		updateFunctionDefinition(scriptID, snippetInfo);
@@ -967,8 +967,27 @@ let SAGE2_CodeSnippets = (function() {
 	// 	console.log("Send Log to:", this.uniqueID, this.snippetID, ...args);
 	// }
 
-	function throwErrorToUser(snippetID, err, uniqueID) {
-		console.log("Send Error to:", uniqueID, snippetID, err);
+	function snippetLogsUpdated(snippetID) {
+		// send to user who has the snippet loaded
+		if (self.functions[snippetID].editor) {
+			sendSnippetLogToUser(snippetID);
+		}
+	}
+
+	function sendSnippetLogToUser(snippetID) {
+		// user target
+		let uniqueID = self.functions[snippetID].editor;
+
+		// consolidate logs from all uses of the snippet
+		let fullLog = {};
+
+		for (let link of self.functions[snippetID].links) {
+			let { log } = self.links[link];
+
+			fullLog[link.getChild().state.snippetsID] = log;
+		}
+
+		console.log("Send to ", uniqueID, fullLog);
 	}
 
 	/**
@@ -1063,7 +1082,8 @@ let SAGE2_CodeSnippets = (function() {
 				getInputInitialValues,
 
 				// expose inputs object for now
-				inputs: self.inputs
+				inputs: self.inputs,
+				log: self.log
 			};
 
 			init();
@@ -1105,10 +1125,26 @@ let SAGE2_CodeSnippets = (function() {
 				self.log.push({
 					type: "console",
 					time: Date.now(),
-					content: args.map(a => a instanceof Object ? JSON.stringify(a).substring(0, 1500) : a).join(" ")
+					content: args.map(a => {
+
+						if (a instanceof Object) {
+							let string;
+							try {
+								// revisit how to handle sending objects
+								string = JSON.stringify(a).substring(0, 1500);
+							} catch (e) {
+								string = "[object Object]";
+							}
+
+							return string;
+						}
+
+						return a;
+					}).join(" ")
 				});
 
-				console.log(transformID, self.log);
+				// console.log(transformID, self.log);
+				snippetLogsUpdated(transformID);
 			}
 
 			function appendErrorToLog(err) {
@@ -1118,7 +1154,8 @@ let SAGE2_CodeSnippets = (function() {
 					content: err
 				});
 
-				console.log(transformID, self.log);
+				// console.log(transformID, self.log);
+				snippetLogsUpdated(transformID);
 			}
 
 			/**
