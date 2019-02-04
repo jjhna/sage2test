@@ -156,9 +156,6 @@ let SAGE2_SnippetEditor = (function () {
 			self.errorLogContainer = self.div.querySelector("#errorMessages");
 			self.consoleLogContainer = self.div.querySelector("#consoleMessages");
 
-			self.errorLogContainer.innerHTML = "";
-			self.consoleLogContainer.innerHTML = "";
-
 			// api helper element
 			self.apiHelper = self.div.querySelector("#snippetApiOptions");
 			addApiHelperOptions(apiExamples, self.apiHelper);
@@ -495,7 +492,85 @@ let SAGE2_SnippetEditor = (function () {
 		 * @param {Object} data - The log from a snippet's execution
 		 */
 		function receiveSnippetLog(data) {
+			console.log("Recieved Snippet Log: ", data);
 
+			let errors = [];
+			let consoleLog = [];
+
+			for (let appID of Object.keys(data.log)) {
+				for (let entry of data.log[appID]) {
+					if (entry.type === "console") {
+						consoleLog.push(Object.assign({appID}, entry));
+					} else {
+						errors.push(Object.assign({ appID }, entry));
+					}
+				}
+			}
+
+			console.log(errors, consoleLog);
+
+			errors.sort((a, b) => a.time - b.time);
+			consoleLog.sort((a, b) => a.time - b.time);
+
+			self.errorLogContainer.innerHTML = "";
+			self.consoleLogContainer.innerHTML = "";
+
+			for (let el in errors) {
+				let log = errors[el];
+
+				let message = document.createElement("div");
+				message.className = "message";
+
+				let timestamp = document.createElement("div");
+				timestamp.className = "timestamp";
+				timestamp.innerText = new Date(log.time).toLocaleTimeString();
+
+				let content = document.createElement("div");
+				content.className = "content";
+				content.innerText = `${log.content.name}: ${log.content.message}`;
+
+				let source = document.createElement("div");
+				source.className = "source";
+				source.innerText = `(${log.appID})`;
+
+				message.appendChild(timestamp);
+				message.appendChild(content);
+				message.appendChild(source);
+
+				self.errorLogContainer.appendChild(message);
+
+				self.errorLogContainer.scrollTop =
+					self.errorLogContainer.scrollHeight;
+			}
+
+			for (let el in consoleLog) {
+				let log = consoleLog[el];
+
+				let message = document.createElement("div");
+				message.className = "message";
+
+				// message.innerText = log.content;
+
+				let timestamp = document.createElement("div");
+				timestamp.className = "timestamp";
+				timestamp.innerText = new Date(log.time).toLocaleTimeString();
+
+				let content = document.createElement("div");
+				content.className = "content";
+				content.innerText = log.content;
+
+				let source = document.createElement("div");
+				source.className = "source";
+				source.innerText = `(${log.appID})`;
+
+				message.appendChild(timestamp);
+				message.appendChild(content);
+				message.appendChild(source);
+
+				self.consoleLogContainer.appendChild(message);
+
+				self.consoleLogContainer.scrollTop = self.consoleLogContainer.scrollHeight;
+			}
 		}
 
 		return {

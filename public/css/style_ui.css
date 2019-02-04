@@ -1391,12 +1391,46 @@ The z-index is very important.
 
 #codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper .log-items .message {
     font-size: 12px;
-    padding: 3px;
+/* 
+    white-space: pre-wrap;
+    word-break: break-all; */
+    display: flex;
+}
 
+#codeSnippetEditor #snippetLoggingWrapper .message div {
     font-family: monospace;
+    padding: 3px;
+}
+
+
+
+#codeSnippetEditor #snippetLoggingWrapper .message .timestamp {
+    flex: 0 0;
+    word-break: normal;
+    white-space: nowrap;
+    color: gray;
+
+    display: flex;
+    align-items: center;
+}
+
+
+#codeSnippetEditor #snippetLoggingWrapper .message .content {
+    flex: 1;
     white-space: pre-wrap;
     word-break: break-all;
+    padding-right: 5px;
 }
+
+
+#codeSnippetEditor #snippetLoggingWrapper .message .source {
+    flex: 0;
+    word-break: normal; 
+    white-space: nowrap;
+    font-style: italic;
+    color: gray;
+}
+
 
 #codeSnippetEditor #snippetLoggingWrapper #errorMessages .message {
     background: #ffefef;

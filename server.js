@@ -1333,6 +1333,7 @@ function setupListeners(wsio) {
 	wsio.on("editorRequestSnippetsExport", wsEditorRequestSnippetsExport);
 	// - Display to WebUI
 	wsio.on("snippetsStateUpdated", wsSnippetsStateUpdated);
+	wsio.on("snippetsSendLog", wsSnippetsSendLog);
 	wsio.on("snippetSendCodeOnLoad", wsSnippetSendCodeOnLoad);
 	wsio.on("snippetsSendProjectExport", wsSnippetsSendProjectExport);
 
@@ -11428,7 +11429,7 @@ function wsSnippetSaveIntoServer(wsio, data) {
 	let fileString = JSON.stringify(fileContents);
 
 	// if the specified name is the same as it previously was
-	if (oldname !== "null" && oldname.split("-")[1] === filename.split("-")[1] && !fs.existsSync(fullpath)) {
+	if (oldname !== "null" && filename && oldname.split("-")[1] === filename.split("-")[1] && !fs.existsSync(fullpath)) {
 		// reuse old name if possible
 		filename = oldname;
 		fullpath = path.join(snippetWritePath, filename);
@@ -11570,6 +11571,23 @@ function wsSnippetsStateUpdated(wsio, data) {
 	snippetsManager.updateFunctionStatus(data);
 
 	broadcast("editorReceiveSnippetStates", data);
+}
+
+
+/**
+ * Pass-through function to bounce a completed snippet load request back to the WebUI
+ *
+ * @method wsSnippetsSendLog
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information, along with the destination.
+ */
+function wsSnippetsSendLog(wsio, data) {
+
+	let ind = clients.findIndex(c => c.id === data.to);
+
+	if (ind !== -1) {
+		clients[ind].emit("editorReceiveSnippetLog", data);
+	}
 }
 
 /**

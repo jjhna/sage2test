@@ -334,6 +334,8 @@ let SAGE2_CodeSnippets = (function() {
 					type: self.functions[scriptID].type,
 					desc: self.functions[scriptID].desc
 				});
+
+				sendSnippetLogToUser(scriptID);
 			}
 		}
 
@@ -969,7 +971,7 @@ let SAGE2_CodeSnippets = (function() {
 
 	function snippetLogsUpdated(snippetID) {
 		// send to user who has the snippet loaded
-		if (self.functions[snippetID].editor) {
+		if (self.functions[snippetID].editor && isMaster) {
 			sendSnippetLogToUser(snippetID);
 		}
 	}
@@ -984,10 +986,15 @@ let SAGE2_CodeSnippets = (function() {
 		for (let link of self.functions[snippetID].links) {
 			let { log } = self.links[link];
 
-			fullLog[link.getChild().state.snippetsID] = log;
+			fullLog[self.links[link].getChild().id] = log;
 		}
 
 		console.log("Send to ", uniqueID, fullLog);
+		wsio.emit("snippetsSendLog", {
+			to: uniqueID,
+			log: fullLog,
+			snippetID
+		});
 	}
 
 	/**
@@ -1151,7 +1158,11 @@ let SAGE2_CodeSnippets = (function() {
 				self.log.push({
 					type: "error",
 					time: Date.now(),
-					content: err
+					content: {
+						message: err.message,
+						stack: err.stack,
+						name: err.name
+					}
 				});
 
 				// console.log(transformID, self.log);
