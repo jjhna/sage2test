@@ -9168,21 +9168,34 @@ function keyUp(uniqueID, pointerX, pointerY, data) {
 			break;
 		}
 		case "applications": {
-			if (remoteInteraction[uniqueID].windowManagementMode() &&
+			// Special case: delete key on the titlebar -> delete app
+			let btn = SAGE2Items.applications.findButtonByPoint(obj.id, localPt);
+			if (btn && btn.id === "titleBar" &&
 				(data.code === 8 || data.code === 46)) {
 				// backspace or delete
 				deleteApplication(obj.data.id, null, {id: uniqueID});
 
-				var eLogData = {
+				let eLogData = {
 					application: {
 						id: obj.data.id,
 						type: obj.data.application
 					}
 				};
 				addEventToUserLog(uniqueID, {type: "delete", data: eLogData, time: Date.now()});
-			// } else {
-			// 	sendKeyUpToApplication(uniqueID, obj.data, localPt, data);
-			// }
+			}
+
+			if (remoteInteraction[uniqueID].windowManagementMode() &&
+				(data.code === 8 || data.code === 46)) {
+				// backspace or delete
+				deleteApplication(obj.data.id, null, {id: uniqueID});
+
+				let eLogData = {
+					application: {
+						id: obj.data.id,
+						type: obj.data.application
+					}
+				};
+				addEventToUserLog(uniqueID, {type: "delete", data: eLogData, time: Date.now()});
 			}
 			// luc: send keys to app anyway
 			sendKeyUpToApplication(uniqueID, obj.data, localPt, data);
