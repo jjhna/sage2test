@@ -43,7 +43,7 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 const passport = require('passport');
 const { Strategy, Issuer } = require('openid-client');
-const { SessionJSONStore, UserJSONStore} = require('../src/store.js');
+const { SessionJSONStore, UserJSONStore} = require('../src/node-store.js');
 
 
 var app = null;
