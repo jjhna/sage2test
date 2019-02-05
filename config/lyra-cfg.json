@@ -174,13 +174,17 @@
 			secure: true
 		}
 	],
-        // list of extra folders for assets and apps
-        folders: [
-                {
-                        name: "extras",
-                        url: "/extras",
-                        path: "/iridium_SSD/evldemo/extras/",
-                        upload: false
-                }
-	]
+    // list of extra folders for assets and apps
+    folders: [
+            {
+                    name: "extras",
+                    url: "/extras",
+                    path: "/iridium_SSD/evldemo/extras/",
+                    upload: false
+            }
+	],
+    ciLogon:{
+    	client_id: "cilogon:/client_id/163078c924567c0dd30fd1465633c3b9",
+    	client_secret: "-ULQK2BYVoJRdsI0TqH-C_EbKjxYBOkhzGrYbmCrt2mWumy36YEiCjWegZoiIrglKg3CB7hR6jlZ_d0KFlEgsQ"
+    }
 }
