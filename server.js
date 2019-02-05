@@ -6,7 +6,7 @@
 //
 // See full text, terms and conditions in the LICENSE.txt included file
 //
-// Copyright (c) 2014-2015
+// Copyright (c) 2014-2019
 
 /**
  * SAGE2 server
@@ -41,7 +41,7 @@ var path          = require('path');             // file path management
 var readline      = require('readline');         // to build an evaluation loop
 var url           = require('url');              // parses urls
 
-// npm: defined in package.json
+// modules defined in package.json
 var formidable    = require('formidable');       // upload processor
 var gm            = require('gm');               // graphicsmagick
 var json5         = require('json5');            // Relaxed JSON format
@@ -76,16 +76,18 @@ var registry            = require('./src/node-registry');         // Registry Ma
 var FileBufferManager	= require('./src/node-filebuffer');
 var PartitionList       = require('./src/node-partitionlist');    // list of SAGE2 Partitions
 var SharedDataManager	= require('./src/node-sharedserverdata'); // manager for shared data
-var userlist            = require('./src/node-userlist');		  // list of users
+var userlist            = require('./src/node-userlist');         // list of users
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
 var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
-var VoiceActionManager	= require('./src/node-voiceToAction'); // manager for shared data
+var VoiceActionManager	= require('./src/node-voiceToAction');    // manager for shared data
+
 //
 // Globals
 //
 
 // Global variable for all media folders
 global.mediaFolders = {};
+
 // System folder, defined within SAGE2 installation
 mediaFolders.system =	{
 	name: "system",
@@ -93,6 +95,7 @@ mediaFolders.system =	{
 	url:  "/uploads",
 	upload: false
 };
+
 // Home directory, defined as ~/Documents/SAGE2_Media or equivalent
 mediaFolders.user =	{
 	name: "user",
@@ -100,11 +103,13 @@ mediaFolders.user =	{
 	url:  "/user",
 	upload: true
 };
+
 // Default upload folder
 var mainFolder = mediaFolders.user;
 
 // Session hash for security
 global.__SESSION_ID = null;
+
 // SAGE2 logger object
 global.logger = null;
 
