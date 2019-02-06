@@ -48,6 +48,7 @@ const { SessionJSONStore, UserJSONStore} = require('../src/node-store.js');
 
 var app = null;
 var userDB = null;
+var publicDirectory;
 
 /**
  * SAGE HTTP request handlers for GET and POST
@@ -101,12 +102,12 @@ class HttpServer {
 			},
 			store: sessionDB,
 			secret: 'asldfkjasd;fkja;sldkf;alsdfk',
-			resave: true,
-			saveUninitialized: false
+			resave: false,
+			saveUninitialized: true
 		}));
 
 		var cfg = global.config;
-		var redirect_uri = 'https://' + cfg.host + ':' + cfg.port + '/authcb';
+		var redirect_uri = 'https://' + cfg.host + '/authcb';
 		Issuer.discover('https://cilogon.org/.well-known/openid-configuration') // => Promise
 			.then(function (ciLogon) {
 				var client = new ciLogon.Client({
@@ -204,6 +205,103 @@ class HttpServer {
 		// handle other paths
 		app.get('*', ensureAuthenticated, handleGet);
 		app.put('*', handlePut);	// not sure if this does anything
+	}
+
+
+
+	buildHeader() {
+		// Get the site configuration, from server.js
+		var cfg = global.config;
+		// Build the header object
+		var header = {};
+
+		// Default datatype of the response
+		header["Content-Type"] = "text/html; charset=utf-8";
+
+		// The X-Frame-Options header can be used to to indicate whether a browser is allowed
+		// to render a page within an <iframe> element or not. This is helpful to prevent clickjacking
+		// attacks by ensuring your content is not embedded within other sites.
+		// See more here: https://developer.mozilla.org/en-US/docs/HTTP/X-Frame-Options.
+		// "SAMEORIGIN" or "DENY" for instance
+		header["X-Frame-Options"] = "SAMEORIGIN";
+
+		// This header enables the Cross-site scripting (XSS) filter built into most recent web browsers.
+		// It's usually enabled by default anyway, so the role of this header is to re-enable the filter
+		// for this particular website if it was disabled by the user.
+		// This header is supported in IE 8+, and in Chrome.
+		header["X-XSS-Protection"] = "1; mode=block";
+
+		// The only defined value, "nosniff", prevents Internet Explorer and Google Chrome from MIME-sniffing
+		// a response away from the declared content-type. This also applies to Google Chrome, when downloading
+		// extensions. This reduces exposure to drive-by download attacks and sites serving user uploaded content
+		// that, by clever naming, could be treated by MSIE as executable or dynamic HTML files.
+		header["X-Content-Type-Options"] = "nosniff";
+
+		// HTTP Strict Transport Security (HSTS) is an opt-in security enhancement
+		// Once a supported browser receives this header that browser will prevent any
+		// communications from being sent over HTTP to the specified domain
+		// and will instead send all communications over HTTPS.
+		// Here using a long (1 year) max-age
+		if (cfg.security && sageutils.isTrue(cfg.security.enableHSTS)) {
+			header["Strict-Transport-Security"] = "max-age=31536000";
+		}
+
+		// Instead of blindly trusting everything that a server delivers, Content-Security-Policy defines
+		// the HTTP header that allows you to create a whitelist of sources of trusted content,
+		// and instructs the browser to only execute or render resources from those sources.
+		// Even if an attacker can find a hole through which to inject script, the script won’t match
+		// the whitelist, and therefore won’t be executed.
+		// default-src 'none' -> default policy that blocks absolutely everything
+		if (cfg.security && sageutils.isTrue(cfg.security.enableCSP)) {
+			// Pretty open
+			header["Content-Security-Policy"] = "default-src 'self';" +
+				// application/browser-plugin is for vtc
+				" plugin-types image/svg+xml application/browser-plugin;" +
+				" object-src 'self';" +
+				" child-src 'self' blob:;" +
+				" connect-src *;" +
+				" font-src 'self' fonts.gstatic.com;" +
+				" form-action 'self';" +
+				" img-src * data: blob:;" +
+				" media-src 'self' blob:;" +
+				" style-src 'self' 'unsafe-inline' fonts.googleapis.com;" +
+				" script-src * 'unsafe-eval' 'unsafe-inline';";
+		}
+
+		// Expect-CT allows a site to determine if they enforce their Certificate Transparency policy
+		if (cfg.security && sageutils.isTrue(cfg.security.enableExpectCertificateTransparency)) {
+			// set to enforce, and valid for 1 hour
+			header["Expect-CT"] = "enforce; max-age:3600;";
+		}
+
+		// Referrer Policy allows a site to control how much information the browser includes
+		//   with navigations away from a document. Only set here for same origin site
+		if (cfg.security && sageutils.isTrue(cfg.security.enableReferrerPolicy)) {
+			header["Referrer-Policy"] = "same-origin";
+		}
+
+		// Feature Policy allows to enable and disable certain web platform features
+		//  in local pages and those they embed
+		if (cfg.security && sageutils.isTrue(cfg.security.enableFeaturePolicy)) {
+			header["Feature-Policy"] = "" +
+				"accelerometer 'none'" +
+				"; ambient-light-sensor 'none'" +
+				"; autoplay *" +
+				"; camera *" +
+				"; encrypted-media 'none'" +
+				"; fullscreen 'none'" +
+				"; geolocation *" +
+				"; gyroscope 'none'" +
+				"; magnetometer 'none'" +
+				"; microphone *" +
+				"; midi 'none'" +
+				"; payment 'none'" +
+				// "; picture-in-picture 'none'" +
+				"; speaker *" +
+				"; usb 'self'" +
+				"; vr 'self'";
+		}
+		return header;
 	}
 }
 

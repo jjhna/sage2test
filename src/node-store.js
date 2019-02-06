@@ -35,6 +35,7 @@ class SessionJSONStore extends Store {
 			this.db = json5.parse(jsonString);
 		} else {
 			this.db = {};
+			fs.writeFileSync(this.filePath, json5.stringify(this.db));
 		}
 	}
 	save(cb) {
@@ -82,8 +83,12 @@ class SessionJSONStore extends Store {
 		this.save(cb);
 	}
 	touch(sid, session, cb) {
-		// Implement Touch logic
-		this.save(cb);
+		try {
+			session.touch();
+			this.set(sid, session, cb);
+		} catch (error) {
+			cb(error);
+		}
 	}
 }
 

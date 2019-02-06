@@ -451,11 +451,10 @@ function initializeSage2Server() {
 
 	// Set up http and https servers
 	var httpServerApp = new HttpServer(publicDirectory);
-	httpServerApp.httpPOST('/upload', uploadForm); // receive newly uploaded files from SAGE Pointer / SAGE UI
-	httpServerApp.httpGET('/config',  sendConfig); // send config object to client using http request
+	httpServerApp.app.post('/upload', uploadForm); // receive newly uploaded files from SAGE Pointer / SAGE UI
 	var options  = setupHttpsOptions();            // create HTTPS options - sets up security keys
-	sage2Server  = http.createServer(httpServerApp.onrequest);
-	sage2ServerS = https.createServer(options, httpServerApp.onrequest);
+	sage2Server  = http.createServer(httpServerApp.app);
+	sage2ServerS = https.createServer(options, httpServerApp.app);
 
 	// In case the HTTPS client doesnt support tickets
 	var tlsSessionStore = {};
