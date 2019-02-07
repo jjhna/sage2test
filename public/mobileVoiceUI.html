@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+
+<style>
+.loader {
+  border: 32px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 32px solid #1ddced;
+  width: 200px;
+  height: 200px;
+  -webkit-animation: spin 3s linear infinite; /* Safari */
+  animation: spin 3s linear infinite;
+  margin: auto;
+/*  position: absolute;
+  bottom: 5%;
+  left:50%;
+  transform: translate(10%, 0);
+*/}
+
+.myContainer {
+  width: 100%;
+  height: 100%;
+}
+
+.myText {
+  /*position: absolute;*/
+  /*top: %5;*/
+  width: 390px;
+  height: 200px;
+  margin: auto;
+  /*left:5%;*/
+  
+}
+
+.demo {
+  width: 100%;
+  text-align: center;
+}
+
+
+#content {
+  width: 100%;
+  margin: auto;
+  text-align: center;
+  font-size: 32;
+/*  position: relative;
+  top: 50%;*/
+  /*transform: translateY(-50%);*/
+}
+
+#buttonDiv {
+  width: 100%;
+  height: 100px;
+  margin: auto;
+  /*background-color:#f3f3f4;*/
+  /*display: flex;*/
+  /*align-items: center;*/
+}
+
+#retryButton {
+  left:0%;
+}
+
+#sendButton{
+  left:100%;
+}
+
+.my-button {
+  background-color: #d0d0d0;
+  border: true;
+  /*border-radius: 2px;*/
+  border-color: #ffffff;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 32px;
+  /*margin: 4px 2px;*/
+  cursor: pointer;
+  border-radius: 15px;
+  height:100%;
+  width:50%;
+  box-shadow: none;
+}
+
+/*.my-button:hover {
+    background: #666;
+    color: #c1e1e0;
+}
+*/
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body onload="init()">
+
+
+<div id="container" class="myContainer"> 
+<textarea class="myText" id="queryToSend"></textarea>
+  <div id="content">
+    Click below to record...
+  </div>
+<div id="myLoader" class="loader" onclick="toggleStates()"></div>
+<div id="buttonDiv">
+<button class="my-button" id="retryButton" onclick="retryEvent(event)">Retry</button><button class="my-button" id="sendButton" onclick="sendEvent(event)" >Send</button>
+</div>
+</div>
+  <span id="final_span" class="final"></span>
+  <span id="interim_span" class="interim"></span>
+<script type="text/javascript" src="src/websocket.io.js"></script>
+<script async src="lib/webix/webix.js"></script>
+
+<script>
+
+var listenState = 0; 
+var loader = document.getElementById("myLoader");
+var retryButton = document.getElementById("retryButton");
+var sendButton = document.getElementById("sendButton");
+var noToggle = false;
+
+function toggleStates() {
+  if(noToggle)
+    return;
+    listenState++;
+
+    if( listenState == 0 ){//ready
+       setStateToReady();
+
+    }
+    if( listenState == 1 ){//listen
+       setStateToListen();
+
+    }
+    if( listenState == 2 ){//send or retry
+      setStateToSendOrRetry();
+      listenState = -1;
+    } 
+    // if( listenState == 3) //not using/// 
+    // {
+    //   //swapInLoader();
+    //   listenState = -1;
+    // }
+  
+}
+
+function retryEvent(event){
+  console.log("retry");
+  //clear and reset the listenner
+
+  setStateToReady();
+  listenState = 0;
+
+  startGestureRecognition('false');
+
+
+}
+
+
+function setStateToReady(){
+  startGestureRecognition('false');
+
+  loader.style["border-top"]= "32px solid #1ddced";
+  loader.style["animation"] = "spin 3s linear infinite";
+  document.getElementById("content").innerHTML = "Click below to record...";
+  retryButton.style.cssText = "background:#d0d0d0";
+  sendButton.style.cssText = "background:#d0d0d0";
+  retryButton.disabled = true;
+  sendButton.disabled = true;
+  document.getElementById("queryToSend").value = "";
+}
+
+function setStateToListen(){
+    startGestureRecognition('true');
+
+    loader.style["border-top"]= "32px solid #1adda4";
+    loader.style["animation"] = "spin 1s linear infinite";
+    retryButton.style.cssText = "background:#d0d0d0";
+    sendButton.style.cssText = "background:#d0d0d0";
+    retryButton.disabled = true;
+    sendButton.disabled = true;
+    document.getElementById("content").innerHTML = "Recording...";
+
+
+    if (recognizing) {
+      recognition.stop();
+      startGestureRecognition('false');
+      return;
+    }
+    final_transcript = '';
+    recognition.lang = "en-US";//select_dialect.value;
+    recognition.start();
+    ignore_onend = false;
+    final_span.innerHTML = '';
+    interim_span.innerHTML = '';
+    //start_img.src = 'images/mic-slash.gif';
+    //showInfo('info_allow');
+    //showButtons('none');
+    start_timestamp = event.timeStamp;
+}
+
+function setStateToSendOrRetry(){
+    startGestureRecognition('false');
+    if (recognizing) {
+      recognition.stop();
+    //return;
+    }
+
+  loader.style["border-top"]= "32px solid #d0d0d0";
+  loader.style["animation"] = "spin 20s linear infinite";
+  document.getElementById("content").innerHTML = " Verify and Send or Retry";
+  retryButton.style.cssText = "background:#1ddced";
+  sendButton.style.cssText = "background:#1ddced";
+  retryButton.disabled = false;
+  sendButton.disabled = false;
+}
+
+function setStateToError(){
+    startGestureRecognition('false');
+    if (recognizing) {
+      recognition.stop();
+    //return;
+    }
+
+  loader.style["border-top"]= "32px solid #F15F5F";
+  loader.style["animation"] = "spin 20s linear infinite";
+  document.getElementById("content").innerHTML = "Error: Cannot reach server";
+  retryButton.style.cssText = "background:#d0d0d0";
+  sendButton.style.cssText = "background:#d0d0d0";
+  retryButton.disabled = true;
+  sendButton.disabled = true;
+
+  noToggle = true;
+}
+
+function sendEvent(event){
+    console.log("send");
+    startGestureRecognition('false');
+
+    sendToSage();
+
+    setStateToReady();
+    listenState = 0;
+}
+
+/////////
+
+var send_to_sage = false;
+var final_transcript = '';
+var recognizing = false;
+var ignore_onend;
+var start_timestamp;
+
+
+/////////
+var wsio;
+wsio = new WebsocketIO();
+
+wsio.open(function() {
+    console.log("Websocket opened");
+
+    setupListeners();
+
+    var clientDescription = {
+      clientType: "articulate_mobile_UI",
+      requests: {
+        config: false,
+        version: false,
+        time: false,
+        console: false
+      }
+      // },
+      // browser: __SAGE2__.browser
+    };
+
+    wsio.emit('addClient', clientDescription);
+
+
+  });
+
+// socket close event (i.e. server crashed)
+  wsio.on('close', function(evt) {
+    setStateToError(); 
+    // show a popup for a long time
+    showMessage("Server offline", 2147483647);
+    // try to reload every few seconds
+    var refresh = setInterval(function() {
+      reloadIfServerRunning(function() {
+        clearInterval(refresh);
+      });
+    }, 2000);
+  });
+
+
+
+function sendToSage() {
+  final_transcript = document.getElementById("queryToSend").value; //"hello I am the mobile voice ui \n";
+  var n = final_transcript.indexOf('\n');
+  if (n < 0 || n >= 80) {
+    n = 40 + final_transcript.substring(40).indexOf(' ');
+  }
+
+  console.log("send to sage! ", final_transcript);
+
+  wsio.emit("googleVoiceSpeechInput", {text: final_transcript});
+}
+
+function startGestureRecognition(gRecognitionStatus) {
+  wsio.emit("gestureRecognitionStatus", {text: gRecognitionStatus});
+}
+
+function init(){
+  startGestureRecognition('false');
+  console.log("init");
+
+}
+
+function setupListeners() {
+  wsio.on('initialize', function(data) {
+    //interactor.setInteractionId(data.UID);
+    // console.log("Data is = ", JSON.stringify(data));
+  });
+
+  // Open a popup on message sent from server
+  wsio.on('errorMessage', showMessage);
+
+    // Server sends the SAGE2 version
+  wsio.on('setupSAGE2Version', function(data) {
+    sage2Version = data;
+    console.log('SAGE2: version', data.base, data.branch, data.commit, data.date);
+  });
+}
+
+
+function showMessage(message, delay) {
+  // var aMessage = webix.alert({
+  //   type:  "alert-error",
+  //   title: "SAGE2 Error",
+  //   ok:    "OK",
+  //   text:  message
+  // });
+  setTimeout(function() {
+    //webix.modalbox.hide(aMessage);
+    console.log("checking...");
+  }, delay ? delay : 2000);
+}
+
+/**
+ * Reload the page if server reloads
+ *
+ * @method reloadIfServerRunning
+ * @param callback {Function} function to call
+ */
+function reloadIfServerRunning(callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/", true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      console.log("server ready");
+      // when server ready, callback
+      setStateToReady();
+      callback();
+      // and reload the page
+      window.location.reload();
+    }
+  };
+  xhr.send();
+}
+
+/////////////////////////////////////////
+
+if (!('webkitSpeechRecognition' in window)) {
+  upgrade();
+} else {
+  //start_button.style.display = 'inline-block';
+  var recognition = new webkitSpeechRecognition();
+  recognition.continuous = true;
+  //recognition.interimResults = true;
+
+  recognition.onstart = function() {
+    recognizing = true;
+    //showInfo('info_speak_now');
+    //start_img.src = 'images/mic-animate.gif';
+  };
+
+  recognition.onerror = function(event) {
+    if (event.error == 'no-speech') {
+      //start_img.src = 'images/mic.gif';
+      //showInfo('info_no_speech');
+      ignore_onend = true;
+    }
+    if (event.error == 'audio-capture') {
+      //start_img.src = 'images/mic.gif';
+      //showInfo('info_no_microphone');
+      ignore_onend = true;
+    }
+    if (event.error == 'not-allowed') {
+      if (event.timeStamp - start_timestamp < 100) {
+        //showInfo('info_blocked');
+      } else {
+        //showInfo('info_denied');
+      }
+      ignore_onend = true;
+    }
+  };
+
+  recognition.onend = function() {
+    console.log("on end");
+
+    recognizing = false;
+
+    if (ignore_onend) {
+      return;
+    }
+    //start_img.src = 'images/mic.gif';
+    if (!final_transcript) {
+      //showInfo('info_start');
+      return;
+    }
+    //showInfo('');
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+      var range = document.createRange();
+      range.selectNode(document.getElementById('final_span'));
+      window.getSelection().addRange(range);
+      console.log(range);
+    }
+    if (send_to_sage) {
+      send_to_sage = false;
+      sendToSage();
+    }
+  };
+
+  recognition.onresult = function(event) {
+    console.log("on result!");
+    var interim_transcript = '';
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        final_transcript += event.results[i][0].transcript;
+      } else {
+        interim_transcript += event.results[i][0].transcript;
+      }
+    }
+    final_transcript = capitalize(final_transcript);
+    final_span.innerHTML = linebreak(final_transcript);
+    interim_span.innerHTML = linebreak(interim_transcript);
+    if (final_transcript || interim_transcript) {
+      //showButtons('inline-block');
+    }
+
+    console.log("final_transcript " + final_transcript);
+    console.log("interim_transcript " + interim_transcript);
+
+    document.getElementById("queryToSend").value = final_transcript;
+  };
+}
+
+function upgrade() {
+  start_button.style.visibility = 'hidden';
+  //showInfo('info_upgrade');
+}
+
+var two_line = /\n\n/g;
+var one_line = /\n/g;
+function linebreak(s) {
+  return s.replace(two_line, '<p></p>').replace(one_line, '<br>');
+}
+
+var first_char = /\S/;
+function capitalize(s) {
+  return s.replace(first_char, function(m) { return m.toUpperCase(); });
+}
+
+
+
+</script>
+
+</body>
+</html>

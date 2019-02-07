@@ -817,6 +817,27 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
 			}
 		}
 	} // ServiceTypeWand ends ///////////////////////////////////////////
+	else if (serviceType === 8 ) { // speech input
+
+
+		
+		var spokenStringBuffer = msg.slice(offset, offset + e.extraDataSize);
+		const confidence = e.posx;
+
+		var speechData = {
+			"phrase": spokenStringBuffer.toString('utf8'),
+			"confidence": confidence,
+			"speechID": sourceID,
+			"type": confidence === 1.0 ? "dictationInput" : "grammarInput"
+		};
+
+			if (omicronManager.eventDebug) {
+				sageutils.log('Omicron', "Kinect speech "  );
+				sageutils.log(speechData);
+			}
+
+		this.kinectInput(sourceID, speechData);
+	} 
 };
 
 /**

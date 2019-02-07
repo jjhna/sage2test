@@ -481,17 +481,17 @@ function setupListeners() {
 }
 //---------------------------------------------------------------
 // Show error message for 2 seconds (or time given as parameter)
-// function showMessage(message, delay) {
-//   var aMessage = webix.alert({
-//     type:  "alert-error",
-//     title: "SAGE2 Error",
-//     ok:    "OK",
-//     text:  message
-//   });
-//   setTimeout(function() {
-//     webix.modalbox.hide(aMessage);
-//   }, delay ? delay : 2000);
-// }
+function showMessage(message, delay) {
+  var aMessage = webix.alert({
+    type:  "alert-error",
+    title: "SAGE2 Error",
+    ok:    "OK",
+    text:  message
+  });
+  setTimeout(function() {
+    webix.modalbox.hide(aMessage);
+  }, delay ? delay : 2000);
+}
 
 
 function inputDetected(){

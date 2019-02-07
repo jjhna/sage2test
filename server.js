@@ -3546,6 +3546,10 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 		broadcast('articulateDebugInfo', data);
 
 
+		//pointedToApps = []; 
+		//CLEAR HEREJILLIAN 
+
+
 	}
 	else{
 		//launch articulate app ...?
@@ -3827,6 +3831,7 @@ function wsGestureRecognitionStatus(wsio, data){
 	var app = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
 	if( app != null ){
 		console.log("start gesture recognition");
+		console.log(data);
 		var data = {id: app.id, data: data.text, date: Date.now()};
 		broadcast('startGestureRecognition', data);
 	}
@@ -7620,7 +7625,7 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 	}
 	*/
 }
-var recognizing = false;
+var recognizing = true;//false;
 
 function wsAlexaVoiceSpeechInput(wsio, data){
 
@@ -7628,6 +7633,8 @@ function wsAlexaVoiceSpeechInput(wsio, data){
 	console.log(data); //this will print a message to the console to show you what the object 'data'
 	console.log("###############################################################");
 	// console.log('recognizing =1 ' + recognizing);
+	console.log("recognizing");
+	console.log(recognizing);
 	if(recognizing === 'true')
 	{
 	wsGestureRecognitionStatus(null, {text:"false"});
@@ -7657,16 +7664,16 @@ function sendKinectInput(id, data) {	// From addClient type == sageUI
 
 	//Vijay and Joe
 	// Using the kinect to detect for the alexa ask articulate keyword to begin gesture recoginition
-	if(data.type == "grammarInput" && data.phrase == "alexa"){
-		// console.log('recognizing = ' + recognizing);
+	if(data.type == "grammarInput" && (data.phrase == "computer" || data.phrase == "articulate" || data.phrase == "alexa") ){ //"alexa"){
+		console.log('grammar input = ' + recognizing);
 
 		if(recognizing === 'false')
 		{
-			// console.log("Starting gesture recognition!!!");
+			console.log("Starting gesture recognition!!!");
 			wsGestureRecognitionStatus(null, {text:"true"});
 			recognizing = 'true';
-	  }
-		// console.log('recognizing = ' + recognizing);
+	  	}
+		console.log('recognizing = ' + recognizing);
 	}
 
 	//	var obj = interactMgr.searchGeometry({x: pointerX, y: pointerY});

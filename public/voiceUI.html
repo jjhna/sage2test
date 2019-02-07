@@ -351,6 +351,7 @@ function speechToSageButton() {
 }
 
 function startButton(event) {
+  console.log("1");
   startGestureRecognition('true');
   if (recognizing) {
     recognition.stop();
@@ -359,6 +360,7 @@ function startButton(event) {
   }
   final_transcript = '';
   recognition.lang = select_dialect.value;
+  console.log(recognition.lang);
   recognition.start();
   ignore_onend = false;
   final_span.innerHTML = '';
@@ -412,7 +414,7 @@ wsio.open(function() {
     setupListeners();
 
     var clientDescription = {
-      clientType: "articulateUI",
+      clientType: "articulate_UI_voice_UI",
       requests: {
         config: false,
         version: false,
