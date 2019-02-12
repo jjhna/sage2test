@@ -24,11 +24,6 @@ const electron = require('electron');
 // Get platform and hostname
 var os = require('os');
 
-// Lets do it on all platforms
-// if (os.platform() === "win32" || os.platform() === "darwin") {
-electron.app.setAppPath(process.cwd());
-// }
-
 //
 // handle install/update for Windows
 //
@@ -94,6 +89,8 @@ function handleSquirrelEvent() {
 const app = electron.app;
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
+const Menu  = electron.Menu;
+const shell = electron.shell;
 // Module to handle ipc with Browser Window
 const ipcMain = electron.ipcMain;
 
@@ -136,8 +133,20 @@ commander
 	.option('--height <n>',              'Window height (int)', myParseInt, 720)
 	.option('--password <s>',            'Server password (string)', null)
 	.option('--show-fps',                'Display the Chrome FPS counter', false)
+	.option('--local',                   'Used for local development', false)
 	.option('--width <n>',               'Window width (int)', myParseInt, 1280)
 	.parse(args);
+
+
+// Change current durectory to find the Webview JS addon
+if (commander.local) {
+	// if (os.platform() === "win32" || os.platform() === "darwin") {
+	console.log('Current directory:', process.cwd());
+	console.log('getAppPath directory:', electron.app.getAppPath());
+	electron.app.setAppPath(process.cwd());
+	// }
+}
+
 
 // Load the flash plugin if asked
 if (commander.plugins) {
@@ -276,6 +285,10 @@ function openWindow() {
  * @method     createWindow
  */
 function createWindow() {
+	// Build a menu
+	var menu = buildMenu();
+	Menu.setApplicationMenu(Menu.buildFromTemplate(menu));
+
 	// If a monitor is specified
 	if (commander.monitor !== null) {
 		// get all the display data
@@ -532,4 +545,184 @@ function myParseInt(str, defaultValue) {
 		return int;
 	}
 	return defaultValue;
+}
+
+
+function buildMenu() {
+
+	const template = [
+		{
+			label: 'Edit',
+			submenu: [
+				{
+					label: 'Undo',
+					accelerator: 'CmdOrCtrl+Z',
+					role: 'undo'
+				},
+				{
+					label: 'Redo',
+					accelerator: 'Shift+CmdOrCtrl+Z',
+					role: 'redo'
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Cut',
+					accelerator: 'CmdOrCtrl+X',
+					role: 'cut'
+				},
+				{
+					label: 'Copy',
+					accelerator: 'CmdOrCtrl+C',
+					role: 'copy'
+				},
+				{
+					label: 'Paste',
+					accelerator: 'CmdOrCtrl+V',
+					role: 'paste'
+				},
+				{
+					label: 'Select All',
+					accelerator: 'CmdOrCtrl+A',
+					role: 'selectall'
+				}
+			]
+		},
+		{
+			label: 'View',
+			submenu: [
+				{
+					label: 'Reload',
+					accelerator: 'CmdOrCtrl+R',
+					click: function(item, focusedWindow) {
+						if (focusedWindow) {
+							focusedWindow.reload();
+						}
+					}
+				},
+				{
+					label: 'Toggle Full Screen',
+					accelerator: (function() {
+						if (process.platform === 'darwin') {
+							return 'Ctrl+Command+F';
+						} else {
+							return 'F11';
+						}
+					}()),
+					click: function(item, focusedWindow) {
+						if (focusedWindow) {
+							focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+						}
+					}
+				},
+				{
+					label: 'Toggle Developer Tools',
+					accelerator: (function() {
+						if (process.platform === 'darwin') {
+							return 'Alt+Command+I';
+						} else {
+							return 'Ctrl+Shift+I';
+						}
+					}()),
+					click: function(item, focusedWindow) {
+						if (focusedWindow) {
+							focusedWindow.toggleDevTools();
+						}
+					}
+				}
+			]
+		},
+		{
+			label: 'Window',
+			role: 'window',
+			submenu: [
+				{
+					label: 'Minimize',
+					accelerator: 'CmdOrCtrl+M',
+					role: 'minimize'
+				},
+				{
+					label: 'Close',
+					accelerator: 'CmdOrCtrl+W',
+					role: 'close'
+				}
+			]
+		},
+		{
+			label: 'Help',
+			role: 'help',
+			submenu: [
+				{
+					label: 'Learn More',
+					click: function() {
+						shell.openExternal('http://sage2.sagecommons.org/v4-0-release/sage2-display-client/');
+					}
+				}
+			]
+		}
+	];
+
+	if (process.platform === 'darwin') {
+		const name = app.getName();
+		template.unshift({
+			label: name,
+			submenu: [
+				{
+					label: 'About ' + name,
+					role: 'about'
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Services',
+					role: 'services',
+					submenu: []
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Hide ' + name,
+					accelerator: 'Command+H',
+					role: 'hide'
+				},
+				{
+					label: 'Hide Others',
+					accelerator: 'Command+Shift+H',
+					role: 'hideothers'
+				},
+				{
+					label: 'Show All',
+					role: 'unhide'
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Quit',
+					accelerator: 'Command+Q',
+					click: function() {
+						app.quit();
+					}
+				}
+			]
+		});
+		const windowMenu = template.find(function(m) {
+			return m.role === 'window';
+		});
+		if (windowMenu) {
+			windowMenu.submenu.push(
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Bring All to Front',
+					role: 'front'
+				});
+		}
+	}
+
+	return template;
 }
