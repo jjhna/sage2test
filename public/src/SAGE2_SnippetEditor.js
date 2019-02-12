@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global ace displayUI interactor wsio SAGE2_SnippetExporter CodeSnippetCompiler */
+/* global ace displayUI interactor wsio SAGE2_SnippetExporter CodeSnippetCompiler, snippetOverlayManager */
 
 let SAGE2_SnippetEditor = (function () {
 	// api examples to be inserted in the editor
@@ -52,6 +52,8 @@ let SAGE2_SnippetEditor = (function () {
 			editorDiv: null,
 			editor: null,
 
+			overlayCheckbox: null,
+
 			changed: false,
 			closeButton: null,
 
@@ -63,8 +65,12 @@ let SAGE2_SnippetEditor = (function () {
 
 			scriptDropdown: null,
 
+			log: null,
 			errorLogContainer: null,
 			consoleLogContainer: null,
+
+			errorLogFilter: null,
+			consoleLogFilter: null,
 
 			loadedSnippet: "new",
 			loadedSnippetType: null,
@@ -115,6 +121,11 @@ let SAGE2_SnippetEditor = (function () {
 					updateIsChanged(true);
 				}
 			});
+
+			self.overlayCheckbox = self.div.querySelector("#snippetsOverlayCheckbox");
+			self.overlayCheckbox.onclick = function(e) {
+				snippetOverlayManager.setOverlayVisibility(e.target.checked);
+			};
 
 			// bind hide and close button
 			// self.div.querySelector("#snippetEditorHide").onclick = hideEditor; // remove hide function
@@ -422,6 +433,17 @@ let SAGE2_SnippetEditor = (function () {
 				newOption.appendChild(name);
 				self.scriptDropdown.appendChild(newOption);
 			}
+
+			snippetOverlayManager.updateSnippetStates(scriptStates);
+		}
+
+		/**
+		 * Updates selector with the existing snippets and their states
+		 *
+		 * @method getSnippetStates
+		 */
+		function getSnippetStates(scriptStates) {
+			return self.scriptStates;
 		}
 
 		/**
@@ -494,20 +516,123 @@ let SAGE2_SnippetEditor = (function () {
 		function receiveSnippetLog(data) {
 			console.log("Recieved Snippet Log: ", data);
 
+			self.log = data.log;
+
+			let apps = Object.keys(data.log);
+
+			console.log(apps);
+			// sort out filters for apps
+
+			// if the currently selected app is not in the list of app logs, reset the filters
+			if (apps.indexOf(self.consoleLogFilter) === -1) {
+				self.consoleLogFilter = null;
+			}
+
+			if (apps.indexOf(self.errorLogFilter) === -1) {
+				self.errorLogFilter = null;
+			}
+
+			let errorFiltersContainer = self.errorLogContainer.parentElement.querySelector(".log-filter");
+			let consoleFiltersContainer = self.consoleLogContainer.parentElement.querySelector(".log-filter");
+
+			let errorFiltersTitle = errorFiltersContainer.querySelector(".log-filter-value");
+			let consoleFiltersTitle = consoleFiltersContainer.querySelector(".log-filter-value");
+
+			errorFiltersTitle.innerText = self.errorLogFilter || "All";
+			consoleFiltersTitle.innerText = self.consoleLogFilter || "All";
+
+			let errorFilters = errorFiltersContainer.querySelector(".log-filter-options");
+			let consoleFilters = consoleFiltersContainer.querySelector(".log-filter-options");
+
+			errorFilters.innerHTML = "";
+			consoleFilters.innerHTML = "";
+
+			// add option to show "All" apps
+			let errorOptionAll = document.createElement("div");
+			let consoleOptionAll = document.createElement("div");
+
+			errorOptionAll.className = "filter-option";
+			consoleOptionAll.className = "filter-option";
+
+			errorOptionAll.innerText = "All";
+			consoleOptionAll.innerText = "All";
+
+			errorOptionAll.onclick = function() {
+				self.errorLogFilter = null;
+				errorFiltersTitle.innerText = "All";
+
+				showLogMessages(data.log);
+			};
+
+
+			consoleOptionAll.onclick = function() {
+				self.consoleLogFilter = null;
+				consoleFiltersTitle.innerText = "All";
+
+				showLogMessages(data.log);
+			};
+
+			errorFilters.appendChild(errorOptionAll);
+			consoleFilters.appendChild(consoleOptionAll);
+
+			// add an option for each app
+			for (let app of apps) {
+				let errorOption = document.createElement("div");
+				let consoleOption = document.createElement("div");
+
+				errorOption.className = "filter-option";
+				consoleOption.className = "filter-option";
+
+				errorOption.innerText = app;
+				consoleOption.innerText = app;
+
+
+				errorOption.onclick = function() {
+					self.errorLogFilter = app;
+					errorFiltersTitle.innerText = app;
+
+					showLogMessages(data.log);
+				};
+
+				consoleOption.onclick = function() {
+					self.consoleLogFilter = app;
+					consoleFiltersTitle.innerText = app;
+
+					showLogMessages(data.log);
+				};
+
+				errorFilters.appendChild(errorOption);
+				consoleFilters.appendChild(consoleOption);
+			}
+
+			showLogMessages(data.log);
+		}
+
+		function showLogMessages(log) {
+			let apps = Object.keys(log);
+
 			let errors = [];
 			let consoleLog = [];
 
-			for (let appID of Object.keys(data.log)) {
-				for (let entry of data.log[appID]) {
+			for (let appID of apps) {
+				for (let entry of log[appID]) {
 					if (entry.type === "console") {
-						consoleLog.push(Object.assign({appID}, entry));
+						consoleLog.push(Object.assign({ appID }, entry));
 					} else {
 						errors.push(Object.assign({ appID }, entry));
 					}
 				}
 			}
 
-			console.log(errors, consoleLog);
+			if (self.errorLogFilter) {
+				errors = errors.filter(message => message.appID === self.errorLogFilter);
+			}
+
+			if (self.consoleLogFilter) {
+				consoleLog = consoleLog.filter(
+					message => message.appID === self.consoleLogFilter
+				);
+			}
 
 			errors.sort((a, b) => a.time - b.time);
 			consoleLog.sort((a, b) => a.time - b.time);
@@ -515,23 +640,24 @@ let SAGE2_SnippetEditor = (function () {
 			self.errorLogContainer.innerHTML = "";
 			self.consoleLogContainer.innerHTML = "";
 
+			// create error entries
 			for (let el in errors) {
-				let log = errors[el];
+				let logEntry = errors[el];
 
 				let message = document.createElement("div");
 				message.className = "message";
 
 				let timestamp = document.createElement("div");
 				timestamp.className = "timestamp";
-				timestamp.innerText = new Date(log.time).toLocaleTimeString();
+				timestamp.innerText = new Date(logEntry.time).toLocaleTimeString();
 
 				let content = document.createElement("div");
 				content.className = "content";
-				content.innerText = `${log.content.name}: ${log.content.message}`;
+				content.innerText = `${logEntry.content.name}: ${logEntry.content.message}`;
 
 				let source = document.createElement("div");
 				source.className = "source";
-				source.innerText = `(${log.appID})`;
+				source.innerText = `(${logEntry.appID})`;
 
 				message.appendChild(timestamp);
 				message.appendChild(content);
@@ -543,8 +669,9 @@ let SAGE2_SnippetEditor = (function () {
 					self.errorLogContainer.scrollHeight;
 			}
 
+			// create console entries
 			for (let el in consoleLog) {
-				let log = consoleLog[el];
+				let logEntry = consoleLog[el];
 
 				let message = document.createElement("div");
 				message.className = "message";
@@ -553,15 +680,15 @@ let SAGE2_SnippetEditor = (function () {
 
 				let timestamp = document.createElement("div");
 				timestamp.className = "timestamp";
-				timestamp.innerText = new Date(log.time).toLocaleTimeString();
+				timestamp.innerText = new Date(logEntry.time).toLocaleTimeString();
 
 				let content = document.createElement("div");
 				content.className = "content";
-				content.innerText = log.content;
+				content.innerText = logEntry.content;
 
 				let source = document.createElement("div");
 				source.className = "source";
-				source.innerText = `(${log.appID})`;
+				source.innerText = `(${logEntry.appID})`;
 
 				message.appendChild(timestamp);
 				message.appendChild(content);
@@ -578,6 +705,8 @@ let SAGE2_SnippetEditor = (function () {
 			hide: hideEditor,
 
 			updateSnippetStates,
+			getSnippetStates,
+
 			receiveLoadedSnippet,
 			receiveProjectExport,
 			receiveSnippetLog,

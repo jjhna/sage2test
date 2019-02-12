@@ -1370,6 +1370,7 @@ The z-index is very important.
 }
 
 #codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper .log-title {
+    /* position: relative; */
     width: 100%;
 
     padding-left: 15px;
@@ -1381,6 +1382,51 @@ The z-index is very important.
     font-size: 14px;
     color: white;
     font-weight: bold;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-title .log-filter {
+    float: right;
+    margin-right: 10px;
+    position: relative;
+
+    text-decoration: underline;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+#codeSnippetEditor #snippetLoggingWrapper .log-title .log-filter-value::after {
+    content: "▼";
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-filter-options {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+
+    min-width: 50px;
+
+    color: #666;
+    border: 1px solid #888;
+    background: #f0f0f0;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-filter:hover .log-filter-options:not(:empty) {
+    display: block;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-filter-options .filter-option {
+    border: 0.25px solid #e0e0e0;
+    cursor: pointer;
+    padding: 2px;
+}
+
+#codeSnippetEditor #snippetLoggingWrapper .log-filter-options .filter-option:hover {
+    background: white;
+    color: #333;
+    border: 0.25px solid #ccc;
 }
 
 #codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper .log-items {
@@ -1418,7 +1464,7 @@ The z-index is very important.
 #codeSnippetEditor #snippetLoggingWrapper .message .content {
     flex: 1;
     white-space: pre-wrap;
-    word-break: break-all;
+    word-break: break-word;
     padding-right: 5px;
 }
 
@@ -1762,6 +1808,62 @@ The z-index is very important.
 .genSnippetColor:hover {
     background-color: #87d1b0;
     color: white;
+}
+
+
+/* ============================ */
+/* ===== Overlay Styling ====== */
+/* ============================ */
+
+
+#snippetsOverlayWrapper {
+    position: absolute;
+    overflow: hidden;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+
+    margin: 2px 0 0 2px;
+
+    z-index: 800;
+}
+
+#snippetsOverlay {
+    width: 100%;
+    height: 100%;
+}
+
+#snippetsOverlay .snippetAppOverlay {
+    fill: #e0e0e0;
+    stroke: #333;
+    stroke-width: 2px;
+}
+
+#snippetsOverlay .snippetAppHighlighted .snippetAppOverlay {
+    fill: #fff;
+    stroke: black;
+}
+
+#snippetsOverlay .snippetAppTitlebar {
+    fill: #888;
+    stroke: #333;
+    stroke-width: 2px;
+}
+
+#snippetsOverlay .snippetAppHighlighted .snippetAppTitlebar {
+    fill: #aaa;
+    stroke: black;
+}
+
+#snippetsOverlay .snippetLinkOverlay {
+    stroke: black;
+    stroke-width: 6;
+    opacity: 1;
+    stroke-linecap: round;
+}
+
+#snippetsOverlay .snippetAppCreationType {
+    stroke-width: 2px;
 }
 
 /* ============================ */

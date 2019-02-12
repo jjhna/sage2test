@@ -554,12 +554,16 @@ let SAGE2_CodeSnippets = (function() {
 	}
 
 	function updateSavedSnippetAssociations() {
+		// send snippet association information to be saved in the server
 
 		if (isMaster) {
 			wsio.emit("updateSnippetAssociationState", {
 				dataCount: self.dataCount,
 				visCount: self.visCount,
-				apps: Object.keys(self.outputApps),
+				apps: Object.keys(self.outputApps).map(snippetsID => ({
+					appID: self.outputApps[snippetsID].id,
+					snippetsID
+				})),
 				links: convertLinksToIDForest()
 			});
 		}

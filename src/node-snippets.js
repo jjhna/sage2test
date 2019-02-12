@@ -43,6 +43,10 @@ let SnippetsManager = (function() {
 			}
 		}
 
+		function initializeSnippetsClient(wsio) {
+			wsio.emit("updateSnippetAssociations", self.associations);
+		}
+
 		function getDependencies() {
 			return self.config.libraries || [];
 		}
@@ -57,6 +61,8 @@ let SnippetsManager = (function() {
 
 		function updateSnippetAssociations(associations) {
 			self.associations = associations;
+
+			self.comm.broadcast("updateSnippetAssociations", self.associations);
 
 			self.logging && log();
 		}
@@ -103,6 +109,7 @@ let SnippetsManager = (function() {
 
 		// public
 		return {
+			initializeSnippetsClient,
 			getDependencies,
 
 			getLoadedSnippetInfo,

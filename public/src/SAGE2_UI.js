@@ -10,7 +10,8 @@
 
 "use strict";
 
-/* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech, SAGE2_SnippetEditor */
+/* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech */
+/* global SAGE2_SnippetEditor, SAGE2_SnippetOverlayManager*/
 /* global removeAllChildren, SAGE2_copyToClipboard, parseBool */
 /* global SAGE2_webrtc_ui_tracker */
 
@@ -71,6 +72,7 @@ var displayUI;
 var interactor;
 var fileManager;
 var snippetEditor;
+var snippetOverlayManager;
 var keyEvents;
 var touchMode;
 var touchDist;
@@ -617,6 +619,7 @@ function setupListeners() {
 		}
 
 		snippetEditor = new SAGE2_SnippetEditor("codeSnippetEditor", config);
+		snippetOverlayManager = new SAGE2_SnippetOverlayManager(config);
 	});
 
 	wsio.on('createAppWindowPositionSizeOnly', function(data) {
@@ -637,14 +640,17 @@ function setupListeners() {
 
 	wsio.on('updateItemOrder', function(data) {
 		displayUI.updateItemOrder(data);
+		snippetOverlayManager.updateItemOrder(data);
 	});
 
 	wsio.on('setItemPosition', function(data) {
 		displayUI.setItemPosition(data);
+		snippetOverlayManager.itemUpdated(data);
 	});
 
 	wsio.on('setItemPositionAndSize', function(data) {
 		displayUI.setItemPositionAndSize(data);
+		snippetOverlayManager.itemUpdated(data);
 	});
 
 	// webUI partition wsio messages
@@ -838,7 +844,7 @@ function setupListeners() {
 		SAGE2_speech.textToSpeech(data.message);
 	});
 
-	// code snippets listeners
+	// vis snippets listeners
 	wsio.on("editorReceiveSnippetStates", function(data) {
 		snippetEditor.updateSnippetStates(data);
 	});
@@ -850,6 +856,9 @@ function setupListeners() {
 	});
 	wsio.on('editorReceiveSnippetLog', function(data) {
 		snippetEditor.receiveSnippetLog(data);
+	});
+	wsio.on("updateSnippetAssociations", function(data) {
+		snippetOverlayManager.updateAssociations(data);
 	});
 
 	wsio.on('zipFolderPathForDownload', function(data) {
@@ -1383,7 +1392,8 @@ function pointerMove(event) {
 			displayUI.pointerMove(pointerX, pointerY);
 		} else {
 			// Otherwise test for application hover
-			displayUI.highlightApplication(pointerX, pointerY);
+			let highlightedApp = displayUI.highlightApplication(pointerX, pointerY);
+			snippetOverlayManager.updateHighlightedApp(highlightedApp);
 		}
 
 	} else {

@@ -1080,6 +1080,8 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 		}
 		initializeExistingAppsPositionSizeTypeOnly(wsio);
 		initializeExistingPartitionsUI(wsio);
+		// Have the Snippets Manager send an update with the associations/state
+		snippetsManager.initializeSnippetsClient(wsio);
 	} else if (wsio.clientType === "standAloneApp") {
 		initializeExistingSagePointers(wsio);
 		createSagePointer(wsio.id);
