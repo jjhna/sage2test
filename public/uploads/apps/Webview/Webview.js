@@ -62,7 +62,7 @@ var Webview = SAGE2_App.extend({
 		this.element.fullscreenable = false;
 		this.element.fullscreen = false;
 		// add the preload clause
-		this.addPreloadFile();
+		// this.addPreloadFile();
 		// security or not: this seems to be an issue often on Windows
 		this.element.disablewebsecurity = false;
 
