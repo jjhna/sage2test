@@ -47,6 +47,7 @@ const { SessionJSONStore, UserJSONStore} = require('../src/node-store.js');
 
 
 var app = null;
+var router = null;
 var userDB = null;
 var publicDirectory;
 
@@ -64,17 +65,17 @@ class HttpServer {
 		publicDirectory = publicDir;
 
 		this.app = app = express();
-
-		var dataFolder = '../data';
+		this.router = router = express.Router();
+		var dataFolder = './data';
 		if (!sageutils.folderExists(dataFolder)) {
 			sageutils.mkdirParent(dataFolder);
 		}
 
 		var sessionDB = new SessionJSONStore();
-		sessionDB.initialize('../data/sessionDB.json');
 
+		sessionDB.initialize('data/sessionDB.json');
 		this.userDB = userDB = new UserJSONStore();
-		this.userDB.initialize('../data/userDB.json');
+		this.userDB.initialize('data/userDB.json');
 		// set default headers
 		//app.use(helmet(secureHeaders()));
 
@@ -91,8 +92,6 @@ class HttpServer {
 		// add & configure middleware
 		app.use(session({
 			genid: (req) => {
-				console.log('Inside the session middleware');
-				console.log(req.sessionID);
 				return uuid(); // use UUIDs for session IDs
 			},
 			cookie: {
@@ -101,9 +100,10 @@ class HttpServer {
 				maxAge: 2 * 24 * 3600 * 1000 // 2 days
 			},
 			store: sessionDB,
+			name: 'SAGE2.sid',
 			secret: 'asldfkjasd;fkja;sldkf;alsdfk',
 			resave: false,
-			saveUninitialized: true
+			saveUninitialized: false
 		}));
 
 		var cfg = global.config;
@@ -117,20 +117,21 @@ class HttpServer {
 				client.CLOCK_TOLERANCE = 5 * 60; // 5 Minutes
 				var params = {
 					client_id: cfg.ciLogon.client_id,
-					redirect_uri: redirect_uri
+					redirect_uri: redirect_uri,
+					scope: 'openid profile'
 				};
 				passport.use('oidc', new Strategy({client: client, params: params}, (tokenset, userinfo, done) => {
-					console.log('userinfo', userinfo);
 					userDB.get(tokenset.claims.sub, function (err, user) {
 						if (err) {
 							user = {
 								id: tokenset.claims.sub,
 								tokenset: tokenset,
-								claims: tokenset.claims
+								claims: tokenset.claims,
+								userinfo: userinfo
 							};
 							userDB.set(user.id, user, function(err) {
 								if (err) {
-									console.log(err);
+									sageutils.log('OIDC', err);
 									return done(err, false);
 								}
 							});
@@ -147,29 +148,19 @@ class HttpServer {
 						done(err, user);
 					});
 				});
+				app.use(passport.initialize());
+				app.use(passport.session());
 
-			app.use(passport.initialize());
-			app.use(passport.session());
-			app.use(express.static(path.join(__dirname, '../public')));
-
-			// handle requests
-			this.setUpAuth();
-			this.setUpRestCalls();
-			this.setUpRoutes();
-		}.bind(this));
+				// handle requests
+				this.setUpRoutes();
+				this.setUpRestCalls();
+				app.use('/', router);
+			}.bind(this));
 	}
-	setUpAuth() {
-		app.get('/login', passport.authenticate('oidc'));
- 
-		// authentication callback
-		app.get('/authcb', passport.authenticate('oidc', { successRedirect: '/', failureRedirect: '/login' }));
-
-	}
-
 	// WIP: "REST" calls?
 	setUpRestCalls() {
 		// send config object to client
-		app.get('/config',  (req, res) => {
+		router.get('/config',  (req, res) => {
 			// Set type
 			let header = {};
 			header["Content-Type"] = "application/json";
@@ -189,22 +180,34 @@ class HttpServer {
 	}
 
 	setUpRoutes() {
+		router.use(enforceHttps);
 		// static assets directories
-		app.use(ensureAuthenticated, secureStatic, express.static(publicDirectory));
+		router.get('/login', passport.authenticate('oidc'))
+		
+ 
+		// authentication callback
+		router.get('/authcb', passport.authenticate('oidc'), ensureAuthenticated, connect);
+
+		//router.get('/connect', connect);
+		router.use(ensureAuthenticated, secureStatic, express.static(publicDirectory));
 
 		for (let f in global.mediaFolders) {
 			let folder = global.mediaFolders[f];
-			app.use(folder.url, ensureAuthenticated, secureStatic, express.static(folder.path));
+			router.get(folder.url, ensureAuthenticated, secureStatic, express.static(folder.path));
 		}
 
+		
 		// serve index at root path
-		app.get('/', ensureAuthenticated, setUserCookies, (req, res) => {
-			res.sendFile(path.join(__dirname + '/index.html'));
+		router.get('/', ensureAuthenticated, setUserCookies, (req, res) => {
+			return res.redirect('/index.html');
 		});
-
+		
+		
+		
+		
 		// handle other paths
-		app.get('*', ensureAuthenticated, handleGet);
-		app.put('*', handlePut);	// not sure if this does anything
+		router.get('*', ensureAuthenticated, handleGet);
+		router.put('*', handlePut);	// not sure if this does anything
 	}
 
 
@@ -305,12 +308,26 @@ class HttpServer {
 	}
 }
 
+function enforceHttps(req, res, next) {
+	if(!req.secure) {
+		return res.redirect("https://" + req.headers.host + req.url);
+	}
+	return next();
+}
+
+function connect(req, res, next) {
+	var returnTo = req.session.returnTo;
+	delete req.session.returnTo
+	return res.redirect(returnTo || '/');
+}
+
+
 function ensureAuthenticated(req, res, next) {
 	if (req.isAuthenticated()) {
 		return next();
 	}
-
-	res.redirect('/login');
+	req.session.returnTo = req.originalUrl;
+	return res.redirect('/login');
 }
 
 
@@ -354,17 +371,21 @@ function secureStatic(req, res, next) {
 	handleHeaders();
 }
 
-
 function setUserCookies(req, res, next) {
-	if (req.user) {
-		if (req.user.SAGE2_ptrName) {
-			res.cookie('SAGE2_ptrName', req.user.SAGE2_ptrName);
+	sageutils.log("Setting cookies!");
+	sageutils.log(req.user);
+	userDB.get(req.user.id, function (err, user) {
+		if (err) {
+			return res.redirect('/login');
+		}
+		if (user.userinfo.given_name) {
+			res.cookie('SAGE2_ptrName', user.userinfo.given_name);
 		}
 		if (req.user.SAGE2_ptrColor) {
 			res.cookie('SAGE2_ptrColor', req.user.SAGE2_ptrColor);
 		}
-	}
-	next();
+	});
+	return next();
 }
 
 
@@ -571,6 +592,7 @@ function handleGet(req, res) {
  * @param res {Object} the response object
  */
 function handlePut(req, res) {
+	sageutils.log('In handle put');
 	var putName = sageutils.sanitizedURL(url.parse(req.url).pathname);
 	// Remove the first / if there
 	if (putName[0] === '/') {

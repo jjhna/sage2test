@@ -40,7 +40,11 @@ class SessionJSONStore extends Store {
 	}
 	save(cb) {
 		try {
-			fs.writeFileSync(this.filePath, json5.stringify(this.db));
+			fs.writeFile(this.filePath, json5.stringify(this.db), function(error) {
+				if (error) {
+					cb("Could not save database " + error);
+				}
+			});
 			cb(null);	
 		} catch(error) {
 			cb("Could not save database " + error);
@@ -55,7 +59,7 @@ class SessionJSONStore extends Store {
 			delete this.db[sid];
 			this.save(cb);
 		} else {
-			cb("session entry does not exist:" + sid);
+			cb(null);
 		}
 	}
 	clear(cb) {
@@ -71,21 +75,28 @@ class SessionJSONStore extends Store {
 		}
 	}
 	get(sid, cb) {
-		if (this.db.hasOwnProperty(sid) === true) {
-			cb("", this.db[sid]);
-		} else {
-			cb("session entry does not exist:" + sid, null);
+		try {
+			if (this.db.hasOwnProperty(sid) === true) {
+				cb("", this.db[sid]);
+			} else {
+				cb(null, null);
+			}
+		} catch(error) {
+			cb(error, undefined);
 		}
+		
 	}
 	set(sid, session, cb) {
 		this.db[sid] = cloneObject(session);
-		this.db[sid].id = sid;
+		this.db[sid].sid = sid;
 		this.save(cb);
 	}
 	touch(sid, session, cb) {
 		try {
 			session.touch();
-			this.set(sid, session, cb);
+			this.db[sid] = cloneObject(session);
+			this.db[sid].sid = sid;
+			this.save(cb);
 		} catch (error) {
 			cb(error);
 		}
@@ -100,12 +111,17 @@ class UserJSONStore {
 			this.db = json5.parse(jsonString);
 		} else {
 			this.db = {};
+			fs.writeFileSync(this.filePath, json5.stringify(this.db));
 		}
 		
 	}
 	save(cb) {
 		try {
-			fs.writeFileSync(this.filePath, json5.stringify(this.db));
+			fs.writeFile(this.filePath, json5.stringify(this.db), function(error) {
+				if(error) {
+					console.log(error);
+				}
+			});
 			cb(null);	
 		} catch(error) {
 			cb("Could not save user database " + error);
