@@ -65,16 +65,21 @@ var heat_map = SAGE2_App.extend( {
 		console.log(this.map);
 
 		//color gradient
-		this.colors = [ "255,245,240", 
-						"254,224,210", 
+		this.colors = [ 
+						 "255,245,240", 
+						 // "254,224,210", 
 						"252,187,161", 
-						"252,146,114", 
+						// "252,146,114", 
 						"251,106,74", 
-						"239,59,44", 
+						// "239,59,44", 
 						"203,24,29", 
-						"165,15,21", 
+						// "165,15,21", 
 						"103,0,13" 
 					]; 
+
+
+
+
 		this.partition = Math.round( this.state.maxValue / this.colors.length ); 
 
 		//this.updateTitle("title");	
@@ -101,7 +106,11 @@ var heat_map = SAGE2_App.extend( {
 			xDim = p2.x - p.x;
 			yDim = p.y - p2.y;
 
- 			idx = Math.round( this.state.data[i].value / this.colors.length );
+			idx = Math.round( (this.state.data[i].value / this.state.maxValue) * (this.colors.length)); 
+			// console.log(idx);
+			// console.log(this.state.data[i].value);
+
+ 			//idx = Math.round( this.state.data[i].value / this.colors.length );
 			this.ctx.fillStyle = "rgba(" + this.colors[idx] + ", .5)";
 			this.ctx.fillRect(p.x, p.y, xDim, yDim);
 		}

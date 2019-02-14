@@ -966,9 +966,20 @@ drawSkeletonLines: function(){
 	 //  now will call not only when they are talking
 	 //  talking status sent, so will use that
 	 //console.log(this.mostRecentSkeleton);
+
+
+	 for(skeleton in this.skeletons){
+	 	if( skeleton.id != this.mostRecentSkeleton.id ){
+	 		wsio.emit("checkKinectPointers", {id: "rkinect_" + this.mostRecentSkeleton.id });
+	 	}
+	 }
+
+
 	 newPosition = {x: mappedX, y: mappedY};
 	 wsio.emit("pointingGesturePosition", {x: mappedX, y:mappedY, id: "rkinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true')});
 
+
+	 
 
 
 	 //no longer need this- always sends, but only looks for apps when it needs to

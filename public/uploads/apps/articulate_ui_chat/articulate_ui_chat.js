@@ -21,6 +21,8 @@ var articulate_ui_chat = SAGE2_App.extend( {
 		console.log("Am I master? " + isMaster );
 		console.log("using master? " + this.useMaster);
 
+		this.requestCount = 0;
+
 
 		this.listOfCommandsForTesting = 
 		[
@@ -200,7 +202,7 @@ var articulate_ui_chat = SAGE2_App.extend( {
 
 		this.chat = d3.selectAll('.chat')
 			.style("display", "flex")
-			.style("flex-flow", "row wrap")
+			.style("flex-flow", "row-reverse wrap")
 			.style("align-items", "flex-start")
 			.style("flex-direction", "column-reverse")
 			.style("margin-bottom", "10px");
@@ -219,9 +221,10 @@ var articulate_ui_chat = SAGE2_App.extend( {
 		// console.log("test");
 		// console.log(this.chatlogs.scrollTop);
 		// console.log(this.chatlogs.scrollHeight);
-		// this.chatlogs.scrollTop = this.chatlogs.scrollHeight;
+		//this.chatlogs.scrollTop = this.chatlogs.scrollHeight;
 		// console.log(this.chatlogs.scrollTop);
 		// console.log(this.chatlogs.scrollHeight);
+		//this.chatlogs.scrollTop = 999999999999;
 	},
 
 	
@@ -785,6 +788,9 @@ articulateDebugInfo: function(data, date){
 				msg = "this is a message from articulate_ui", //not really used, but an option
 				console.log(dataToVisualize); //just for sanity
 
+				// if( maxVal == 1 )
+				// 	maxVal = 2;
+
 				initState = {  // these values will load on child app init
 					value: 20,
 					data: dataToVisualize, //here is where I send the locations and number of crimes at this location, which came from the nlp smart hub
@@ -1153,10 +1159,10 @@ articulateDebugInfo: function(data, date){
 			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
 				var moveAppIndex = this.childList.indexOf(this.childList[key]);
 				//this.closeChild(closeAppIndex);
-				newW = this.childList[key].w;
-				newH = this.childList[key].h;
+				newW = this.childList[key].w*.5;
+				newH = this.childList[key].h*.5;
 				newX = 5440 - newW;//this.childList[key].x+200;
-				newY = this.childList[key].y;
+				newY = 100; //this.childList[key].y;
 				this.moveAndResizeChildById(this.childList[key].childId, newX, newY, newW, newH, true);
 				console.log("Move and Resize "+this.childList[key].childId);
 				return;
@@ -1171,10 +1177,10 @@ articulateDebugInfo: function(data, date){
 			if(this.childList[key]["initState"]["initState"]["hub_id"] == hubId){
 				var moveAppIndex = this.childList.indexOf(this.childList[key]);
 				//this.closeChild(closeAppIndex);
-				newW = this.childList[key].w*1.5;
-				newH = this.childList[key].h*1.5;
-				newX = 5440/2.0 - newW;//this.childList[key].x+200;
-				newY = (3000 - newH)/2;
+				newW = this.childList[key].w*2.0;
+				newH = this.childList[key].h*2.0;
+				newX = 5440/2.0 - newW/2.0;//this.childList[key].x+200;
+				newY = 3000/2.0 - newH/2.0;
 
 				console.log(newW);
 				console.log(newH);

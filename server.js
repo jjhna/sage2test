@@ -1804,12 +1804,16 @@ function wsRemoveKinectPointer(wsio,data) {
 	}
 }
 
+
+
 //A function used to cleanup all kinect pointers that have been inactive for 10seconds
 function wsCheckKinectPointers(wsio,data){
 	let curTime = new Date();
 	for(let id in sagePointers){
 		if(curTime - sagePointers[id].lastUsed > 1000){
-			stopSageKinectPointer(id);
+			//stopSageKinectPointer(id);
+			data = {id: id};
+			wsRemoveKinectPointer(wsio, data);
 		}
 	}
 }
@@ -3835,7 +3839,23 @@ function wsGestureRecognitionStatus(wsio, data){
 		var data = {id: app.id, data: data.text, date: Date.now()};
 		broadcast('startGestureRecognition', data);
 	}
+
+	// if( data.text == "false" ){
+	// 	cleanUpKinectPointers();
+	// }
 	// console.log(app);
+}
+
+function cleanUpKinectPointers(){
+
+	// for (var pointer in sagePointers)
+	// {
+	// 	if (sagePointers[pointer].isKinect() && 
+	// 	{
+			
+	// 	}
+	// }
+
 }
 
 //receiving pointing positions and finding pointed to apps
