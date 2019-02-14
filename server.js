@@ -1245,7 +1245,7 @@ function setupListeners(wsio) {
 
 	//JILLIAN CHECK HERE
 	wsio.on('pointingGesturePosition',              wsPointingGesturePosition);
-	wsio.on('leftHandPosition',             			  wsLeftHandPosition);
+	//wsio.on('leftHandPosition',             			  wsLeftHandPosition);
 	wsio.on('stopPointingGesturePosition',          wsStopPointingGesturePosition);
 	//wsio.on('gestureZoomOut',          							wsGestureZoomOut);
 	//wsio.on('gestureZoomIn',          							wsGestureZoomIn);

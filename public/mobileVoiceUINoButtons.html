@@ -36,8 +36,8 @@
   /*position: absolute;*/
   /*top: %5;*/
   /*left: 5%;*/
-  width: 100%;
-  height: 100px;
+  width: 95%;
+  height: 250px;
   /*height: 50%;*/
   /*padding-top: 30%;*/
   /*width: 390px;*/
@@ -125,12 +125,12 @@
   <span>
 <textarea class="myText" id="queryToSend"></textarea>
   <div id="content">
-    Click below to record... HI 
+    Click below to record... 
   </div>
 <div id="myLoader" class="loader" onclick="toggleStates()"></div>
-<div id="buttonDiv">
+<!-- <div id="buttonDiv">
 <button class="my-button" id="retryButton" onclick="retryEvent(event)">Retry</button><button class="my-button" id="sendButton" onclick="sendEvent(event)" >Send</button>
-</div>
+</div> -->
 </span>
 </div>
   <span id="final_span" class="final" style="display:none;"></span>
@@ -142,8 +142,8 @@
 
 var listenState = 0; 
 var loader = document.getElementById("myLoader");
-var retryButton = document.getElementById("retryButton");
-var sendButton = document.getElementById("sendButton");
+// var retryButton = document.getElementById("retryButton");
+// var sendButton = document.getElementById("sendButton");
 var noToggle = false;
 
 function toggleStates() {
@@ -157,11 +157,12 @@ function toggleStates() {
     }
     if( listenState == 1 ){//listen
        setStateToListen();
+        listenState = -1;
+
 
     }
     if( listenState == 2 ){//send or retry
       setStateToSendOrRetry();
-      listenState = -1;
     } 
     // if( listenState == 3) //not using/// 
     // {
@@ -185,27 +186,35 @@ function retryEvent(event){
 
 
 function setStateToReady(){
+
+    if (recognizing) {
+      recognition.stop();
+      startGestureRecognition('false');
+      return;
+    }
+
   startGestureRecognition('false');
 
   loader.style["border-top"]= "32px solid #1ddced";
   loader.style["animation"] = "spin 3s linear infinite";
   document.getElementById("content").innerHTML = "Click below to record...";
-  retryButton.style.cssText = "background:#d0d0d0";
-  sendButton.style.cssText = "background:#d0d0d0";
-  retryButton.disabled = true;
-  sendButton.disabled = true;
-  document.getElementById("queryToSend").value = "";
+  // retryButton.style.cssText = "background:#d0d0d0";
+  // sendButton.style.cssText = "background:#d0d0d0";
+  // retryButton.disabled = true;
+  // sendButton.disabled = true;
+  //document.getElementById("queryToSend").value = "";
 }
 
 function setStateToListen(){
     startGestureRecognition('true');
+    document.getElementById("queryToSend").value = "";
 
     loader.style["border-top"]= "32px solid #1adda4";
     loader.style["animation"] = "spin 1s linear infinite";
-    retryButton.style.cssText = "background:#d0d0d0";
-    sendButton.style.cssText = "background:#d0d0d0";
-    retryButton.disabled = true;
-    sendButton.disabled = true;
+    // retryButton.style.cssText = "background:#d0d0d0";
+    // sendButton.style.cssText = "background:#d0d0d0";
+    // retryButton.disabled = true;
+    // sendButton.disabled = true;
     document.getElementById("content").innerHTML = "Recording...";
 
 
@@ -235,11 +244,11 @@ function setStateToSendOrRetry(){
 
   loader.style["border-top"]= "32px solid #d0d0d0";
   loader.style["animation"] = "spin 20s linear infinite";
-  document.getElementById("content").innerHTML = " Verify and Send or Retry";
-  retryButton.style.cssText = "background:#1ddced";
-  sendButton.style.cssText = "background:#1ddced";
-  retryButton.disabled = false;
-  sendButton.disabled = false;
+  document.getElementById("content").innerHTML = "Click below to record...";
+  // retryButton.style.cssText = "background:#1ddced";
+  // sendButton.style.cssText = "background:#1ddced";
+  // retryButton.disabled = false;
+  // sendButton.disabled = false;
 }
 
 function setStateToError(){
@@ -252,10 +261,10 @@ function setStateToError(){
   loader.style["border-top"]= "32px solid #F15F5F";
   loader.style["animation"] = "spin 20s linear infinite";
   document.getElementById("content").innerHTML = "Error: Cannot reach server";
-  retryButton.style.cssText = "background:#d0d0d0";
-  sendButton.style.cssText = "background:#d0d0d0";
-  retryButton.disabled = true;
-  sendButton.disabled = true;
+  // retryButton.style.cssText = "background:#d0d0d0";
+  // sendButton.style.cssText = "background:#d0d0d0";
+  // retryButton.disabled = true;
+  // sendButton.disabled = true;
 
   noToggle = true;
 }
@@ -458,19 +467,24 @@ if (!('webkitSpeechRecognition' in window)) {
       range.selectNode(document.getElementById('final_span'));
       window.getSelection().addRange(range);
       console.log(range);
+
+      sendEvent(null);
     }
     if (send_to_sage) {
       send_to_sage = false;
       sendToSage();
     }
+    
 
-    loader.style["border-top"]= "32px solid #d0d0d0";
-    loader.style["animation"] = "spin 20s linear infinite";
-    document.getElementById("content").innerHTML = " Verify and Send or Retry";
-    retryButton.style.cssText = "background:#1ddced";
-    sendButton.style.cssText = "background:#1ddced";
-    retryButton.disabled = false;
-    sendButton.disabled = false;
+    //setStateToReady();
+
+    // loader.style["border-top"]= "32px solid #d0d0d0";
+    // loader.style["animation"] = "spin 20s linear infinite";
+    // document.getElementById("content").innerHTML = "Click below to record...";
+    // retryButton.style.cssText = "background:#1ddced";
+    // sendButton.style.cssText = "background:#1ddced";
+    // retryButton.disabled = false;
+    // sendButton.disabled = false;
   };
 
   recognition.onresult = function(event) {

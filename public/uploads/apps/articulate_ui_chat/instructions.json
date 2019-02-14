@@ -2,7 +2,7 @@
 	"main_script": "articulate_ui_chat.js",
 	"icon": "articulate_ui_chat.png",
 	"width": 1500,
-	"height": 1000,
+	"height": 3000,
 	"resize": "free",
 	"dependencies": [
 	],
