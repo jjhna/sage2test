@@ -108,9 +108,7 @@ function UIBuilder(json_cfg, clientID) {
 			} else {
 				newratio = document.documentElement.clientHeight / wallHeight;
 			}
-			this.bg.style.webkitTransform = "scale(" + (newratio) + ")";
-			this.bg.style.mozTransform    = "scale(" + (newratio) + ")";
-			this.bg.style.transform       = "scale(" + (newratio) + ")";
+			this.bg.style.transform = "scale(" + (newratio) + ")";
 
 			this.main.style.width  = wallWidth  + "px";
 			this.main.style.height = wallHeight + "px";
@@ -125,9 +123,7 @@ function UIBuilder(json_cfg, clientID) {
 					} else {
 						newr = document.documentElement.clientHeight / wallHeight;
 					}
-					_this.bg.style.webkitTransform = "scale(" + (newr) + ")";
-					_this.bg.style.mozTransform    = "scale(" + (newr) + ")";
-					_this.bg.style.transform       = "scale(" + (newr) + ")";
+					_this.bg.style.transform = "scale(" + (newr) + ")";
 					_this.scale = newr;
 					// Rescale the box around the pointers
 					for (var key in _this.pointerItems) {
@@ -140,8 +136,6 @@ function UIBuilder(json_cfg, clientID) {
 				// keycode: f
 				if (event.keyCode === 70) {
 					if (_this.ratio === "fit") {
-						_this.bg.style.webkitTransform = "scale(1)";
-						_this.bg.style.mozTransform = "scale(1)";
 						_this.bg.style.transform = "scale(1)";
 						_this.ratio = "full";
 						_this.scale = 1;
@@ -153,9 +147,7 @@ function UIBuilder(json_cfg, clientID) {
 							newr = document.documentElement.clientHeight / wallHeight;
 						}
 						_this.scale = newr;
-						_this.bg.style.webkitTransform = "scale(" + _this.scale + ")";
-						_this.bg.style.mozTransform    = "scale(" + _this.scale + ")";
-						_this.bg.style.transform       = "scale(" + _this.scale + ")";
+						_this.bg.style.transform = "scale(" + _this.scale + ")";
 						_this.ratio = "fit";
 					}
 					// Rescale the box around the pointers
@@ -358,8 +350,6 @@ function UIBuilder(json_cfg, clientID) {
 		this.clock.style.left       = (-this.offsetX + this.titleBarHeight).toString() + "px";
 		// center vertically: position top 50% and then translate by -50%
 		this.clock.style.top        = "50%";
-		this.clock.style.webkitTransform  = "translateY(-50%)";
-		this.clock.style.mozTransform  = "translateY(-50%)";
 		this.clock.style.transform  = "translateY(-50%)";
 
 		machine.style.position   = "absolute";
@@ -368,8 +358,6 @@ function UIBuilder(json_cfg, clientID) {
 		machine.style.color      = textColor;
 		machine.style.left       = (-this.offsetX + (6 * this.titleBarHeight)).toString() + "px";
 		machine.style.top        = "50%";
-		machine.style.webkitTransform  = "translateY(-50%)";
-		machine.style.mozTransform  = "translateY(-50%)";
 		machine.style.transform  = "translateY(-50%)";
 
 		var rightOffset = this.offsetX - (this.json_cfg.totalWidth - this.width);
@@ -384,8 +372,6 @@ function UIBuilder(json_cfg, clientID) {
 			version.style.right  = ((6 * this.titleBarHeight) + rightOffset).toString() + "px";
 		}
 		version.style.top = "50%";
-		version.style.webkitTransform = "translateY(-50%)";
-		version.style.mozTransform = "translateY(-50%)";
 		version.style.transform = "translateY(-50%)";
 
 		// Load the logo (shown top left corner)
@@ -776,9 +762,7 @@ function UIBuilder(json_cfg, clientID) {
 
 		// Center the logo
 		logo.style.top = "50%";
-		logo.style.webkitTransform  = "translateY(-50%)";
-		logo.style.mozTransform     = "translateY(-50%)";
-		logo.style.transform        = "translateY(-50%)";
+		logo.style.transform = "translateY(-50%)";
 	};
 
 	/**
@@ -806,7 +790,10 @@ function UIBuilder(json_cfg, clientID) {
 			watermark.style.cursor = "none";
 		}
 		if (this.json_cfg.background.watermark.color) {
+			// change color of all the path elements
 			this.changeSVGColor(watermark, "path", null, this.json_cfg.background.watermark.color);
+			// change color of all the rect elements
+			this.changeSVGColor(watermark, "rect", null, this.json_cfg.background.watermark.color);
 		}
 
 		watermark.style.opacity  = 0.4;
@@ -1028,8 +1015,9 @@ function UIBuilder(json_cfg, clientID) {
 	* @param pointer_data {Object} pointer information
 	*/
 	this.showSagePointer = function(pointer_data) {
-		var pointerElem = document.getElementById(pointer_data.id);
-		var translate;
+		// Get the DOM element from the data structure
+		let pointerElem = this.pointerItems[pointer_data.id].div;
+		let translate;
 		if (pointer_data.portal !== undefined && pointer_data.portal !== null) {
 			var left = pointer_data.left * dataSharingPortals[pointer_data.portal].scaleX;
 			var top = pointer_data.top * dataSharingPortals[pointer_data.portal].scaleY;
@@ -1039,9 +1027,7 @@ function UIBuilder(json_cfg, clientID) {
 		}
 
 		pointerElem.style.display = "block";
-		pointerElem.style.webkitTransform = translate;
-		pointerElem.style.mozTransform    = translate;
-		pointerElem.style.transform       = translate;
+		pointerElem.style.transform = translate;
 
 		this.pointerItems[pointerElem.id].setLabel(pointer_data.label);
 		this.pointerItems[pointerElem.id].setColor(pointer_data.color);
@@ -1059,7 +1045,8 @@ function UIBuilder(json_cfg, clientID) {
 	* @param pointer_data {Object} pointer information
 	*/
 	this.hideSagePointer = function(pointer_data) {
-		var pointerElem = document.getElementById(pointer_data.id);
+		// Get the DOM element from the data structure
+		let pointerElem = this.pointerItems[pointer_data.id].div;
 		// making sure the element exists (it seems sometimes it's not)
 		if (pointerElem) {
 			pointerElem.style.display = "none";
@@ -1075,9 +1062,9 @@ function UIBuilder(json_cfg, clientID) {
 	*/
 	this.updateSagePointerPosition = function(pointer_data) {
 		if (this.pointerItems[pointer_data.id].isShown) {
-			var pointerElem = document.getElementById(pointer_data.id);
-
-			var translate;
+			// Get the DOM element from the data structure
+			let pointerElem = this.pointerItems[pointer_data.id].div;
+			let translate;
 			if (pointer_data.portal !== undefined && pointer_data.portal !== null) {
 				var left = pointer_data.left * dataSharingPortals[pointer_data.portal].scaleX;
 				var top = pointer_data.top * dataSharingPortals[pointer_data.portal].scaleY;
@@ -1085,11 +1072,8 @@ function UIBuilder(json_cfg, clientID) {
 			} else {
 				translate = "translate(" + pointer_data.left + "px," + pointer_data.top + "px)";
 			}
-
-			requestAnimationFrame(function() {
-				pointerElem.style.webkitTransform = translate;
-				pointerElem.style.mozTransform    = translate;
-				pointerElem.style.transform       = translate;
+			requestAnimationFrame(function(ts) {
+				pointerElem.style.transform = translate;
 			});
 		}
 	};
@@ -1500,7 +1484,6 @@ function UIBuilder(json_cfg, clientID) {
 	* @method showInterface
 	*/
 	this.showInterface = function() {
-		var i;
 		if (this.uiHidden) {
 			// Show the top bar
 			this.upperBar.style.display = 'block';
@@ -1514,22 +1497,22 @@ function UIBuilder(json_cfg, clientID) {
 			}
 			// Show the apps top bar
 			var applist = document.getElementsByClassName("windowTitle");
-			for (i = 0; i < applist.length; i++) {
+			for (let i = 0; i < applist.length; i++) {
 				applist[i].style.display = 'block';
 			}
 			// Show the apps border
 			var itemlist = document.getElementsByClassName("windowItem");
-			for (i = 0; i < itemlist.length; i++) {
+			for (let i = 0; i < itemlist.length; i++) {
 				itemlist[i].classList.toggle("windowItemNoBorder");
 			}
 			// Show the partitions top bar
 			var ptnlist = document.getElementsByClassName("partitionTitle");
-			for (i = 0; i < ptnlist.length; i++) {
+			for (let i = 0; i < ptnlist.length; i++) {
 				ptnlist[i].style.display = 'block';
 			}
 			// Show the partitions background area
 			var ptntitlelist = document.getElementsByClassName("partitionArea");
-			for (i = 0; i < ptntitlelist.length; i++) {
+			for (let i = 0; i < ptntitlelist.length; i++) {
 				ptntitlelist[i].style.display = 'block';
 			}
 			this.uiHidden = false;

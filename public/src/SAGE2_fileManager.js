@@ -19,7 +19,7 @@
 
 /* global SAGE2_init, SAGE2_resize, escape, unescape, sage2Version, showDialog */
 /* global removeAllChildren, SAGE2_copyToClipboard, displayUI, dateToYYYYMMDDHHMMSS */
-/* global showSAGE2Message */
+/* global showSAGE2Message, pasteHandler */
 /* global SAGE2_speech */
 
 "use strict";
@@ -418,13 +418,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 			tooltip: "Mouse and keyboard operations and shortcuts",
 			callback: function (evt) {
 				window.open("help/interaction.html", '_blank');
-				// webix.modalbox({
-				// 	title: "Mouse and keyboard operations",
-				// 	buttons: ["Ok"],
-				// 	text: "<img src=/images/cheat-sheet.jpg width=100%>",
-				// 	width: "70%",
-				// 	height: "50%"
-				// });
 			}
 		},
 
@@ -432,6 +425,31 @@ function FileManager(wsio, mydiv, uniqueID) {
 			tooltip: "Quick Reference for Voice Commands",
 			callback: function (evt) {
 				window.open("help/voice.html", '_blank');
+			}
+		},
+
+		notehelp_menu: {value: "Connection Note",
+			tooltip: "Create a quick note with connection information",
+			callback: function (evt) {
+				// Open the server generated quickNote
+				wsio.emit('loadApplication', {
+					application: '/user/notes/Connect.note',
+					user: _this.uniqueID,
+					dimensions: [720, 690],
+					// Center top
+					position: [
+						(_this.json_cfg.totalWidth - 720) / 2,
+						_this.json_cfg.ui.titleBarHeight
+					]
+				});
+			}
+		},
+
+		clearcache_menu: {value: "Clear Cache",
+			tooltip: "Clear your browser: cache, cookies, local storage, etc",
+			callback: function (evt) {
+				// NAvigate to the 'logout' route
+				window.location.href = "/logout";
 			}
 		},
 
@@ -1108,16 +1126,24 @@ function FileManager(wsio, mydiv, uniqueID) {
 	webix.ui({
 		id: "uploadAPI",
 		view: "uploader",
-		upload: "/upload",  // POST url
-		formData: {
-			open: false // do not open after upload
+		upload: "/upload",  // HTTP POST url
+		formData: function() {
+			// Data added during the upload POST call
+			return {
+				open: false,    // do not open after upload
+				SAGE2_ptrName:  interactor.pointerLabel,
+				SAGE2_ptrColor: interactor.pointerColor
+			};
 		},
 		on: {
 			onFileUpload: function(item) {
-				console.log('uploaded file', item.name);
+				console.log('Uploader> uploaded file', item.name);
+			},
+			onBeforeFileAdd: function(item) {
+				console.log('Uploader> adding file', item.name);
 			},
 			onUploadComplete: function(item) {
-				console.log('upload complete');
+				console.log('Uploader> upload complete');
 				var d = $$("uploadlist");
 				d.data.each(function(obj) {
 					// if all good, remove from list
@@ -1128,7 +1154,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				});
 			},
 			onFileUploadError: function(item) {
-				console.log('onFileUploadError', item);
+				console.log('Uploader> onFileUploadError', item);
 			}
 		},
 		link: "uploadlist",
@@ -1566,11 +1592,17 @@ function FileManager(wsio, mydiv, uniqueID) {
 				user: _this.uniqueID,
 				position: position
 			});
-		} else {
-			// Opening a file
+		} else if (appType === "movie_player") {
 			wsio.emit('loadFileFromServer', {
 				application: appType,
 				filename: tid,
+				user: _this.uniqueID,
+				position: position
+			});
+		} else {
+			// Opening a file
+			wsio.emit('loadApplication', {
+				application: tid,
 				user: _this.uniqueID,
 				position: position
 			});
@@ -1595,7 +1627,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 			}
 			openWithMenu.select(openWithMenu.getFirstId(), false);
 			openWithWindow.show();
-
 		} else {
 			var filename = this.allFiles[tid].exif.FileName;
 			var message = "No application available to open " + filename + ".";
@@ -1619,19 +1650,19 @@ function FileManager(wsio, mydiv, uniqueID) {
 		if (elt) {
 			// Order important here (not the best situation)
 			if (elt.exif.MIMEType.indexOf('sage2/session') >= 0) {
-				response = "load_session";
+				response = "sage2/session";
 			} else if (elt.exif.MIMEType.indexOf('sage2/url') >= 0) {
 				response = "sage2/url";
-			} else if (elt.sage2Type) {
-				// if we set a SAGE2 type, use it
-				response = "application/custom";
+			} else if (elt.exif.MIMEType.indexOf('video') >= 0) {
+				response = "movie_player";
 			} else if (elt.exif.MIMEType.indexOf('image') >= 0) {
 				response = "image_viewer";
 			} else if (elt.exif.MIMEType.indexOf('pdf') >= 0) {
 				response = "pdf_viewer";
-			} else if (elt.exif.MIMEType.indexOf('video') >= 0) {
-				response = "movie_player";
 			}
+			// } else if (elt.sage2Type) {
+			// 	// if we set a SAGE2 type, use it
+			// 	response = "application/custom";
 		}
 		// send the result
 		return response;
@@ -1823,11 +1854,15 @@ function FileManager(wsio, mydiv, uniqueID) {
 					{margin: 5, cols: [
 						{view: "button", value: "Cancel", click: function() {
 							this.getTopParentView().hide();
+							// Handler for 'paste' event (as in copy/paste)
+							document.addEventListener("paste", pasteHandler, false);
 						}},
 						{view: "button", value: "Save", type: "form", click: function() {
 							var values = this.getFormView().getValues();
 							wsio.emit('saveSession', values.session);
 							this.getTopParentView().hide();
+							// Handler for 'paste' event (as in copy/paste)
+							document.addEventListener("paste", pasteHandler, false);
 						}}
 					]}
 				],
@@ -1842,6 +1877,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 			// ESC closes
 			if (code === 27 && !e.ctrlKey && !e.shiftKey && !e.altKey) {
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 			// ENTER activates
@@ -1849,9 +1886,13 @@ function FileManager(wsio, mydiv, uniqueID) {
 				var values = this.getFormView().getValues();
 				wsio.emit('saveSession', values.session);
 				this.getTopParentView().hide();
+				// Handler for 'paste' event (as in copy/paste)
+				document.addEventListener("paste", pasteHandler, false);
 				return false;
 			}
 		});
+		// Handler for 'paste' event (as in copy/paste)
+		document.removeEventListener("paste", pasteHandler, false);
 		// Set focus on the text box
 		$$('session_filename').focus();
 		// select the text in the box (easier to type another name)
@@ -2060,7 +2101,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	var tmenu = webix.ui({
 		view: "contextmenu",
 		id: "tmenu",
-		data: ["New folder", { $template: "Separator" }, "Refresh", "Open"],
+		data: ["New folder", "Open All Files", { $template: "Separator" }, "Refresh"],
 		on: {
 			onMenuItemClick: function(id) {
 				var context = this.getContext();
@@ -2121,7 +2162,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 						});
 						$$('folder_name').focus();
 						break;
-					case "Open":
+					case "Open All Files":
 						loadFolder(list.getItem(listId));
 						break;
 					case "Refresh":
@@ -2238,12 +2279,29 @@ function FileManager(wsio, mydiv, uniqueID) {
 		});
 
 		// Add the remote sites link into the top menubar
+		var remote_menu = $$('topmenu').getSubMenu('remote_menu');
 		this.json_cfg.remote_sites.forEach(function(site, i, arr) {
 			// if we have a valid definition of a remote site (host, port and name)
 			if (site.host && site.port && site.name) {
+				// Add the menu entry with a link to the remote UI
+				remote_menu.add({
+					// use id as an index
+					id: i.toString(),
+					config: {autowidth: true, zIndex: 9000},
+					value: site.name,
+					tooltip: "Opens the UI for " + site.name
+				});
+			}
+		});
+		// Attach the callbacks on the remote site menu items
+		remote_menu.attachEvent("onItemClick", function (act, evt, node) {
+			// retrieve the index from the id
+			let idx = parseInt(act);
+			let site = _this.json_cfg.remote_sites[idx];
+			if (site.host && site.port && site.name) {
 				// Build the UI URL
-				var protocol  = (site.secure === true) ? "https" : "http";
-				var remoteURL = protocol + "://" + site.host + ":" + site.port;
+				let protocol  = (site.secure === true) ? "https" : "http";
+				let remoteURL = protocol + "://" + site.host + ":" + site.port;
 				// pass the password or hash to the URL
 				if (site.password) {
 					remoteURL += '/session.html?page=index.html?session=' + site.password;
@@ -2252,16 +2310,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 				} else {
 					remoteURL += '/index.html';
 				}
-				// Add the menu entry with a link to the remote UI
-				$$('topmenu').getSubMenu('remote_menu').add({
-					id: "remotesite_" + i,
-					tooltip: remoteURL,
-					config: {autowidth: true, zIndex: 9000},
-					value: site.name,
-					// when clicked, open the remote UI in a new tab
-					href: remoteURL,
-					target: "_blank"
-				});
+				// when clicked, open the remote UI in a new tab
+				window.open(remoteURL, '_blank');
 			}
 		});
 

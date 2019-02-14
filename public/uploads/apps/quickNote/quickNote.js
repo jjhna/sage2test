@@ -10,6 +10,8 @@
 
 "use strict";
 
+/* global showdown hljs*/
+
 var quickNote = SAGE2_App.extend({
 	init: function(data) {
 		this.SAGE2Init("div", data);
@@ -17,46 +19,90 @@ var quickNote = SAGE2_App.extend({
 		this.resizeEvents = "continuous"; // "onfinish";
 
 		this.element.id = "div" + data.id;
-		this.element.style.background = "lightyellow";
-		this.element.style.fontSize   = ui.titleTextSize + "px";
-		// Using SAGE2 default font
-		this.element.style.fontFamily = "Courier New, Consolas, Menlo, monospace";
-		// Default starting attributes
 		this.backgroundChoice = "lightyellow";
 
-		/*
-		basing text size on title size is throwing off the sizing based on site location.
-		need to have a base size and then scale.
-		starting with size 20 and scaling up provides 25 characters of space
-		at 300px wide, this is 15px per character.
-		each character is roughly 26.8px tall
-		*/
-		this.startingFontSize       = 19.9;
-		this.startingAppWidth       = 300; // Hardcode necessary(?) to keep scale on resize/restart/reload
-		this.startingAppHeight      = 134; // 5 lines is 26.8 * 5 = 134;
-		this.startingFontHeight     = 26.8;
-		this.startingTextZoneWidth  = 25;
-		this.startingTextZoneHeight = 5;
-		this.needTextZoneHeight     = 5;
-		this.sizeModification       = 1; // 1 is normal <1 is small >1 is larger
-
+		// Separate div since the html will be contantly edited with showdown
+		this.markdownDiv = document.createElement("div");
+		// Add a CSS class so we can style the text in the css file
+		this.markdownDiv.classList.add("showdown");
+		// Control position and size
+		this.markdownDiv.style.position = "absolute";
+		this.markdownDiv.style.top      = "0";
+		this.markdownDiv.style.left     = "0";
+		this.markdownDiv.style.width    = "100%";
+		this.markdownDiv.style.height   = "100%";
+		// padding: top, right, bottom, and left
+		// or global value, here 1/2 line
+		this.markdownDiv.style.padding = ui.titleTextSize + "px";
+		this.markdownDiv.style.margin = 0;
+		// Default font size based on SAGE2 settings
+		this.markdownDiv.style.fontSize = ui.titleTextSize + "px";
+		this.markdownDiv.style.boxSizing = "border-box";
+		this.markdownDiv.style.listStylePosition = "inside";
+		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
 
+		// Add highlight extension before making converter
+		this.makeHighlightExtension();
+		// Make a converter
+		this.showdown_converter = new showdown.Converter({
+			emoji: true,
+			simpleLineBreaks: true,
+			simplifiedAutoLink: true,
+			headerLevelStart: 2,
+			extensions: ['codehighlight']
+		});
+
 		// If loaded from session, this.state will have meaningful values.
 		this.setMessage(this.state);
-
-
 		var _this = this;
 		// If it got file contents from the sever, then extract.
 		if (data.state.contentsOfNoteFile) {
 			this.parseDataFromServer(data.state.contentsOfNoteFile);
 		} else if (this.state.contentsOfNoteFile) {
 			this.parseDataFromServer(this.state.contentsOfNoteFile);
-		} else if (data.customLaunchParams) { // if it was passed additional init values
+		} else if (data.customLaunchParams) {
+			// if it was passed additional init values
 			data.customLaunchParams.serverDate = new Date(Date.now());
 			_this.setMessage(data.customLaunchParams);
 		}
+		this.adjustFontSize();
+		this.showOrHideArrow();
+	},
+
+	makeHighlightExtension: function () {
+		// Prevent multiple creations of the same extension.
+		if (showdown.hasLoadedCustomHighlightExtension) {
+			return;
+		}
+		showdown.hasLoadedCustomHighlightExtension = true;
+		// add extension
+		showdown.extension('codehighlight', function() {
+			function htmlunencode(text) {
+				return (
+					text
+						.replace(/&amp;/g, '&')
+						.replace(/&lt;/g, '<')
+						.replace(/&gt;/g, '>')
+				);
+			}
+			return [
+				{
+					type: 'output',
+					filter: function (text, converter, options) {
+						var left  = '<pre><code\\b[^>]*>',
+							right = '</code></pre>',
+							flags = 'g',
+							replacement = function (wholeMatch, match, left, right) {
+								match = htmlunencode(match);
+								return left + hljs.highlightAuto(match).value + right;
+							};
+						return showdown.helper.replaceRecursiveRegExp(text, replacement, left, right, flags);
+					}
+				}
+			];
+		});
 	},
 
 	/**
@@ -64,15 +110,15 @@ var quickNote = SAGE2_App.extend({
 	1st: creator and timestamp
 	2nd: color for note
 	3rd: content for note
-
 	*/
 	parseDataFromServer: function(fileContentsFromServer) {
 		var fileData  = {};
-		var fileLines = fileContentsFromServer.split("\n");
 		fileData.fileDefined = true;
-		fileData.clientName  = fileLines[0];
-		fileData.colorChoice = fileLines[1];
-		fileData.clientInput = fileLines[2];
+		fileData.clientName  = fileContentsFromServer.substring(0, fileContentsFromServer.indexOf("\n"));
+		fileContentsFromServer  = fileContentsFromServer.substring(fileContentsFromServer.indexOf("\n") + 1); // Remove first line
+		fileData.colorChoice  = fileContentsFromServer.substring(0, fileContentsFromServer.indexOf("\n"));
+		fileContentsFromServer  = fileContentsFromServer.substring(fileContentsFromServer.indexOf("\n") + 1); // Remove second line
+		fileData.clientInput = fileContentsFromServer; // The rest is to be displayed
 		this.setMessage(fileData);
 	},
 
@@ -81,74 +127,33 @@ var quickNote = SAGE2_App.extend({
 	msgParams.clientInput	What they typed for the note.
 	*/
 	setMessage: function(msgParams) {
-		// First clean the input, if there is i nput
-		if (msgParams.clientInput) {
-			this.state.clientInput = msgParams.clientInput; // keep original
-			let words = msgParams.clientInput.split(" "); // separate out words
-			let hasModifiedWord = false;
-			// determine the number of lines needed
-			let lines = msgParams.clientInput.split("\n");
-			this.needTextZoneHeight = lines.length + 1; // have extra line to show no missing text
-			for (let i = 0; i < lines.length; i++) {
-				if (lines[i].length > this.startingTextZoneWidth) {
-					this.needTextZoneHeight += parseInt(lines[i].length / this.startingTextZoneWidth);
-				}
-			}
-
-			for (let i = 0; i < words.length; i++) {
-				// if a word is larget than the zone width
-				if (words[i].length > this.startingTextZoneWidth) {
-					hasModifiedWord = true;
-					let pieces = "";
-					// split it into pieces that will fit within one line
-					while (words[i].length > this.startingTextZoneWidth) {
-						pieces += words[i].substring(0, this.startingTextZoneWidth);
-						pieces += " ";
-						words[i] = words[i].substring(this.startingTextZoneWidth);
-						this.needTextZoneHeight++; // inflates lines usage by 1
-					}
-					pieces += words[i];
-					words[i] = pieces; // put back into location
-				}
-			} // if there was word modification to shrink into view, then need to rejoin
-			if (hasModifiedWord) {
-				msgParams.clientInput = words.join(" ");
-			}
-			msgParams.clientInput = msgParams.clientInput.replace(/\n/g, "<br>");
-		}
 		// If defined by a file, use those values
 		if (msgParams.fileDefined === true) {
-			this.backgroundChoice   = msgParams.colorChoice;
-			this.state.colorChoice  = this.backgroundChoice;
+			this.element.style.background = this.state.colorChoice  = this.backgroundChoice = msgParams.colorChoice;
 			this.state.creationTime = msgParams.clientName;
-			this.element.style.background = msgParams.colorChoice;
-			this.element.innerHTML        = msgParams.clientInput;
 			this.formatAndSetTitle(this.state.creationTime);
 			this.saveNote(msgParams.creationTime);
 		} else { // else defined by load or user input
 			// Otherwise set the values using probably user input.
 			if (msgParams.clientName === undefined || msgParams.clientName === null || msgParams.clientName == "") {
-				msgParams.clientName = "";
+				msgParams.clientName = ""; // Could be anon
 			}
-			// If the color choice was defined, use the given color. RMB choices do not provide a color (currently)
+			// If the color choice was defined, use the given color.
 			if (msgParams.colorChoice !== undefined && msgParams.colorChoice !== null && msgParams.colorChoice !== "") {
-				this.backgroundChoice = msgParams.colorChoice;
-				this.element.style.background = msgParams.colorChoice;
+				this.element.style.background = this.backgroundChoice = this.state.colorChoice = msgParams.colorChoice;
 			}
-
-			// set the text, currently innerHTML matters to render <br> and allow for html tags
-			this.element.innerHTML = msgParams.clientInput;
 			// client input state set as part of the clean
 			this.state.clientName  = msgParams.clientName;
 			this.state.colorChoice = this.backgroundChoice;
-
 			// if the creationTime has not been set, then fill it out.
 			if (this.state.creationTime === null
 				&& msgParams.serverDate !== undefined
 				&& msgParams.serverDate !== null) {
 				this.state.creationTime = new Date(msgParams.serverDate);
-				// build the title string.
-				var titleString = msgParams.clientName + "-QN-" + this.state.creationTime.getFullYear();
+				// Remove the unicode charaters from client name because used in the file name
+				var cleanName = msgParams.clientName.replace(/[^\x20-\x7F]/g, "").trim();
+				// build the title string
+				var titleString = cleanName + "-QN-" + this.state.creationTime.getFullYear();
 				if (this.state.creationTime.getMonth() < 9) {
 					titleString += "0";
 				}
@@ -186,11 +191,9 @@ var quickNote = SAGE2_App.extend({
 			}
 		}
 
-		// adjust height to show all text. minimum 5 lines enforce(?)
-		this.needTextZoneHeight = (this.needTextZoneHeight < 5) ? 5 : this.needTextZoneHeight;
-		this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
-		this.sendResize(this.sage2_width,
-			this.needTextZoneHeight * this.startingFontHeight * this.sizeModification);
+		// set the text, currently innerHTML matters to render <br> and allow for html tags
+		this.state.clientInput = msgParams.clientInput;
+		this.markdownDiv.innerHTML = this.showdown_converter.makeHtml(msgParams.clientInput);
 
 		// save if didn't come from file
 		if (msgParams.fileDefined !== true) {
@@ -201,7 +204,7 @@ var quickNote = SAGE2_App.extend({
 	setColor: function(responseObject) {
 		this.backgroundChoice         = responseObject.color;
 		this.state.colorChoice        = this.backgroundChoice;
-		this.element.style.background = responseObject.color;
+		this.markdownDiv.style.background = responseObject.color;
 		this.saveNote(responseObject.creationTime);
 	},
 
@@ -238,6 +241,8 @@ var quickNote = SAGE2_App.extend({
 				colorChoice:  this.state.colorChoice,
 				creationTime: this.state.creationTime
 			});
+			this.adjustFontSize();
+			this.showOrHideArrow();
 		}
 		this.resize(date);
 	},
@@ -263,23 +268,26 @@ var quickNote = SAGE2_App.extend({
 		wsio.emit("saveDataOnServer", fileData);
 		// save the state value
 		this.state.contentsOfNoteFile = fileData.fileContent;
-
 		// update the context menu with the current content
 		this.getFullContextMenuAndUpdate();
 	},
 
 	draw: function(date) {
-		// left intentionally blank
 	},
 
 	resize: function(date) {
-		this.element.style.background = this.backgroundChoice;
-		this.sizeModification = parseInt(this.element.clientWidth) / this.startingAppWidth;
-		this.element.style.fontSize = (this.startingFontSize * this.sizeModification) + "px";
 	},
 
 	event: function(eventType, position, user_id, data, date) {
-		// left intentionally blank
+		if (eventType === "specialKey") {
+			if (data.code === 40 && data.state === "down") {
+				// arrow down
+				this.adjustFontSize({ modifier: "decrease" });
+			} else if (data.code === 38 && data.state === "down") {
+				// arrow up
+				this.adjustFontSize({ modifier: "increase" });
+			}
+		}
 	},
 
 	duplicate: function(responseObject) {
@@ -288,7 +296,9 @@ var quickNote = SAGE2_App.extend({
 			this.launchAppWithValues("quickNote", {
 				clientName: responseObject.clientName,
 				clientInput: this.state.clientInput,
-				colorChoice: this.state.colorChoice
+				colorChoice: this.state.colorChoice,
+				scale: this.state.scale,
+				showArrow: true
 			},
 			this.sage2_x + 100, this.sage2_y);
 		}
@@ -316,10 +326,26 @@ var quickNote = SAGE2_App.extend({
 		entry.description = "Edit Note";
 		entry.callback    = "SAGE2_editQuickNote";
 		entry.parameters  = {
-			currentContent: this.state.clientInput,
+			currentContent:     this.state.clientInput,
 			currentColorChoice: this.state.colorChoice
 		};
 		entries.push(entry);
+
+		entries.push({description: "separator"});
+
+		if (!this.isShowingArrow) {
+			entry = {};
+			entry.description = "Show arrow";
+			entry.callback    = "showOrHideArrow";
+			entry.parameters  = {status: "show"};
+			entries.push(entry);
+		} else {
+			entry = {};
+			entry.description = "Hide arrow";
+			entry.callback    = "showOrHideArrow";
+			entry.parameters  = {status: "hide"};
+			entries.push(entry);
+		}
 
 		entries.push({description: "separator"});
 
@@ -332,46 +358,67 @@ var quickNote = SAGE2_App.extend({
 		entries.push({description: "separator"});
 
 		entry = {};
-		entry.description = "Blue";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightblue"};
-		entry.entryColor  = "lightblue";
+		entry.description = "Set Color";
+		entry.children = [
+			{
+				description: "Blue",
+				callback: "setColor",
+				parameters: { color: "lightblue"},
+				entryColor: "lightblue"
+			},
+			{
+				description: "Yellow",
+				callback: "setColor",
+				parameters: { color: "lightyellow"},
+				entryColor: "lightyellow"
+			},
+			{
+				description: "Pink",
+				callback: "setColor",
+				parameters: { color: "lightpink"},
+				entryColor: "lightpink"
+			},
+			{
+				description: "Green",
+				callback: "setColor",
+				parameters: { color: "lightgreen"},
+				entryColor: "lightgreen"
+			},
+			{
+				description: "White",
+				callback: "setColor",
+				parameters: { color: "#f4f4f4"},
+				entryColor: "#f4f4f4"
+			},
+			{
+				description: "Orange",
+				callback: "setColor",
+				parameters: { color: "lightsalmon"},
+				entryColor: "lightsalmon"
+			}
+		];
 		entries.push(entry);
 
-		entry = {};
-		entry.description = "Yellow";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightyellow"};
-		entry.entryColor  = "lightyellow";
-		entries.push(entry);
+		entries.push({description: "separator"});
 
-		entry = {};
-		entry.description = "Pink";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightpink"};
-		entry.entryColor  = "lightpink";
-		entries.push(entry);
+		entries.push({
+			description: "Increase font size",
+			accelerator: "\u2191",     // up-arrow
+			callback: "adjustFontSize",
+			parameters: {
+				modifier: "increase"
+			}
+		});
+		entries.push({
+			description: "Decrease font size",
+			accelerator: "\u2193",     // down-arrow
+			callback: "adjustFontSize",
+			parameters: {
+				modifier: "decrease"
+			}
+		});
 
-		entry = {};
-		entry.description = "Green";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightgreen"};
-		entry.entryColor  = "lightgreen";
-		entries.push(entry);
-
-		entry = {};
-		entry.description = "White";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "white"};
-		entry.entryColor  = "white";
-		entries.push(entry);
-
-		entry = {};
-		entry.description = "Orange";
-		entry.callback    = "setColor";
-		entry.parameters  = { color: "lightsalmon"};
-		entry.entryColor  = "lightsalmon";
-		entries.push(entry);
+		entries.push({description: "separator"});
 
 		entries.push({
 			description: "Copy content to clipboard",
@@ -384,8 +431,75 @@ var quickNote = SAGE2_App.extend({
 		return entries;
 	},
 
-	quit: function() {
-		// no additional calls needed.
+	adjustFontSize: function(responseObject) {
+		// if this is activated as part of a state update, skip the adjustment
+		if (responseObject) {
+			if (responseObject.modifier === "increase") {
+				this.state.scale *= 1.2; // 20 percent increase good?
+			} else if (responseObject.modifier === "decrease") {
+				this.state.scale *= 0.8; // same reduction?
+			}
+		}
+		this.markdownDiv.style.fontSize = parseInt(ui.titleTextSize * this.state.scale) + "px";
+
+		this.getFullContextMenuAndUpdate();
+		this.SAGE2Sync(true);
+	},
+
+	showOrHideArrow: function(responseObject) {
+		if (!responseObject) { // state update
+			if (this.state.showArrow) {
+				this.addTopLeftArrowToWall();
+			} else {
+				this.hideTopLeftArrow();
+			}
+		} else {
+			if (responseObject.status === "show") {
+				this.addTopLeftArrowToWall();
+				this.state.showArrow = true;
+			} else if (responseObject.status === "hide") {
+				this.hideTopLeftArrow();
+				this.state.showArrow = false;
+			}
+			this.SAGE2Sync(true);
+		}
+	},
+
+	addTopLeftArrowToWall: function() {
+		if (this.hasLoadedTopLeftArrow) {
+			if (!this.isShowingArrow) {
+				this.arrow.style.display = "block";
+				this.isShowingArrow = true;
+				this.getFullContextMenuAndUpdate();
+			}
+			return;
+		}
+		this.hasLoadedTopLeftArrow = true;
+		this.isShowingArrow = true;
+
+		let arrow = document.createElement("img");
+		arrow.style.position = "absolute";
+		arrow.style.top = 0; // keep aligned to top of window
+		// need to calculate size
+		arrow.style.height = (ui.titleBarHeight * 1) + "px";
+		// move it outside of the title bar
+		arrow.style.left   = (ui.titleBarHeight * -1) + "px";
+		arrow.src = "images/quickNote_leftArrow.svg";
+
+		let titlebar = document.getElementById(this.id + "_title");
+		titlebar.appendChild(arrow);
+		titlebar.style.overflow = "visible";
+
+		this.arrow = arrow;
+		this.getFullContextMenuAndUpdate();
+	},
+
+	hideTopLeftArrow: function () {
+		if (this.arrow) {
+			this.arrow.style.display = "none";
+			this.isShowingArrow = false;
+		}
+		this.getFullContextMenuAndUpdate();
 	}
 
 });

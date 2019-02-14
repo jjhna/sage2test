@@ -181,7 +181,8 @@ function setupListeners() {
 		// var jingle = "sage2_jinggle.mp3";
 		// var jingle = "kola-startup.mp3";
 		// var jingle = "blues_lick_in_a.mp3";
-		var jingle = "waipio-jingle.mp3";
+		// var jingle = "waipio-jingle.mp3";
+		var jingle = "cahokia-jingle.mp3";
 		if (json_cfg.ui.startup_sound) {
 			// use the jingle file if specificied in configuration file
 			jingle = json_cfg.ui.startup_sound;
@@ -257,6 +258,7 @@ function setupListeners() {
 			vid.startPaused   = data.data.paused;
 			vid.controls      = false;
 			vid.style.display = "none";
+			vid.crossOrigin   = "anonymous";
 			vid.addEventListener('canplaythrough', function() {
 				// Video is loaded and can be played
 				if (vid.firstPlay && vid.sessionTime) {
@@ -501,6 +503,12 @@ function setupListeners() {
 				vid.sessionTime = data.timestamp;
 			} else {
 				vid.currentTime = data.timestamp;
+			}
+
+			if (data.play) {
+				vid.play();
+			} else {
+				vid.pause();
 			}
 		}
 	});

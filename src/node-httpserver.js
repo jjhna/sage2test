@@ -142,7 +142,6 @@ class HttpServer {
 				passport.serializeUser(function(user, done) {
 					done(null, user.id);
 				});
-
 				passport.deserializeUser(function(id, done) {
 					userDB.get(id, function (err, user) {
 						done(err, user);
@@ -366,7 +365,7 @@ function secureStatic(req, res, next) {
 			delete header['X-Frame-Options'];
 		}
 
-		next();
+		return next();
 	}
 	handleHeaders();
 }

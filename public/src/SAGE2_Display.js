@@ -21,8 +21,6 @@
 /* global SAGE2RemoteSitePointer */
 /* global process */
 
-/* global require */
-
 "use strict";
 
 /**
@@ -168,8 +166,14 @@ function setupFocusHandlers() {
 	});
 
 	if (__SAGE2__.browser.isElectron) {
+		// Get the version number for Electron
+		let electronVersion = process.versions.electron;
+		// Parse the string and get the Major version number
+		let majorVersion = parseInt(electronVersion.split('.')[0]);
+		let electron = require('electron');
+
 		// Display warning messages from the 'Main' Electron process
-		require('electron').ipcRenderer.on('warning', function(event, message) {
+		electron.ipcRenderer.on('warning', function(event, message) {
 			var problemDialog = ui.buildMessageBox('problemDialog', message);
 			ui.main.appendChild(problemDialog);
 			document.getElementById('problemDialog').style.display = "block";
@@ -180,21 +184,28 @@ function setupFocusHandlers() {
 		});
 
 		// Receive hardware info from the main process (electron node)
-		require('electron').ipcRenderer.on('hardwareData', function(event, message) {
+		electron.ipcRenderer.on('hardwareData', function(event, message) {
 			if (wsio !== undefined) {
 				// and send it to the server
 				wsio.emit('displayHardware', message);
 			}
 		});
 		// Receive performance info from the main process (electron node)
-		require('electron').ipcRenderer.on('performanceData', function(event, message) {
+		electron.ipcRenderer.on('performanceData', function(event, message) {
 			if (wsio !== undefined) {
 				// Add renderer process load info
-				var procMem = process.getProcessMemoryInfo();
 				var procCPU = process.getCPUUsage();
-				message.processLoad.memResidentSet += procMem.workingSetSize;
-				message.processLoad.memPercent += (procMem.workingSetSize / message.mem.total) * 100;
 				message.processLoad.cpuPercent += procCPU.percentCPUUsage;
+
+				if (majorVersion < 4) {
+					// for version 3 and below
+					var procMem = process.getProcessMemoryInfo();
+					message.processLoad.memResidentSet += procMem.workingSetSize;
+					message.processLoad.memPercent += (procMem.workingSetSize / message.mem.total) * 100;
+				} else {
+					// version 4 has new APIs
+					// ...
+				}
 				// and send it to the server
 				wsio.emit('performanceData', message);
 			}
@@ -236,7 +247,9 @@ function removeStoredFileListEventHandler(callback) {
 function resetIdle() {
 	if (uiTimer) {
 		clearTimeout(uiTimer);
-		ui.showInterface();
+		if (ui.uiHidden) {
+			ui.showInterface();
+		}
 		uiTimer = setTimeout(function() {
 			ui.hideInterface();
 		}, uiTimerDelay * 1000);
@@ -312,6 +325,7 @@ function SAGE2_init() {
 function setupListeners() {
 	wsio.on('initialize', function(data) {
 		var startTime  = new Date(data.start);
+		wsio.UID = data.UID;
 
 		// Global initialization
 		SAGE2_initialize(startTime);
@@ -774,16 +788,12 @@ function setupListeners() {
 		} else {
 			var translate = "translate(" + position_data.elemLeft + "px," + position_data.elemTop + "px)";
 			var selectedElemTitle = document.getElementById(position_data.elemId + "_title");
-			selectedElemTitle.style.webkitTransform = translate;
-			selectedElemTitle.style.mozTransform    = translate;
-			selectedElemTitle.style.transform       = translate;
-
 			var selectedElem = document.getElementById(position_data.elemId);
-			selectedElem.style.webkitTransform = translate;
-			selectedElem.style.mozTransform    = translate;
-			selectedElem.style.transform       = translate;
+			requestAnimationFrame(function(ts) {
+				selectedElemTitle.style.transform = translate;
+				selectedElem.style.transform = translate;
+			});
 		}
-
 
 		var app = applications[position_data.elemId];
 		if (app !== undefined) {
@@ -897,14 +907,10 @@ function setupListeners() {
 		if (position_data.elemAnimate) {
 			moveItemWithAnimation(position_data);
 		} else {
-			selectedElemTitle.style.webkitTransform = translate;
-			selectedElemTitle.style.mozTransform    = translate;
-			selectedElemTitle.style.transform       = translate;
-
-			selectedElem.style.webkitTransform = translate;
-			selectedElem.style.mozTransform    = translate;
-			selectedElem.style.transform       = translate;
-
+			requestAnimationFrame(function(ts) {
+				selectedElemTitle.style.transform = translate;
+				selectedElem.style.transform      = translate;
+			});
 		}
 
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
@@ -1476,9 +1482,7 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	windowTitle.style.height = titleBarHeight.toString() + "px";
 	windowTitle.style.left   = (-offsetX).toString() + "px";
 	windowTitle.style.top    = (-offsetY).toString() + "px";
-	windowTitle.style.webkitTransform = translate;
-	windowTitle.style.mozTransform    = translate;
-	windowTitle.style.transform       = translate;
+	windowTitle.style.transform = translate;
 	windowTitle.style.zIndex = itemCount.toString();
 	if (ui.noDropShadow === true) {
 		windowTitle.style.boxShadow = "none";
@@ -1553,14 +1557,12 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 	var windowItem = document.createElement("div");
 	windowItem.id = data.id;
-	windowItem.className      = "windowItem";
-	windowItem.style.left     = (-offsetX).toString() + "px";
-	windowItem.style.top      = (titleBarHeight - offsetY).toString() + "px";
-	windowItem.style.webkitTransform = translate;
-	windowItem.style.mozTransform    = translate;
-	windowItem.style.transform       = translate;
-	windowItem.style.overflow = "hidden";
-	windowItem.style.zIndex   = (itemCount + 1).toString();
+	windowItem.className       = "windowItem";
+	windowItem.style.left      = (-offsetX).toString() + "px";
+	windowItem.style.top       = (titleBarHeight - offsetY).toString() + "px";
+	windowItem.style.transform = translate;
+	windowItem.style.overflow  = "hidden";
+	windowItem.style.zIndex    = (itemCount + 1).toString();
 	if (ui.noDropShadow === true) {
 		windowItem.style.boxShadow = "none";
 	}
@@ -1583,8 +1585,6 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	windowStateContatiner.style.position = "absolute";
 	windowStateContatiner.style.top = "0px";
 	windowStateContatiner.style.left = "0px";
-	windowStateContatiner.style.webkitTransform = "translate(0px,0px)";
-	windowStateContatiner.style.mozTransform = "translate(0px,0px)";
 	windowStateContatiner.style.transform = "translate(0px,0px)";
 	windowState.appendChild(windowStateContatiner);
 	windowItem.appendChild(windowState);

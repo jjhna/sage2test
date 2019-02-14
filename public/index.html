@@ -10,7 +10,8 @@
 <link rel="apple-touch-icon" sizes="256x256" href="images/icons/S2-256ios.png" />
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-
+<!-- SEO -->
+<meta name="Description" content="SAGE2: A New Approach for Data Intensive Collaboration Using Scalable Resolution Shared Displays” (best paper award), 10th IEEE International Conference on Collaborative Computing: Networking, Applications and Worksharing. 2014. CollaborateCom 2014, by T. Marrinan, J. Aurisano, A. Nishimoto, K. Bharadwaj, V. Mateevitsi, L. Renambot, L. Long, A. Johnson, and J. Leigh">
 
 <title>SAGE2</title>
 
@@ -89,6 +90,7 @@
 <script async src="src/SAGE2_DisplayUI.js"></script>
 <script async src="src/SAGE2_Speech.js"></script>
 <script async src="src/SAGE2_UI.js"></script>
+<script async src="src/SAGE2_webrtc.js"></script>
 
 <!-- Style sheets -->
 <link rel="stylesheet" type="text/css" href="css/fonts.css"/>
@@ -383,40 +385,6 @@
 	<div id="appContextMenu">
 	</div>
 
-	<div id="uiNoteMaker" class="dialog">
-			<br>
-			<div id="uiNoteMakerOptions">
-				<table cellSpacing="5">
-					<tr>
-						<td colspan="4">
-							<input type="checkbox" id="uiNoteMakerCheckAnonymous">
-							<label for="uiNoteMakerCheckAnonymous"> Anonymous</label>
-						</td>
-					</tr>
-					<tr>
-						<td>&nbsp;&nbsp;</td>
-						<td class="uinmColorPickColumn"> <div id="uinmColorPick1" class="uinmColorPickBlock"></div> </td>
-						<td class="uinmColorPickColumn"> <div id="uinmColorPick2" class="uinmColorPickBlock"></div> </td>
-						<td class="uinmColorPickColumn"> <div id="uinmColorPick3" class="uinmColorPickBlock"></div> </td>
-					</tr>
-					<tr>
-						<td>&nbsp;&nbsp;</td>
-						<td class="uinmColorPickColumn"> <div id="uinmColorPick4" class="uinmColorPickBlock"></div> </td>
-						<td class="uinmColorPickColumn"> <div id="uinmColorPick5" class="uinmColorPickBlock"></div> </td>
-						<td class="uinmColorPickColumn"> <div id="uinmColorPick6" class="uinmColorPickBlock"></div> </td>
-					</tr>
-				</table>
-			</div>
-			<br>
-			&nbsp;&nbsp;&nbsp;
-			<textarea id="uiNoteMakerInputField"></textarea>
-			&nbsp;&nbsp;&nbsp;
-			<br>
-			<br>&nbsp;
-			<span id="uiNoteMakerCloseButton" class="button">Close</span>&nbsp;&nbsp;&nbsp;
-			<span id="uiNoteMakerSendButton" class="button">Make Note [Enter]</span>
-			<br>&nbsp;
-	</div>
 	<div id="uiDrawZone" class="dialog">
 		<br>
 		<table cellSpacing="4">

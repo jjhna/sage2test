@@ -14,6 +14,7 @@ Supplement to get some additional input functionality.
 
 */
 
+console.log('PRELOAD');
 
 // ------------------------------------------------------------------------------------------------------------------
 // 1
@@ -152,6 +153,8 @@ function loadJS(res, cb) {
 // wait for the page (webview) to load
 var scriptAddInterval = setInterval(function() {
 	if (document.readyState === "complete") {
+console.log('COMPLETE');
+
 		// stop trying
 		clearInterval(scriptAddInterval);
 		// load some runtime files and process hack

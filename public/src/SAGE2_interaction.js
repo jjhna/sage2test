@@ -13,6 +13,7 @@
 /* global showSAGE2PointerOverlayNoMouse, hideSAGE2PointerOverlayNoMouse */
 /* global pointerClick, sagePointerDisabled, sagePointerEnabled */
 /* global viewOnlyMode, deleteCookie */
+/* global displayUI, pointerX, pointerY, SAGE2_webrtc_ui_tracker */
 
 "use strict";
 
@@ -41,6 +42,9 @@ function SAGE2_interaction(wsio) {
 	this.mediaVideo  = null;
 	this.mediaResolution = 2;
 	this.mediaQuality    = 9;
+	// By default, do not use WebRTC
+	this.mediaUseRTC     = getCookie('SAGE2_useRTC') === "true" ? true : false;
+
 	this.chromeDesktopCaptureEnabled = false;
 	this.broadcasting  = false;
 	this.gotRequest    = false;
@@ -49,14 +53,6 @@ function SAGE2_interaction(wsio) {
 	this.maxUploadSize = 20 * (1024 * 1024 * 1024); // 20GB just as a precaution
 	this.array_xhr     = [];
 
-	// Event filtering for mouseMove
-	this.now = Date.now();
-	this.cnt = 0;
-	// accumultor for delta motion of the mouse
-	this.deltaX = 0;
-	this.deltaY = 0;
-	// Send frequency (frames per second)
-	this.sendFrequency = 35;
 	// Timeout for when scrolling ends
 	this.scrollTimeId = null;
 
@@ -332,8 +328,7 @@ function SAGE2_interaction(wsio) {
 				formdata.append("file" + i.toString(), files[i]);
 				formdata.append("dropX", dropX);
 				formdata.append("dropY", dropY);
-				formdata.append("open",  true);
-				formdata.append("openCompressed", showCompressed);
+				formdata.append("open",  showCompressed);
 				formdata.append("SAGE2_ptrName",  userSettings.SAGE2_ptrName);
 				formdata.append("SAGE2_ptrColor", userSettings.SAGE2_ptrColor);
 
@@ -497,6 +492,8 @@ function SAGE2_interaction(wsio) {
 		} else {
 			// enable SAGE2 Pointer
 			this.wsio.emit('startSagePointer', this.user);
+			// Update its position given the mouse position
+			displayUI.pointerMove(pointerX, pointerY);
 
 			document.addEventListener('mousedown',  this.pointerPress,     false);
 			document.addEventListener('mousemove',  this.pointerMove,      false);
@@ -640,6 +637,10 @@ function SAGE2_interaction(wsio) {
 		// mediaVideo.src = window.URL.createObjectURL(this.mediaStream);
 		mediaVideo.srcObject = this.mediaStream;
 		mediaVideo.play();
+
+		if (SAGE2_webrtc_ui_tracker.enabled) {
+			SAGE2_webrtc_ui_tracker.streamSuccess(stream);
+		}
 	};
 
 	/**
@@ -849,31 +850,14 @@ function SAGE2_interaction(wsio) {
 		var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
 		var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-		// Event filtering
-		var now  = Date.now();
-		// time difference since last event
-		var diff = now - this.now;
-		// count the events
-		this.cnt++;
-		if (diff >= (1000 / this.sendFrequency)) {
-			// Calculate the offset
-			// increase the speed for touch devices
-			var scale = (hasMouse ? this.sensitivity : 3 * this.sensitivity);
-			var px  = this.deltaX * scale;
-			var py  = this.deltaY * scale;
-			// Send the event
-			this.wsio.emit('pointerMove', {dx: Math.round(px), dy: Math.round(py)});
-			// Reset the accumulators
-			this.deltaX = 0;
-			this.deltaY = 0;
-			// Reset the time and count
-			this.now = now;
-			this.cnt = 0;
-		} else {
-			// if it's not time, just accumulate
-			this.deltaX += movementX;
-			this.deltaY += movementY;
-		}
+		// Calculate the offset
+		// increase the speed for touch devices
+		var scale = (hasMouse ? this.sensitivity : 3 * this.sensitivity);
+		var px  = movementX * scale;
+		var py  = movementY * scale;
+		// Send the event
+		this.wsio.emit('pointerMove', {dx: Math.round(px), dy: Math.round(py)});
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -888,6 +872,7 @@ function SAGE2_interaction(wsio) {
 	this.pointerReleaseMethod = function(event) {
 		var btn = (event.button === 0) ? "left" : (event.button === 1) ? "middle" : "right";
 		this.wsio.emit('pointerRelease', {button: btn});
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -901,6 +886,7 @@ function SAGE2_interaction(wsio) {
 	*/
 	this.pointerDblClickMethod = function(event) {
 		this.wsio.emit('pointerDblClick');
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -925,6 +911,7 @@ function SAGE2_interaction(wsio) {
 			_this.wsio.emit('pointerScrollEnd');
 			_this.scrollTimeId = null;
 		}, 500);
+
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
@@ -1074,6 +1061,18 @@ function SAGE2_interaction(wsio) {
 				]
 			}, $$("user_color"));
 		}
+	};
+
+	/**
+	* Handler to enable webrtc desktop sharing
+	*
+	* @method changeScreenShareWebRTCMethod
+	* @param value {Boolean} true/false for webrtc technique
+	*/
+	this.changeScreenShareWebRTCMethod = function(value) {
+		this.mediaUseRTC = value ? true : false;
+		console.log('WebRTC value changed', this.mediaUseRTC);
+		addCookie('SAGE2_useRTC', this.mediaUseRTC);
 	};
 
 	/**
@@ -1403,6 +1402,12 @@ function SAGE2_interaction(wsio) {
 									{id: 7, value: "Medium"},
 									{id: 9, value: "High"}
 								]
+							},
+							{
+								view: "checkbox",
+								label: "Use WebRTC",
+								id:   "use_webrtc",
+								value: this.mediaUseRTC
 							}
 						]
 					},
@@ -1423,6 +1428,11 @@ function SAGE2_interaction(wsio) {
 
 		// change screen resolution
 		if (type === 'main') {
+			let rtc = $$("use_webrtc");
+			rtc.attachEvent("onChange", () => {
+				this.changeScreenShareWebRTC(rtc.getValue());
+			});
+
 			let res = $$("screen_resolution");
 			res.attachEvent("onChange", () => {
 				this.changeScreenShareResolution(res.getValue() - 1, res.getText());
@@ -1454,7 +1464,6 @@ function SAGE2_interaction(wsio) {
 		}
 	});
 
-
 	/**
 	* Getter for user name
 	*
@@ -1476,7 +1485,6 @@ function SAGE2_interaction(wsio) {
 			return userSettings.SAGE2_userEmail;
 		}
 	});
-
 
 	/**
 	* Getter for pointer color
@@ -1500,7 +1508,6 @@ function SAGE2_interaction(wsio) {
 		}
 	});
 
-
 	this.streamSuccess               = this.streamSuccessMethod.bind(this);
 	this.streamFail                  = this.streamFailMethod.bind(this);
 	this.streamEnded                 = this.streamEndedMethod.bind(this);
@@ -1521,10 +1528,8 @@ function SAGE2_interaction(wsio) {
 	this.changeSage2PointerColor     = this.changeSage2PointerColorMethod.bind(this);
 	this.changeScreenShareResolution = this.changeScreenShareResolutionMethod.bind(this);
 	this.changeScreenShareQuality    = this.changeScreenShareQualityMethod.bind(this);
+	this.changeScreenShareWebRTC     = this.changeScreenShareWebRTCMethod.bind(this);
 	this.step                        = this.stepMethod.bind(this);
-
-
-	/** init **/
 
 	// Check if a domain cookie exists for the name
 	var cookieName = getCookie('SAGE2_ptrName');

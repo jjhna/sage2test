@@ -681,7 +681,7 @@ AppLoader.prototype.loadZipAppFromFile = function(file, mime_type, aUrl, externa
 	});
 };
 
-AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, openCompressed, callback) {
+AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, callback) {
 	var _this = this;
 	var zipFolder = path.join(path.dirname(file), name);
 
@@ -701,6 +701,7 @@ AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, openCompres
 				// Clean up further the file names
 				cleanFilename = cleanFilename.replace(/[$%^&()'`\\/]/g, '_');
 				var cleanFilePath = path.join(zipFolder, cleanFilename);
+				var mime_type = registry.getMimeType(cleanFilename);
 				// Move the file to the right folder
 				mv(filePath, cleanFilePath, function(err1) {
 					if (err1) {
@@ -712,13 +713,16 @@ AppLoader.prototype.addUnzippedFolderToAssets = function(file, name, openCompres
 							sageutils.log("Loader", "internal error", err2);
 						} else {
 							assets.addFile(data.SourceFile, data, function() {
-								if (openCompressed === true) {
-									// Open the file onto the wall
-									_this.loadFileFromLocalStorage({filename: cleanFilePath}, callback);
-								} else {
-									// Fake the callback
-									callback({file: cleanFilePath});
-								}
+								// get a valid URL for it
+								var aUrl = assets.getURL(data.SourceFile);
+								// calculate a complete URL with hostname
+								var external_url = url.resolve(_this.hostOrigin, aUrl);
+								// and load the application
+								_this.loadApplication({
+									location: "file", path: cleanFilePath, url: aUrl, external_url: external_url,
+									type: mime_type, name: cleanFilename, compressed: false}, function(appInstance, handle) {
+									callback(appInstance, handle);
+								});
 							});
 							assets.saveAssets();
 						}
@@ -1101,7 +1105,7 @@ AppLoader.prototype.loadFileFromLocalStorage = function(file, callback) {
 	});
 };
 
-AppLoader.prototype.manageAndLoadUploadedFile = function(file, openCompressed, callback) {
+AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 	// sanitize filename by remove odd charaters
 	var cleanFilename = sanitize(file.name, {replacement: "_"});
 	// Clean up further the file names
@@ -1137,7 +1141,7 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, openCompressed, c
 					// done with the tmp file
 					fs.unlinkSync(file.path);
 					// call same funtion again with the new PNG file
-					return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, false, callback);
+					return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, callback);
 				});
 				// done for now
 				return;
@@ -1173,7 +1177,7 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, openCompressed, c
 				} else {
 					// Compressed ZIP data file, extract to SAGE2_Media/data/
 					var name = path.basename(cleanFilename, path.extname(cleanFilename));
-					_this.addUnzippedFolderToAssets(localPath, name, openCompressed, callback);
+					_this.addUnzippedFolderToAssets(localPath, name, callback);
 				}
 			} else {
 				// try to process all the files with exiftool
@@ -1203,7 +1207,7 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, openCompressed, c
 	if (mime_type === "application/zip") {
 		var unzipper = new Unzip(file.path);
 		unzipper.on('list', function (files) {
-			var instructionsFile = files.find(x => x === "instructions.json");
+			var instructionsFile = files.find(x => x.endsWith("instructions.json"));
 			if (instructionsFile !== undefined && instructionsFile !== null) {
 				processUploadedFile(dir);
 			} else {

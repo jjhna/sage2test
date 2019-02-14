@@ -108,7 +108,8 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-prompt');
 
 	// this would be run by typing "grunt test" on the command line
-	grunt.registerTask('all', ['eslint', 'yuidoc', 'mochacli']);
+	// grunt.registerTask('all', ['eslint', 'yuidoc', 'mochacli']);
+	grunt.registerTask('all', ['eslint', 'yuidoc']);
 
 	// the default task can be run just by typing "grunt" on the command line
 	grunt.registerTask('default', ['eslint']);
