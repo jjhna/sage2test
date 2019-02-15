@@ -185,6 +185,7 @@
 	],
     ciLogon:{
     	client_id: "cilogon:/client_id/163078c924567c0dd30fd1465633c3b9",
-    	client_secret: "-ULQK2BYVoJRdsI0TqH-C_EbKjxYBOkhzGrYbmCrt2mWumy36YEiCjWegZoiIrglKg3CB7hR6jlZ_d0KFlEgsQ"
+    	client_secret: "-ULQK2BYVoJRdsI0TqH-C_EbKjxYBOkhzGrYbmCrt2mWumy36YEiCjWegZoiIrglKg3CB7hR6jlZ_d0KFlEgsQ",
+    	sessionSecret: "fx8392nd38al7hrenos0HYSQAjd89Nns7"
     }
 }

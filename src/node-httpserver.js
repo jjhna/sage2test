@@ -66,18 +66,16 @@ class HttpServer {
 
 		this.app = app = express();
 		this.router = router = express.Router();
-		var dataFolder = './data';
+		var dataFolder = 'sessiondata';
 		if (!sageutils.folderExists(dataFolder)) {
 			sageutils.mkdirParent(dataFolder);
 		}
 
 		var sessionDB = new SessionJSONStore();
+		sessionDB.initialize(path.join(dataFolder, 'sessionDB.json'));
 
-		sessionDB.initialize('data/sessionDB.json');
 		this.userDB = userDB = new UserJSONStore();
-		this.userDB.initialize('data/userDB.json');
-		// set default headers
-		//app.use(helmet(secureHeaders()));
+		this.userDB.initialize(path.join(dataFolder, 'userDB.json'));
 
 		// Generate the service worker for caching
 		generateSW();
@@ -101,25 +99,26 @@ class HttpServer {
 			},
 			store: sessionDB,
 			name: 'SAGE2.sid',
-			secret: 'asldfkjasd;fkja;sldkf;alsdfk',
+			secret: cfg.ciLogon.sessionSecret,
 			resave: false,
 			saveUninitialized: false
 		}));
 
 		var cfg = global.config;
 		var redirect_uri = 'https://' + cfg.host + '/authcb';
-		Issuer.discover('https://cilogon.org/.well-known/openid-configuration') // => Promise
+		Issuer.discover('https://cilogon.org/.well-known/openid-configuration')
 			.then(function (ciLogon) {
 				var client = new ciLogon.Client({
 					client_id: cfg.ciLogon.client_id,
 					client_secret: cfg.ciLogon.client_secret
-				}); // => Client
+				});
 				client.CLOCK_TOLERANCE = 5 * 60; // 5 Minutes
 				var params = {
 					client_id: cfg.ciLogon.client_id,
 					redirect_uri: redirect_uri,
 					scope: 'openid profile'
 				};
+				// Tell passport hows users will login
 				passport.use('oidc', new Strategy({client: client, params: params}, (tokenset, userinfo, done) => {
 					userDB.get(tokenset.claims.sub, function (err, user) {
 						if (err) {
@@ -152,14 +151,37 @@ class HttpServer {
 
 				// handle requests
 				this.setUpRoutes();
-				this.setUpRestCalls();
+				// For all paths, use this router
 				app.use('/', router);
 			}.bind(this));
 	}
-	// WIP: "REST" calls?
-	setUpRestCalls() {
+	
+	setUpRoutes() {
+		// redirect http to https
+		router.use(enforceHttps);
+
+		// authentication starting point
+		router.get('/login', passport.authenticate('oidc'))
+ 
+		// authentication callback
+		router.get('/authcb', passport.authenticate('oidc'), ensureAuthenticated, setUserCookies, connect);
+
+		// Serve static files
+		router.use(ensureAuthenticated, secureStatic, express.static(publicDirectory));
+
+		// Serve static file from media folders
+		for (let f in global.mediaFolders) {
+			let folder = global.mediaFolders[f];
+			router.get(folder.url, ensureAuthenticated, secureStatic, express.static(folder.path));
+		}
+
+		// serve index at root path
+		router.get('/', ensureAuthenticated, (req, res) => {
+			return res.redirect('/index.html');
+		});
+
 		// send config object to client
-		router.get('/config',  (req, res) => {
+		router.get('/config', ensureAuthenticated, (req, res) => {
 			// Set type
 			let header = {};
 			header["Content-Type"] = "application/json";
@@ -176,34 +198,6 @@ class HttpServer {
 			res.write(JSON.stringify(global.config, null, 2));
 			res.end();
 		});
-	}
-
-	setUpRoutes() {
-		router.use(enforceHttps);
-		// static assets directories
-		router.get('/login', passport.authenticate('oidc'))
-		
- 
-		// authentication callback
-		router.get('/authcb', passport.authenticate('oidc'), ensureAuthenticated, connect);
-
-		//router.get('/connect', connect);
-		router.use(ensureAuthenticated, secureStatic, express.static(publicDirectory));
-
-		for (let f in global.mediaFolders) {
-			let folder = global.mediaFolders[f];
-			router.get(folder.url, ensureAuthenticated, secureStatic, express.static(folder.path));
-		}
-
-		
-		// serve index at root path
-		router.get('/', ensureAuthenticated, setUserCookies, (req, res) => {
-			return res.redirect('/index.html');
-		});
-		
-		
-		
-		
 		// handle other paths
 		router.get('*', ensureAuthenticated, handleGet);
 		router.put('*', handlePut);	// not sure if this does anything
@@ -307,6 +301,14 @@ class HttpServer {
 	}
 }
 
+/**
+ * Express middleware to reroute all http requests to https
+ *
+ * @method enforceHttps
+ * @param req {Object} the request object
+ * @param res {Object} the response object
+ * @param next {Object} the middleware chaining object
+ */
 function enforceHttps(req, res, next) {
 	if(!req.secure) {
 		return res.redirect("https://" + req.headers.host + req.url);
@@ -314,20 +316,48 @@ function enforceHttps(req, res, next) {
 	return next();
 }
 
+/**
+ * Express middleware to handle redirection to page the user requested before login in
+ *
+ * @method connect
+ * @param req {Object} the request object
+ * @param res {Object} the response object
+ * @param next {Object} the middleware chaining object
+ */
+
 function connect(req, res, next) {
 	var returnTo = req.session.returnTo;
 	delete req.session.returnTo
 	return res.redirect(returnTo || '/');
 }
 
-
+/**
+ * Express middleware for making sure that the user is logged in
+ *
+ * @method ensureAuthenticated
+ * @param req {Object} the request object
+ * @param res {Object} the response object
+ * @param next {Object} the middleware chaining object
+ */
 function ensureAuthenticated(req, res, next) {
+	// Pass through is the request has been authenticated
 	if (req.isAuthenticated()) {
 		return next();
 	}
+	// Otherwise save the url for redirection after authenticaion and redirect to login page
 	req.session.returnTo = req.originalUrl;
 	return res.redirect('/login');
 }
+
+
+/**
+ * Express middleware for protecting static pages
+ *
+ * @method secureStatic
+ * @param req {Object} the request object
+ * @param res {Object} the response object
+ * @param next {Object} the middleware chaining object
+ */
 
 
 function secureStatic(req, res, next) {
@@ -365,26 +395,34 @@ function secureStatic(req, res, next) {
 			delete header['X-Frame-Options'];
 		}
 
-		return next();
+		next();
 	}
 	handleHeaders();
 }
 
+/**
+ * Express middleware for setting pointer name and pointer color 
+ *
+ * @method setUserCookies
+ * @param req {Object} the request object
+ * @param res {Object} the response object
+ * @param next {Object} the middleware chaining object
+ */
+
 function setUserCookies(req, res, next) {
-	sageutils.log("Setting cookies!");
-	sageutils.log(req.user);
 	userDB.get(req.user.id, function (err, user) {
 		if (err) {
 			return res.redirect('/login');
 		}
-		if (user.userinfo.given_name) {
-			res.cookie('SAGE2_ptrName', user.userinfo.given_name);
+		var ptrName = user.userinfo.given_name || req.user.SAGE2_ptrName;
+		if (ptrName) {
+			res.cookie('SAGE2_ptrName', ptrName);
 		}
 		if (req.user.SAGE2_ptrColor) {
 			res.cookie('SAGE2_ptrColor', req.user.SAGE2_ptrColor);
 		}
+		next();
 	});
-	return next();
 }
 
 
