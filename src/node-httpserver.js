@@ -82,7 +82,7 @@ class HttpServer {
 			extended: true
 		}));
 		app.use(bodyParser.json());
-
+		var cfg = global.config;
 
 		// add & configure middleware
 		app.use(session({
@@ -101,7 +101,7 @@ class HttpServer {
 			saveUninitialized: false
 		}));
 
-		var cfg = global.config;
+		
 		var redirect_uri = 'https://' + cfg.host + '/authcb';
 		Issuer.discover('https://cilogon.org/.well-known/openid-configuration')
 			.then(function (ciLogon) {
