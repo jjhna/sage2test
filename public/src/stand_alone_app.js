@@ -503,7 +503,7 @@ function StandAloneApp(id, wsio) {
 			}
 		}
 	};
-	
+
 	this.pointerDblClick = function(event) {
 		this.wsio.emit('pointerDblClick');
 	};
@@ -707,8 +707,8 @@ function StandAloneApp(id, wsio) {
 		if (charCode !== 32) {
 			this.pointerMove(this.pointerX, this.pointerY);
 			this.wsio.emit('keyPress', {code: charCode, character: String.fromCharCode(charCode)});
-			event.preventDefault();	
-		} 
+			event.preventDefault();
+		}
 		return true;
 	};
 

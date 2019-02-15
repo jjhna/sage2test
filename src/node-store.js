@@ -45,11 +45,10 @@ class SessionJSONStore extends Store {
 					cb("Could not save database " + error);
 				}
 			});
-			cb(null);	
-		} catch(error) {
+			cb(null);
+		} catch (error) {
 			cb("Could not save database " + error);
 		}
-		
 	}
 	all(cb) {
 		cb("", Object.values(this.db));
@@ -69,7 +68,7 @@ class SessionJSONStore extends Store {
 	length(cb) {
 		try {
 			var count = Object.keys(this.db).length;
-			cb("", count);	
+			cb("", count);
 		} catch (error) {
 			cb(error);
 		}
@@ -81,10 +80,9 @@ class SessionJSONStore extends Store {
 			} else {
 				cb(null, null);
 			}
-		} catch(error) {
+		} catch (error) {
 			cb(error, undefined);
 		}
-		
 	}
 	set(sid, session, cb) {
 		this.db[sid] = cloneObject(session);
@@ -113,20 +111,18 @@ class UserJSONStore {
 			this.db = {};
 			fs.writeFileSync(this.filePath, json5.stringify(this.db));
 		}
-		
 	}
 	save(cb) {
 		try {
 			fs.writeFile(this.filePath, json5.stringify(this.db), function(error) {
-				if(error) {
+				if (error) {
 					console.log(error);
 				}
 			});
-			cb(null);	
-		} catch(error) {
+			cb(null);
+		} catch (error) {
 			cb("Could not save user database " + error);
 		}
-		
 	}
 	all(cb) {
 		cb("", Object.values(this.db));
@@ -146,7 +142,7 @@ class UserJSONStore {
 	length(cb) {
 		try {
 			var count = Object.keys(this.db).length;
-			cb("", count);	
+			cb("", count);
 		} catch (error) {
 			cb(error);
 		}
@@ -166,14 +162,15 @@ class UserJSONStore {
 }
 
 function cloneObject(obj) {
-    var clone = {};
-    for(var i in obj) {
-        if(obj[i] != null &&  typeof(obj[i])=="object")
-            clone[i] = cloneObject(obj[i]);
-        else
-            clone[i] = obj[i];
-    }
-    return clone;
+	var clone = {};
+	for (var i in obj) {
+		if (obj[i] !== null &&  typeof(obj[i]) === "object") {
+			clone[i] = cloneObject(obj[i]);
+		} else {
+			clone[i] = obj[i];
+		}
+	}
+	return clone;
 }
 
 module.exports.SessionJSONStore = SessionJSONStore;

@@ -30,9 +30,6 @@ var zlib = require('zlib');  // to enable HTTP compression
 //   to see request: env DEBUG=sage2http node server.js ....
 var debug = require('debug')('sage2http');
 
-// External package to clean up URL requests
-var normalizeURL = require('normalizeurl');
-
 // SAGE2 own modules
 var sageutils  = require('../src/node-utils');    // provides utility functions
 var generateSW = require('../generate-service-worker.js');
@@ -61,7 +58,7 @@ var publicDirectory;
 
 class HttpServer {
 	constructor(publicDir) {
-		
+
 		publicDirectory = publicDir;
 
 		this.app = app = express();
@@ -86,7 +83,7 @@ class HttpServer {
 		}));
 		app.use(bodyParser.json());
 
-	
+
 		// add & configure middleware
 		app.use(session({
 			genid: (req) => {
@@ -155,14 +152,14 @@ class HttpServer {
 				app.use('/', router);
 			}.bind(this));
 	}
-	
+
 	setUpRoutes() {
 		// redirect http to https
 		router.use(enforceHttps);
 
 		// authentication starting point
-		router.get('/login', passport.authenticate('oidc'))
- 
+		router.get('/login', passport.authenticate('oidc'));
+
 		// authentication callback
 		router.get('/authcb', passport.authenticate('oidc'), ensureAuthenticated, setUserCookies, connect);
 
@@ -310,7 +307,7 @@ class HttpServer {
  * @param next {Object} the middleware chaining object
  */
 function enforceHttps(req, res, next) {
-	if(!req.secure) {
+	if (!req.secure) {
 		return res.redirect("https://" + req.headers.host + req.url);
 	}
 	return next();
@@ -327,7 +324,7 @@ function enforceHttps(req, res, next) {
 
 function connect(req, res, next) {
 	var returnTo = req.session.returnTo;
-	delete req.session.returnTo
+	delete req.session.returnTo;
 	return res.redirect(returnTo || '/');
 }
 
@@ -401,7 +398,7 @@ function secureStatic(req, res, next) {
 }
 
 /**
- * Express middleware for setting pointer name and pointer color 
+ * Express middleware for setting pointer name and pointer color
  *
  * @method setUserCookies
  * @param req {Object} the request object
