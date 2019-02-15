@@ -100,6 +100,7 @@ var articulate_ui_chat = SAGE2_App.extend( {
 
 		this.chatbox = this.mainDiv.append('div')
 					.attr('class', 'chatbox')
+					.attr('id', 'box')
 					.style('width', "90%")
 					.style('min-width', '390px')
 					.style('height', "90%")
@@ -114,6 +115,7 @@ var articulate_ui_chat = SAGE2_App.extend( {
 
 		this.chatlogs = this.chatbox.append('div')
 				.attr('class', 'chatlogs')
+				.attr('id', 'logs')
 				// .style('padding', '10px')
 				.style("flex-direction", "column-reverse")
 				.style('width', '100%')
@@ -218,12 +220,24 @@ var articulate_ui_chat = SAGE2_App.extend( {
 	},
 
 	updateScroll: function(){
+		logs = document.getElementById("logs");
+		console.log(logs.scrollTop);
+		console.log(logs.scrollHeight);
+		logs.scrollTop = logs.scrollHeight;
+				console.log(logs.scrollTop);
+		console.log(logs.scrollHeight);
+//
+		// console.log(this.chatbox);
+		//console.log(this.chatbox["_groups"][0][0].scrollTop);
+
+		// console.log(this.chatlogs);
 		// console.log("test");
-		// console.log(this.chatlogs.scrollTop);
-		// console.log(this.chatlogs.scrollHeight);
-		//this.chatlogs.scrollTop = this.chatlogs.scrollHeight;
-		// console.log(this.chatlogs.scrollTop);
-		// console.log(this.chatlogs.scrollHeight);
+		// console.log("scrollTop: " +  this.chatbox["_groups"][0][0].scrollTop);
+		// console.log("scrollHeight: " + this.chatbox["_groups"][0][0].scrollHeight);
+		//  this.chatbox["_groups"][0][0].scrollTop = 999999999999; //this.chatbox["_groups"][0][0].scrollHeight;
+		// console.log("scrollTop: " +  this.chatbox["_groups"][0][0].scrollTop);
+		// console.log("scrollHeight: " + this.chatbox["_groups"][0][0].scrollHeight);
+				console.log("----------")
 		//this.chatlogs.scrollTop = 999999999999;
 	},
 
