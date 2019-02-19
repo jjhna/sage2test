@@ -1819,7 +1819,6 @@ The z-index is very important.
 #snippetsOverlayWrapper {
     position: absolute;
     overflow: hidden;
-    pointer-events: none;
     width: 100%;
     height: 100%;
 
@@ -1850,9 +1849,19 @@ The z-index is very important.
     stroke-width: 2px;
 }
 
+#snippetsOverlay .snippetAppTitle {
+    fill: white;
+    font-weight: bold;
+}
+
 #snippetsOverlay .snippetAppHighlighted .snippetAppTitlebar {
     fill: #aaa;
     stroke: black;
+}
+
+#snippetsOverlay .snippetDragStartTarget .snippetAppOverlay {
+    stroke: #444;
+    stroke-width: 8px;
 }
 
 #snippetsOverlay .snippetLinkOverlay {
@@ -1865,6 +1874,26 @@ The z-index is very important.
 #snippetsOverlay .snippetAppCreationType {
     stroke-width: 2px;
 }
+
+#snippetsOverlay .snippetsDragInteractionLine {
+    stroke-linecap: round;
+    stroke-width: 5px;
+
+    stroke-linejoin: round;
+
+    opacity: 0.75;
+
+    pointer-events: none;
+}
+
+
+#snippetsOverlay .snippetsDragInteractionTarget {
+    opacity: 0.5;
+
+    pointer-events: none;
+    stroke-width: 5px;
+}
+
 
 /* ============================ */
 /* ====== Editor Styling ====== */

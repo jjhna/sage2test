@@ -33,7 +33,16 @@ let SAGE2_SnippetOverlayManager = (function() {
 			appMapping: null,
 
 			snippetLinks: {},
-			snippetApps: {}
+			snippetApps: {},
+
+			dragAction: null,
+
+			dragStartApp: null,
+			dragStart: null,
+			dragEnd: null,
+
+			dragMarker: null,
+			dragTargetMarker: null
 		};
 
 		init();
@@ -48,11 +57,83 @@ let SAGE2_SnippetOverlayManager = (function() {
 					config.totalWidth,
 					config.totalHeight
 				].join(", ")
-			);
+			)
+				.on("mousemove", function() {
+					if (self.dragAction) {
+						let current = {
+							x: d3.event.layerX * self.widthRatio,
+							y: d3.event.layerY * self.heightRatio
+						};
+
+						if (Math.abs(current.x - self.dragStart.x) > 100 || Math.abs(current.y - self.dragStart.y) > 100) {
+							self.dragMarker.style("opacity", null);
+							self.dragTargetMarker.style("opacity", null);
+						}
+
+						self.dragMarker
+							.attr("d", calculateTaperedPath(self.dragStartApp, current));
+
+						self.dragTargetMarker
+							.attr("x", current.x - self.newAppDim / 2)
+							.attr("y", current.y - self.newAppDim / 2)
+							.attr("width", self.newAppDim)
+							.attr("height", self.newAppDim);
+					}
+				})
+				.on("mouseup", function() {
+					d3.selectAll(".snippetDragStartTarget").classed("snippetDragStartTarget", false);
+
+					if (self.dragAction) {
+						// if the mouseup was not bubbled up from an app target
+						if (!self.dragEnd) {
+							self.dragEnd = {
+								x: d3.event.layerX,
+								y: d3.event.layerY,
+								appID: null
+							};
+						}
+
+						self.dragAction.source = self.dragStart.appID;
+						self.dragAction.target = self.dragEnd.appID;
+						self.dragAction.targetCenter = {
+							x: self.dragEnd.x * self.widthRatio,
+							y: self.dragEnd.y * self.heightRatio
+						};
+
+						// "dispatch" action
+						console.log(self.dragAction);
+
+						wsio.emit("editorSnippetActionPerformed", self.dragAction);
+
+						self.dragAction = null;
+
+						self.dragMarker.remove();
+						self.dragMarker = null;
+
+						self.dragTargetMarker.remove();
+						self.dragTargetMarker = null;
+
+						self.dragStart = null;
+						self.dragStartApp = null;
+						self.dragEnd = null;
+					}
+				});
+
+			self.width = +self.overlay.attr("width");
+			self.height = +self.overlay.attr("height");
+
+			self.widthRatio = config.totalWidth / self.width;
+			self.heightRatio = config.totalHeight / self.height;
 
 			setOverlayVisibility(true);
+			setInteractMode(true);
 
 			self.titleBarOffset = config.ui.titleBarHeight;
+
+
+			self.newAppDim = Math.min(config.totalWidth, config.totalHeight * 2) / 4;
+
+			// self.appGroup = self.overlay.append("g");
 
 			self.linkGroup = self.overlay.append("g")
 				.attr("transform", `translate(0, ${config.ui.titleBarHeight})`);
@@ -66,6 +147,10 @@ let SAGE2_SnippetOverlayManager = (function() {
 			self.overlay.style("display", isVisible ? "initial" : "none");
 		}
 
+		function setInteractMode(isInteracting) {
+			d3.select("#sage2UICanvas")
+				.style("pointer-events", isInteracting ? "none" : "all");
+		}
 
 		// save new set of snippet associations, redraw all
 		function updateAssociations(data) {
@@ -158,12 +243,12 @@ let SAGE2_SnippetOverlayManager = (function() {
 								self.snippetStates[parentLink.snippetID].type
 							];
 						});
+
+					d3.select(this).select(".snippetAppTitle").text(self.snippetStates[parentLink.snippetID].desc);
 				});
 		}
 
 		function draw() {
-			console.log("draw snippets overlay");
-
 			self.appGroup.selectAll("*").remove();
 			self.linkGroup.selectAll("*").remove();
 
@@ -183,10 +268,94 @@ let SAGE2_SnippetOverlayManager = (function() {
 
 					let g = d3.select(this);
 
-					g
-						.attr("id", "overlay_" + appData.appID)
+					g.attr("id", "overlay_" + appData.appID)
 						.attr("class", "snippetAppGroup")
-						.attr("transform", `translate(${left}, ${top})`);
+						.attr("transform", `translate(${left}, ${top})`)
+						.on("mousedown", function(d) {
+							let { left, top, width, height } = displayUI.applications[appID];
+
+							let current = {
+								x: d3.event.layerX * self.widthRatio,
+								y: d3.event.layerY * self.heightRatio
+							};
+
+							self.dragStart = {
+								x: current.x,
+								y: current.y,
+								appID: d
+							};
+
+							self.dragStartApp = {
+								x: left + width / 2,
+								y: top + height / 2 + self.titleBarOffset
+							};
+
+							d3.select(this).classed("snippetDragStartTarget", true);
+
+							let action = "execute";
+							let snippetID = "codeSnippet-1";
+							let actionType = self.snippetStates[snippetID].type;
+
+							self.dragAction = {
+								action: action,
+								snippetID,
+								type: actionType
+							};
+
+							self.dragTargetMarker = self.overlay
+								.append("rect")
+								.attr("class", "snippetsDragInteractionTarget")
+								.attr("width", self.newAppDim)
+								.attr("height", self.newAppDim)
+								.attr("x", current.x - self.newAppDim / 2)
+								.attr("y", current.y - self.newAppDim / 2)
+								.style("stroke", darkColor[actionType])
+								.style("fill", lightColor[actionType])
+								.style("opacity", 0);
+
+							self.dragMarker = self.overlay.append("path")
+								.attr("class", "snippetsDragInteractionLine")
+								.attr("d", calculateTaperedPath(self.dragStartApp, current))
+								.style("stroke", darkColor[actionType])
+								.style("fill", lightColor[actionType])
+								.style("opacity", 0);
+						})
+						.on("mousemove", function(d) {
+							let {
+								left: x,
+								top: y,
+								width: w,
+								height: h
+							} = displayUI.applications[appID];
+
+							// if it is dragging
+							if (self.dragMarker && self.dragStart.appID !== d) {
+								self.dragTargetMarker
+									.attr("x", x)
+									.attr("y", y)
+									.attr("width", w)
+									.attr("height", h + self.titleBarOffset);
+
+								self.dragMarker.attr("d", calculateTaperedPath(self.dragStartApp, {
+									x: x + w / 2, y: y + h / 2 + self.titleBarOffset
+								}));
+
+								d3.event.stopPropagation();
+							}
+						})
+						.on("mouseup", function(d) {
+							console.log("mouseUp on app");
+
+							self.dragEnd = {
+								appID: d !== self.dragStart.appID && d || null,
+								x: d3.event.layerX,
+								y: d3.event.layerY
+							};
+
+							d3.selectAll(".snippetDragStartTarget").classed("snippetDragStartTarget", false);
+
+							// d3.event.stopPropagation();
+						});
 
 					g.append("rect")
 						.attr("class", "snippetAppOverlay")
@@ -203,6 +372,13 @@ let SAGE2_SnippetOverlayManager = (function() {
 						.attr("class", "snippetAppTitlebar")
 						.attr("width", width)
 						.attr("height", self.titleBarOffset);
+
+					let title = g.append("text")
+						.attr("class", "snippetAppTitle")
+						.attr("x", 3)
+						.attr("y", self.titleBarOffset - 6)
+						.style("font-size", self.titleBarOffset - 4)
+						.text("Testing a Sentence");
 
 					if (self.snippetStates) {
 						let parentLinkID = Object.keys(self.snippetLinks).filter(
@@ -221,6 +397,8 @@ let SAGE2_SnippetOverlayManager = (function() {
 									self.snippetStates[parentLink.snippetID].type
 								];
 							});
+
+						title.text(self.snippetStates[parentLink.snippetID].desc);
 					}
 				});
 
@@ -232,10 +410,34 @@ let SAGE2_SnippetOverlayManager = (function() {
 				.each(function(linkID) {
 					let link = self.snippetLinks[linkID];
 
+					let {
+						left: left1,
+						top: top1,
+						width: width1,
+						height: height1
+					} = displayUI.applications[link.parent.appID];
+
+					let {
+						left: left2,
+						top: top2,
+						width: width2,
+						height: height2
+					} = displayUI.applications[link.child.appID];
+
+					let start = {
+						x: left1 + width1 / 2,
+						y: top1 + height1 / 2
+					};
+
+					let end = {
+						x: left2 + width2 / 2,
+						y: top2 + height2 / 2
+					};
+
 					d3.select(this)
 						.attr("id", "overlay_" + linkID)
 						.attr("class", "snippetLinkOverlay")
-						.attr("d", calculateLinkPath(link));
+						.attr("d", calculateTaperedPath(start, end));
 
 					if (self.snippetStates) {
 						d3.select(this)
@@ -326,13 +528,69 @@ let SAGE2_SnippetOverlayManager = (function() {
 			for (let linkID of linksToUpdate) {
 				let link = self.snippetLinks[linkID];
 
+				let {
+					left: left1,
+					top: top1,
+					width: width1,
+					height: height1
+				} = displayUI.applications[link.parent.appID];
+
+				let {
+					left: left2,
+					top: top2,
+					width: width2,
+					height: height2
+				} = displayUI.applications[link.child.appID];
+
+				let start = {
+					x: left1 + width1 / 2,
+					y: top1 + height1 / 2
+				};
+
+				let end = {
+					x: left2 + width2 / 2,
+					y: top2 + height2 / 2
+				};
+
 				self.linkGroup.select("#overlay_" + linkID)
 					.attr("class", "snippetLinkOverlay")
-					.attr("d", calculateLinkPath(link));
-
+					.attr("d", calculateTaperedPath(start, end));
 			}
 		}
 
+		function calculateTaperedPath(start, end) {
+			let dx = end.x - start.x;
+			let dy = end.y - start.y;
+
+			let slope = dy / dx;
+			// let angle = Math.atan2(dy, dx);
+
+			if (slope === Infinity) {
+				slope = Math.pow(10, 10);
+			}
+
+			let inverse = 1 / -slope;
+
+			let width = self.titleBarOffset;
+
+			let idx = Math.sqrt(
+				Math.pow(width / 2, 2) / (1 + Math.pow(inverse, 2))
+			);
+			let idy = inverse * idx;
+
+			let pathCoords = [
+				[start.x - idx * 2, start.y - idy * 2],
+				[start.x + idx * 2, start.y + idy * 2],
+				[end.x + idx / 4, end.y + idy / 4],
+				[end.x - idx / 4, end.y - idy / 4]
+			];
+
+			// let pathCoordsStr = pathCoords.map(c => c.join(", "));
+
+			return `M ${pathCoords.map(c => c.join(", ")).join("L ")} Z`;
+		}
+
+		/*
 		function calculateLinkPath(link) {
 			let {
 				left: left1,
@@ -348,26 +606,43 @@ let SAGE2_SnippetOverlayManager = (function() {
 				height: height2
 			} = displayUI.applications[link.child.appID];
 
-			let slope = (top2 - top1) / (left2 - left1);
+			let dx = left2 - left1;
+			let dy = top2 - top1;
+
+			let slope = dy / dx;
+			// let angle = Math.atan2(dy, dx);
+
 			let inverse = 1 / -slope;
 
 			let width = self.titleBarOffset;
 
-			let dx = Math.sqrt(Math.pow(width / 2, 2) / (1 + Math.pow(inverse, 2)));
-			let dy = inverse * dx;
+			let idx = Math.sqrt(Math.pow(width / 2, 2) / (1 + Math.pow(inverse, 2)));
+			let idy = inverse * idx;
 
 			let pathCoords = [
-				[left1 - dx * 1.5 + width1 / 2, top1 - dy * 1.5 + height1 / 2],
-				[left1 + dx * 1.5 + width1 / 2, top1 + dy * 1.5 + height1 / 2],
-				[left2 + dx / 2 + width2 / 2, top2 + dy / 2 + height2 / 2],
-				[left2 - dx / 2 + width2 / 2, top2 - dy / 2 + height2 / 2]
+				[left1 - idx * 1.5 + width1 / 2, top1 - idy * 1.5 + height1 / 2],
+				[left1 + idx * 1.5 + width1 / 2, top1 + idy * 1.5 + height1 / 2],
+				[left2 + idx / 4 + width2 / 2, top2 + idy / 4 + height2 / 2],
+				[left2 - idx / 4 + width2 / 2, top2 - idy / 4 + height2 / 2]
 			];
 
+			// working on curved corners
+			// let pathCoordsStr = pathCoords.map(c => c.join(", "));
+
+			// return `M ${pathCoordsStr[0]} A ${width/2 * 1.5}, ${width/2 * 1.5}, 0, 0, ${(Math.sign(angle) + 1) / 2}, ${pathCoordsStr[1]} L ${pathCoordsStr[2]} A ${width/2}, ${width/2}, 0, 0, 0, ${pathCoordsStr[3]} Z`
+
 			return `M ${pathCoords.map(c => c.join(", ")).join("L ")} Z`;
+		}
+		*/
+
+		function onResize() {
+			// update the width/height and relative width/height of the svg
+
 		}
 
 		return {
 			setOverlayVisibility,
+			setInteractMode,
 
 			updateAssociations,
 			updateSnippetStates,
@@ -375,7 +650,9 @@ let SAGE2_SnippetOverlayManager = (function() {
 			updateHighlightedApp,
 
 			updateItemOrder,
-			itemUpdated
+			itemUpdated,
+
+			onResize
 		};
 	};
 }());

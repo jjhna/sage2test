@@ -53,6 +53,7 @@ let SAGE2_SnippetEditor = (function () {
 			editor: null,
 
 			overlayCheckbox: null,
+			interactCheckbox: null,
 
 			changed: false,
 			closeButton: null,
@@ -125,6 +126,11 @@ let SAGE2_SnippetEditor = (function () {
 			self.overlayCheckbox = self.div.querySelector("#snippetsOverlayCheckbox");
 			self.overlayCheckbox.onclick = function(e) {
 				snippetOverlayManager.setOverlayVisibility(e.target.checked);
+			};
+
+			self.interactCheckbox = self.div.querySelector("#snippetsInteractingCheckbox");
+			self.interactCheckbox.onclick = function(e) {
+				snippetOverlayManager.setInteractMode(e.target.checked);
 			};
 
 			// bind hide and close button

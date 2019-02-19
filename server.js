@@ -1337,6 +1337,7 @@ function setupListeners(wsio) {
 	wsio.on('editorSaveSnippet', wsEditorSaveSnippet);
 	wsio.on('editorCloneSnippet', wsEditorCloneSnippet);
 	wsio.on("editorRequestSnippetsExport", wsEditorRequestSnippetsExport);
+	wsio.on("editorSnippetActionPerformed", wsEditorSnippetActionPerformed);
 	// - Display to WebUI
 	wsio.on("snippetsStateUpdated", wsSnippetsStateUpdated);
 	wsio.on("snippetsSendLog", wsSnippetsSendLog);
@@ -11562,6 +11563,17 @@ function wsEditorCloneSnippet(wsio, data) {
 function wsEditorRequestSnippetsExport(wsio) {
 
 	broadcast("snippetsExportRequest", {from: wsio.id});
+}
+
+/**
+ * Pass-through function to execute an action on the display from the WebUI
+ *
+ * @method wsEditorSnippetActionPerformed
+ * @param {Object} wsio - ws to originator.
+ */
+function wsEditorSnippetActionPerformed(wsio, data) {
+
+	broadcast("snippetsActionPerformed", data);
 }
 
 /* ===== Code Snippets Messages from Display ===== */

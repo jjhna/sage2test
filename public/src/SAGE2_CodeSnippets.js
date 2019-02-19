@@ -373,7 +373,7 @@ let SAGE2_CodeSnippets = (function() {
 	 * @method createDataApplication
 	 * @param {String} snippetsID - the id of the data object for reference
 	 */
-	function createDataApplication(snippetsID) {
+	function createDataApplication(snippetsID, center) {
 		if (isMaster) {
 			let minDim = Math.min(ui.json_cfg.totalWidth, ui.json_cfg.totalHeight * 2);
 			// let minDim = Math.min(ui.width, ui.height * 2);
@@ -383,6 +383,7 @@ let SAGE2_CodeSnippets = (function() {
 					"/uploads/apps/Snippets_Data",
 				color: '#ff0000',
 				dimensions: [minDim / 4, minDim / 4],
+				position: center && [center.x - minDim / 8, center.y - minDim / 8],
 				data: {
 					snippetsID
 				}
@@ -397,7 +398,7 @@ let SAGE2_CodeSnippets = (function() {
 	 * @method createVisApplication
 	 * @param {String} snippetsID - the id of the vis object for reference
 	 */
-	function createVisApplication(snippetsID) {
+	function createVisApplication(snippetsID, center) {
 		if (isMaster) {
 			let minDim = Math.min(ui.json_cfg.totalWidth, ui.json_cfg.totalHeight * 2);
 
@@ -406,6 +407,7 @@ let SAGE2_CodeSnippets = (function() {
 					"/uploads/apps/Snippets_Vis",
 				color: "#ff0000",
 				dimensions: [minDim / 4, minDim / 4],
+				position: center && [center.x - minDim / 8, center.y - minDim / 8],
 				data: {
 					snippetsID
 				}
@@ -753,6 +755,12 @@ let SAGE2_CodeSnippets = (function() {
 			});
 	}
 
+	function handleActionFromUI(action) {
+		console.log("handleActionFromUI", action);
+
+		executeCodeSnippet(action.snippetID, action.source, action.targetCenter);
+	}
+
 	/**
 	 * Executes a code snippet by ID on a parent dataset, by ID
 	 *
@@ -760,7 +768,7 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} snippetID - the ID of the code snippet
 	 * @param {String} parentID - the SAGE2 ID of the app as the target
 	 */
-	function executeCodeSnippet(snippetID, parentID) {
+	function executeCodeSnippet(snippetID, parentID, targetLocation) {
 		console.log(snippetID, parentID);
 
 		let snippet = self.functions[snippetID];
@@ -790,14 +798,14 @@ let SAGE2_CodeSnippets = (function() {
 				// get link ready for application finish
 				self.pendingVisLinks.push(newLink);
 
-				createVisApplication(snippetsID);
+				createVisApplication(snippetsID, targetLocation);
 			} else {
 				let snippetsID = "data-" + self.dataCount++;
 
 				// get link ready for application finish
 				self.pendingDataLinks.push(newLink);
 
-				createDataApplication(snippetsID);
+				createDataApplication(snippetsID, targetLocation);
 			}
 		} else {
 			self.links[Object.keys(self.links)[linkIndex]].update();
@@ -1250,6 +1258,7 @@ let SAGE2_CodeSnippets = (function() {
 		createVisApplication,
 		createBlockPath,
 
+		handleActionFromUI,
 		displayApplicationLoaded,
 		outputAppClosed,
 		getAppAncestry,

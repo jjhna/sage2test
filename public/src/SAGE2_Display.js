@@ -1520,6 +1520,12 @@ function setupListeners() {
 			SAGE2_CodeSnippets.requestSnippetsProjectExport(data.from);
 		}
 	});
+
+	wsio.on("snippetsActionPerformed", function(data) {
+		console.log("snippetsActionPerformed", data);
+
+		SAGE2_CodeSnippets.handleActionFromUI(data);
+	});
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {
