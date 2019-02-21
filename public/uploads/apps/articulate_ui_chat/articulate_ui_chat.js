@@ -414,7 +414,8 @@ articulateDebugInfo: function(data, date){
 			console.log("ABOUT TO CONTACT ARTICULATE HUB");
 			console.log(data);
 				if( data.targetAppID) {
-						this.contactArticulateHub(base_url+data.text, requestIndex - 1, data.targetAppID["appId"]);  //send to the articulate hub
+							targetId = data.orderedItems[0]["name"]; 
+						this.contactArticulateHub(base_url+data.text, requestIndex - 1, targetId );  //data.targetAppID["appId"]);  //send to the articulate hub
 				}
 				else {
 

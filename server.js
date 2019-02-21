@@ -3468,7 +3468,7 @@ function validParentChildPair(parentId, childId) {
 		var childList = parentApps[parentId];
 		var found = false;
 		for (var i = 0; i < childList.length; i++) {
-			console.log("childList[i] =" + childList[i] + " childId = " + childId);
+			//console.log("childList[i] =" + childList[i] + " childId = " + childId);
 			if (childList[i] == childId) {
 				found = true;
 			}
@@ -3541,7 +3541,14 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 	if( app != null ){
 		console.log("arraylength2 " + pointedToApps.length);
 		var targetAppID = mostOccurrenceItem(pointedToApps);
+		// var realTarget = selectTarget(orderedItems); 
 		console.log("targetAppID in server " + targetAppID);
+		// console.log("target: ")
+		// console.log(realTarget);
+		// targetAppID = null;
+		// if( realTarget  )
+		// targetAppID = realTarget["name"]; 
+
 		var data = {id: app.id, data: {text: data.text, orderedItems: orderedItems, targetAppID: targetAppID}, date: Date.now()};
 		broadcast('textInputEvent', data);
 		console.log(data);
@@ -3550,7 +3557,7 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 		broadcast('articulateDebugInfo', data);
 
 
-		//pointedToApps = []; 
+		pointedToApps = []; 
 		//CLEAR HEREJILLIAN 
 
 
@@ -3559,6 +3566,13 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 		//launch articulate app ...?
 		//for now assume it is launched
 	}
+}
+
+function selectTarget(orderedItems){
+	if(orderedItems.length == 0)
+		return null;
+	else
+		return orderedItems[0]; 
 }
 
 /// Vijay and Joe
@@ -3834,8 +3848,8 @@ function wsGestureRecognitionStatus(wsio, data){
 	//	var obj = interactMgr.searchGeometry({x: pointerX, y: pointerY}); //object on top pointed at given an x and y coordinate HERE!
 	var app = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
 	if( app != null ){
-		console.log("start gesture recognition");
-		console.log(data);
+		//console.log("start gesture recognition");
+		//console.log(data);
 		var data = {id: app.id, data: data.text, date: Date.now()};
 		broadcast('startGestureRecognition', data);
 	}
@@ -3893,11 +3907,11 @@ function wsPointingGesturePosition(wsio, data){
 			//console.log("app.left " + app.left + " app.y " + app.y + "app.width" + app.width + " app.height " + app.height );
 			if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){//*****
 				rightPointing = true;
-				console.log("data recognition status: " + data.recognitionStatus);
+				//console.log("data recognition status: " + data.recognitionStatus);
 				if( data.recognitionStatus ){
 					// pointedToApps[pointedToApps.length]= {appId: app.id, pointerId: data.id};
 
-					console.log("pointing to the app!");
+					//console.log("pointing to the app!");
 
 					pointedToApps.push({appId: app.id, pointerId: data.id});
 					if(app.id !== cur_app_id){
