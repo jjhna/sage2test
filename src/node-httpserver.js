@@ -190,9 +190,10 @@ class HttpServer {
 				header['Access-Control-Allow-Credentials'] = true;
 			}
 			res.writeHead(200, header);
-			// Adding the calculated version into the data structure
-			// global.config.version = SAGE2_version;
-			res.write(JSON.stringify(global.config, null, 2));
+			//Removing ciLogon client details from config before serving it.
+			var configCopy = Object.assign({}, global.config);
+			delete configCopy["ciLogon"];
+			res.write(JSON.stringify(configCopy, null, 2));
 			res.end();
 		});
 		// handle other paths
