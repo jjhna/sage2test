@@ -101,7 +101,6 @@ class HttpServer {
 			saveUninitialized: false
 		}));
 
-		
 		var redirect_uri = 'https://' + cfg.host + '/authcb';
 		Issuer.discover('https://cilogon.org/.well-known/openid-configuration')
 			.then(function (ciLogon) {
@@ -192,7 +191,7 @@ class HttpServer {
 			res.writeHead(200, header);
 			//Removing ciLogon client details from config before serving it.
 			var configCopy = Object.assign({}, global.config);
-			delete configCopy["ciLogon"];
+			delete configCopy.ciLogon;
 			res.write(JSON.stringify(configCopy, null, 2));
 			res.end();
 		});
