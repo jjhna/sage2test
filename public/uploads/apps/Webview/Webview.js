@@ -605,7 +605,7 @@ var Webview = SAGE2_App.extend({
 				content = this.element.getWebContents();
 				content.enableDeviceEmulation({
 					screenPosition: "mobile",
-					fitToView: true
+					screenSize: {width: 1000, height: 2000}
 				});
 			}
 
@@ -688,6 +688,26 @@ var Webview = SAGE2_App.extend({
 			this.layer.style.width  = this.element.style.width;
 			this.layer.style.height = this.element.style.height;
 		}
+
+		if (this.contentType === "web") {
+			let content = this.element.getWebContents();
+			let scale = this.sage2_width / 1000;
+			if (scale < 1.5) {
+				content.enableDeviceEmulation({
+					screenPosition: "desktop",
+					deviceScaleFactor: 0,
+				});
+			} else {
+				content.enableDeviceEmulation({
+					screenPosition: "mobile",
+					screenSize: {width: 1000, height: 2000},
+					viewSize: { width: 1000, height: 2000},
+					scale: scale,
+					deviceScaleFactor: 0
+				});
+			}
+		}
+
 		this.refresh(date);
 	},
 
