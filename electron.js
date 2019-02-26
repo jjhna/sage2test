@@ -411,7 +411,6 @@ function createWindow() {
 		params.partition = 'partition_' + partitionNumber;
 		partitionNumber = partitionNumber + 1;
 		webPreferences.preloadURL = "file://" + path.join(__dirname + '/public/uploads/apps/Webview/SAGE2_script_supplement.js');
-		console.log('webPreferences', webPreferences);
 	});
 
 	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {
