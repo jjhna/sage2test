@@ -695,7 +695,7 @@ var Webview = SAGE2_App.extend({
 			if (scale < 1.5) {
 				content.enableDeviceEmulation({
 					screenPosition: "desktop",
-					deviceScaleFactor: 0,
+					deviceScaleFactor: 0
 				});
 			} else {
 				content.enableDeviceEmulation({
