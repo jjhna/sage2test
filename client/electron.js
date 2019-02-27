@@ -435,7 +435,7 @@ function createWindow() {
 		}
 
 		mainWindow.loadURL(location);
-	})
+	});
 
 	ipcMain.on('getPerformanceData', function() {
 		var perfData = {};
@@ -566,27 +566,35 @@ function myParseInt(str, defaultValue) {
 	return defaultValue;
 }
 
-function createRemoteSiteInputWindow(){
-	//creating a new window
-    remoteSiteInputWindow = new BrowserWindow({
-        width: 300,
-        height: 200,
-        title: 'Connect to Remote Site'
-    });
-    // Load html into window
-    remoteSiteInputWindow.loadURL(url.format({
-        pathname: path.join(__dirname, 'remoteSiteWindow.html'),
-        protocol: 'file',
-        slashes: true
-
-    }));
-    // Garbage collection for window (when add window is closed the space should be deallocated)
-    remoteSiteInputWindow.on('closed', () => {
-        remoteSiteInputWindow = null;
-    })
+/**
+ * Creates a remote site input window.
+ *
+ * @method     createRemoteSiteInputWindow
+ */
+function createRemoteSiteInputWindow() {
+	// creating a new window
+	remoteSiteInputWindow = new BrowserWindow({
+		width: 300,
+		height: 200,
+		title: 'Connect to Remote Site',
+		webPreferences: {
+			nodeIntegration: true,
+			webSecurity: true
+		}
+	});
+	// Load html into window
+	remoteSiteInputWindow.loadURL(url.format({
+		pathname: path.join(__dirname, 'remoteSiteWindow.html'),
+		protocol: 'file',
+		slashes: true
+	}));
+	// Garbage collection for window (when add window is closed the space should be deallocated)
+	remoteSiteInputWindow.on('closed', () => {
+		remoteSiteInputWindow = null;
+	});
 
 	// No menu needed in this window
-    remoteSiteInputWindow.setMenu(null);
+	remoteSiteInputWindow.setMenu(null);
 }
 
 
@@ -598,10 +606,10 @@ function buildMenu() {
 			submenu: [
 				{
 					label: 'Connect to Remote Site',
-        			accelerator: process.platform === 'darwin' ? 'Command+K' : 'Ctrl+K',
-        			click(){
+					accelerator: process.platform === 'darwin' ? 'Command+K' : 'Ctrl+K',
+					click() {
 						createRemoteSiteInputWindow();
-        			}
+					}
 				}
 			]
 		},

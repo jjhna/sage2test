@@ -202,6 +202,7 @@ if (commander.debug) {
  * be closed automatically when the JavaScript object is garbage collected.
  */
 var mainWindow;
+var remoteSiteInputWindow;
 
 /**
  * Opens a window.
@@ -411,10 +412,29 @@ function createWindow() {
 		params.partition = 'partition_' + partitionNumber;
 		partitionNumber = partitionNumber + 1;
 		webPreferences.preloadURL = "file://" + path.join(__dirname + '/public/uploads/apps/Webview/SAGE2_script_supplement.js');
+		console.log('webPreferences', webPreferences);
 	});
 
 	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {
 		// New webview added and completed
+	});
+
+	// Catch remote URL to connect to
+	ipcMain.on('connect-url', (e, URL) => {
+		var location = URL;
+		// Close input window
+		remoteSiteInputWindow.close();
+
+		location = location + "/display.html?clientID=-1";
+		if (commander.hash) {
+			// add the password hash to the URL
+			location += '&hash=' + commander.hash;
+		} else if (commander.password) {
+			// add the password hash to the URL
+			location += '?session=' + commander.password;
+		}
+
+		mainWindow.loadURL(location);
 	});
 
 	ipcMain.on('getPerformanceData', function() {
@@ -546,10 +566,53 @@ function myParseInt(str, defaultValue) {
 	return defaultValue;
 }
 
+/**
+ * Creates a remote site input window.
+ *
+ * @method     createRemoteSiteInputWindow
+ */
+function createRemoteSiteInputWindow() {
+	// creating a new window
+	remoteSiteInputWindow = new BrowserWindow({
+		width: 300,
+		height: 200,
+		title: 'Connect to Remote Site',
+		webPreferences: {
+			nodeIntegration: true,
+			webSecurity: true
+		}
+	});
+	// Load html into window
+	remoteSiteInputWindow.loadURL(url.format({
+		pathname: path.join(__dirname, 'remoteSiteWindow.html'),
+		protocol: 'file',
+		slashes: true
+	}));
+	// Garbage collection for window (when add window is closed the space should be deallocated)
+	remoteSiteInputWindow.on('closed', () => {
+		remoteSiteInputWindow = null;
+	});
+
+	// No menu needed in this window
+	remoteSiteInputWindow.setMenu(null);
+}
+
 
 function buildMenu() {
 
 	const template = [
+		{
+			label: 'File',
+			submenu: [
+				{
+					label: 'Connect to Remote Site',
+					accelerator: process.platform === 'darwin' ? 'Command+K' : 'Ctrl+K',
+					click() {
+						createRemoteSiteInputWindow();
+					}
+				}
+			]
+		},
 		{
 			label: 'Edit',
 			submenu: [
