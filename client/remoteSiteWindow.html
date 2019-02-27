@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Connect to Remote Site</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+</head>
+<body>
+    <div class='container'>
+    <form>
+        <div>
+            <label>Enter URL of Remote Site</label>
+            <input type="text" id="url" autofocus>
+        </div>
+        <button class = 'btn waves-effect wave-lights' type="submit"><i class="material-icons left">screen_share</i>Mirror screen</button>
+    </form>
+    </div>
+    <script>
+        const electron = require('electron');
+        const {ipcRenderer} = electron;
+
+        const form = document.querySelector('form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const URL = document.querySelector('#url').value;
+            //sending URL to electron.js, params: key value pair (id,URL)
+            ipcRenderer.send('connect-url', URL);
+        })
+    </script>
+</body>
+</html>
