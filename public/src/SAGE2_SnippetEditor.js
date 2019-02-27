@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global ace displayUI interactor wsio SAGE2_SnippetExporter CodeSnippetCompiler, snippetOverlayManager */
+/* global ace d3 displayUI interactor wsio SAGE2_SnippetExporter CodeSnippetCompiler, snippetOverlayManager */
 
 let SAGE2_SnippetEditor = (function () {
 	// api examples to be inserted in the editor
@@ -65,6 +65,8 @@ let SAGE2_SnippetEditor = (function () {
 			loadButton: null,
 
 			scriptDropdown: null,
+
+			snippetList: null,
 
 			log: null,
 			errorLogContainer: null,
@@ -128,10 +130,10 @@ let SAGE2_SnippetEditor = (function () {
 				snippetOverlayManager.setOverlayVisibility(e.target.checked);
 			};
 
-			self.interactCheckbox = self.div.querySelector("#snippetsInteractingCheckbox");
-			self.interactCheckbox.onclick = function(e) {
-				snippetOverlayManager.setInteractMode(e.target.checked);
-			};
+			// self.interactCheckbox = self.div.querySelector("#snippetsInteractingCheckbox");
+			// self.interactCheckbox.onclick = function(e) {
+			// 	snippetOverlayManager.setInteractMode(e.target.checked);
+			// };
 
 			// bind hide and close button
 			// self.div.querySelector("#snippetEditorHide").onclick = hideEditor; // remove hide function
@@ -169,6 +171,8 @@ let SAGE2_SnippetEditor = (function () {
 
 			// ready script selector dropdown
 			self.scriptDropdown = self.div.querySelector("#loadSnippetOptions");
+
+			self.snippetList = self.div.querySelector("#snippetListWrapper .list-content");
 
 			self.errorLogContainer = self.div.querySelector("#errorMessages");
 			self.consoleLogContainer = self.div.querySelector("#consoleMessages");
@@ -408,6 +412,10 @@ let SAGE2_SnippetEditor = (function () {
 			self.scriptStates = scriptStates;
 			self.scriptDropdown.innerHTML = ""; // This works to remove options... real method removing one-by-one was failing
 
+			self.snippetList.innerHTML = "";
+
+			let list = d3.select(self.snippetList);
+
 			for (let script of Object.values(scriptStates)) {
 				// populate Dropdown
 				let newOption = document.createElement("div");
@@ -439,6 +447,52 @@ let SAGE2_SnippetEditor = (function () {
 				newOption.appendChild(name);
 				self.scriptDropdown.appendChild(newOption);
 			}
+
+			list.selectAll(".list-item")
+				.data(Object.values(scriptStates))
+				.enter().append("div")
+				.attr("class", d => "list-item " + d.type)
+				// .text(d => d.desc)
+				.each(function(d) {
+					let item = d3.select(this);
+
+					item.append("div")
+						.attr("class", "snippet-name")
+						.text(d.desc);
+
+					let controls = item.append("div")
+						.attr('class', "action-icons");
+
+					controls.append("i")
+						.attr("class", "fa fa-play")
+						.on("click", function() {
+							let newAction = {
+								action: "execute",
+								snippetID: d.id,
+								type: d.type
+							};
+
+							console.log(newAction);
+
+							snippetOverlayManager.setInteractMode(true);
+							snippetOverlayManager.setUserSelectedAction(newAction);
+
+							hideEditor();
+						});
+
+					controls.append("i")
+						.attr("class", "fa fa-copy");
+
+					controls.append("i")
+						.attr("class", "fa fa-folder-open")
+						.classed("open", self.loadedSnippet === d.id)
+						.classed("disabled", !self.loadedSnippet && d.locked)
+						.on("click", function() {
+							if (d.id !== self.loadedSnippet && !d.locked) {
+								loadScript(d.id);
+							}
+						});
+				});
 
 			snippetOverlayManager.updateSnippetStates(scriptStates);
 		}

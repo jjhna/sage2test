@@ -35,6 +35,9 @@ let SAGE2_SnippetOverlayManager = (function() {
 			snippetLinks: {},
 			snippetApps: {},
 
+			isInteracting: false,
+			interactionCursor: null,
+
 			dragAction: null,
 
 			dragStartApp: null,
@@ -59,7 +62,15 @@ let SAGE2_SnippetOverlayManager = (function() {
 				].join(", ")
 			)
 				.on("mousemove", function() {
-					if (self.dragAction) {
+					if (self.isInteracting) {
+						self.interactionCursor
+							.attr("transform", `translate(
+								${d3.event.layerX * self.widthRatio},
+								${d3.event.layerY * self.heightRatio})
+							`);
+					}
+
+					if (self.dragAction && self.dragMarker) {
 						let current = {
 							x: d3.event.layerX * self.widthRatio,
 							y: d3.event.layerY * self.heightRatio
@@ -116,6 +127,8 @@ let SAGE2_SnippetOverlayManager = (function() {
 						self.dragStart = null;
 						self.dragStartApp = null;
 						self.dragEnd = null;
+
+						setInteractMode(false);
 					}
 				});
 
@@ -125,11 +138,7 @@ let SAGE2_SnippetOverlayManager = (function() {
 			self.widthRatio = config.totalWidth / self.width;
 			self.heightRatio = config.totalHeight / self.height;
 
-			setOverlayVisibility(true);
-			setInteractMode(true);
-
 			self.titleBarOffset = config.ui.titleBarHeight;
-
 
 			self.newAppDim = Math.min(config.totalWidth, config.totalHeight * 2) / 4;
 
@@ -139,6 +148,40 @@ let SAGE2_SnippetOverlayManager = (function() {
 				.attr("transform", `translate(0, ${config.ui.titleBarHeight})`);
 
 			self.appGroup = self.overlay.append("g");
+
+			self.interactionCursor = self.overlay.append("g")
+				.attr("class", "snippetsInteractionCursor")
+				.attr("transform", `translate(0, 0)`)
+				.style("opacity", 0);
+
+			self.interactionCursor.append("path")
+				.attr("d", `M 0,0 L 25, ${-self.titleBarOffset} L 25, ${self.titleBarOffset} Z`)
+				.style("fill", "#888")
+				.style("stroke", "#000")
+				.style("stroke-width", 2);
+
+			let cursorRect = self.interactionCursor.append("rect")
+				.attr("width", 175)
+				.attr("height", self.titleBarOffset * 2)
+				.attr("x", 25)
+				.attr("y", -self.titleBarOffset)
+				.style("fill", lightColor.data)
+				.style("stroke", darkColor.data)
+				.style("stroke-width", 2);
+
+			let cursorText = self.interactionCursor.append("text")
+				.attr("x", 29)
+				.attr("y", self.titleBarOffset / 4)
+				.style("font-size", self.titleBarOffset)
+				.style("font-weight", "bold")
+				.style("fill", "#333")
+				.text("SnippetNamelahsd;flhasd");
+
+			let cursorTextWidth = cursorText.node().getBBox().width;
+
+			cursorRect.attr("width", cursorTextWidth + 6);
+
+			setOverlayVisibility(true);
 		}
 
 		function setOverlayVisibility(isVisible) {
@@ -148,8 +191,33 @@ let SAGE2_SnippetOverlayManager = (function() {
 		}
 
 		function setInteractMode(isInteracting) {
+			self.isInteracting = isInteracting;
+
 			d3.select("#sage2UICanvas")
 				.style("pointer-events", isInteracting ? "none" : "all");
+
+			self.interactionCursor
+				.style("opacity", isInteracting ? 1 : 0);
+		}
+
+		// start an interaction action by the user
+		function setUserSelectedAction(action) {
+			let {
+				snippetID,
+				type: actionType
+			} = action;
+
+			self.dragAction = action;
+
+			let cursorText = self.interactionCursor
+				.select("text")
+				.text(self.snippetStates[snippetID].desc);
+			let textWidth = cursorText.node().getBBox().width;
+			self.interactionCursor.select("rect")
+				.attr("width", textWidth + 6)
+				.style("fill", lightColor[actionType])
+				.style("stroke", darkColor[actionType]);
+
 		}
 
 		// save new set of snippet associations, redraw all
@@ -292,15 +360,7 @@ let SAGE2_SnippetOverlayManager = (function() {
 
 							d3.select(this).classed("snippetDragStartTarget", true);
 
-							let action = "execute";
-							let snippetID = "codeSnippet-1";
-							let actionType = self.snippetStates[snippetID].type;
-
-							self.dragAction = {
-								action: action,
-								snippetID,
-								type: actionType
-							};
+							let actionType = self.dragAction.type;
 
 							self.dragTargetMarker = self.overlay
 								.append("rect")
@@ -316,11 +376,17 @@ let SAGE2_SnippetOverlayManager = (function() {
 							self.dragMarker = self.overlay.append("path")
 								.attr("class", "snippetsDragInteractionLine")
 								.attr("d", calculateTaperedPath(self.dragStartApp, current))
-								.style("stroke", darkColor[actionType])
-								.style("fill", lightColor[actionType])
+								.style("stroke", lightColor[actionType])
+								.style("fill", darkColor[actionType])
 								.style("opacity", 0);
 						})
 						.on("mousemove", function(d) {
+							if (self.isInteracting) {
+								self.interactionCursor
+									.attr("transform", `translate(${d3.event.layerX * self.widthRatio},
+										${d3.event.layerY * self.heightRatio})`);
+							}
+
 							let {
 								left: x,
 								top: y,
@@ -643,6 +709,7 @@ let SAGE2_SnippetOverlayManager = (function() {
 		return {
 			setOverlayVisibility,
 			setInteractMode,
+			setUserSelectedAction,
 
 			updateAssociations,
 			updateSnippetStates,

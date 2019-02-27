@@ -1347,9 +1347,160 @@ The z-index is very important.
     align-items: stretch;
 }
 
+#codeSnippetEditor #snippetListWrapper {
+    display: flex;
+    flex-basis: 250px;
+    flex-direction: column;
+
+    margin: 15px;
+    margin-right: 0px;
+
+    border: 1px solid #888;
+    background: #e0e0e0;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-title {
+    flex: 0;
+    width: 100%;
+
+    padding-left: 15px;
+    box-sizing: border-box;
+    background-color: #aaa;
+    border-bottom: 1px solid #999;
+    
+    line-height: 24px;
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-content {
+    flex: 1;
+
+    padding: 5px;
+
+    box-shadow: inset 0 0 5px #aaa;
+    background: #e0e0e0;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item {
+    display: flex;
+
+    margin: 5px 0;
+
+    border-radius: 3px;
+
+    box-shadow: 0 0 4px #aaa;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item.gen {
+    background: #b3e2cd;
+    border: 3px solid #87d1b0;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item.data {
+    background: #cbd5e8;
+    border: 3px solid #9db0d3;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item.draw {
+    background: #fdcdac;
+    border: 3px solid #fba76d;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item .snippet-name {
+    padding: 4px;
+
+    font-size: 16px;
+    color: black;
+
+    flex: 1;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item .action-icons {
+    flex: 0 0 88px;
+    display: flex;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item .action-icons i {
+    /* margin: 0 4px; */
+    font-size: 16px;
+    padding: 5px;
+
+    border: 1px solid black;
+
+    display: flex;
+    flex-basis: 28px;
+
+    justify-content: center;
+    align-items: center;
+
+    color: white;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item.gen .action-icons i {
+    border: 0px solid #b3e2cd;
+
+    background: #87d1b0;
+
+    border-left-width: 2px;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item.gen i:hover {
+    background: #b3e2cd;
+    border-color: #87d1b0;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item.data .action-icons i {
+    border: 0px solid #cbd5e8;
+
+    background: #9db0d3;
+
+    border-left-width: 2px;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item.data i:hover {
+    background: #cbd5e8;
+    border-color: #9db0d3;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item.draw .action-icons i {
+    border: 0px solid #fdcdac;
+
+    background: #fba76d;
+
+    border-left-width: 2px;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item.draw i:hover {
+    background: #fdcdac;
+    border-color: #fba76d;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item i:hover {
+    cursor: pointer;
+    color: #333;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item i.disabled {
+    cursor: not-allowed;
+    background: #e0e0e0 !important;
+    color: #333;
+
+    border-color: #ccc !important;
+}
+
+#codeSnippetEditor #snippetListWrapper .list-item i.open {
+    cursor: not-allowed;
+    background: #00ff00 !important;
+    color: #333;
+
+    border-color: #ccc !important;
+}
+
 #codeSnippetEditor #snippetLoggingWrapper {
     display: flex;
-    flex-basis: 400px;
+    flex-basis: 350px;
     flex-direction: column;
 
     margin: 15px;
@@ -1825,6 +1976,8 @@ The z-index is very important.
     margin: 2px 0 0 2px;
 
     z-index: 800;
+
+    cursor: none;
 }
 
 #snippetsOverlay {
@@ -1861,7 +2014,7 @@ The z-index is very important.
 
 #snippetsOverlay .snippetDragStartTarget .snippetAppOverlay {
     stroke: #444;
-    stroke-width: 8px;
+    stroke-width: 4px;
 }
 
 #snippetsOverlay .snippetLinkOverlay {
@@ -1892,6 +2045,10 @@ The z-index is very important.
 
     pointer-events: none;
     stroke-width: 5px;
+}
+
+#snippetsOverlay .snippetsInteractionCursor {
+    pointer-events: none;
 }
 
 
