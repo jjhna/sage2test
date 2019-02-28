@@ -19,6 +19,7 @@
 
 'use strict';
 
+const path = require('path');
 const electron = require('electron');
 
 // Get platform and hostname
@@ -133,19 +134,16 @@ commander
 	.option('--height <n>',              'Window height (int)', myParseInt, 720)
 	.option('--password <s>',            'Server password (string)', null)
 	.option('--show-fps',                'Display the Chrome FPS counter', false)
-	.option('--local',                   'Used for local development', false)
 	.option('--width <n>',               'Window width (int)', myParseInt, 1280)
 	.parse(args);
 
 
-// Change current durectory to find the Webview JS addon
-if (commander.local) {
-	// if (os.platform() === "win32" || os.platform() === "darwin") {
-	console.log('Current directory:', process.cwd());
-	console.log('getAppPath directory:', electron.app.getAppPath());
-	electron.app.setAppPath(process.cwd());
-	// }
-}
+// // Change current durectory to find the Webview JS addon
+// 	// if (os.platform() === "win32" || os.platform() === "darwin") {
+// 	console.log('Current directory:', process.cwd());
+// 	console.log('getAppPath directory:', electron.app.getAppPath());
+// 	electron.app.setAppPath(process.cwd());
+// 	// }
 
 
 // Load the flash plugin if asked
@@ -412,6 +410,7 @@ function createWindow() {
 		// Each partition has a distinct context, ie partition
 		params.partition = 'partition_' + partitionNumber;
 		partitionNumber = partitionNumber + 1;
+		webPreferences.preloadURL = "file://" + path.join(__dirname + '/public/uploads/apps/Webview/SAGE2_script_supplement.js');
 	});
 
 	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {
