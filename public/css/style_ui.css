@@ -1391,11 +1391,14 @@ The z-index is very important.
     border-radius: 3px;
 
     box-shadow: 0 0 4px #aaa;
+
+    transition: border-color 0.4s;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item.gen {
     background: #b3e2cd;
-    border: 3px solid #87d1b0;
+    border: 3px solid;
+    border-color: #87d1b0;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item.data {
@@ -1409,17 +1412,20 @@ The z-index is very important.
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item .snippet-name {
-    padding: 4px;
+    padding: 4px 6px;
 
     font-size: 16px;
     color: black;
 
     flex: 1;
+    word-break: break-word;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item .action-icons {
     flex: 0 0 88px;
     display: flex;
+
+    margin-right: -1px;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item .action-icons i {
@@ -1435,67 +1441,64 @@ The z-index is very important.
     justify-content: center;
     align-items: center;
 
-    color: white;
+    color: #333;
+
+    transition: all 0.4s;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item.gen .action-icons i {
-    border: 0px solid #b3e2cd;
-
-    background: #87d1b0;
+    border: 0px solid #87d1b0;
+    background: #b3e2cd;
 
     border-left-width: 2px;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item.gen i:hover {
-    background: #b3e2cd;
-    border-color: #87d1b0;
+    background: #87d1b0;
+    border-color: #b3e2cd;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item.data .action-icons i {
-    border: 0px solid #cbd5e8;
-
-    background: #9db0d3;
+    border: 0px solid #9db0d3;
+    background: #cbd5e8;
 
     border-left-width: 2px;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item.data i:hover {
-    background: #cbd5e8;
-    border-color: #9db0d3;
+    background: #9db0d3;
+    border-color: #cbd5e8;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item.draw .action-icons i {
-    border: 0px solid #fdcdac;
-
-    background: #fba76d;
+    border: 0px solid #fba76d;
+    background: #fdcdac;
 
     border-left-width: 2px;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item.draw i:hover {
-    background: #fdcdac;
-    border-color: #fba76d;
+    background: #fba76d;
+    border-color: #fdcdac;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item i:hover {
     cursor: pointer;
-    color: #333;
+    color: #fff;
 }
 
 #codeSnippetEditor #snippetListWrapper .list-item i.disabled {
     cursor: not-allowed;
-    background: #e0e0e0 !important;
-    color: #333;
+    background: #f0f0f0 !important;
+    color: #666;
 
     border-color: #ccc !important;
 }
 
-#codeSnippetEditor #snippetListWrapper .list-item i.open {
-    cursor: not-allowed;
-    background: #00ff00 !important;
-    color: #333;
+#codeSnippetEditor #snippetListWrapper .list-item.open {
+    /* background: #fff; */
 
-    border-color: #ccc !important;
+    border-color: #666;
 }
 
 #codeSnippetEditor #snippetLoggingWrapper {

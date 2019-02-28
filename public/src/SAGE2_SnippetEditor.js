@@ -412,7 +412,7 @@ let SAGE2_SnippetEditor = (function () {
 			self.scriptStates = scriptStates;
 			self.scriptDropdown.innerHTML = ""; // This works to remove options... real method removing one-by-one was failing
 
-			self.snippetList.innerHTML = "";
+			// self.snippetList.innerHTML = "";
 
 			let list = d3.select(self.snippetList);
 
@@ -448,11 +448,12 @@ let SAGE2_SnippetEditor = (function () {
 				self.scriptDropdown.appendChild(newOption);
 			}
 
-			list.selectAll(".list-item")
-				.data(Object.values(scriptStates))
-				.enter().append("div")
-				.attr("class", d => "list-item " + d.type)
-				// .text(d => d.desc)
+			let listBind = list.selectAll(".list-item")
+				.data(Object.values(scriptStates), d => d.id);
+
+			listBind.exit().remove();
+
+			listBind.enter().append("div").attr("class", d => "list-item " + d.type)
 				.each(function(d) {
 					let item = d3.select(this);
 
@@ -481,17 +482,30 @@ let SAGE2_SnippetEditor = (function () {
 						});
 
 					controls.append("i")
-						.attr("class", "fa fa-copy");
+						.attr("class", "fa fa-copy")
+						.on("click", function() {
+							saveCopy(d.id);
+						});
 
 					controls.append("i")
 						.attr("class", "fa fa-folder-open")
-						.classed("open", self.loadedSnippet === d.id)
-						.classed("disabled", !self.loadedSnippet && d.locked)
 						.on("click", function() {
 							if (d.id !== self.loadedSnippet && !d.locked) {
 								loadScript(d.id);
 							}
 						});
+				});
+
+			list.selectAll(".list-item")
+				.classed("open", d => self.loadedSnippet === d.id)
+				.each(function(d) {
+					let item = d3.select(this);
+
+					item.select(".snippet-name")
+						.text(d.desc);
+
+					item.select(".fa-folder-open")
+						.classed("disabled", d.locked);
 				});
 
 			snippetOverlayManager.updateSnippetStates(scriptStates);
