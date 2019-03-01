@@ -574,8 +574,8 @@ function myParseInt(str, defaultValue) {
 function createRemoteSiteInputWindow() {
 	// creating a new window
 	remoteSiteInputWindow = new BrowserWindow({
-		width: 300,
-		height: 200,
+		width: 800,
+		height: 500,
 		title: 'Connect to Remote Site',
 		webPreferences: {
 			nodeIntegration: true,

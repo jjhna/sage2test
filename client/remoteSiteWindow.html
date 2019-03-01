@@ -1,33 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Connect to Remote Site</title>
+    <script>
+        // Renaming require keyword to be able to use jQuery and node in electron, load node modules with nodeRequire()
+        window.nodeRequire = require;
+        delete window.require;
+        delete window.exports; delete window.module; 
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
 
 </head>
+
 <body>
     <div class='container'>
-    <form>
-        <div>
-            <label>Enter URL of Remote Site</label>
-            <input type="text" id="url" autofocus>
-        </div>
-        <button class = 'btn waves-effect wave-lights' type="submit"><i class="material-icons left">screen_share</i>Mirror screen</button>
-    </form>
-    </div>
-    <script>
-        const electron = require('electron');
-        const {ipcRenderer} = electron;
+        <form>
+            <div>
+                <label>Enter URL of Remote Site</label>
+                <div>
+                    <div class='inline'>
+                        <input type="text" id="url" autofocus>
+                    </div>
+                    <!-- Dropdown Trigger -->
+                    <a class='dropdown-trigger btn inline blue-grey darken-2' href='#' data-target='dropdown1'>Known
+                        sites</a>
 
+                    <!-- Dropdown Structure -->
+                    <ul id='dropdown1' class='dropdown-content'>
+                        <li><a class='clickable'>canopus.evl.uic.edu</a></li>
+                    </ul>
+                </div>
+            </div>
+            <p>
+                <label>
+                    <input class='checkb' id='check_1' type="checkbox" />
+                    <span>Display #</span>
+                </label>
+            </p>
+            <p>
+                <label>
+                    <input class='checkb' id='check_2' type="checkbox" />
+                    <span>Full Screen</span>
+                </label>
+            </p>
+            <button class='btn waves-effect wave-lights blue-grey darken-2' type="submit"><i
+                    class="material-icons left">screen_share</i>Mirror screen</button>
+        </form>
+
+    </div>
+    <style>
+        .inline {
+            display: inline-block;
+            width: 45%;
+
+        }
+
+        /* #url{
+            width: 1000%;
+        } */
+    </style>
+    <script>
+        const electron = nodeRequire('electron');
+        const { ipcRenderer } = electron;
+        const url_sites = 'https://canopus.evl.uic.edu/config';
+
+        // Utility method for jQuery
+        $.extend({
+            el: function (el, attributes = {}) {
+                var $el = $(document.createElement(el));
+                $el.attr(attributes);
+                return $el;
+            }
+        });
+
+        //logging function
+        function l(item) {
+            console.log(item);
+        }
+
+        // Change text box on click of drop down
+        function changeInput(e) {
+            $("#url").val(e.target.innerHTML); //because it is an input, use .val() to set and .html() to get
+        }
+
+        /**
+         * Checks json and creates dropdown list
+         * TODO check if json is correct 
+         */
+        function createDropdownList(config_json) {
+            config_json.remote_sites.forEach(createDropItem);
+        }
+        
+        // Creates an item for the dropdown menu
+        function createDropItem(item, index) {
+            l(item.host);
+            $('#dropdown1').append(
+                $.el('li').append(
+                    $.el('a', { class: 'clickable' }).text(item.host)
+                )
+            );
+        }
+
+        // Take site url and format it properly
+        function formatProperly(url){
+            const url_start = 'https://';
+            if(!url.startsWith('http://') || !url.startsWith('https://')){
+                url = url_start+url;
+            }
+            return url;
+        }
+
+        //TODO add string input control before sending ipc
         const form = document.querySelector('form');
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const URL = document.querySelector('#url').value;
+            let URL = document.querySelector('#url').value;
+            
+            URL = formatProperly(URL);
             //sending URL to electron.js, params: key value pair (id,URL)
             ipcRenderer.send('connect-url', URL);
-        })
+        });
+
+        // Initialize dropdown with sites
+        document.addEventListener('DOMContentLoaded', function () {
+            var elems = document.querySelectorAll('.dropdown-trigger');
+            options = {
+                edge: 'left',
+                hover: true
+            }
+            var instances = M.Dropdown.init(elems, options);
+
+            fetch(url_sites)
+                .then(res => res.json())
+                .then((out) => {
+                    createDropdownList(out);
+                })
+                .then(() => {
+                    const dropd = document.querySelectorAll('.clickable');
+
+                    dropd.forEach(function (item) {
+                        item.addEventListener('click', changeInput);
+                    });
+                })
+                .catch(err => { throw err });
+
+        });
+
+        /**
+         * Making sure only one of the check boxes are selected and dynamically unselect
+         */ 
+        $('.checkb').click(function () {
+            var checked = $(this)[0].checked;
+            var $check1 = $('#check_1')[0];
+            var $check2 = $('#check_2')[0];
+            if (checked) {
+                if ($(this)[0].id === 'check_1') {
+                    l($check2);
+                    if ($check2.checked) {
+                        $check2.checked = false;
+                    }
+                } else {
+                    if ($check1.checked) {
+                        $check1.checked = false;
+                    }
+                }
+            }
+        });
+
     </script>
 </body>
+
 </html>
