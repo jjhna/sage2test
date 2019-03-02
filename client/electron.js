@@ -424,8 +424,6 @@ function createWindow() {
 		var location = URL;
 		// Close input window
 		remoteSiteInputWindow.close();
-
-		location = location + "/display.html?clientID=-1";
 		if (commander.hash) {
 			// add the password hash to the URL
 			location += '&hash=' + commander.hash;
@@ -433,7 +431,6 @@ function createWindow() {
 			// add the password hash to the URL
 			location += '?session=' + commander.password;
 		}
-
 		mainWindow.loadURL(location);
 	});
 
