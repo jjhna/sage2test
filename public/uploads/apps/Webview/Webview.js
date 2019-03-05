@@ -226,6 +226,8 @@ var Webview = SAGE2_App.extend({
 			_this.getFullContextMenuAndUpdate();
 			_this.isLoading = false;
 			_this.changeWebviewTitle();
+			// recalculate the scaling
+			_this.resize();
 		});
 
 		// To handle navigation whithin the page (ie. anchors)
@@ -465,45 +467,6 @@ var Webview = SAGE2_App.extend({
 			});
 		} else {
 			// Moved to electron.js main app
-
-			// content.on('certificate-error', function(event, url, error, certificate, callback) {
-			// 	console.log('HEHEHE');
-			// 	_this.pre.innerHTML += 'Webview>certificate error:' + event + '\n';
-			// 	_this.element.executeJavaScript(
-			// 		"document.body.innerHTML = '<h1>This webpage has invalid certificates and cannot be loaded</h1>'");
-			// });
-
-			// content.on('certificate-error', function(event, url, error, certificate, callback) {
-			// 	// This doesnt seem like a security risk yet
-			// 	if (error === "net::ERR_CERTIFICATE_TRANSPARENCY_REQUIRED") {
-			// 		console.log('Webview>certificate error1:', url, error, certificate);
-			// 		// we ignore the certificate error
-			// 		event.preventDefault();
-			// 		return callback(true);
-			// 	} else if (error === "net::ERR_CERT_COMMON_NAME_INVALID") {
-			// 		// self-signed certificate
-			// 		console.log('common name invalid', certificate, certificate.issuerName)
-			// 		// we ignore the certificate error
-			// 		event.preventDefault();
-			// 		return callback(true);
-			// 	} else if (error === "net::ERR_CERT_AUTHORITY_INVALID") {
-			// 		// self-signed certificate
-			// 		console.log('self-signed certificate', certificate, certificate.issuerName)
-			// 		// we ignore the certificate error
-			// 		event.preventDefault();
-			// 		return callback(true);
-			// 	} else {
-			// 		// More troubling error
-			// 		console.log('Webview>certificate error2:', url, error, certificate);
-			// 		// Add the message to the console layer
-			// 		_this.pre.innerHTML += 'Webview>certificate error:' + event + '\n';
-			// 		_this.element.executeJavaScript(
-			// 			"document.body.innerHTML = '<h1>This webpage has invalid certificates and cannot be loaded</h1>'");
-			// 		// Denied
-			// 		callback(false);
-			// 	}
-			// });
-
 			this.addedHandlerForCertificteError = true;
 		}
 	},
@@ -691,20 +654,50 @@ var Webview = SAGE2_App.extend({
 
 		if (this.contentType === "web") {
 			let content = this.element.getWebContents();
-			let scale = this.sage2_width / 1000;
-			if (scale < 1.5) {
-				content.enableDeviceEmulation({
-					screenPosition: "desktop",
-					deviceScaleFactor: 0
-				});
+			let ar = this.sage2_width / this.sage2_height;
+			if (ar >= 1.0) {
+				// landscape window
+				let scale = this.sage2_width / 1280;
+				if (scale < 1.2) {
+					content.enableDeviceEmulation({
+						screenPosition: "desktop",
+						deviceScaleFactor: 0
+					});
+				} else {
+					content.enableDeviceEmulation({
+						screenSize: {
+							width:  this.sage2_width,
+							height: this.sage2_height
+						},
+						viewSize: {
+							width:  this.sage2_width  * scale,
+							height: this.sage2_height * scale},
+						scale: scale,
+						deviceScaleFactor: 0
+					});
+				}
 			} else {
-				content.enableDeviceEmulation({
-					screenPosition: "mobile",
-					screenSize: {width: 1000, height: 2000},
-					viewSize: { width: 1000, height: 2000},
-					scale: scale,
-					deviceScaleFactor: 0
-				});
+				// portrait window
+				let scale = this.sage2_height / 1280;
+				if (scale < 1.2) {
+					content.enableDeviceEmulation({
+						screenPosition: "desktop",
+						deviceScaleFactor: 0
+					});
+				} else {
+					content.enableDeviceEmulation({
+						screenPosition: "mobile",
+						screenSize: {
+							width:  this.sage2_width,
+							height: this.sage2_height
+						},
+						viewSize: {
+							width:  this.sage2_width  / scale,
+							height: this.sage2_height / scale},
+						scale: scale,
+						deviceScaleFactor: 0
+					});
+				}
 			}
 		}
 
