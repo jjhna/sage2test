@@ -12,7 +12,7 @@
 		"itsF": "F"
 	},
 	"title": "US Weather",
-	"version": "1.2",
+	"version": "1.2.1",
 	"description": "US Weather map using D3.js",
 	"keywords": [ "maps", "weather", "geo", "d3" ],
 	"author": "Andrew Johnson <lenzman@me.com>",
