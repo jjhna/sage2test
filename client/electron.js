@@ -197,6 +197,10 @@ if (commander.debug) {
 	app.commandLine.appendSwitch("remote-debugging-port", port.toString());
 }
 
+// As of 2019, video elements with sound will no longer autoplay unless user interacted with page.
+// switch found from: https://github.com/electron/electron/issues/13525/
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+
 /**
  * Keep a global reference of the window object, if you don't, the window will
  * be closed automatically when the JavaScript object is garbage collected.
@@ -411,7 +415,6 @@ function createWindow() {
 		params.partition = 'partition_' + partitionNumber;
 		partitionNumber = partitionNumber + 1;
 		webPreferences.preloadURL = "file://" + path.join(__dirname + '/public/uploads/apps/Webview/SAGE2_script_supplement.js');
-		console.log('webPreferences', webPreferences);
 	});
 
 	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {
