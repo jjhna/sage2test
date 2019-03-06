@@ -105,6 +105,7 @@
          * Checks json and creates dropdown list
          */
         function createDropdownList(config_json) {
+            // l(config_json)
             if(!config_json.remote_sites){
                 return;
             }
@@ -176,12 +177,14 @@
             ]).then((response) => {
                 if (response.timeout) {
                     onTimeout();
-                    return;
+                    return null;
+                } else {
+                    return response.json();
                 }
-                return response;
-            }).then(response => response.json())
-            .then((json) =>{
-                createDropdownList(json);
+            }).then((json) =>{
+                if(json){
+                    createDropdownList(json);
+                }
             });
         }
 
