@@ -20,59 +20,92 @@
 
 <body>
     <div class='container'>
-        <form>
-            <div>
-                <label>Enter URL of Remote Site</label>
-                <div>
-                    <div class='inline'>
+        <form action="">
+            <div class="row">
+                <div class="col s8"><label>Enter URL of Remote Site</label>
+                    <div class="input-field">
+                        <!-- favorite and favorite_border -->
+                        <i class="material-icons prefix">favorite_border</i>
                         <input type="text" id="url" autofocus>
                     </div>
-                    <!-- Dropdown Trigger -->
-                    <a class='dropdown-trigger btn inline blue-grey darken-2' href='#' data-target='dropdown1'>Known
-                        sites</a>
+                    <div>
+                        <!-- Dropdown Trigger -->
+                        <a class='dropdown-trigger btn blue-grey darken-2 z-depth-3' href='#' data-target='sites_dropdown'>Known
+                            sites</a>
+                        <!-- Dropdown Structure -->
+                        <ul id='sites_dropdown' class='dropdown-content'>
+                            <!-- <li><a class='clickable'>canopus.evl.uic.edu</a></li> -->
+                        </ul>
+                    </div>
+                </div>
+                <div class="col s4"><label>Options</label>
 
-                    <!-- Dropdown Structure -->
-                    <ul id='dropdown1' class='dropdown-content'>
-                        <li><a class='clickable'>canopus.evl.uic.edu</a></li>
-                    </ul>
+                    <br><br>
+                    <p>
+                        <label>
+                            <input class='checkb' id='check_2' type="checkbox" checked='true' />
+                            <span>Display Full Wall</span>
+                        </label>
+                    </p>
+                    <div class="row">
+                      <div class="col s10"> 
+                    <p>
+                        <label>
+                            <input class='checkb' id='check_1' type="checkbox" />
+                            <span>Display client ID</span>
+                        </label>
+                    </p>
+                </div> 
+                <div class="col s1"><div id='display-id-div'>
+                        <!-- Dropdown Trigger -->
+                        <a id="id_drop" class='dropdown-trigger btn blue-grey darken-2 z-depth-3 scale-transition scale-out' href='#'
+                            data-target='ids_dropdown'>ID</a>
+                        <!-- Dropdown Structure -->
+                        <ul id='ids_dropdown' class='dropdown-content'>
+                            <!-- <li><a class='clickable'>0</a></li> -->
+                        </ul>
+                    </div></div>
+                </div>
+                    <!-- <div id='display-id-div' class="input-field inline">
+                            <input id="display_id" type="text">
+                            <label for="email_inline">Display ID</label>
+                        </div> -->
+            
                 </div>
             </div>
-            <p>
-                <label>
-                    <input class='checkb' id='check_1' type="checkbox" />
-                    <span>Display client ID #</span>
-                </label>
-            </p>
-            <div id='display-id-div' class="input-field inline">
-                <input id="display_id" type="text">
-                <label for="email_inline">Display ID</label>
-            </div>
-            <p>
-                <label>
-                    <input class='checkb' id='check_2' type="checkbox" checked='true' />
-                    <span>Full Screen</span>
-                </label>
-            </p>
-            <button class='btn waves-effect wave-lights blue-grey darken-2' type="submit"><i
-                    class="material-icons left">screen_share</i>Mirror screen</button>
+            <button class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3' type="submit"><i
+                    class="material-icons left">screen_share</i>Okay</button>
         </form>
-
     </div>
-    <style>
+    <!-- <style>
         .inline {
             display: inline-block;
             width: 45%;
 
         }
 
+        #left_panel {
+            float: left;
+            width: 60%;
+        }
+
+        #url {
+            width:80%;
+        }
+
+        #right_panel {
+            float: left;
+            width: 35%;
+        }
+
         /* #url{
-            width: 1000%;
-        } */
-    </style>
+                width: 1000%;
+            } */
+    </style> -->
     <script>
         const electron = nodeRequire('electron');
         const { ipcRenderer } = electron;
-        const url_sites = 'https://canopus.evl.uic.edu/config';
+        const default_config_url = 'https://canopus.evl.uic.edu/config';
 
         // Utility method for jQuery
         $.extend({
@@ -88,36 +121,81 @@
             console.log(item);
         }
 
-        // Change text box on click of drop down
-        function changeInput(e) {
-            $("#url").val(e.target.innerHTML); //because it is an input, use .val() to set and .html() to get
+        function buildConfigURL(domain){
+            return 'https://' + domain + '/config';
         }
 
-        function attachBehaviorDropdownItems() {
+        // Change text box on click of drop down
+        function sitesOnClick(e) {
+            $("#url").val(e.target.innerHTML); //because it is an input, use .val() to set and .html() to get
+            fetchWithTimeout(buildConfigURL(e.target.innerHTML), 1000, () => { l('Canopus site server down, timeout reached, refresh to try again') })
+                .catch(err => { throw err });
+        }
+
+        function attachBehaviorDropdownSites() {
             const dropd = document.querySelectorAll('.clickable');
 
             dropd.forEach(function (item) {
-                item.addEventListener('click', changeInput);
+                item.addEventListener('click', sitesOnClick);
             });
+        }
+
+        function attachBehaviorDropdownIds() {
+            const dropd = document.querySelectorAll('.clickable-id');
+
+            dropd.forEach(function (item) {
+                item.addEventListener('click', (e) => {
+                    $("#id_drop").text(e.target.innerHTML);
+                });
+            });
+        }
+
+        function removePreviousDropdownItem(ul_id){
+            document.getElementById(ul_id).innerHTML = "";
+        }
+
+        function populateUI(config_json) {
+            removePreviousDropdownItem("sites_dropdown");
+            removePreviousDropdownItem("ids_dropdown");
+
+            populateDropdownSites(config_json.remote_sites);
+            populateDropdownIds(config_json.displays);
+            // TODO password
+        }
+
+        function populateDropdownIds(display_ids) {
+            // l(config_json)
+            if (!display_ids) {
+                return;
+            }
+            display_ids.forEach(createDropItemIds);
+            attachBehaviorDropdownIds();
         }
 
         /**
          * Checks json and creates dropdown list
          */
-        function createDropdownList(config_json) {
-            // l(config_json)
-            if(!config_json.remote_sites){
+        function populateDropdownSites(remote_sites) {
+            if (!remote_sites) {
                 return;
             }
-            config_json.remote_sites.forEach(createDropItem);
-            attachBehaviorDropdownItems();
+            remote_sites.forEach(createDropItemSites);
+            attachBehaviorDropdownSites();
         }
 
         // Creates an item for the dropdown menu
-        function createDropItem(item, index) {
-            $('#dropdown1').append(
+        function createDropItemSites(item, index) {
+            $('#sites_dropdown').append(
                 $.el('li').append(
                     $.el('a', { class: 'clickable' }).text(item.host)
+                )
+            );
+        }
+
+        function createDropItemIds(item, index) {
+            $('#ids_dropdown').append(
+                $.el('li').append(
+                    $.el('a', { class: 'clickable-id' }).text(index)
                 )
             );
         }
@@ -132,17 +210,16 @@
 
             // If display number is toggled then take the ID, if NaN do full sscreen
             if ($check1.checked) {
-                var id = isNaN(parseInt($('#display_id').val())) ? -1 : parseInt($('#display_id').val());
-                /**
-                 * ! Change with max ID that I don't know
-                 */
-                if(id > -2 && id < 18){
-                    url = url + '/display.html?clientID='+id;
+                var id_element = document.getElementById('id_drop');
+                var id = isNaN(parseInt(id_element.innerHTML)) ? -1 : parseInt(id_element.innerHTML);
+
+                if (id > -2) {
+                    url = url + '/display.html?clientID=' + id;
                 }
             }
             else {
                 url = url + '/display.html?clientID=-1';
-            } 
+            }
             return url;
         }
 
@@ -181,9 +258,9 @@
                 } else {
                     return response.json();
                 }
-            }).then((json) =>{
-                if(json){
-                    createDropdownList(json);
+            }).then((json) => {
+                if (json) {
+                    populateUI(json);
                 }
             });
         }
@@ -197,11 +274,11 @@
             }
             var instances = M.Dropdown.init(elems, options);
 
-            attachBehaviorDropdownItems();
-            $("#display-id-div").hide();
+            attachBehaviorDropdownSites();
+            // $("#display-id-div").hide();
 
-            // fetch(url_sites)
-            fetchWithTimeout(url_sites, 1000, () => { l('Canopus site server down, timeout reached, refresh to try again') })
+            // fetch(default_config_url)
+            fetchWithTimeout(default_config_url, 1000, () => { l('Canopus site server down, timeout reached, refresh to try again') })
                 .catch(err => { throw err });
         });
 
@@ -217,12 +294,14 @@
                     if ($check2.checked) {
                         $check2.checked = false;
                     }
-                    $("#display-id-div").show();
+                    $("#id_drop").addClass('scale-in');
+                    // $("#display-id-div").show();
                 } else {
                     if ($check1.checked) {
                         $check1.checked = false;
                     }
-                    $("#display-id-div").hide();
+                    $("#id_drop").removeClass('scale-in');
+                    // $("#display-id-div").hide();
                 }
             }
         });
