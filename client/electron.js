@@ -19,6 +19,7 @@
 
 'use strict';
 
+const path = require('path');
 const electron = require('electron');
 
 // Get platform and hostname
@@ -138,14 +139,12 @@ commander
 	.parse(args);
 
 
-// Change current durectory to find the Webview JS addon
-if (commander.local) {
-	// if (os.platform() === "win32" || os.platform() === "darwin") {
-	console.log('Current directory:', process.cwd());
-	console.log('getAppPath directory:', electron.app.getAppPath());
-	electron.app.setAppPath(process.cwd());
-	// }
-}
+// // Change current durectory to find the Webview JS addon
+// 	// if (os.platform() === "win32" || os.platform() === "darwin") {
+// 	console.log('Current directory:', process.cwd());
+// 	console.log('getAppPath directory:', electron.app.getAppPath());
+// 	electron.app.setAppPath(process.cwd());
+// 	// }
 
 
 // Load the flash plugin if asked
@@ -198,6 +197,10 @@ if (commander.debug) {
 	// Add the parameter to the list of options on the command line
 	app.commandLine.appendSwitch("remote-debugging-port", port.toString());
 }
+
+// As of 2019, video elements with sound will no longer autoplay unless user interacted with page.
+// switch found from: https://github.com/electron/electron/issues/13525/
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 /**
  * Keep a global reference of the window object, if you don't, the window will
@@ -406,12 +409,39 @@ function createWindow() {
 		// ev.preventDefault();
 	});
 
+	// New webview going to be added
 	var partitionNumber = 0;
 	mainWindow.webContents.on('will-attach-webview', function(event, webPreferences, params) {
-		// New webview going to be added
-		// Each partition has a distinct context, ie partition
-		params.partition = 'partition_' + partitionNumber;
-		partitionNumber = partitionNumber + 1;
+		// Load the SAGE2 addon code
+		webPreferences.preloadURL = "file://" + path.join(__dirname + '/public/uploads/apps/Webview/SAGE2_script_supplement.js');
+
+		// Parse the URL
+		let destination = url.parse(params.src);
+		// Get the domain
+		let hostname = destination.host || destination.hostname;
+
+		// Special partitions to keep login info (wont work with multiple accounts)
+		if (hostname.endsWith("sharepoint.com") ||
+			hostname.endsWith("live.com") ||
+			hostname.endsWith("office.com")) {
+			params.partition = 'persist:office';
+		} else if (hostname.endsWith("appear.in")) {
+			// VTC
+			params.partition = 'persist:appear';
+		} else if (hostname.endsWith("youtube.com")) {
+			// VTC
+			params.partition = 'persist:youtube';
+		} else if (hostname.endsWith("github.com")) {
+			// GITHUB
+			params.partition = 'persist:github';
+		} else if (hostname.endsWith("google.com")) {
+			// GOOGLE
+			params.partition = 'persist:google';
+		} else {
+			// default isolated partitions
+			params.partition = 'partition_' + partitionNumber;
+			partitionNumber = partitionNumber + 1;
+		}
 	});
 
 	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {
@@ -551,6 +581,7 @@ function myParseInt(str, defaultValue) {
 function buildMenu() {
 
 	const template = [
+<<<<<<< HEAD
 	{
 		label: 'Edit',
 		submenu: [
@@ -658,6 +689,118 @@ function buildMenu() {
 			},
 		]
 	}
+=======
+		{
+			label: 'Edit',
+			submenu: [
+				{
+					label: 'Undo',
+					accelerator: 'CmdOrCtrl+Z',
+					role: 'undo'
+				},
+				{
+					label: 'Redo',
+					accelerator: 'Shift+CmdOrCtrl+Z',
+					role: 'redo'
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Cut',
+					accelerator: 'CmdOrCtrl+X',
+					role: 'cut'
+				},
+				{
+					label: 'Copy',
+					accelerator: 'CmdOrCtrl+C',
+					role: 'copy'
+				},
+				{
+					label: 'Paste',
+					accelerator: 'CmdOrCtrl+V',
+					role: 'paste'
+				},
+				{
+					label: 'Select All',
+					accelerator: 'CmdOrCtrl+A',
+					role: 'selectall'
+				}
+			]
+		},
+		{
+			label: 'View',
+			submenu: [
+				{
+					label: 'Reload',
+					accelerator: 'CmdOrCtrl+R',
+					click: function(item, focusedWindow) {
+						if (focusedWindow) {
+							focusedWindow.reload();
+						}
+					}
+				},
+				{
+					label: 'Toggle Full Screen',
+					accelerator: (function() {
+						if (process.platform === 'darwin') {
+							return 'Ctrl+Command+F';
+						} else {
+							return 'F11';
+						}
+					}()),
+					click: function(item, focusedWindow) {
+						if (focusedWindow) {
+							focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+						}
+					}
+				},
+				{
+					label: 'Toggle Developer Tools',
+					accelerator: (function() {
+						if (process.platform === 'darwin') {
+							return 'Alt+Command+I';
+						} else {
+							return 'Ctrl+Shift+I';
+						}
+					}()),
+					click: function(item, focusedWindow) {
+						if (focusedWindow) {
+							focusedWindow.toggleDevTools();
+						}
+					}
+				}
+			]
+		},
+		{
+			label: 'Window',
+			role: 'window',
+			submenu: [
+				{
+					label: 'Minimize',
+					accelerator: 'CmdOrCtrl+M',
+					role: 'minimize'
+				},
+				{
+					label: 'Close',
+					accelerator: 'CmdOrCtrl+W',
+					role: 'close'
+				}
+			]
+		},
+		{
+			label: 'Help',
+			role: 'help',
+			submenu: [
+				{
+					label: 'Learn More',
+					click: function() {
+						shell.openExternal('http://sage2.sagecommons.org/v4-0-release/sage2-display-client/');
+					}
+				}
+			]
+		}
+>>>>>>> master
 	];
 
 	if (process.platform === 'darwin') {
@@ -665,6 +808,7 @@ function buildMenu() {
 		template.unshift({
 			label: name,
 			submenu: [
+<<<<<<< HEAD
 			{
 				label: 'About ' + name,
 				role: 'about'
@@ -716,6 +860,61 @@ function buildMenu() {
 				label: 'Bring All to Front',
 				role: 'front'
 			});
+=======
+				{
+					label: 'About ' + name,
+					role: 'about'
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Services',
+					role: 'services',
+					submenu: []
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Hide ' + name,
+					accelerator: 'Command+H',
+					role: 'hide'
+				},
+				{
+					label: 'Hide Others',
+					accelerator: 'Command+Shift+H',
+					role: 'hideothers'
+				},
+				{
+					label: 'Show All',
+					role: 'unhide'
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Quit',
+					accelerator: 'Command+Q',
+					click: function() {
+						app.quit();
+					}
+				}
+			]
+		});
+		const windowMenu = template.find(function(m) {
+			return m.role === 'window';
+		});
+		if (windowMenu) {
+			windowMenu.submenu.push(
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Bring All to Front',
+					role: 'front'
+				});
+>>>>>>> master
 		}
 	}
 

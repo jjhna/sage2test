@@ -156,7 +156,7 @@ var MediaFolderRefreshStatus = {
 				// Remove old assets but not the links
 				if (AllAssets.list[item].valid === false &&
 					AllAssets.list[item].sage2Type !== "sage2/url") {
-					sageutils.log("Assets", "Removing old item", item, AllAssets.list[item]);
+					sageutils.log("Assets", "Removing old item", item);
 					delete AllAssets.list[item];
 				}
 			}

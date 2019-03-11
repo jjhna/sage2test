@@ -14,10 +14,6 @@ Supplement to get some additional input functionality.
 
 */
 
-
-// ------------------------------------------------------------------------------------------------------------------
-// 1
-
 var s2InjectForKeys = {};
 
 /*
