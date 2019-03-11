@@ -408,13 +408,39 @@ function createWindow() {
 		// ev.preventDefault();
 	});
 
+	// New webview going to be added
 	var partitionNumber = 0;
 	mainWindow.webContents.on('will-attach-webview', function(event, webPreferences, params) {
-		// New webview going to be added
-		// Each partition has a distinct context, ie partition
-		params.partition = 'partition_' + partitionNumber;
-		partitionNumber = partitionNumber + 1;
+		// Load the SAGE2 addon code
 		webPreferences.preloadURL = "file://" + path.join(__dirname + '/public/uploads/apps/Webview/SAGE2_script_supplement.js');
+
+		// Parse the URL
+		let destination = url.parse(params.src);
+		// Get the domain
+		let hostname = destination.host || destination.hostname;
+
+		// Special partitions to keep login info (wont work with multiple accounts)
+		if (hostname.endsWith("sharepoint.com") ||
+			hostname.endsWith("live.com") ||
+			hostname.endsWith("office.com")) {
+			params.partition = 'persist:office';
+		} else if (hostname.endsWith("appear.in")) {
+			// VTC
+			params.partition = 'persist:appear';
+		} else if (hostname.endsWith("youtube.com")) {
+			// VTC
+			params.partition = 'persist:youtube';
+		} else if (hostname.endsWith("github.com")) {
+			// GITHUB
+			params.partition = 'persist:github';
+		} else if (hostname.endsWith("google.com")) {
+			// GOOGLE
+			params.partition = 'persist:google';
+		} else {
+			// default isolated partitions
+			params.partition = 'partition_' + partitionNumber;
+			partitionNumber = partitionNumber + 1;
+		}
 	});
 
 	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {
