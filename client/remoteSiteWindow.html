@@ -18,94 +18,282 @@
 
 </head>
 
-<body>
+<body class="grey lighten-4">
     <div class='container'>
         <form action="">
-            <div class="row">
-                <div class="col s8"><label>Enter URL of Remote Site</label>
-                    <div class="input-field">
-                        <!-- favorite and favorite_border -->
-                        <i class="material-icons prefix">favorite_border</i>
-                        <input type="text" id="url" autofocus>
-                    </div>
-                    <div>
-                        <!-- Dropdown Trigger -->
-                        <a class='dropdown-trigger btn blue-grey darken-2 z-depth-3' href='#' data-target='sites_dropdown'>Known
-                            sites</a>
-                        <!-- Dropdown Structure -->
-                        <ul id='sites_dropdown' class='dropdown-content'>
-                            <!-- <li><a class='clickable'>canopus.evl.uic.edu</a></li> -->
-                        </ul>
-                    </div>
-                </div>
-                <div class="col s4"><label>Options</label>
+            <div class="section">
+                <h3>Connect to remote site</h3>
+                <div class="row">
+                    <div class="col s8"><label>Enter URL of Remote Site</label>
+                        <div class="input-field">
+                            <!-- favorite and favorite_border -->
+                            <!-- <a class="btn-floating pulse"><i class="material-icons">favorite_border</i></a> -->
 
-                    <br><br>
-                    <p>
-                        <label>
-                            <input class='checkb' id='check_2' type="checkbox" checked='true' />
-                            <span>Display Full Wall</span>
-                        </label>
-                    </p>
-                    <div class="row">
-                      <div class="col s10"> 
-                    <p>
-                        <label>
-                            <input class='checkb' id='check_1' type="checkbox" />
-                            <span>Display client ID</span>
-                        </label>
-                    </p>
-                </div> 
-                <div class="col s1"><div id='display-id-div'>
-                        <!-- Dropdown Trigger -->
-                        <a id="id_drop" class='dropdown-trigger btn blue-grey darken-2 z-depth-3 scale-transition scale-out' href='#'
-                            data-target='ids_dropdown'>ID</a>
-                        <!-- Dropdown Structure -->
-                        <ul id='ids_dropdown' class='dropdown-content'>
-                            <!-- <li><a class='clickable'>0</a></li> -->
-                        </ul>
-                    </div></div>
-                </div>
-                    <!-- <div id='display-id-div' class="input-field inline">
-                            <input id="display_id" type="text">
-                            <label for="email_inline">Display ID</label>
-                        </div> -->
-            
+                            <i id="favorite_heart" class="material-icons prefix"
+                                style="cursor: pointer">favorite_border</i>
+                            <input type="text" id="url" data-name="" autofocus>
+                        </div>
+                        <div>
+                            <!-- Dropdown Trigger -->
+                            <a class='dropdown-trigger btn blue-grey darken-2 z-depth-3' href='#'
+                                data-target='sites_dropdown'>Known
+                                sites</a>
+                            <!-- Dropdown Structure -->
+                            <ul id='sites_dropdown' class='dropdown-content'>
+                                <!-- <li><a class='clickable'>canopus.evl.uic.edu</a></li> -->
+                            </ul>
+                        </div>
+                        <div id='favorites_carousel' class="carousel" style="zoom:80%;">
+                            <div class="card blue-grey darken-2 carousel-item">
+                                <div class="card-content white-text">
+                                    <span class="card-title">Continuum</span>
+                                    <p>canopus.evl.uic.edu</p>
+                                </div>
+                                <div class="card-action">
+                                    <a onclick="selectFavoriteSite(this)" href="#"><i
+                                            class="material-icons prefix">add_to_queue</i></a>
+                                    <a onclick="removeFavoriteSite(this)" href="#"><i
+                                            class="small material-icons prefix">favorite</i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col s4"><label>Options</label>
+
+                        <br><br>
+                        <p>
+                            <label>
+                                <input class='checkb' id='check_2' type="checkbox" checked='true' />
+                                <span>Display Full Wall</span>
+                            </label>
+                        </p>
+                        <div class="row">
+                            <div class="col s10">
+                                <p>
+                                    <label>
+                                        <input class='checkb' id='check_1' type="checkbox" />
+                                        <span>Display client ID</span>
+                                    </label>
+                                </p>
+                            </div>
+                            <div class="col s1">
+                                <div id='display-id-div'>
+                                    <!-- Dropdown Trigger -->
+                                    <a id="id_drop"
+                                        class='dropdown-trigger btn blue-grey darken-2 z-depth-3 scale-transition scale-out'
+                                        href='#' data-target='ids_dropdown'>ID</a>
+                                    <!-- Dropdown Structure -->
+                                    <ul id='ids_dropdown' class='dropdown-content'>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <br><br><br><br><br><br><br><br><br>
+                        <div class="divider"></div>
+                        <div class="section">
+                            <div class="row">
+                                <div class="col s6"><button id="cancel_btn"
+                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'
+                                        type="submit">Cancel</button></div>
+                                <div class="col s6">
+                                    <!-- disabled 
+                                TODO added pulse class for 2 second on enable-->
+                                    <button id="okay_btn"
+                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3' type="submit">
+                                        <!-- <i class="material-icons left">screen_share</i> -->
+                                        Okay</button></div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
-            <button class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3' type="submit"><i
-                    class="material-icons left">screen_share</i>Okay</button>
+
+
         </form>
     </div>
-    <!-- <style>
-        .inline {
-            display: inline-block;
-            width: 45%;
 
-        }
-
-        #left_panel {
-            float: left;
-            width: 60%;
-        }
-
-        #url {
-            width:80%;
-        }
-
-        #right_panel {
-            float: left;
-            width: 35%;
-        }
-
-        /* #url{
-                width: 1000%;
-            } */
-    </style> -->
     <script>
         const electron = nodeRequire('electron');
+        const fs = nodeRequire('fs');
         const { ipcRenderer } = electron;
-        const default_config_url = 'https://canopus.evl.uic.edu/config';
+
+        // const default_config_url = 'https://canopus.evl.uic.edu/config';
+        const default_config_url = 'https://orion-win.evl.uic.edu/config';
+        const favorites_path = '/tmp/sage2_favorite_sites.json'
+
+        //JS object containing list of favorites sites
+        var favorites = {
+            list: []
+            // list: [{
+            //     host: 'orion-win.evl.uic.edu',
+            //     name: 'CAVE2'
+            // },
+            // {
+            //     host: 'test.edu',
+            //     name: 'CAVE3'
+            // },
+            // {
+            //     host: 'hhhg.sds.ds',
+            //     name: 'CAVE4'
+            // }]
+        };
+
+        // writeFavoritesOnFile(favorites);
+
+
+        // Reading the favorites json file
+        fs.readFile(favorites_path, 'utf8', function readFileCallback(err, data) {
+            if (err) { // most likely no json file (first use), write empty favorites on file
+                console.log(err);
+                writeFavoritesOnFile(favorites);
+            } else {
+                favorites = JSON.parse(data); //convert json to object
+                if (favorites.list.length > 0) {
+                    clearCarousel();
+                    populateCarousel(favorites.list);
+                    updateInitCarousel();
+                }
+            }
+        });
+
+
+        // add on click listener to heart (add/remove from favorites)
+        document.getElementById("favorite_heart").addEventListener('click', (e) => {
+            let checked = e.target.innerHTML == 'favorite_border' ? false : true;
+            let URL = document.querySelector('#url').value;
+            let sitename = document.querySelector('#url').getAttribute('data-name')
+            if (URL) {
+                if (!checked) { //item added to favorites
+                    setFullHeart();
+                    addToFavorites({
+                        name: sitename || 'Unknown name',
+                        host: URL
+                    });
+                } else { //item removed from favorites
+                    setEmptyHeart();
+                    removeFromFavorites(URL);
+                }
+            }
+        });
+
+
+        function setFullHeart() {
+            document.getElementById("favorite_heart").innerHTML = 'favorite';
+        }
+
+        function setEmptyHeart() {
+            document.getElementById("favorite_heart").innerHTML = 'favorite_border';
+        }
+
+
+        function populateCarousel(favorites_list) {
+            if (!favorites_list) {
+                return;
+            }
+            favorites_list.forEach(addItemToCarousel);
+            // attachBehaviorDropdownSites();
+        }
+
+
+
+        function addItemToCarousel(item, index) {
+            $('#favorites_carousel').append(
+                $.el('div', {
+                    class: 'card blue-grey darken-2 carousel-item'
+                }).append(
+                    $.el('div', {
+                        class: 'card-content white-text'
+                    }).append(
+                        `<span class="card-title">${item.name}</span><p>${item.host}</p>`
+                    ),
+                    $.el('div', {
+                        class: 'card-action'
+                    }).append(
+                        '<a onclick="selectFavoriteSite(this)" href="#"><i class="material-icons prefix">add_to_queue</i></a><a onclick="removeFavoriteSite(this)" href="#"><i class="small material-icons prefix">favorite</i></a>'
+                    )
+                )
+            );
+        }
+
+        function selectFavoriteSite(element) {
+            let url = element.parentElement.parentElement.firstElementChild.lastElementChild.innerText;
+            let name = element.parentElement.parentElement.firstElementChild.firstElementChild.innerText;
+
+            $("#url").val(url);
+            $("#url").attr("data-name", name); // store site name in data-name attr of url
+            //check if in favorites, if it is color heart in black, if not color it in white
+            setFullHeart();
+            // fetch config file and update list
+            fetchWithTimeout(buildConfigURL(url), 1000, () => { l('Site server down, timeout reached, refresh to try again') })
+                .catch(err => { throw err });
+        }
+
+        /**
+         * Remove from favorites, write file, update carousel, color heart in white if the url in #url is the
+         * same as the one just unselected
+         */
+        function removeFavoriteSite(element) {
+            var url = element.parentElement.parentElement.firstElementChild.lastElementChild.innerText;
+            let URL_in_form = document.querySelector('#url').value;
+            removeFromFavorites(url);
+            if (URL_in_form === url) {
+                setEmptyHeart();
+            }
+        }
+
+
+        /**
+         * Adds a new favorite site to the favorite json if it is not already in the list and writes back to file
+         */
+        function addToFavorites(favorite_item) {
+            if (!alreadyInFavorites(favorite_item.host)) {
+                favorites.list.push(favorite_item);
+                writeFavoritesOnFile(favorites);
+                addItemToCarousel(favorite_item);
+                updateInitCarousel();
+            }
+        }
+
+        function alreadyInFavorites(host) {
+            if (favorites.list.length === 0) {
+                return false;
+            }
+            for (favorite of favorites.list) {
+                if (favorite.host === host) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function clearCarousel() {
+            document.getElementById("favorites_carousel").innerHTML = "";
+        }
+
+        function removeFromFavorites(favorite_url) {
+            for (let i = 0; i < favorites.list.length; i++) {
+                if (favorite_url === favorites.list[i].host) {
+                    favorites.list.splice(i, 1);
+                    writeFavoritesOnFile(favorites);
+                    clearCarousel();
+                    populateCarousel(favorites.list);
+                    updateInitCarousel();
+                }
+            }
+        }
+
+        /**
+         * Writes favorites in a persistent way on local machine
+         */
+        function writeFavoritesOnFile(favorites_obj) {
+            fs.writeFile(favorites_path, JSON.stringify(favorites_obj), 'utf8', () => { }); // write it back 
+        }
+
+        /**
+         * TODO disable okay button if nothing in URL (class disable), plus pulse
+         */
 
         // Utility method for jQuery
         $.extend({
@@ -121,15 +309,25 @@
             console.log(item);
         }
 
-        function buildConfigURL(domain){
+        function buildConfigURL(domain) {
             return 'https://' + domain + '/config';
         }
 
         // Change text box on click of drop down
         function sitesOnClick(e) {
-            $("#url").val(e.target.innerHTML); //because it is an input, use .val() to set and .html() to get
-            fetchWithTimeout(buildConfigURL(e.target.innerHTML), 1000, () => { l('Canopus site server down, timeout reached, refresh to try again') })
+            // set text of url field
+            $("#url").val(e.target.getAttribute('data-host')); //because it is an input, use .val() to set and .html() to get
+            $("#url").attr("data-name", e.target.innerText); // store site name in data-name attr of url
+            //check if in favorites, if it is color heart in black, if not color it in white
+            if (alreadyInFavorites(e.target.getAttribute('data-host'))) {
+                setFullHeart();
+            } else {
+                setEmptyHeart();
+            }
+            // fetch config file and update list
+            fetchWithTimeout(buildConfigURL(e.target.getAttribute('data-host')), 1000, () => { l('Site server down, timeout reached, refresh to try again') })
                 .catch(err => { throw err });
+
         }
 
         function attachBehaviorDropdownSites() {
@@ -150,7 +348,7 @@
             });
         }
 
-        function removePreviousDropdownItem(ul_id){
+        function removePreviousDropdownItem(ul_id) {
             document.getElementById(ul_id).innerHTML = "";
         }
 
@@ -164,7 +362,6 @@
         }
 
         function populateDropdownIds(display_ids) {
-            // l(config_json)
             if (!display_ids) {
                 return;
             }
@@ -187,7 +384,7 @@
         function createDropItemSites(item, index) {
             $('#sites_dropdown').append(
                 $.el('li').append(
-                    $.el('a', { class: 'clickable' }).text(item.host)
+                    $.el('a', { class: 'clickable', 'data-host': item.host }).text(item.name)
                 )
             );
         }
@@ -230,12 +427,16 @@
          */
         const form = document.querySelector('form');
         form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            let URL = document.querySelector('#url').value;
+            if (e.target.id == "cancel_btn") {
+                ipcRenderer.send('close-connect-page', "0");
+            } else {
+                e.preventDefault();
+                let URL = document.querySelector('#url').value;
 
-            URL = formatProperly(URL);
-            //sending URL to electron.js, params: key value pair (id,URL)
-            ipcRenderer.send('connect-url', URL);
+                URL = formatProperly(URL);
+                //sending URL to electron.js, params: key value pair (id,URL)
+                ipcRenderer.send('connect-url', URL);
+            }
         });
 
         /**
@@ -265,6 +466,13 @@
             });
         }
 
+        function updateInitCarousel() {
+            var elems = document.querySelectorAll('.carousel');
+            if (typeof elems !== 'undefined') {
+                var instances = M.Carousel.init(elems, options);
+            }
+        }
+
         // Initialize dropdown with sites
         document.addEventListener('DOMContentLoaded', function () {
             var elems = document.querySelectorAll('.dropdown-trigger');
@@ -273,6 +481,9 @@
                 hover: true
             }
             var instances = M.Dropdown.init(elems, options);
+
+            //carousel init
+            updateInitCarousel();
 
             attachBehaviorDropdownSites();
             // $("#display-id-div").hide();

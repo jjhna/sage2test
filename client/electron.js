@@ -420,6 +420,11 @@ function createWindow() {
 	});
 
 	// Catch remote URL to connect to
+	ipcMain.on('close-connect-page', (e, URL) => {
+		remoteSiteInputWindow.close();
+	});
+
+	// Catch remote URL to connect to
 	ipcMain.on('connect-url', (e, URL) => {
 		var location = URL;
 		// Close input window
@@ -571,8 +576,9 @@ function myParseInt(str, defaultValue) {
 function createRemoteSiteInputWindow() {
 	// creating a new window
 	remoteSiteInputWindow = new BrowserWindow({
-		width: 800,
-		height: 500,
+		width: 1000,
+		height: 600,
+		frame: false,
 		title: 'Connect to Remote Site',
 		webPreferences: {
 			nodeIntegration: true,
