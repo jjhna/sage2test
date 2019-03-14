@@ -410,43 +410,43 @@ let SAGE2_SnippetEditor = (function () {
 		function updateSnippetStates(scriptStates) {
 			// update saved states and clear existing options
 			self.scriptStates = scriptStates;
-			self.scriptDropdown.innerHTML = ""; // This works to remove options... real method removing one-by-one was failing
+			// self.scriptDropdown.innerHTML = ""; // This works to remove options... real method removing one-by-one was failing
 
 			// self.snippetList.innerHTML = "";
 
 			let list = d3.select(self.snippetList);
 
-			for (let script of Object.values(scriptStates)) {
-				// populate Dropdown
-				let newOption = document.createElement("div");
-				let typeBadge = document.createElement("div");
-				let name = document.createElement("span");
+			// for (let script of Object.values(scriptStates)) {
+			// 	// populate Dropdown
+			// 	let newOption = document.createElement("div");
+			// 	let typeBadge = document.createElement("div");
+			// 	let name = document.createElement("span");
 
-				newOption.className = "dropdownOption";
-				typeBadge.className = "colorBadge " + script.type + "SnippetColor";
+			// 	newOption.className = "dropdownOption";
+			// 	typeBadge.className = "colorBadge " + script.type + "SnippetColor";
 
-				newOption.onclick = function() {
-					if (script.locked && script.id !== self.loadedSnippet) {
-						saveCopy(script.id);
-					} else if (script.id !== self.loadedSnippet) {
-						loadScript(script.id);
-					}
-				};
+			// 	newOption.onclick = function() {
+			// 		if (script.locked && script.id !== self.loadedSnippet) {
+			// 			saveCopy(script.id);
+			// 		} else if (script.id !== self.loadedSnippet) {
+			// 			loadScript(script.id);
+			// 		}
+			// 	};
 
-				name.innerHTML = `[${script.id.split("-")[1]}] - ${script.desc}`;
+			// 	name.innerHTML = `[${script.id.split("-")[1]}] - ${script.desc}`;
 
-				if (script.id === self.loadedSnippet) {
-					newOption.disabled = true;
-					newOption.classList.add("loaded");
-				} else if (script.locked) {
-					newOption.disabled = true;
-					newOption.classList.add("locked");
-				}
+			// 	if (script.id === self.loadedSnippet) {
+			// 		newOption.disabled = true;
+			// 		newOption.classList.add("loaded");
+			// 	} else if (script.locked) {
+			// 		newOption.disabled = true;
+			// 		newOption.classList.add("locked");
+			// 	}
 
-				newOption.appendChild(typeBadge);
-				newOption.appendChild(name);
-				self.scriptDropdown.appendChild(newOption);
-			}
+			// 	newOption.appendChild(typeBadge);
+			// 	newOption.appendChild(name);
+			// 	self.scriptDropdown.appendChild(newOption);
+			// }
 
 			let listBind = list.selectAll(".list-item")
 				.data(Object.values(scriptStates), d => d.id);
@@ -504,8 +504,14 @@ let SAGE2_SnippetEditor = (function () {
 					item.select(".snippet-name")
 						.text(d.desc);
 
-					item.select(".fa-folder-open")
-						.classed("disabled", d.locked);
+					item
+						.select(".fa-folder-open")
+						.classed("disabled", d.locked)
+						.on("click", function() {
+							if (d.id !== self.loadedSnippet && !d.locked) {
+								loadScript(d.id);
+							}
+						});
 				});
 
 			snippetOverlayManager.updateSnippetStates(scriptStates);
