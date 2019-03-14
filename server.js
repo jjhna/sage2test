@@ -401,11 +401,9 @@ function initializeSage2Server() {
 		config.passwordProtected = true;
 		// New password, regenerate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
-	} else if (sageutils.fileExists(passwordFile)) {
-		// remove pasword file, if option not specified
-		// fs.unlinkSync(passwordFile);
-
-		// // If a password file exists, load it
+	} else if (sageutils.fileExists(passwordFile) && (typeof program.password  === "string")) {
+		// If a password file exists, and the password flag was used but was empty, load from the file
+		// This is to allow sabi to launch using passwords, while still removing passwd on non password flag launches.
 		var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
 		var passwordFileJson       = JSON.parse(passwordFileJsonString);
 		if (passwordFileJson.pwd !== null) {
@@ -416,6 +414,11 @@ function initializeSage2Server() {
 		} else {
 			sageutils.log("Secure", "Invalid hash file", passwordFile);
 		}
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
+	} else if (sageutils.fileExists(passwordFile)) {
+		// remove pasword file, if option not specified
+		fs.unlinkSync(passwordFile);
 
 		// Now, generate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
