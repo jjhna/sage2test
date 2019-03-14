@@ -403,21 +403,22 @@ function initializeSage2Server() {
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
 	} else if (sageutils.fileExists(passwordFile)) {
 		// remove pasword file, if option not specified
-		fs.unlinkSync(passwordFile);
-		// Now, generate the connection note
-		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
+		// fs.unlinkSync(passwordFile);
 
 		// // If a password file exists, load it
-		// var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
-		// var passwordFileJson       = JSON.parse(passwordFileJsonString);
-		// if (passwordFileJson.pwd !== null) {
-		// 	global.__SESSION_ID = passwordFileJson.pwd;
-		// 	sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
-		// 	// the session is protected
-		// 	config.passwordProtected = true;
-		// } else {
-		// 	sageutils.log("Secure", "Invalid hash file", passwordFile);
-		// }
+		var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
+		var passwordFileJson       = JSON.parse(passwordFileJsonString);
+		if (passwordFileJson.pwd !== null) {
+			global.__SESSION_ID = passwordFileJson.pwd;
+			sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
+			// the session is protected
+			config.passwordProtected = true;
+		} else {
+			sageutils.log("Secure", "Invalid hash file", passwordFile);
+		}
+
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
 	} else {
 		// Now, generate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
