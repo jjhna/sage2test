@@ -171,6 +171,8 @@ const url = require('url');
 var parsedURL = url.parse(commander.server);
 // default domais are local
 var domains   = "localhost,127.0.0.1";
+// Store current site domain
+var currentDomain = parsedURL.hostname;
 if (parsedURL.hostname) {
 	// add the hostname
 	domains +=  "," + parsedURL.hostname;
@@ -419,14 +421,16 @@ function createWindow() {
 		// New webview added and completed
 	});
 
-	// Catch remote URL to connect to
-	ipcMain.on('close-connect-page', (e, URL) => {
+	// Catch the close connection page event
+	ipcMain.on('close-connect-page', (e, value) => {
 		remoteSiteInputWindow.close();
 	});
 
 	// Catch remote URL to connect to
 	ipcMain.on('connect-url', (e, URL) => {
 		var location = URL;
+		// Update current domain
+		currentDomain = url.parse(URL).hostname;
 		// Close input window
 		remoteSiteInputWindow.close();
 		if (commander.hash) {
@@ -591,6 +595,8 @@ function createRemoteSiteInputWindow() {
 		protocol: 'file',
 		slashes: true
 	}));
+	setTimeout(() => {remoteSiteInputWindow.webContents.send('current-location', currentDomain);}, 1000);
+	
 	// Garbage collection for window (when add window is closed the space should be deallocated)
 	remoteSiteInputWindow.on('closed', () => {
 		remoteSiteInputWindow = null;
