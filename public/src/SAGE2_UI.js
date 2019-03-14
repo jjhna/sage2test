@@ -66,6 +66,25 @@ if (!String.prototype.startsWith) {
 /* eslint-enable */
 //
 
+/**
+ * Handling Progressive Web App installation
+ *
+ */
+var deferredInstallationPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+	console.log('PWA> beforeinstallprompt');
+	// we are now allow to install as an application
+	deferredInstallationPrompt = e;
+});
+
+
+window.addEventListener('appinstalled', (evt) => {
+	console.log('PWA> SAGE2 Application installed');
+	deferredInstallationPrompt = null;
+});
+
+
 var wsio;
 var displayUI;
 var interactor;
@@ -147,8 +166,6 @@ window.addEventListener('load', function(event) {
 window.addEventListener('resize', function(event) {
 	SAGE2_resize();
 });
-
-
 
 // Get Browser-Specifc Prefix
 function getBrowserPrefix() {
@@ -2092,7 +2109,8 @@ function handleDblClick(element) {
 function pointerScroll(event) {
 	if (event.target.id === "sage2UICanvas") {
 		displayUI.pointerScroll(pointerX, pointerY, event.deltaY);
-		event.preventDefault();
+		// Not needed anymore (chrome 73)
+		// event.preventDefault();
 	}
 }
 
