@@ -4,19 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <title>Connect to Remote Site</title>
-    <script>
-        // Renaming require keyword to be able to use jQuery and node in electron, load node modules with nodeRequire()
-        window.nodeRequire = require;
-        delete window.require;
-        delete window.exports; delete window.module; 
-    </script>
     <link rel="stylesheet" href="css/materialize.min.css">
     <link href="css/material.icons.css" rel="stylesheet">
-    <script src="js/jquery-3.3.1.min.js"></script>
     <script src="js/materialize.min.js"></script>
 
 
 </head>
+
+<style>
+    .carousel .indicators .indicator-item {
+        background-color: #455a64;
+    }
+
+</style>
 
 <body class="grey lighten-4">
     <div class='container'>
@@ -36,7 +36,7 @@
                         <div>
                             <!-- Dropdown Trigger -->
                             <a class='dropdown-trigger btn blue-grey darken-2 z-depth-3' href='#'
-                                data-target='sites_dropdown'>Known
+                                data-target='sites_dropdown'>Connected
                                 sites</a>
                             <!-- Dropdown Structure -->
                             <ul id='sites_dropdown' class='dropdown-content'>
@@ -44,7 +44,7 @@
                             </ul>
                         </div>
                         <div id='favorites_carousel' class="carousel" style="zoom:80%;">
-                            <div class="card blue-grey darken-2 carousel-item">
+                            <div class="card blue-grey darken-2 carousel-item z-depth-3">
                                 <div class="card-content white-text">
                                     <span class="card-title">Continuum</span>
                                     <p>canopus.evl.uic.edu</p>

@@ -595,8 +595,10 @@ function createRemoteSiteInputWindow() {
 		protocol: 'file',
 		slashes: true
 	}));
-	setTimeout(() => {remoteSiteInputWindow.webContents.send('current-location', currentDomain);}, 1000);
-	
+	setTimeout(() => {
+		remoteSiteInputWindow.webContents.send('current-location', currentDomain);
+	}, 1000);
+
 	// Garbage collection for window (when add window is closed the space should be deallocated)
 	remoteSiteInputWindow.on('closed', () => {
 		remoteSiteInputWindow = null;
