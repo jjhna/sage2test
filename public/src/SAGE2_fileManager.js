@@ -20,7 +20,7 @@
 /* global SAGE2_init, SAGE2_resize, escape, unescape, sage2Version, showDialog */
 /* global removeAllChildren, SAGE2_copyToClipboard, displayUI, dateToYYYYMMDDHHMMSS */
 /* global showSAGE2Message, pasteHandler */
-/* global SAGE2_speech */
+/* global SAGE2_speech, deferredInstallationPrompt */
 
 "use strict";
 
@@ -192,7 +192,39 @@ function FileManager(wsio, mydiv, uniqueID) {
 				_this.saveSession();
 			}
 		},
-		separator: {value: "separator"},
+		separator1: {value: "separator"},
+		install_menu: {value: "Install as an Application",
+			tooltip: "Saves this user interface as a Desktop Progressive Web Application, standalone from Chrome",
+			callback: function (evt) {
+				if (deferredInstallationPrompt) {
+					webix.confirm({
+						type:  "alert-warning",
+						title: "SAGE2 Message",
+						ok:    "OK",
+						width: "50%",
+						text:  "<span style='font-weight:bold;'>Install SAGE2 UI?</span>",
+						callback: function(yesno) {
+							if (yesno) {
+								// Show the prompt
+								deferredInstallationPrompt.prompt();
+								// Wait for the user to respond to the prompt
+								deferredInstallationPrompt.userChoice
+									.then((choiceResult) => {
+										if (choiceResult.outcome === 'accepted') {
+											console.log('User accepted the A2HS prompt');
+										} else {
+											console.log('User dismissed the A2HS prompt');
+										}
+									});
+							}
+						}
+					});
+				} else {
+					showSAGE2Message("Installation not yet supported for your current installation");
+				}
+			}
+		},
+		separator2: {value: "separator"},
 		showfm_menu: {value: "Open Media Browser",
 			tooltip: "Shows the file media browser below the user interface",
 			callback: function (evt) {
