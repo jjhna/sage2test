@@ -15,7 +15,6 @@
     .carousel .indicators .indicator-item {
         background-color: #455a64;
     }
-
 </style>
 
 <body class="grey lighten-4">
@@ -33,15 +32,25 @@
                                 style="cursor: pointer">favorite_border</i>
                             <input type="text" id="url" data-name="" autofocus>
                         </div>
-                        <div>
-                            <!-- Dropdown Trigger -->
-                            <a class='dropdown-trigger btn blue-grey darken-2 z-depth-3' href='#'
-                                data-target='sites_dropdown'>Connected
-                                sites</a>
-                            <!-- Dropdown Structure -->
-                            <ul id='sites_dropdown' class='dropdown-content'>
-                                <!-- <li><a class='clickable'>canopus.evl.uic.edu</a></li> -->
-                            </ul>
+                        <div class="row">
+                            <div class="col s5">
+                                <!-- Dropdown Trigger -->
+                                <a class='dropdown-trigger btn blue-grey darken-2 z-depth-3' href='#'
+                                    data-target='sites_dropdown'>Connected
+                                    sites</a>
+                                <!-- Dropdown Structure -->
+                                <ul id='sites_dropdown' class='dropdown-content'>
+                                    <!-- <li><a class='clickable'>canopus.evl.uic.edu</a></li> -->
+                                </ul>
+                            </div>
+                            <div class="col s7"><a id="load-site-info-btn"
+                                    class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'
+                                    onclick="loadCurrentSiteInfo()">
+                                    <span id="load-site-info-btn-text">Load site info</span><i
+                                        class="material-icons right">refresh</i>
+                                </a>
+                            </div>
+
                         </div>
                         <div id='favorites_carousel' class="carousel" style="zoom:80%;">
                             <div class="card blue-grey darken-2 carousel-item z-depth-3">
@@ -88,21 +97,27 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="input-field col s12">
+                                <input disabled id="password" type="password" class="validate">
+                                <label id="pwd-control" for="password">Password</label>
+                            </div>
+                        </div>
 
-                        <br><br><br><br><br><br><br><br><br>
+                        <br><br><br><br><br><br>
                         <div class="divider"></div>
                         <div class="section">
                             <div class="row">
-                                <div class="col s6"><button id="cancel_btn"
-                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'
-                                        type="submit">Cancel</button></div>
+                                <div class="col s6"><a id="cancel_btn" onclick="cancelOnClick()"
+                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>Cancel</a>
+                                </div>
                                 <div class="col s6">
                                     <!-- disabled 
                                 TODO added pulse class for 2 second on enable-->
-                                    <button id="okay_btn"
-                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3' type="submit">
+                                    <a id="okay_btn" onclick="okayOnClick()"
+                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>
                                         <!-- <i class="material-icons left">screen_share</i> -->
-                                        Okay</button></div>
+                                        Okay</a></div>
                             </div>
                         </div>
 

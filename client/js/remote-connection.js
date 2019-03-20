@@ -18,7 +18,15 @@ const siteDropdown = document.getElementById('sites_dropdown');
 const check1 = document.getElementById('check_1');
 const check2 = document.getElementById('check_2');
 const urlInput = document.getElementById('url');
+const loadSiteInfoBtn = document.getElementById('load-site-info-btn');
+const loadSiteInfoBtnText = document.getElementById('load-site-info-btn-text');
+// const pwdControl = document.getElementById('pwd-control');
+const pwdInput = document.getElementById('password');
 
+
+const buttonColorClass = "blue-grey darken-2";
+// const offlineColorClass = "deep-orange accent-1";
+// const onlineColorClass = "green lighten-1";
 const onlineColor = "#60d277";
 const offlineColor = "#d5715d";
 
@@ -55,10 +63,9 @@ fs.readFile(favorites_path, 'utf8', function readFileCallback(err, data) {
 });
 
 
-// add on click listener to heart (add/remove from favorites)
+
 /**
- *
- * TODO when added to favorites load its config file
+ * add on click listener to heart (add/remove from favorites)
  */
 favoriteHeart.addEventListener('click', (e) => {
 	let checked = e.target.innerHTML == 'favorite_border' ? false : true;
@@ -124,6 +131,14 @@ function removeClass(elem, classes) {
 	}
 }
 
+function enablePassword() {
+	pwdInput.removeAttribute("disabled");
+}
+
+function disablePassword() {
+	pwdInput.setAttribute("disabled", "");
+}
+
 /**
  * Adds an item to the carousel of favorites
  *
@@ -164,12 +179,7 @@ function selectFavoriteSite(element) {
 	//check if in favorites, if it is color heart in black, if not color it in white
 	setFullHeart();
 	// fetch config file and update list
-	fetchWithTimeout(buildConfigURL(host), 1000, () => {
-		onCurrentSiteDown();
-	})
-		.catch(err => {
-			throw err;
-		});
+	loadSiteInfo(host);
 }
 
 /**
@@ -304,13 +314,7 @@ function sitesOnClick(e) {
 		setEmptyHeart();
 	}
 	// fetch config file and update list
-	fetchWithTimeout(buildConfigURL(e.target.getAttribute('data-host')), 1000, () => {
-		onCurrentSiteDown();
-	})
-		.catch(err => {
-			throw err;
-		});
-
+	loadSiteInfo(e.target.getAttribute('data-host'));
 }
 
 /**
@@ -367,7 +371,12 @@ function populateUI(config_json) {
 
 	populateDropdownSites(config_json.remote_sites);
 	populateDropdownIds(config_json.displays);
-	// TODO password
+
+	if (config_json.passwordProtected) {
+		enablePassword();
+	} else {
+		disablePassword();
+	}
 }
 
 /**
@@ -455,32 +464,55 @@ function formatProperly(url) {
 /**
  * Okay button handler. Creates the url based on user input and sends it to the main electron.js to connect to the selected site
  */
-const form = document.querySelector('form');
-form.addEventListener('submit', (e) => {
-	if (e.target.id == "cancel_btn") {
-		ipcRenderer.send('close-connect-page', "0");
-	} else {
-		e.preventDefault();
-		let URL = urlInput.value;
+// const form = document.querySelector('form');
+// form.addEventListener('submit', (e) => {
+//     l(e.target.id)
+//     l(e.target)
+// 	if (e.target.id == "cancel_btn") {
+// 		ipcRenderer.send('close-connect-page', "0");
+// 	} else {
+// 		e.preventDefault();
+// 		let URL = urlInput.value;
 
-		URL = formatProperly(URL);
-		//sending URL to electron.js, params: key value pair (id,URL)
-		ipcRenderer.send('connect-url', URL);
-	}
-});
+// 		URL = formatProperly(URL);
+// 		//sending URL to electron.js, params: key value pair (id,URL)
+// 		// ipcRenderer.send('connect-url', URL);
+// 	}
+// });
+
+// cancelBtn.addEventListener('click', (e) => {
+//     ipcRenderer.send('close-connect-page', "0");
+// });
+
+// okayBtn.addEventListener('click', (e) => {
+//     e.preventDefault();
+//     URL = formatProperly(urlInput.value);
+// });
+
+function cancelOnClick() {
+	l("cancel on click");
+	ipcRenderer.send('close-connect-page', "0");
+}
+
+function okayOnClick() {
+	l("okau on click");
+	let URL = formatProperly(urlInput.value);
+	// sending URL to electron.js, params: key value pair (id,URL)
+	ipcRenderer.send('connect-url', URL);
+}
 
 ipcRenderer.on('current-location', (e, host) => {
-	fetchWithTimeout(buildConfigURL(host), 1000, () => {
-		onCurrentSiteDown();
-	})
-		.catch(err => {
-			throw err;
-		});
+	loadSiteInfo(host);
 });
 
+/**
+ * Handles the UI update if the current site is down
+ * @return {void}
+ */
 function onCurrentSiteDown() {
 	removePreviousDropdownItem("sites_dropdown");
 	removePreviousDropdownItem("ids_dropdown");
+	setLoadInfoButtonOffline();
 	l('Site server down, timeout reached, refresh to try again');
 }
 
@@ -514,10 +546,19 @@ function fetchWithTimeout(url, delay, onTimeout) {
 	}).then((json) => {
 		if (json) {
 			populateUI(json);
+			setLoadInfoButtonOnline();
 		}
 	});
 }
 
+/**
+ * Sets the color of card to display online/offline status
+ *
+ * @param  {String} url of the site
+ * @param  {HTML element} elem card elem
+ * @param  {any} delay time in ms to wait for fetch request before declaring to be offline
+ * @return void
+ */
 function setOnlineStatus(url, elem, delay) {
 	const timer = new Promise((resolve) => {
 		setTimeout(resolve, delay, {
@@ -541,6 +582,57 @@ function setOnlineStatus(url, elem, delay) {
 }
 
 /**
+ * Sets colors of the load site info button to display null site status
+ * @return {void}
+ */
+function resetSiteInfo() {
+	addClass(loadSiteInfoBtn, buttonColorClass);
+	loadSiteInfoBtnText.textContent = "Load Site Info";
+}
+
+/**
+ * Sets colors of the load site info button to display online site
+ * @return {void}
+ */
+function setLoadInfoButtonOnline() {
+	removeClass(loadSiteInfoBtn, buttonColorClass);
+	loadSiteInfoBtnText.textContent = "Site Online";
+	loadSiteInfoBtn.style.background = onlineColor;
+}
+
+/**
+ * Sets colors of the load site info button to display offline site
+ * @return {void}
+ */
+function setLoadInfoButtonOffline() {
+	removeClass(loadSiteInfoBtn, buttonColorClass);
+	loadSiteInfoBtnText.textContent = "Site Offline";
+	loadSiteInfoBtn.style.background = offlineColor;
+}
+
+/**
+ * Onclick handler for Load site info button. gets the current site in url and loads its info
+ * @return {void}
+ */
+function loadCurrentSiteInfo() {
+	loadSiteInfo(urlInput.value);
+}
+
+/**
+ * Loads information about a site given itss host. Populates dropdowns, sets online/offline status
+ * @param  {String} host the host of the site to load
+ * @return {void}
+ */
+function loadSiteInfo(host) {
+	fetchWithTimeout(buildConfigURL(host), 1000, () => {
+		onCurrentSiteDown();
+	})
+		.catch(err => {
+			throw err;
+		});
+}
+
+/**
  * Initializes the JS for the carousel
  *
  * @method updateInitCarousel
@@ -554,7 +646,7 @@ function updateInitCarousel() {
 		indicators: true
 	};
 	if (typeof elems !== 'undefined') {
-		var instances = M.Carousel.init(elems, options);
+		M.Carousel.init(elems, options);
 	}
 }
 
@@ -566,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		hover: true
 		// noWrap: true
 	};
-	var instances = M.Dropdown.init(elems, options);
+	M.Dropdown.init(elems, options);
 
 	//carousel init
 	updateInitCarousel();
@@ -594,11 +686,14 @@ check2.addEventListener('click', (e) => {
 	}
 });
 
+// Checks if modified url input contains host of a site in favorite and sets the heart status and loads site information
 urlInput.addEventListener("input", (e) => {
 	let host = urlInput.value;
 	if (alreadyInFavorites(host)) {
 		setFullHeart();
+		loadSiteInfo(host);
 	} else {
 		setEmptyHeart();
+		resetSiteInfo();
 	}
 });
