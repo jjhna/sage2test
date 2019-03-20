@@ -19,8 +19,11 @@
 
 'use strict';
 
+const path = require('path');
 const electron = require('electron');
-electron.app.setAppPath(process.cwd());
+
+// Get platform and hostname
+var os = require('os');
 
 //
 // handle install/update for Windows
@@ -87,6 +90,8 @@ function handleSquirrelEvent() {
 const app = electron.app;
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
+const Menu  = electron.Menu;
+const shell = electron.shell;
 // Module to handle ipc with Browser Window
 const ipcMain = electron.ipcMain;
 
@@ -96,8 +101,6 @@ var commander = require('commander');
 var si = require('systeminformation');
 // Get the version from the package file
 var version = require('./package.json').version;
-// Get platform and hostname
-var os = require('os');
 
 /**
  * Setup the command line argument parsing (commander module)
@@ -134,6 +137,15 @@ commander
 	.option('--width <n>',               'Window width (int)', myParseInt, 1280)
 	.parse(args);
 
+
+// // Change current durectory to find the Webview JS addon
+// 	// if (os.platform() === "win32" || os.platform() === "darwin") {
+// 	console.log('Current directory:', process.cwd());
+// 	console.log('getAppPath directory:', electron.app.getAppPath());
+// 	electron.app.setAppPath(process.cwd());
+// 	// }
+
+
 // Load the flash plugin if asked
 if (commander.plugins) {
 	// Flash loader
@@ -150,6 +162,7 @@ if (commander.plugins) {
 // Reset the desktop scaling
 //if (os.platform() === "win32") {
 app.commandLine.appendSwitch("force-device-scale-factor", "1");
+app.commandLine.appendSwitch("ignore-gpu-blacklist");
 //}
 
 // Remove the limit on the number of connections per domain
@@ -183,6 +196,10 @@ if (commander.debug) {
 	// Add the parameter to the list of options on the command line
 	app.commandLine.appendSwitch("remote-debugging-port", port.toString());
 }
+
+// As of 2019, video elements with sound will no longer autoplay unless user interacted with page.
+// switch found from: https://github.com/electron/electron/issues/13525/
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 /**
  * Keep a global reference of the window object, if you don't, the window will
@@ -270,6 +287,10 @@ function openWindow() {
  * @method     createWindow
  */
 function createWindow() {
+	// Build a menu
+	var menu = buildMenu();
+	Menu.setApplicationMenu(Menu.buildFromTemplate(menu));
+
 	// If a monitor is specified
 	if (commander.monitor !== null) {
 		// get all the display data
@@ -387,12 +408,39 @@ function createWindow() {
 		// ev.preventDefault();
 	});
 
+	// New webview going to be added
 	var partitionNumber = 0;
 	mainWindow.webContents.on('will-attach-webview', function(event, webPreferences, params) {
-		// New webview going to be added
-		// Each partition has a distinct context, ie partition
-		params.partition = 'partition_' + partitionNumber;
-		partitionNumber = partitionNumber + 1;
+		// Load the SAGE2 addon code
+		webPreferences.preloadURL = "file://" + path.join(__dirname + '/public/uploads/apps/Webview/SAGE2_script_supplement.js');
+
+		// Parse the URL
+		let destination = url.parse(params.src);
+		// Get the domain
+		let hostname = destination.host || destination.hostname;
+
+		// Special partitions to keep login info (wont work with multiple accounts)
+		if (hostname.endsWith("sharepoint.com") ||
+			hostname.endsWith("live.com") ||
+			hostname.endsWith("office.com")) {
+			params.partition = 'persist:office';
+		} else if (hostname.endsWith("appear.in")) {
+			// VTC
+			params.partition = 'persist:appear';
+		} else if (hostname.endsWith("youtube.com")) {
+			// VTC
+			params.partition = 'persist:youtube';
+		} else if (hostname.endsWith("github.com")) {
+			// GITHUB
+			params.partition = 'persist:github';
+		} else if (hostname.endsWith("google.com")) {
+			// GOOGLE
+			params.partition = 'persist:google';
+		} else {
+			// default isolated partitions
+			params.partition = 'partition_' + partitionNumber;
+			partitionNumber = partitionNumber + 1;
+		}
 	});
 
 	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {
@@ -411,12 +459,34 @@ function createWindow() {
 			memPercent: 0,
 			memResidentSet: 0
 		};
-		var procMem = process.getProcessMemoryInfo();
+
 		var procCPU = process.getCPUUsage();
-		displayLoad.memResidentSet = procMem.workingSetSize;
-		displayLoad.memPercent = procMem.workingSetSize / perfData.mem.total * 100;
 		displayLoad.cpuPercent = procCPU.percentCPUUsage;
-		//console.log(process.pid, mainWindow.webContents.pid);
+
+		// Get the version number for Electron
+		let electronVersion = process.versions.electron;
+		// Parse the string and get the Major version number
+		let majorVersion = parseInt(electronVersion.split('.')[0]);
+		if (majorVersion < 4) {
+			// for version 3 and below
+			let procMem = process.getProcessMemoryInfo();
+			displayLoad.memResidentSet = procMem.workingSetSize;
+			displayLoad.memPercent = procMem.workingSetSize / perfData.mem.total * 100;
+		} else {
+			// version 4 has new APIs
+			let metrics = app.getAppMetrics();
+			metrics.forEach(function(m) {
+				// pid Integer - Process id of the process.
+				// type String - Process type (Browser or Tab or GPU etc).
+				// memory MemoryInfo - Memory information for the process.
+				// cpu CPUUsage - CPU usage of the process.
+				if (m.pid === process.pid) {
+					// Not Yet Implemented in beta3
+					// console.log('V4', m.memory);
+				}
+			});
+		}
+
 		// CPU Load
 		si.currentLoad(function(data) {
 			perfData.cpuLoad = {
@@ -504,4 +574,184 @@ function myParseInt(str, defaultValue) {
 		return int;
 	}
 	return defaultValue;
+}
+
+
+function buildMenu() {
+
+	const template = [
+		{
+			label: 'Edit',
+			submenu: [
+				{
+					label: 'Undo',
+					accelerator: 'CmdOrCtrl+Z',
+					role: 'undo'
+				},
+				{
+					label: 'Redo',
+					accelerator: 'Shift+CmdOrCtrl+Z',
+					role: 'redo'
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Cut',
+					accelerator: 'CmdOrCtrl+X',
+					role: 'cut'
+				},
+				{
+					label: 'Copy',
+					accelerator: 'CmdOrCtrl+C',
+					role: 'copy'
+				},
+				{
+					label: 'Paste',
+					accelerator: 'CmdOrCtrl+V',
+					role: 'paste'
+				},
+				{
+					label: 'Select All',
+					accelerator: 'CmdOrCtrl+A',
+					role: 'selectall'
+				}
+			]
+		},
+		{
+			label: 'View',
+			submenu: [
+				{
+					label: 'Reload',
+					accelerator: 'CmdOrCtrl+R',
+					click: function(item, focusedWindow) {
+						if (focusedWindow) {
+							focusedWindow.reload();
+						}
+					}
+				},
+				{
+					label: 'Toggle Full Screen',
+					accelerator: (function() {
+						if (process.platform === 'darwin') {
+							return 'Ctrl+Command+F';
+						} else {
+							return 'F11';
+						}
+					}()),
+					click: function(item, focusedWindow) {
+						if (focusedWindow) {
+							focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+						}
+					}
+				},
+				{
+					label: 'Toggle Developer Tools',
+					accelerator: (function() {
+						if (process.platform === 'darwin') {
+							return 'Alt+Command+I';
+						} else {
+							return 'Ctrl+Shift+I';
+						}
+					}()),
+					click: function(item, focusedWindow) {
+						if (focusedWindow) {
+							focusedWindow.toggleDevTools();
+						}
+					}
+				}
+			]
+		},
+		{
+			label: 'Window',
+			role: 'window',
+			submenu: [
+				{
+					label: 'Minimize',
+					accelerator: 'CmdOrCtrl+M',
+					role: 'minimize'
+				},
+				{
+					label: 'Close',
+					accelerator: 'CmdOrCtrl+W',
+					role: 'close'
+				}
+			]
+		},
+		{
+			label: 'Help',
+			role: 'help',
+			submenu: [
+				{
+					label: 'Learn More',
+					click: function() {
+						shell.openExternal('http://sage2.sagecommons.org/v4-0-release/sage2-display-client/');
+					}
+				}
+			]
+		}
+	];
+
+	if (process.platform === 'darwin') {
+		const name = app.getName();
+		template.unshift({
+			label: name,
+			submenu: [
+				{
+					label: 'About ' + name,
+					role: 'about'
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Services',
+					role: 'services',
+					submenu: []
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Hide ' + name,
+					accelerator: 'Command+H',
+					role: 'hide'
+				},
+				{
+					label: 'Hide Others',
+					accelerator: 'Command+Shift+H',
+					role: 'hideothers'
+				},
+				{
+					label: 'Show All',
+					role: 'unhide'
+				},
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Quit',
+					accelerator: 'Command+Q',
+					click: function() {
+						app.quit();
+					}
+				}
+			]
+		});
+		const windowMenu = template.find(function(m) {
+			return m.role === 'window';
+		});
+		if (windowMenu) {
+			windowMenu.submenu.push(
+				{
+					type: 'separator'
+				},
+				{
+					label: 'Bring All to Front',
+					role: 'front'
+				});
+		}
+	}
+
+	return template;
 }

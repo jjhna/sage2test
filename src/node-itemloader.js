@@ -1141,7 +1141,7 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 					// done with the tmp file
 					fs.unlinkSync(file.path);
 					// call same funtion again with the new PNG file
-					return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, false, callback);
+					return _this.manageAndLoadUploadedFile({name: cleanFilename + ".png", path: tmpPath}, callback);
 				});
 				// done for now
 				return;

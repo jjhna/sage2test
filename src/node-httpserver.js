@@ -104,8 +104,9 @@ HttpServer.prototype.notfound = function(res) {
  * @method redirect
  * @param res {Object} response
  * @param aurl {String} destination URL
+ * @param code {Number} HTTP code: 301 or 302 (default)
  */
-HttpServer.prototype.redirect = function(res, aurl) {
+HttpServer.prototype.redirect = function(res, aurl, code = 302) {
 	var header = this.buildHeader();
 	// Do not allow iframe
 	header["X-Frame-Options"] = "DENY";
@@ -113,6 +114,23 @@ HttpServer.prototype.redirect = function(res, aurl) {
 	//    causes issue with caching and cookies
 	// 302 HTTP code for found: redirect
 	header.Location = aurl;
+	res.writeHead(code, header);
+	res.end();
+};
+
+/**
+ * Clear the user's data caches and redirect to index.html
+ *
+ * @method clearSiteData
+ * @param res {Object} response
+ */
+HttpServer.prototype.clearSiteData = function(res) {
+	// Default header first
+	var header = this.buildHeader();
+	// Use the Clear-Site-Data header:
+	// https://www.w3.org/TR/clear-site-data/
+	header["Clear-Site-Data"] = '"cache","cookies","storage"';
+	header.Location = "index.html";
 	res.writeHead(302, header);
 	res.end();
 };
@@ -244,7 +262,18 @@ HttpServer.prototype.onreq = function(req, res) {
 
 		// redirect root path to index.html
 		if (getName === "/") {
-			this.redirect(res, "index.html");
+			// Build the secure URL
+			let secureURL = "https://" + global.config.host +
+				(global.config.secure_port === 443 ? "" : ":" + global.config.secure_port) +
+				"/index.html";
+			this.redirect(res, secureURL, 301);
+			// this.redirect(res, "index.html");
+			return;
+		}
+
+		// Clear the user's cache and redirect to index.html
+		if (getName === "/logout") {
+			this.clearSiteData(res);
 			return;
 		}
 
@@ -336,7 +365,9 @@ HttpServer.prototype.onreq = function(req, res) {
 			var header = this.buildHeader();
 
 			if (path.extname(pathname) === ".html") {
-				if (pathname.endsWith("public/index.html")) {
+				if (pathname === path.resolve("public/index.html") ||
+					pathname === path.resolve("public/session.html")
+				) {
 					// Allow embedding the UI page
 					delete header['X-Frame-Options'];
 				} else {

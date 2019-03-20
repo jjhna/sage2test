@@ -10,6 +10,8 @@
 
 "use strict";
 
+/* global SAGE2_webrtc_ui_tracker SAGE2WebrtcPeerConnection */
+
 /**
  * @module client
  * @submodule media_stream
@@ -48,19 +50,25 @@ var media_stream = SAGE2_App.extend({
 		this.resizeEvents = null;
 		this.moveEvents   = null;
 		this.date = data.date;
+
+		this.webrtc_activateIfEnabled();
 	},
 
 	img1Loaded: function() {
 		this.bufferId = 0;
 		this.img1IsLoaded = true;
 		this.draw(this.date);
+		this.webrtc_fallbackStatusHideCheck();
 	},
 
 	img2Loaded: function() {
 		this.img2IsLoaded = true;
 		this.bufferId = 1;
 		this.draw(this.date);
+		this.webrtc_fallbackStatusHideCheck();
 	},
+
+
 
 	/**
 	* Loads the app from a previous state
@@ -154,6 +162,128 @@ var media_stream = SAGE2_App.extend({
 			// 	// Press 'x' to close itself
 			// 	this.close();
 			// }
+		}
+	},
+
+
+	// ---------------------------------------------------------------------------------------------------
+	// Webrtc checkin
+	webrtc_activateIfEnabled: function() {
+		console.log("media_stream checking if webrtc is enabled");
+		if (SAGE2_webrtc_ui_tracker.enabled) {
+			console.log("    ENABLED");
+			this.webrtcParts = {}; // add storage for webrtc parts
+			this.webrtc_addParts();
+			this.webrtc_askUIForStreamInfo();
+		} else {
+			console.log("    DISABLED");
+		}
+	},
+
+	// Add the visuals to the app, for now it covers the old stuff
+	webrtc_addParts: function() {
+		let vid = document.createElement("video");
+		this.webrtcParts.videoElement = vid;
+		this.webrtcParts.fallbackStatusHideCounter = 0;
+		vid.style.position = "absolute";
+		vid.style.left = "0px";
+		vid.style.top = "0px";
+		vid.autoplay = true;
+		vid.style.width = "100%";
+		vid.style.height = "100%";
+
+		this.element.parentNode.appendChild(vid);
+
+		// Add information div to let user know about connection status
+		let statusDiv = document.createElement("div");
+		this.webrtcParts.status = statusDiv;
+		statusDiv.style.position = "absolute";
+		statusDiv.style.top = "0px";
+		statusDiv.style.left = "0px";
+		statusDiv.style.width = "100%";
+		statusDiv.style.height = "100%";
+		statusDiv.style.background = "white";
+		statusDiv.innerHTML = "<h1>Initializing WebRTC connection...</h1>";
+		this.element.parentNode.insertBefore(statusDiv, this.element);
+	},
+
+	// Request stream info from UI, give it the UID from wsio to uniquely identify display client
+	// The UID is used incase there are two display clients pointed at the same viewport
+	webrtc_askUIForStreamInfo: function() {
+		let isRemoteShare = false; // WARNING: only works one hop?
+		// Remote share if there are three pipes: remote_server:port | client| stream id
+		if (this.id.split("|").length === 3) {
+			isRemoteShare = true;
+		}
+		if (!isRemoteShare) {
+			// Need to handshake with the source client
+			this.webrtcParts.streamerId = this.id.split("|")[0];
+			// Send to client
+			wsio.emit("sendDataToClient", {
+				clientDest: this.webrtcParts.streamerId,
+				func: "webrtc_SignalMessageFromDisplay",
+				appId: this.id,
+				destinationId: this.webrtcParts.streamerId,
+				sourceId: wsio.UID,
+				message: "appStarted"
+			});
+		} else {
+			// This is a remotely shared ScreenShare, need to handshake with the original source client
+			// Three parts, the middle is the source client
+			this.webrtcParts.streamerId = this.id.split("|")[1];
+			// Send to client
+			wsio.emit("webRtcRemoteScreenShareSendingDisplayMessage", {
+				clientDest: this.webrtcParts.streamerId,
+				func: "webrtc_SignalMessageFromDisplay",
+				appId: this.id,
+				destinationId: this.webrtcParts.streamerId,
+				sourceId: wsio.UID,
+				message: "appStarted"
+			});
+		}
+		this.webrtcParts.status.innerHTML += "<h1>Requesting Path from STUN server...</h1>";
+	},
+
+	webrtc_SignalMessageFromUi: function(responseObject) {
+
+		// Could have only gotten here by knowing appId, check if for this display
+		if (responseObject.destinationId === wsio.UID) {
+			// If a peer has not yet been made, make it now
+			if (!this.webrtcParts.s2wpc) {
+				this.webrtcParts.s2wpc = new SAGE2WebrtcPeerConnection(
+					this.id,                            // Id of this app
+					responseObject.sourceId,            // UI id for identifying streamerid
+					wsio.UID,                           // Goto specific display
+					null,                               // Display doesn't have stream
+					this.webrtcParts.videoElement,      // Display has destination video element
+					responseObject.cameFromSourceServer // Only has a value if came from a remote source
+				);
+			}
+			// Otherwise, let it get handled
+			this.webrtcParts.s2wpc.readMessage(responseObject.message, () => {
+				// This function triggers when a connection is detected
+				this.webrtcParts.status.style.visibility = "hidden";
+				this.showModeInTitle("WebRTC mode");
+			});
+		}
+	},
+
+	webrtc_fallbackStatusHideCheck: function() {
+		this.webrtcParts.fallbackStatusHideCounter++;
+		// If the img1Loaded or 2 is triggered more than three times, the client is sending frames outside of webrtc.
+		if (this.webrtcParts.fallbackStatusHideCounter > 2) {
+			this.webrtcParts.status.style.visibility = "hidden";
+			this.showModeInTitle();
+			// this.showModeInTitle("Default mode");
+		}
+	},
+
+	showModeInTitle: function(mode) {
+		if (mode) {
+			var titleText = document.getElementById(this.id + "_text").textContent;
+			titleText = titleText.substring(0, titleText.indexOf("een"));
+			titleText += "een (" + mode + ")";
+			document.getElementById(this.id + "_text").textContent = titleText;
 		}
 	}
 

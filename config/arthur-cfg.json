@@ -1,4 +1,4 @@
-/*
+ /*
 	default configuration of the server - Windows
 */
 {
@@ -9,7 +9,7 @@
 	background: {
 		color: "#333333",
 		watermark: {
-			svg: "images/EVL-LAVA.svg",
+			svg: "images/EVL-logo.svg",
 			color: "rgba(255, 255, 255, 0.5)"
 		},
 		image: {
@@ -43,10 +43,10 @@
 		viewing_distance: 0.71	// in meters
 	},
 	resolution: {
-		//width: 3840,
-		//height: 2160
-		width: 2560,
-		height: 1600
+		width: 3840,
+		height: 2160
+		//width: 2560,
+		//height: 1600
 		//width: 1366,
 		//height: 768
 	},
@@ -92,41 +92,55 @@
 	// for experimental features: true/false
 	
 	experimental: {
-		webbrowser: false,  // enable the awesomium module
-		
-		omicron: // enable omicron input module
-		{
+		omicron: {
 			enable: true,
 			
-			// Port SAGE will listen on for a oinputserver connection
+			// Port SAGE will listen for a oinputserver connection
 			msgPort: 28000,
 			
 			// If specified, SAGE will actively attempt to connect to
 			// an oinputserver on the specified IP and data port
-			inputServerIP: "127.0.0.1",
-			dataPort: 30015,
+			inputServerIP: "131.193.183.183",
+			dataPort: 30005,
 			
 			eventDebug: false,
 			
 			enableTouch: true,
-			enableMocap: false,
-			enableWand: false,
-			
-			style: "Pointer", // Display as "Touch" or "Pointer"
-			interactionMode: "Window", // "Window" or "App"
-			touchOffset: [ 0, -20 ],
-			
+			enableWand: true,
+			enableMocap: true,
+						
+			style: "Touch", // Display as "Touch" or "Pointer"
+			interactionMode: "App", // "Window" or "App"
+
 			// Touch gestures
-			enableGestures: true,
 			gestureDebug: false,
+			touchOffset: [ 12, 5 ], // in pixels
+			enableGestures: true,
+			
+			acceleratedDragScale: 3,
+			
+			enableDoubleClickMaximize: true,
+			enableThreeFingerRightClick: false,
+			
+			enableTwoFingerWindowDrag: true,
+			zoomToMoveGestureMinimumDistance: 100,
 			
 			enableTwoFingerZoom: true,
 			zoomGestureScale: 2000,
-			enableTwoFingerWindowDrag: false,
 			
-			acceleratedDragScale: 0,
+			enableFiveFingerCloseApp: true,
+			
+			// Wand
+			wandNames:
+			{
+				"1": {label: "Wand (Config Named)", color: "rgba(50, 250, 150, 1.0)"}
+			},
+			
+			// Advanced
+			moveEventLimit: 100,				// if 100, sends 1/100 of move events received
+			enableStuckTouchDetection: true,
+			nonCriticalEventDelay: 10
 		}
-		
 	},
 	
 	dependencies: {

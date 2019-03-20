@@ -20,11 +20,16 @@ var JupyterLab = SAGE2_App.extend({
 
 		// add image holder
 		this.img = document.createElement("img");
-		this.img.style.width = this.width + "px";
-		this.img.style.height = this.height + "px";
-		// this.img.style.width = "100%";
-		// this.img.style.height = "100%";
+		this.img.style.width = data.width + "px";
+		this.img.style.height = data.height + "px";
 		this.img.style.backgroundColor = "white";
+
+		this.updateContent({
+			src: data.state.src,
+			height: data.height,
+			width: data.width,
+			title: data.title
+		});
 
 		this.element.appendChild(this.img);
 
@@ -55,22 +60,19 @@ var JupyterLab = SAGE2_App.extend({
 		// calculate new size
 		let newAspect = data.width / data.height;
 
-		console.log(this.sage2_width, this.sage2_height);
-		console.log(data.width, data.height);
-
+		// resize for new image aspect ratio
 		if (newAspect > this.imgAspect) { // wider
 			this.sendResize(this.sage2_height * newAspect, this.sage2_height);
 		} else { // taller
 			this.sendResize(this.sage2_width, this.sage2_width / newAspect);
 		}
 
-		console.log(this, this.sage2_width, this.sage2_height);
-
-		this.img.src = data.src; // update image contents
+		// update image
+		this.img.src = data.src.trim(); // update image contents
 		this.img.style.width = this.sage2_width;
 		this.img.style.height = this.sage2_height;
 
-		// this.sendResize(data.width, data.height);
+		// save aspect ratio
 		this.imgAspect = newAspect;
 	},
 
