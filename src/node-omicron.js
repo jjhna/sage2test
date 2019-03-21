@@ -6,7 +6,7 @@
 //
 // See full text, terms and conditions in the LICENSE.txt included file
 //
-// Copyright (c) 2014-2015
+// Copyright (c) 2014-2019
 
 /**
  * Omicron connection module for SAGE2
@@ -128,6 +128,26 @@ function OmicronManager(sysConfig) {
 	this.enableTwoFingerWindowDrag = false;
 	this.enableTwoFingerZoom = true;
 	this.enableFiveFingerCloseApp = false;
+
+	var clientParameters = 0;
+	//clientParameters |= 1 << 0;	// Sending data to server (instead of receiving - default: off)
+	//clientParameters |= 1 << 11;	// Use TCP for all data instead of by event type (default: off)
+	//clientParameters |= 1 << 12;	// Use UDP for all data instead of by event type (default: off)
+
+	// Request ServiceTypes (all on by default)
+	clientParameters |= 1 << 1;		// Pointer
+	clientParameters |= 1 << 2;		// Mocap
+	//clientParameters |= 1 << 3;		// Keyboard
+	//clientParameters |= 1 << 4;		// Controller
+	//clientParameters |= 1 << 5;		// UI
+	//clientParameters |= 1 << 6;		// Generic
+	//clientParameters |= 1 << 7;		// Brain
+	clientParameters |= 1 << 8;		// Wand
+	clientParameters |= 1 << 9;		// Speech
+	//clientParameters |= 1 << 10;	// Image
+	clientParameters |= 1 << 13;	// Audio
+
+	this.config.clientFlags = clientParameters;
 
 	// Default config
 	if (this.config === undefined) {
@@ -330,7 +350,7 @@ OmicronManager.prototype.connect = function(msgPort) {
 			omicronManager.omicronDataPort);
 		omicronManager.oinputserverConnected = true;
 
-		var sendbuf = util.format("omicron_data_on,%d\n", omicronManager.omicronDataPort);
+		var sendbuf = util.format("omicronV3_data_on,%d,%d\n", omicronManager.omicronDataPort, omicronManager.config.clientFlags);
 		omicronManager.oinputserverSocket.write(sendbuf);
 	});
 	omicronManager.oinputserverSocket.on('error', function(e) {
