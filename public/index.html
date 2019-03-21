@@ -523,63 +523,67 @@
 				</div>
 				
 
-				<div id="snippetEditorWrapper" class="panel-wrapper">
-					<div class="panel-title">
-						<div class="label">
-							Code Editor
-						</div>
-
-						<div class="control title-control">
-							<input type="text" id="snippetDescription" placeholder="Snippet Name">
-							<div id="snippetEditorSave" class="controlButton">Save</div>
-						</div>
-
-						<div class="control title-control">
-							<div id="snippetApiDropdown" class="dropdownWrapper">
-								<div class="controlButton controlDropdown">
-									<div style="font-weight: bold; font-size: 20px;margin-right:5px;">+</div>API Call
-								</div>
-								<div id="snippetApiOptions" class="dropdownOptionList right">
+				<div id="reflowWrapper">
+					<div id="snippetEditorWrapper" class="panel-wrapper">
+						<div class="panel-title">
+							<div class="label">
+								Code Editor
+							</div>
+	
+							<div class="control title-control">
+								<input type="text" id="snippetDescription" placeholder="Snippet Name">
+								<div id="snippetEditorSave" class="controlButton">Save</div>
+							</div>
+	
+							<div class="control title-control">
+								<div id="snippetApiDropdown" class="dropdownWrapper">
+									<div class="controlButton controlDropdown">
+										<div style="font-weight: bold; font-size: 20px;margin-right:5px;">+</div>API Call
+									</div>
+									<div id="snippetApiOptions" class="dropdownOptionList right">
+									</div>
 								</div>
 							</div>
 						</div>
+						<div class="panel-content" id="snippetEditor">
+						</div>
 					</div>
-					<div class="panel-content" id="snippetEditor">
+	
+					<div id="snippetLoggingWrapper">
+						<div class=" panel-wrapper log-section-wrapper">
+							<div class="panel-title log-title">
+								<div class="label">
+									Errors
+								</div>
+								<div class="log-filter">
+									<div class="log-filter-value">
+										All
+									</div>
+									<div class="log-filter-options">
+									</div>
+								</div>
+							</div>
+							<div id="errorMessages" class="panel-content log-items"></div>
+						</div>
+						<div class="panel-wrapper log-section-wrapper">
+							<div class="panel-title log-title">
+								<div class="label">
+									Console Messages
+								</div>
+								<div class="log-filter">
+									<div class="log-filter-value">
+										All
+									</div>
+									<div class="log-filter-options">
+									</div>
+								</div>
+							</div>
+							<div id="consoleMessages" class="panel-content log-items"></div>
+						</div>
 					</div>
+
 				</div>
 
-				<div id="snippetLoggingWrapper">
-					<div class=" panel-wrapper log-section-wrapper">
-						<div class="panel-title log-title">
-							<div class="label">
-								Errors
-							</div>
-							<div class="log-filter">
-								<div class="log-filter-value">
-									All
-								</div>
-								<div class="log-filter-options">
-								</div>
-							</div>
-						</div>
-						<div id="errorMessages" class="panel-content log-items"></div>
-					</div>
-					<div class="panel-wrapper log-section-wrapper">
-						<div class="panel-title log-title">
-							<div class="label">
-								Console Messages
-							</div>
-							<div class="log-filter">
-								<div class="log-filter-value">
-									All
-								</div>
-								<div class="log-filter-options">
-								</div>
-							</div>
-						</div>
-						<div id="consoleMessages" class="panel-content log-items"></div>
-					</div>
-				</div>
 			</div>
 
 			</div>

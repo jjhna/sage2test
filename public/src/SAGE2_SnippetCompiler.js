@@ -19,38 +19,21 @@ const CodeSnippetCompiler = (function() {
 		let codeCompile_final = codeCompile_2.replace(visElemRegex);
 
 		let parameters = {
-			gen: ['previousData', 'link', 'console'],
-			data: ['data', 'link', 'console'],
-			draw: ['data', 'link', 'console']
+			gen: ["previousData", "next", "link", "console"],
+			data: ["data", "next", "link", "console"],
+			draw: ["data", "next", "link", "console"]
 		};
 
-		let functionBlocks = {
-			data: `
-				/* USER DEFINED CODE */
-				// Code written by user will be inserted here
-				
-				${codeCompile_final}
+		let functionBlock = `
+			/* USER DEFINED CODE */
+			// Code written by user will be inserted here
+			
+			${codeCompile_final}
 
-				/* END USER DEFINED CODE*/`,
-			draw: `
-				/* USER DEFINED CODE */
-				// Code written by user will be inserted here
+			/* END USER DEFINED CODE*/
+		`;
 
-				${codeCompile_final}
-				
-				/* END USER DEFINED CODE*/`,
-			gen: `
-				return new Promise((resolve, reject) => {
-					/* USER DEFINED CODE */
-					// Code written by user will be inserted here
-
-					${codeCompile_final}
-
-				});
-				/* END USER DEFINED CODE*/`
-		};
-
-		return new Function(...parameters[type], functionBlocks[type]);
+		return new Function(...parameters[type], functionBlock);
 	}
 
 	/**
@@ -74,7 +57,7 @@ const CodeSnippetCompiler = (function() {
 		let codeCompile_final = codeCompile_2.replace(visElemRegex);
 
 		let functionBlocks = {
-			data: `(function (data, link) {
+			data: `(function (data, next, link) {
 				/* USER DEFINED CODE */
 				// Code written by user will be inserted here
 				
@@ -82,7 +65,7 @@ const CodeSnippetCompiler = (function() {
 
 				/* END USER DEFINED CODE*/
 			})`,
-			draw: `(function (data, link) {
+			draw: `(function (data, next, link) {
 				/* USER DEFINED CODE */
 				// Code written by user will be inserted here
 
@@ -91,15 +74,12 @@ const CodeSnippetCompiler = (function() {
 				/* END USER DEFINED CODE*/
 		
 			})`,
-			gen: `(function (previousData, link) {
-				// Promise to handle async
-				return new Promise((resolve, reject) => {
-					/* USER DEFINED CODE */
-					// Code written by user will be inserted here
+			gen: `(function (previousData, next, link) {
+				/* USER DEFINED CODE */
+				// Code written by user will be inserted here
 
-					${codeCompile_final}
+				${codeCompile_final}
 
-				});
 				/* END USER DEFINED CODE*/
 			})`
 		};

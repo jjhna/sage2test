@@ -10,245 +10,307 @@
 /* global d3 */
 
 var Snippets_Vis = SAGE2_App.extend({
-	init: function(data) {
-		// Create div into the DOM
-		this.SAGE2Init("div", data);
-		// Set the DOM id
-		this.element.id = "div_" + data.id;
-		// Set the background to black
-		this.element.style.backgroundColor = 'white';
+  init: function(data) {
+    // Create div into the DOM
+    this.SAGE2Init("div", data);
+    // Set the DOM id
+    this.element.id = "div_" + data.id;
+    // Set the background to black
+    this.element.style.backgroundColor = "white";
 
-		this.parentLink = null;
-		this.childLinks = [];
+    this.dataset = [];
 
-		// this.inputsOpen = false;
+    this.parentLink = null;
+    this.childLinks = [];
 
-		// move and resize callbacks
-		this.resizeEvents = "onfinish"; // continuous
+    // this.inputsOpen = false;
 
-		this.content = document.createElement("div");
-		this.content.style.width = "100%";
-		this.content.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
-		this.content.style.position = "absolute";
-		this.content.style.boxSizing = "border-box";
-		this.content.style.left = "0";
-		this.content.style.top = ui.titleBarHeight * 1.5 + "px";
-		this.content.style.overflow = "hidden";
-		
-		this.element.appendChild(this.content);
+    // move and resize callbacks
+    this.resizeEvents = "onfinish"; // continuous
 
-		let inputs = document.createElement("div");
-		inputs.className = "snippetsInputWrapper";
-		inputs.style.position = "absolute";
-		inputs.style.left = this.sage2_width + "px";
-		inputs.style.top = "0";
-		inputs.style.width = "300px";
-		inputs.style.minHeight = "100%";
-		inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
-		inputs.style.boxSizing = "border-box";
-		inputs.style.background = "lightgray";
+    this.content = document.createElement("div");
+    this.content.style.width = "100%";
+    this.content.style.height =
+      this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+    this.content.style.position = "absolute";
+    this.content.style.boxSizing = "border-box";
+    this.content.style.left = "0";
+    this.content.style.top = ui.titleBarHeight * 1.5 + "px";
+    this.content.style.overflow = "hidden";
 
-		this.inputs = inputs;
-		this.element.appendChild(inputs);
+    this.element.appendChild(this.content);
 
-		// add error popup to app
-		let errorBox = document.createElement("div");
-		errorBox.style.width = "90%";
-		errorBox.style.height = "50%";
-		errorBox.style.position = "absolute";
-		errorBox.style.boxSizing = "border-box";
-		errorBox.style.left = "5%";
-		errorBox.style.top = "20%";
+    let inputs = document.createElement("div");
+    inputs.className = "snippetsInputWrapper";
+    inputs.style.position = "absolute";
+    inputs.style.left = this.sage2_width + "px";
+    inputs.style.top = "0";
+    inputs.style.width = "300px";
+    inputs.style.minHeight = "100%";
+    inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
+    inputs.style.boxSizing = "border-box";
+    inputs.style.background = "lightgray";
 
-		errorBox.style.borderRadius = "10px";
-		errorBox.style.background = "#ffe2e2";
-		errorBox.style.boxShadow = "3px 3px 25px 3px black";
-		errorBox.style.border = "2px solid #ffb4b4";
-		errorBox.style.color = "red";
-		errorBox.style.fontWeight = "bold";
-		errorBox.style.fontSize = (3 * ui.titleBarHeight) / 4 + "px";
-		errorBox.style.padding = "10px";
+    this.inputs = inputs;
+    this.element.appendChild(inputs);
 
-		errorBox.style.fontFamily = 'monospace';
-		errorBox.style.whiteSpace = "normal";
+    // add error popup to app
+    let errorBox = document.createElement("div");
+    errorBox.style.width = "90%";
+    errorBox.style.height = "50%";
+    errorBox.style.position = "absolute";
+    errorBox.style.boxSizing = "border-box";
+    errorBox.style.left = "5%";
+    errorBox.style.top = "20%";
 
-		errorBox.style.display = "none";
+    errorBox.style.borderRadius = "10px";
+    errorBox.style.background = "#ffe2e2";
+    errorBox.style.boxShadow = "3px 3px 25px 3px black";
+    errorBox.style.border = "2px solid #ffb4b4";
+    errorBox.style.color = "red";
+    errorBox.style.fontWeight = "bold";
+    errorBox.style.fontSize = (3 * ui.titleBarHeight) / 4 + "px";
+    errorBox.style.padding = "10px";
 
-		this.errorBox = errorBox;
-		this.element.appendChild(errorBox);
+    errorBox.style.fontFamily = "monospace";
+    errorBox.style.whiteSpace = "normal";
 
-		// use mouse events normally
-		this.passSAGE2PointerAsMouseEvents = true;
+    errorBox.style.display = "none";
 
-		// SAGE2 Application Settings
+    this.errorBox = errorBox;
+    this.element.appendChild(errorBox);
 
-		// add wrapper for function execution information
-		let ancestry = d3.select(this.element).append("svg")
-			.attr("class", "snippetAncestry")
-			.attr("height", ui.titleBarHeight * 1.5)
-			.attr("width", data.width);
+    // use mouse events normally
+    this.passSAGE2PointerAsMouseEvents = true;
 
-		this.ancestry = ancestry;
+    // SAGE2 Application Settings
 
-		SAGE2_CodeSnippets.displayApplicationLoaded(this.id, this);
+    // add wrapper for function execution information
+    let ancestry = d3
+      .select(this.element)
+      .append("svg")
+      .attr("class", "snippetAncestry")
+      .attr("height", ui.titleBarHeight * 1.5)
+      .attr("width", data.width);
 
-		this.createAncestorList();
+    this.ancestry = ancestry;
 
-		// give descriptive title to app
-		if (this.parentLink) {
-			if (this.parentLink.getParent()) {
-				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
-			} else {
-				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
-			}
-		} else {
-			this.updateTitle("VisSnippets: " + this.state.snippetsID);
-		}
-	},
+    SAGE2_CodeSnippets.displayApplicationLoaded(this.id, this);
 
-	load: function(date) {
-		console.log('Snippets_Vis> Load with state', this.state);
-		this.refresh(date);
-	},
+    this.createAncestorList();
 
-	draw: function(date) {
-	},
+    // give descriptive title to app
+    if (this.parentLink) {
+      if (this.parentLink.getParent()) {
+        this.updateTitle(
+          "VisSnippets: " +
+            `snip[${this.parentLink.getSnippetID().split("-")[1]}](${
+              this.parentLink.getParent().id
+            }) ➔ ` +
+            this.id
+        );
+      } else {
+        this.updateTitle(
+          "VisSnippets: " +
+            `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` +
+            this.id
+        );
+      }
+    } else {
+      this.updateTitle("VisSnippets: " + this.state.snippetsID);
+    }
+  },
 
-	getElement: function (data, date) {
-		// update with new data and draw
+  load: function(date) {
+    console.log("Snippets_Vis> Load with state", this.state);
+    this.refresh(date);
+  },
 
-		// remove error dialogue when the element is requested for draw function
-		this.errorBox.style.display = "none";
+  draw: function(date) {},
 
-		// refresh ancestor list (in case of name change)
-		this.createAncestorList();
-		
-		return this.snippetsVisElement || this.element;
-	},
+  getElement: function(data, date) {
+    // update with new data and draw
 
-	displayError: function(err) {
-		this.errorBox.style.display = "initial";
-		this.errorBox.innerHTML = err;
-	},
+    // remove error dialogue when the element is requested for draw function
+    this.errorBox.style.display = "none";
 
-	setParentLink: function (link, date) {
-		// save the parent of the function
-		this.parentLink = link;
-		
-		// give descriptive title to app
-		if (this.parentLink) {
-			if (this.parentLink.getParent()) {
-				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}](${this.parentLink.getParent().id}) ➔ ` + this.id);
-			} else {
-				this.updateTitle("VisSnippets: " + `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` + this.id);
-			}
-		} else {
-			this.updateTitle("VisSnippets: " + this.state.snippetsID);
-		}
-	},
+    // refresh ancestor list (in case of name change)
+    this.createAncestorList();
 
-	removeParentLink: function() {
-		delete this.parentLink;
-		
-		this.createAncestorList();
-	},
+    return this.snippetsVisElement || this.element;
+  },
 
-	createAncestorList: function() {
-		// build sequential function call list and display
-		let ancestry = SAGE2_CodeSnippets.getAppAncestry(this);
-		// outsource ancestry drawing ot SAGE2_CodeSnippets
-		SAGE2_CodeSnippets.drawAppAncestry({
-			svg: this.ancestry,
-			width: this.sage2_width,
-			height: ui.titleBarHeight * 1.5,
-			ancestry,
-			app: this
-		});
-	},
+  getDataset: function(date) {
+    // update with new data and draw
+    return this.dataset;
+  },
 
-	updateAncestorTree: function() {
-		this.createAncestorList();
+  updateDataset: function(data, date) {
+    // update dataset
+    this.dataset = data;
 
-		for (let link of this.childLinks) {
-			link.getChild().updateAncestorTree();
-		}
-	},
+    this.updateChildren();
 
-	resize: function(date) {
-		// Called when window is resized
-		let contentWidth = this.state.inputsOpen ? this.sage2_width - 300 : this.sage2_width;
-		this.content.style.width = contentWidth + "px";
-		this.content.style.height = this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+    // refresh ancestor list (in case of name change)
+    this.createAncestorList();
+  },
 
-		this.inputs.style.left = contentWidth + "px";
+  updateChildren: function(date) {
+    // update all children
+    for (let childLink of this.childLinks) {
+      childLink.update();
+    }
+  },
 
-		// update ancestor list size
-		this.ancestry.attr("width", this.sage2_width);
-		this.createAncestorList();
+  displayError: function(err) {
+    this.errorBox.style.display = "initial";
+    this.errorBox.innerHTML = err;
+  },
 
-		if (this.parentLink) {
-			this.parentLink.update(); // redraw
-		}
+  addChildLink: function(data, date) {
+    this.childLinks.push(data);
+  },
 
-		this.refresh(date);
-	},
+  removeChildLink: function(link) {
+    let linkInd = this.childLinks.indexOf(link);
 
-	quit: function() {
-		// Make sure to delete stuff (timers, ...)
-		SAGE2_CodeSnippets.outputAppClosed(this);
-	},
+    this.childLinks.splice(linkInd, 1);
+  },
 
-	requestEdit: function(data) {
-		// handled the same as a load request in the editor
-		SAGE2_CodeSnippets.requestSnippetLoad(data.clientId, this.parentLink.getSnippetID());
-	},
+  setParentLink: function(link, date) {
+    // save the parent of the function
+    this.parentLink = link;
 
-	getContextEntries() {
-		return [
-			{
-				description: "Edit Snippet",
-				// callback
-				callback: "requestEdit",
-				// parameters of the callback function
-				parameters:  {}
-			}
-		]
-	},
+    // give descriptive title to app
+    if (this.parentLink) {
+      if (this.parentLink.getParent()) {
+        this.updateTitle(
+          "VisSnippets: " +
+            `snip[${this.parentLink.getSnippetID().split("-")[1]}](${
+              this.parentLink.getParent().id
+            }) ➔ ` +
+            this.id
+        );
+      } else {
+        this.updateTitle(
+          "VisSnippets: " +
+            `snip[${this.parentLink.getSnippetID().split("-")[1]}] ➔ ` +
+            this.id
+        );
+      }
+    } else {
+      this.updateTitle("VisSnippets: " + this.state.snippetsID);
+    }
+  },
 
-	event: function(eventType, position, user_id, data, date) {
-		if (eventType === "pointerPress" && (data.button === "left")) {
-			// click
-		} else if (eventType === "pointerMove" && this.dragging) {
-			// move
-		} else if (eventType === "pointerRelease" && (data.button === "left")) {
-			// click release
-		} else if (eventType === "pointerScroll") {
-			// Scroll events for zoom
-		} else if (eventType === "widgetEvent") {
-			// widget events
-		} else if (eventType === "keyboard") {
-			if (data.character === "m") {
-				this.refresh(date);
-			}
-		} else if (eventType === "specialKey") {
-			if (data.code === 37 && data.state === "down") {
-				// left
-				this.refresh(date);
-			} else if (data.code === 38 && data.state === "down") {
-				// up
-				this.refresh(date);
-			} else if (data.code === 39 && data.state === "down") {
-				// right
-				this.refresh(date);
-			} else if (data.code === 40 && data.state === "down") {
-				// down
-				this.refresh(date);
-			}
-		} else if (eventType === "dataUpdate") {
-			console.log("Data Update", data);
+  removeParentLink: function() {
+    delete this.parentLink;
 
-			this.updateContent(data, date);
-			// this.refresh(date);
-		}
-	}
+    this.createAncestorList();
+  },
+
+  createAncestorList: function() {
+    // build sequential function call list and display
+    let ancestry = SAGE2_CodeSnippets.getAppAncestry(this);
+    // outsource ancestry drawing ot SAGE2_CodeSnippets
+    SAGE2_CodeSnippets.drawAppAncestry({
+      svg: this.ancestry,
+      width: this.sage2_width,
+      height: ui.titleBarHeight * 1.5,
+      ancestry,
+      app: this
+    });
+  },
+
+  updateAncestorTree: function() {
+    this.createAncestorList();
+
+    for (let link of this.childLinks) {
+      link.getChild().updateAncestorTree();
+    }
+  },
+
+  resize: function(date) {
+    // Called when window is resized
+    let contentWidth = this.state.inputsOpen
+      ? this.sage2_width - 300
+      : this.sage2_width;
+    this.content.style.width = contentWidth + "px";
+    this.content.style.height =
+      this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+
+    this.inputs.style.left = contentWidth + "px";
+
+    // update ancestor list size
+    this.ancestry.attr("width", this.sage2_width);
+    this.createAncestorList();
+
+    if (this.parentLink) {
+      this.parentLink.update(); // redraw
+    }
+
+    this.refresh(date);
+  },
+
+  quit: function() {
+    // Make sure to delete stuff (timers, ...)
+    SAGE2_CodeSnippets.outputAppClosed(this);
+  },
+
+  requestEdit: function(data) {
+    // handled the same as a load request in the editor
+    SAGE2_CodeSnippets.requestSnippetLoad(
+      data.clientId,
+      this.parentLink.getSnippetID()
+    );
+  },
+
+  getContextEntries() {
+    return [
+      {
+        description: "Edit Snippet",
+        // callback
+        callback: "requestEdit",
+        // parameters of the callback function
+        parameters: {}
+      }
+    ];
+  },
+
+  event: function(eventType, position, user_id, data, date) {
+    if (eventType === "pointerPress" && data.button === "left") {
+      // click
+    } else if (eventType === "pointerMove" && this.dragging) {
+      // move
+    } else if (eventType === "pointerRelease" && data.button === "left") {
+      // click release
+    } else if (eventType === "pointerScroll") {
+      // Scroll events for zoom
+    } else if (eventType === "widgetEvent") {
+      // widget events
+    } else if (eventType === "keyboard") {
+      if (data.character === "m") {
+        this.refresh(date);
+      }
+    } else if (eventType === "specialKey") {
+      if (data.code === 37 && data.state === "down") {
+        // left
+        this.refresh(date);
+      } else if (data.code === 38 && data.state === "down") {
+        // up
+        this.refresh(date);
+      } else if (data.code === 39 && data.state === "down") {
+        // right
+        this.refresh(date);
+      } else if (data.code === 40 && data.state === "down") {
+        // down
+        this.refresh(date);
+      }
+    } else if (eventType === "dataUpdate") {
+      console.log("Data Update", data);
+
+      this.updateContent(data, date);
+      // this.refresh(date);
+    }
+  }
 });

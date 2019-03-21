@@ -167,7 +167,8 @@ let SAGE2_CodeSnippets = (function() {
 				desc: func.desc,
 				creator: func.creator ? func.creator : null,
 				snippetID: id,
-				filename: func.src ? func.src : null
+				filename: func.src ? func.src : null,
+				editor: func.editor
 			});
 
 			// send info for user who saved code to load
@@ -181,6 +182,8 @@ let SAGE2_CodeSnippets = (function() {
 
 			let functionState = getFunctionInfo();
 			wsio.emit("snippetsStateUpdated", functionState);
+
+			sendSnippetLogToUser(id);
 		}
 
 	}
@@ -274,6 +277,8 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} filename - the name of the script file
 	 */
 	function loadFromFile(func, filename, id = "new") {
+		console.log(func);
+
 		if (id !== "new") {
 			self.reloadSnippetFilemap[filename] = id;
 		}
@@ -287,6 +292,7 @@ let SAGE2_CodeSnippets = (function() {
 			type: func.type,
 			desc: func.desc,
 			creator: func.creator || "unknown",
+			editor: func.editor || null,
 			links: []
 		};
 
@@ -524,32 +530,37 @@ let SAGE2_CodeSnippets = (function() {
 		if (app.application === "Snippets_Vis") {
 			let primedLink = self.pendingVisLinks.pop();
 
-			if (primedLink.getParent()) {
-				primedLink.getParent().addChildLink(primedLink);
+			if (primedLink) {
+				if (primedLink.getParent()) {
+					primedLink.getParent().addChildLink(primedLink);
+				}
+
+				app.setParentLink(primedLink);
+
+				primedLink.setChild(app);
+				primedLink.update();
+
+				// fix reference
+				self.outputApps[app.state.snippetsID] = app;
 			}
-
-			app.setParentLink(primedLink);
-
-			primedLink.setChild(app);
-			primedLink.update();
-
-			// fix reference
-			self.outputApps[app.state.snippetsID] = app;
 
 		} else if (app.application === "Snippets_Data") {
 			let primedLink = self.pendingDataLinks.pop();
 
-			if (primedLink.getParent()) {
-				primedLink.getParent().addChildLink(primedLink);
+			if (primedLink) {
+				if (primedLink.getParent()) {
+					primedLink.getParent().addChildLink(primedLink);
+				}
+
+				app.setParentLink(primedLink);
+
+				primedLink.setChild(app);
+				primedLink.update();
+
+				// fix reference
+				self.outputApps[app.state.snippetsID] = app;
 			}
 
-			app.setParentLink(primedLink);
-
-			primedLink.setChild(app);
-			primedLink.update();
-
-			// fix reference
-			self.outputApps[app.state.snippetsID] = app;
 		}
 
 		updateSavedSnippetAssociations();
@@ -1058,6 +1069,7 @@ let SAGE2_CodeSnippets = (function() {
 
 
 	function initializeSnippetAssociations(info) {
+		console.log(info);
 
 		let appPromises = [];
 		self.dataCount = info.dataCount;
@@ -1127,6 +1139,11 @@ let SAGE2_CodeSnippets = (function() {
 				self.child = child;
 			}
 
+			function updateChildren(data) {
+				// propagates from within app
+				self.child.updateDataset(data);
+			}
+
 			function getSnippetID() {
 				return self.transformID;
 			}
@@ -1193,46 +1210,36 @@ let SAGE2_CodeSnippets = (function() {
 				let id = self.transformID;
 
 				let logger = {
-					// log: consoleLogToUser.bind({snippetID: id, uniqueID: curator.functions[id].editor})
-					log: appendConsoleToLog
+					log: appendConsoleToLog,
+					error: appendErrorToLog
 				};
 
-				if (curator.functions[id].type === "data" && p) {
-					// call function (calculates new dataset and updates child)
-					try {
-						let result = curator.functions[id].code.call(c, p.getDataset(), publicObject, logger);
-						c.updateDataset(result);
-					} catch (err) {
-						c.displayError(err);
+				let dataset;
 
-						appendErrorToLog(err);
-					}
-				} else if (curator.functions[id].type === "draw" && p) {
-					// call function (plots data on svg)
-					try {
-						// remove error dialogue when the element is requested for draw function
-						c.errorBox.style.display = "none";
-
-						curator.functions[id].code.call(c, p.getDataset(), publicObject, logger);
-						c.updateAncestorTree();
-					} catch (err) {
-						c.displayError(err);
-
-						appendErrorToLog(err);
-					}
-				} else if (curator.functions[id].type === "gen") {
-					// call function (this returns a promise)
-					curator.functions[id]
-						.code.call(c, c.getDataset(), publicObject, logger)
-						.then(function(data) {
-							c.updateDataset(data);
-						})
-						.catch(err => {
-							c.displayError(err);
-
-							appendErrorToLog(err);
-						});
+				if (curator.functions[id].type === "gen") {
+					dataset = c.getDataset();
+				} else {
+					dataset = p.getDataset();
 				}
+
+				let parameters = [
+					c, // child app
+					dataset, // dataset input to function
+					updateChildren, // 'next' function to pass data to the following function
+					publicObject, // link reference for API
+					logger // logger which overrides console.log to capture output
+				];
+
+				try {
+					// call the function
+					curator.functions[id].code.call(...parameters);
+				} catch (err) {
+					// display and log any caught errors
+					c.displayError(err);
+
+					appendErrorToLog(err);
+				}
+
 			}
 
 			return publicObject;

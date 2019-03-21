@@ -322,24 +322,25 @@ let SAGE2_SnippetEditor = (function () {
 
 
 			if (type === "draw") {
-				self.editor.setValue(`// function drawSnippet (data) {
+				self.editor.setValue(`// function drawSnippet (data, next) {
 	// write your code here:\n\tlet { elem, width, height } = SAGE2.SnippetVisElement({ type: "svg" });
 		
-		
+	// optional initial output value for linking operations
+	next([]);
 //}`);
 			} else if (type === "gen") {
-				self.editor.setValue(`// function generatorSnippet (resolve, reject, previousData) {
+				self.editor.setValue(`// function generatorSnippet (previousData, next) {
 	// write your code here:
 	let newData = [];
 	
-	resolve(newData);
+	next(newData);
 //}`);
 			} else {
-				self.editor.setValue(`// function dataSnippet (data) {
+				self.editor.setValue(`// function dataSnippet (data, next) {
 	// write your code here:
 	let newData = data;
 	
-	return newData;
+	next(newData);
 //}`);
 			}
 
@@ -354,6 +355,9 @@ let SAGE2_SnippetEditor = (function () {
 
 			self.descInput.value = '';
 			updateIsChanged(false);
+
+			// clear log
+			showLogMessages({});
 		}
 
 		/**

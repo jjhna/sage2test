@@ -57,6 +57,8 @@ let SnippetsManager = (function() {
 
 		function addLoadedSnippet(info) {
 			self.loaded[info.filename] = info;
+
+			// console.trace(info);
 		}
 
 		function updateSnippetAssociations(associations) {

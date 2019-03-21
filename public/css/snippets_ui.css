@@ -244,9 +244,12 @@
     display: flex;
     flex-basis: 350px;
     flex-direction: column;
-
+    
+    opacity: 1;
     /* margin: 15px; */
     /* margin-left: 0px; */
+
+    /* transition: flex-basis 0.5s ease 0s, display 0s ease 0.5s, opacity 0.25s ease-in-out 0.25s; */
 }
 
 #codeSnippetEditor #snippetLoggingWrapper .log-section-wrapper {
@@ -379,6 +382,15 @@
     color: black;
 }
 
+#codeSnippetEditor #reflowWrapper {
+  display: flex;
+  flex: 1;
+  /* height: 100%; */
+
+  align-items: stretch;
+
+  flex-direction: row;
+}
 
 
 /* ===================================== */
@@ -687,7 +699,7 @@
 
 
 #codeSnippetEditor .title-control .controlButton {
-    padding: 0px 3px;
+    padding: 0px 4px;
     border-width: 0 1px;
 
     color: #333;
@@ -847,4 +859,21 @@
 
 .ace_editor span {
     color: white;
+}
+
+@media screen and (max-width: 1300px) {
+  /* #codeSnippetEditor #snippetLoggingWrapper {
+    flex-basis: 0px;
+    display: none;
+    opacity: 0;
+  } */
+
+  #codeSnippetEditor #reflowWrapper {
+    flex-direction: column;
+  }
+
+  #codeSnippetEditor #snippetLoggingWrapper {
+    flex-direction: row;
+    flex-basis: 275px;
+  }
 }

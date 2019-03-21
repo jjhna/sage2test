@@ -11430,7 +11430,8 @@ function wsSnippetSaveIntoServer(wsio, data) {
 		text: data.text,
 		type: data.type,
 		desc: data.desc,
-		creator: data.creator
+		creator: data.creator,
+		editor: data.editor
 	};
 
 	let fileString = JSON.stringify(fileContents);

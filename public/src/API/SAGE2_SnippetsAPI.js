@@ -137,4 +137,8 @@ var SAGE2 = SAGE2 || {};
 		// create and save new timeout
 		link.timeout = setTimeout(link.update, time);
 	};
+
+	SAGE2.RequireData = function(attributes, app) {
+
+	};
 }());

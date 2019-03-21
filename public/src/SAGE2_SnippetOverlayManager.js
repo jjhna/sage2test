@@ -70,18 +70,18 @@ let SAGE2_SnippetOverlayManager = (function() {
 							`);
 					}
 
-					if (self.dragAction && self.dragMarker) {
+					if (self.dragAction && self.dragTargetMarker) {
 						let current = {
 							x: d3.event.layerX * self.widthRatio,
 							y: d3.event.layerY * self.heightRatio
 						};
 
 						if (Math.abs(current.x - self.dragStart.x) > 100 || Math.abs(current.y - self.dragStart.y) > 100) {
-							self.dragMarker.style("opacity", null);
+							self.dragMarker && self.dragMarker.style("opacity", null);
 							self.dragTargetMarker.style("opacity", null);
 						}
 
-						self.dragMarker
+						self.dragMarker && self.dragMarker
 							.attr("d", calculateTaperedPath(self.dragStartApp, current));
 
 						self.dragTargetMarker
@@ -118,7 +118,7 @@ let SAGE2_SnippetOverlayManager = (function() {
 
 						self.dragAction = null;
 
-						self.dragMarker.remove();
+						self.dragMarker && self.dragMarker.remove();
 						self.dragMarker = null;
 
 						self.dragTargetMarker.remove();
@@ -218,6 +218,25 @@ let SAGE2_SnippetOverlayManager = (function() {
 				.style("fill", lightColor[actionType])
 				.style("stroke", darkColor[actionType]);
 
+
+			if (actionType === "gen") {
+				self.dragTargetMarker = self.overlay
+					.append("rect")
+					.attr("class", "snippetsDragInteractionTarget")
+					.attr("width", self.newAppDim)
+					.attr("height", self.newAppDim)
+					.attr("x", 0 - self.newAppDim / 2)
+					.attr("y", 0 - self.newAppDim / 2)
+					.style("stroke", darkColor[actionType])
+					.style("fill", lightColor[actionType])
+					.style("opacity", 0);
+
+				self.dragStart = {
+					x: 0,
+					y: 0,
+					appID: null
+				};
+			}
 		}
 
 		// save new set of snippet associations, redraw all
@@ -232,8 +251,6 @@ let SAGE2_SnippetOverlayManager = (function() {
 			for (let link of data.links) {
 				processSubtree(link, null);
 			}
-
-			console.log(self.snippetLinks);
 
 			draw();
 		}
@@ -322,7 +339,7 @@ let SAGE2_SnippetOverlayManager = (function() {
 
 			// draw info per app
 			self.appGroup.selectAll(".snippetAppGroup")
-				.data(Object.keys(self.snippetApps))
+				.data(Object.keys(self.snippetApps).filter(id => displayUI.applications[id]))
 				.enter().append("g")
 				.each(function(appID) {
 					let appData = self.snippetApps[appID];
@@ -558,6 +575,9 @@ let SAGE2_SnippetOverlayManager = (function() {
 
 		// update a single item when moved/resized
 		function itemUpdated(data) {
+			if (!displayUI.applications[data.elemId]) {
+				return;
+			}
 
 			let {
 				left,
@@ -655,51 +675,6 @@ let SAGE2_SnippetOverlayManager = (function() {
 
 			return `M ${pathCoords.map(c => c.join(", ")).join("L ")} Z`;
 		}
-
-		/*
-		function calculateLinkPath(link) {
-			let {
-				left: left1,
-				top: top1,
-				width: width1,
-				height: height1
-			} = displayUI.applications[link.parent.appID];
-
-			let {
-				left: left2,
-				top: top2,
-				width: width2,
-				height: height2
-			} = displayUI.applications[link.child.appID];
-
-			let dx = left2 - left1;
-			let dy = top2 - top1;
-
-			let slope = dy / dx;
-			// let angle = Math.atan2(dy, dx);
-
-			let inverse = 1 / -slope;
-
-			let width = self.titleBarOffset;
-
-			let idx = Math.sqrt(Math.pow(width / 2, 2) / (1 + Math.pow(inverse, 2)));
-			let idy = inverse * idx;
-
-			let pathCoords = [
-				[left1 - idx * 1.5 + width1 / 2, top1 - idy * 1.5 + height1 / 2],
-				[left1 + idx * 1.5 + width1 / 2, top1 + idy * 1.5 + height1 / 2],
-				[left2 + idx / 4 + width2 / 2, top2 + idy / 4 + height2 / 2],
-				[left2 - idx / 4 + width2 / 2, top2 - idy / 4 + height2 / 2]
-			];
-
-			// working on curved corners
-			// let pathCoordsStr = pathCoords.map(c => c.join(", "));
-
-			// return `M ${pathCoordsStr[0]} A ${width/2 * 1.5}, ${width/2 * 1.5}, 0, 0, ${(Math.sign(angle) + 1) / 2}, ${pathCoordsStr[1]} L ${pathCoordsStr[2]} A ${width/2}, ${width/2}, 0, 0, 0, ${pathCoordsStr[3]} Z`
-
-			return `M ${pathCoords.map(c => c.join(", ")).join("L ")} Z`;
-		}
-		*/
 
 		function onResize() {
 			// update the width/height and relative width/height of the svg
