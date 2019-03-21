@@ -70,8 +70,6 @@ var Snippets_Data = SAGE2_App.extend({
 		this.content = content;
 		this.element.appendChild(content);
 
-		console.log(ui.titleBarHeight);
-
 		let inputs = document.createElement("div");
 		inputs.className = "snippetsInputWrapper";
 		inputs.style.position = "absolute";

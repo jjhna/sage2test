@@ -277,8 +277,6 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} filename - the name of the script file
 	 */
 	function loadFromFile(func, filename, id = "new") {
-		console.log(func);
-
 		if (id !== "new") {
 			self.reloadSnippetFilemap[filename] = id;
 		}
@@ -473,8 +471,9 @@ let SAGE2_CodeSnippets = (function() {
 			],
 			draw: [
 				[0, 0],
-				[1, 0],
-				[1, 1],
+				[0.925, 0],
+				[1, 0.5],
+				[0.925, 1],
 				[0, 1],
 				[0.075, 0.5]
 			]
@@ -595,7 +594,7 @@ let SAGE2_CodeSnippets = (function() {
 
 			// get mapping information from appID change or snippetID change
 			appID = self.reloadAppIDmap[appID];
-			snippetID = self.reloadSnippetIDmap[snippetID];
+			// snippetID = self.reloadSnippetIDmap[snippetID];
 			linkID = "link" + self.linkCount++;
 
 			let id = self.appIDmap[appID];
@@ -1077,7 +1076,7 @@ let SAGE2_CodeSnippets = (function() {
 
 		for (let app of info.apps) {
 			appPromises.push(new Promise(function(resolve, reject) {
-				self.loadingApps[app] = resolve;
+				self.loadingApps[app.snippetsID] = resolve;
 			}));
 		}
 
