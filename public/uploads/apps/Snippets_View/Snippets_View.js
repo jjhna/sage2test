@@ -1,15 +1,15 @@
 //
-// SAGE2 application: Snippets_Vis
+// SAGE2 application: Snippets_View
 // by: Andrew Burks <andrewtburks@gmail.com>
 //
-// Copyright (c) 2017
+// Copyright (c) 2018-2019
 //
 
 "use strict";
 
 /* global d3 */
 
-var Snippets_Vis = SAGE2_App.extend({
+var Snippets_View = SAGE2_App.extend({
   init: function(data) {
     // Create div into the DOM
     this.SAGE2Init("div", data);
@@ -28,57 +28,54 @@ var Snippets_Vis = SAGE2_App.extend({
     // move and resize callbacks
     this.resizeEvents = "onfinish"; // continuous
 
-    this.content = document.createElement("div");
-    this.content.style.width = "100%";
-    this.content.style.height =
-      this.sage2_height - ui.titleBarHeight * 1.5 + "px";
-    this.content.style.position = "absolute";
-    this.content.style.boxSizing = "border-box";
-    this.content.style.left = "0";
-    this.content.style.top = ui.titleBarHeight * 1.5 + "px";
-    this.content.style.overflow = "hidden";
+    this.content = d3.select(this.element).append("div")
+      .style("width", "100%")
+      .style("height", this.sage2_height - ui.titleBarHeight * 1.5 + "px")
+      .style("position", "absolute")
+      .style("box-sizing", "border-box")
+      .style("left", 0)
+      .style("top", ui.titleBarHeight * 1.5 + "px")
+      .style("overflow", "hidden");
 
-    this.element.appendChild(this.content);
+    this.dataView = this.content
+      .append("div")
+      .style("width", "100%")
+      .style("height", "100%")
+      .style("font-family", "monospace")
+      .style("white-space", "pre")
+      .style("padding", "8px 10px");
 
-    let inputs = document.createElement("div");
-    inputs.className = "snippetsInputWrapper";
-    inputs.style.position = "absolute";
-    inputs.style.left = this.sage2_width + "px";
-    inputs.style.top = "0";
-    inputs.style.width = "300px";
-    inputs.style.minHeight = "100%";
-    inputs.style.padding = ui.titleBarHeight * 1.5 + 8 + "px 10px";
-    inputs.style.boxSizing = "border-box";
-    inputs.style.background = "lightgray";
-
-    this.inputs = inputs;
-    this.element.appendChild(inputs);
+    this.inputs = d3.select(this.element).append("div")
+      .attr("class", "snippetsInputWrapper")
+      .style("position", "absolute")
+      .style("left", this.sage2_width + "px")
+      .style("top", 0)
+      .style("min-height", "100%")
+      .style("padding", ui.titleBarHeight * 1.5 + 8 + "px 10px")
+      .style("box-sizing", "border-box")
+      .style("background", "lightgray");
 
     // add error popup to app
-    let errorBox = document.createElement("div");
-    errorBox.style.width = "90%";
-    errorBox.style.height = "50%";
-    errorBox.style.position = "absolute";
-    errorBox.style.boxSizing = "border-box";
-    errorBox.style.left = "5%";
-    errorBox.style.top = "20%";
+    this.errorBox = d3.select(this.element).append("div")
+      .style("width","90%")
+      .style("height","50%")
+      .style("position","absolute")
+      .style("boxSizing","border-box")
+      .style("left","5%")
+      .style("top","20%")
+      .style("borderRadius","10px")
+      .style("background","#ffe2e2")
+      .style("boxShadow","3px 3px 25px 3px black")
+      .style("border","2px solid #ffb4b4")
+      .style("color","red")
+      .style("fontWeight","bold")
+      .style("fontSize",(3 * ui.titleBarHeight) / 4 + "px")
+      .style("padding","10px")
+      .style("fontFamily", "monospace")
+      .style("whiteSpace", "normal");
 
-    errorBox.style.borderRadius = "10px";
-    errorBox.style.background = "#ffe2e2";
-    errorBox.style.boxShadow = "3px 3px 25px 3px black";
-    errorBox.style.border = "2px solid #ffb4b4";
-    errorBox.style.color = "red";
-    errorBox.style.fontWeight = "bold";
-    errorBox.style.fontSize = (3 * ui.titleBarHeight) / 4 + "px";
-    errorBox.style.padding = "10px";
 
-    errorBox.style.fontFamily = "monospace";
-    errorBox.style.whiteSpace = "normal";
-
-    errorBox.style.display = "none";
-
-    this.errorBox = errorBox;
-    this.element.appendChild(errorBox);
+    this.errorBox.style("display", "none");
 
     // use mouse events normally
     this.passSAGE2PointerAsMouseEvents = true;
@@ -148,6 +145,17 @@ var Snippets_Vis = SAGE2_App.extend({
   updateDataset: function(data, date) {
     // update dataset
     this.dataset = data;
+
+    if (!this.snippetsVisElement) {
+      this.errorBox.style.display = "none";
+
+      let dataString = JSON.stringify(this.dataset, null, 2) + "";
+
+      // draw
+      this.dataView.text(dataString.length > 1500
+          ? dataString.substring(0, 1500) + "\n\n..."
+          : dataString);
+    }
 
     this.updateChildren();
 

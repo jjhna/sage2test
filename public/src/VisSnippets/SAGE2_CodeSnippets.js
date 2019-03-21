@@ -6,7 +6,7 @@
 //
 // See full text, terms and conditions in the LICENSE.txt included file
 //
-// Copyright (c) 2014-17
+// Copyright (c) 2014-19
 
 "use strict";
 
@@ -298,7 +298,7 @@ let SAGE2_CodeSnippets = (function() {
 
 		try {
 			snippetInfo.code = CodeSnippetCompiler.createFunction(func.type, func.text);
-			snippetInfo.text = func.text.replace(/`/gi, "\\`").replace(/\$/gi, "\\$");
+			snippetInfo.text = func.text.replace(/`/gi, "\\`").replace(/\${/gi, "\\${");
 		} catch (err) {
 			console.log("Error parsing code", err);
 		}
@@ -420,6 +420,31 @@ let SAGE2_CodeSnippets = (function() {
 	}
 
 	/**
+	 * Send a request to open a Snippets_View application, including the reference ID for
+	 * the vis application
+	 *
+	 * @method createViewApplication
+	 * @param {String} snippetsID - the id of the object object for reference
+	 */
+	function createViewApplication(snippetsID, center) {
+		if (isMaster) {
+			console.log(snippetsID, center);
+			let minDim = Math.min(ui.json_cfg.totalWidth, ui.json_cfg.totalHeight * 2);
+
+			wsio.emit("loadApplication", {
+				application:
+					"/uploads/apps/Snippets_View",
+				color: "#ff0000",
+				dimensions: [minDim / 4, minDim / 4],
+				position: center && [center.x - minDim / 8, center.y - minDim / 8],
+				data: {
+					snippetsID
+				}
+			});
+		}
+	}
+
+	/**
 	 * Send a request to open a Snippets_List application to dislay loaded code
 	 *
 	 * @method createListApplication
@@ -495,9 +520,11 @@ let SAGE2_CodeSnippets = (function() {
 	 */
 	function displayApplicationLoaded(id, app) {
 		let originalID = app.state.snippetsID;
+		console.log(id, originalID);
+
 		// if the saved ID of the application is already in use, update
 		if (self.outputApps[app.state.snippetsID]) {
-			let newID = app.application === "Snippets_Vis" ?
+			let newID = originalID.includes("vis") ?
 				"vis-" + self.visCount++ :
 				"data-" + self.dataCount++;
 
@@ -526,7 +553,7 @@ let SAGE2_CodeSnippets = (function() {
 
 	function handleLoadedApplication(app) {
 		// call required function, update reference
-		if (app.application === "Snippets_Vis") {
+		if (app.state.snippetsID.includes("vis")) {
 			let primedLink = self.pendingVisLinks.pop();
 
 			if (primedLink) {
@@ -543,7 +570,7 @@ let SAGE2_CodeSnippets = (function() {
 				self.outputApps[app.state.snippetsID] = app;
 			}
 
-		} else if (app.application === "Snippets_Data") {
+		} else if (app.state.snippetsID.includes("data")) {
 			let primedLink = self.pendingDataLinks.pop();
 
 			if (primedLink) {
@@ -808,14 +835,16 @@ let SAGE2_CodeSnippets = (function() {
 				// get link ready for application finish
 				self.pendingVisLinks.push(newLink);
 
-				createVisApplication(snippetsID, targetLocation);
+				// createVisApplication(snippetsID, targetLocation);
+				createViewApplication(snippetsID, targetLocation);
 			} else {
 				let snippetsID = "data-" + self.dataCount++;
 
 				// get link ready for application finish
 				self.pendingDataLinks.push(newLink);
 
-				createDataApplication(snippetsID, targetLocation);
+				// createDataApplication(snippetsID, targetLocation);
+				createViewApplication(snippetsID, targetLocation);
 			}
 		} else {
 			self.links[Object.keys(self.links)[linkIndex]].update();
@@ -1036,6 +1065,8 @@ let SAGE2_CodeSnippets = (function() {
 		// helper method
 		function createSubtree(link, linkID) {
 			let inputs = {};
+
+			console.log(link, link.getChild());
 
 			for (let input of Object.keys(link.inputs)) {
 				inputs[input] = {
@@ -1262,6 +1293,7 @@ let SAGE2_CodeSnippets = (function() {
 
 		createDataApplication,
 		createVisApplication,
+		createViewApplication,
 		createBlockPath,
 
 		handleActionFromUI,
