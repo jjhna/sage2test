@@ -391,5 +391,32 @@ body {
 .snippetsExecutionOrderBlock:after {
 	border-left-color: inherit;
 	border-width: 13px;
-	margin-top: -
+	/* margin-top: - */
+}
+
+.json-summary-type {
+	color: var(--snippets-yellow);
+}
+.json-summary-type.json-summary-type-string {
+	color: var(--snippets-green);
+}
+
+.json-summary-name {
+	color: var(--snippets-red);
+}
+
+.json-summary-length {
+	color: var(--snippets-blue);
+}
+
+.json-summary-circular {
+	color: var(--snippets-purple);
+}
+
+:root {
+	--snippets-yellow: #e5c07b;
+	--snippets-blue: #61afef;
+	--snippets-red: #ef596f;
+	--snippets-purple: #d55fde;
+	--snippets-green: #89ca78;
 }

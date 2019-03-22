@@ -43,7 +43,9 @@ var Snippets_View = SAGE2_App.extend({
       .style("height", "100%")
       .style("font-family", "monospace")
       .style("white-space", "pre")
-      .style("padding", "8px 10px");
+      .style("padding", "8px 10px")
+      .style("color", "#abb2bf")
+      .style("background-color", "#282c34");
 
     this.inputs = d3.select(this.element).append("div")
       .attr("class", "snippetsInputWrapper")
@@ -146,15 +148,15 @@ var Snippets_View = SAGE2_App.extend({
     // update dataset
     this.dataset = data;
 
+    
     if (!this.snippetsVisElement) {
+      let summary = SAGE2_SnippetsUtil.summarizeJSON(data);
+      let printedSummary = SAGE2_SnippetsUtil.printSummarizedJSON(summary);
+
       this.errorBox.style.display = "none";
 
-      let dataString = JSON.stringify(this.dataset, null, 2) + "";
-
       // draw
-      this.dataView.text(dataString.length > 1500
-          ? dataString.substring(0, 1500) + "\n\n..."
-          : dataString);
+      this.dataView.html(printedSummary);
     }
 
     this.updateChildren();
@@ -243,9 +245,8 @@ var Snippets_View = SAGE2_App.extend({
     let contentWidth = this.state.inputsOpen
       ? this.sage2_width - 300
       : this.sage2_width;
-    this.content.style.width = contentWidth + "px";
-    this.content.style.height =
-      this.sage2_height - ui.titleBarHeight * 1.5 + "px";
+    this.content.style("width", contentWidth + "px");
+    this.content.style("height", this.sage2_height - ui.titleBarHeight * 1.5 + "px");
 
     this.inputs.style.left = contentWidth + "px";
 
