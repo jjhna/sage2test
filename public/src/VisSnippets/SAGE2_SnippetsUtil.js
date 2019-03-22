@@ -18,7 +18,7 @@ let SAGE2_SnippetsUtil = (function() {
 		indentation: " ", // or "\t"
 		indentCount: 2,
 		maxLevel: 4
-	}
+	};
 
 	// utility function to extract overall json structure without printing entire data object
 	function summarizeJSON(data) {
@@ -41,16 +41,16 @@ let SAGE2_SnippetsUtil = (function() {
 				// recurse to items in the array
 				if (arr.length) {
 					summarized.items = {
-						"0": summarizeItem(arr[0])
+						0: summarizeItem(arr[0])
 					};
 				}
-				
+
 				return summarized;
 			},
 			Object: (obj) => {
 				let summarized = {};
 
-				summarized.type = "Object"
+				summarized.type = "Object";
 				summarized.keys = Object.keys(obj);
 
 				summarized.items = {};
@@ -68,7 +68,7 @@ let SAGE2_SnippetsUtil = (function() {
 				};
 			}
 		};
-	
+
 		let type = "Other";
 
 		if (item instanceof Array) {
@@ -92,7 +92,7 @@ let SAGE2_SnippetsUtil = (function() {
 				});
 				item["*snippets_mark*"] = true;
 			}
-			
+
 			return summarize[type](item);
 		}
 	}
@@ -103,7 +103,7 @@ let SAGE2_SnippetsUtil = (function() {
 
 			// recurse to the next level
 			if (obj instanceof Array && obj.length) {
-				unmarkObject(obj[0])
+				unmarkObject(obj[0]);
 			} else if (obj instanceof Object) {
 				for (let key of Object.keys(obj)) {
 					unmarkObject(obj[key]);
@@ -129,7 +129,7 @@ let SAGE2_SnippetsUtil = (function() {
 			string += "{\n";
 
 			let childStrings = data.keys.map(key => {
-				return printSummaryLevel(data.items[key], l + 1)
+				return printSummaryLevel(data.items[key], l + 1);
 			});
 
 			for (let i = 0; i < data.keys.length; i++) {
@@ -140,7 +140,7 @@ let SAGE2_SnippetsUtil = (function() {
 				string += childStrings[i];
 
 				if (i < data.keys.length - 1) {
-					string += ","
+					string += ",";
 				}
 
 				string += "\n";
@@ -161,13 +161,13 @@ let SAGE2_SnippetsUtil = (function() {
 				}
 
 				string += printSummaryLevel(data.items["0"], l + 1);
-	
+
 				if (needsNewlines) {
 					string += "\n" + self.indentation.repeat(l * self.indentCount);
 
 				}
 			}
-			
+
 			string += "]";
 		} else {
 			string += wrapInHTML(data.type, "type");
@@ -178,11 +178,11 @@ let SAGE2_SnippetsUtil = (function() {
 
 	function wrapInHTML(value, type) {
 		let tags = {
-      type: `<span class="json-summary json-summary-type json-summary-type-${value}">&lt;${value}&gt;</span>`,
-      name: `<span class="json-summary json-summary-name">${value}</span>`,
-      length: `<span class="json-summary json-summary-length">${value}</span>`,
-      circular: `<span class="json-summary json-summary-circular">${value}</span>`
-    };
+			type: `<span class="json-summary json-summary-type json-summary-type-${value}">&lt;${value}&gt;</span>`,
+			name: `<span class="json-summary json-summary-name">${value}</span>`,
+			length: `<span class="json-summary json-summary-length">${value}</span>`,
+			circular: `<span class="json-summary json-summary-circular">${value}</span>`
+		};
 
 		return tags[type];
 	}

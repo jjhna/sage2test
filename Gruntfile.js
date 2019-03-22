@@ -26,7 +26,7 @@ module.exports = function(grunt) {
 			},
 			browserFiles: {
 				files: {
-					src: ['public/src/*.js', 'public/admin/*.js', 'public/src/API/*.js']
+					src: ['public/src/*.js', 'public/admin/*.js', 'public/src/VisSnippets/*.js']
 				},
 				options: { configFile: "build/.eslint_client_rc" }
 			},
