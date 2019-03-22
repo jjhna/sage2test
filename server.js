@@ -6906,6 +6906,9 @@ function pointerPressOnApplication(uniqueID, pointerX, pointerY, data, obj, loca
 				sendPointerPressToApplication(uniqueID, obj.data, pointerX, pointerY, data);
 			} else {
 				selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+				if (data.sourceType === "touch") {
+					sendPointerPressToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+				}
 			}
 		}
 		return;
