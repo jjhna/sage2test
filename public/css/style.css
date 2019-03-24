@@ -412,6 +412,30 @@ body {
 .json-summary-type {
 	color: var(--snippets-yellow);
 }
+
+.json-summary-value {
+	color: #abb2bf;
+
+	margin-left: 4px;
+	font-style: italic;
+}
+
+.json-summary-value.json-summary-value::before {
+	content: "(";
+}
+
+.json-summary-value.json-summary-value::after {
+	content: ")";
+}
+
+.json-summary-value.json-summary-value-string::before {
+	content: "('";
+}
+
+.json-summary-value.json-summary-value-string::after {
+	content: "')";
+}
+
 .json-summary-type.json-summary-type-string {
 	color: var(--snippets-green);
 }
