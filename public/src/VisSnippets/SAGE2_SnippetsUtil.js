@@ -126,27 +126,36 @@ let SAGE2_SnippetsUtil = (function() {
 		if (data.circular) {
 			string += wrapInHTML("(circular reference)", "circular");
 		} else if (data.type === "Object") {
-			string += "{\n";
+			string += "{";
 
 			let childStrings = data.keys.map(key => {
 				return printSummaryLevel(data.items[key], l + 1);
 			});
 
-			for (let i = 0; i < data.keys.length; i++) {
-				string += self.indentation.repeat((l + 1) * self.indentCount);
+			if (childStrings.length) {
+				let childStringCombined = "\n";
 
-				string += wrapInHTML(data.keys[i], "name") + ": ";
+				for (let i = 0; i < data.keys.length; i++) {
+					childStringCombined += self.indentation.repeat((l + 1) * self.indentCount);
 
-				string += childStrings[i];
+					childStringCombined += wrapInHTML(data.keys[i], "name") + ": ";
 
-				if (i < data.keys.length - 1) {
-					string += ",";
+					childStringCombined += childStrings[i];
+
+					if (i < data.keys.length - 1) {
+						childStringCombined += ",";
+					}
+
+					childStringCombined += "\n" + self.indentation.repeat(l * self.indentCount);
+
 				}
 
-				string += "\n";
-
+				string += wrapInHTML(childStringCombined, "child");
 			}
-			string += self.indentation.repeat(l * self.indentCount) + "}";
+
+			string += "}";
+
+			string = wrapInHTML(string, "layer");
 
 		} else if (data.type === "Array") {
 			// string += "[]";
@@ -169,6 +178,8 @@ let SAGE2_SnippetsUtil = (function() {
 			}
 
 			string += "]";
+
+			// string = wrapInHTML(string, "layer");
 		} else {
 			string += wrapInHTML(data.type, "type");
 		}
@@ -181,7 +192,14 @@ let SAGE2_SnippetsUtil = (function() {
 			type: `<span class="json-summary json-summary-type json-summary-type-${value}">&lt;${value}&gt;</span>`,
 			name: `<span class="json-summary json-summary-name">${value}</span>`,
 			length: `<span class="json-summary json-summary-length">${value}</span>`,
-			circular: `<span class="json-summary json-summary-circular">${value}</span>`
+			circular: `<span class="json-summary json-summary-circular">${value}</span>`,
+			layer: `<span class="json-summary json-summary-checkbox">
+					<input type="checkbox">
+					<span class="json-summary-checkboxmarker" onclick="(function(me){
+						me.parentNode.classList.toggle('checked');console.log('click');
+					})(this)"></span>
+				</span><div class="json-summary json-summary-layer">${value}</div>`,
+			child: `<div class="json-summary json-summary-child">${value}</div>`
 		};
 
 		return tags[type];

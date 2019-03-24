@@ -371,14 +371,14 @@
 }
 
 #codeSnippetEditor #snippetLoggingWrapper #consoleMessages .message {
-    background: #fefefe;
+    background: var(--snippets-base3);
     color: black;
 
     border: 1px solid #cdcdcd;
 }
 
 #codeSnippetEditor #snippetLoggingWrapper #consoleMessages .message:nth-child(even) {
-    background: #f0f0f0;
+    background: var(--snippets-base2);
     color: black;
 }
 
@@ -876,4 +876,108 @@
     flex-direction: row;
     flex-basis: 275px;
   }
+}
+/* ======================================= */
+/* == Code Snippets JSON logger Styling == */
+/* ======================================= */
+
+.json-summary {
+    font-family: monospace;
+}
+
+.json-summary-checkbox {
+  display: inline;
+  position: relative;
+  cursor: pointer;
+  
+  padding-left: 10px;
+  margin-left: 2px;
+  white-space: nowrap;
+
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.json-summary-checkbox>input{
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.json-summary-checkboxmarker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 12px;
+  height: 10px;
+  width: 10px;
+
+  line-height: 10px;
+  text-align: center;
+
+  color: var(--snippets-base1);
+  border: 1px solid var(--snippets-base1);
+}
+
+.json-summary-checkboxmarker::before {
+    content: "+";
+}
+
+.json-summary-checkbox.checked>.json-summary-checkboxmarker::before {
+    content: "–";
+}
+
+.json-summary-layer {
+    display: inline;
+}
+
+.json-summary-layer>.json-summary-child {
+    display: none;
+}
+
+.json-summary-checkbox.checked+.json-summary-layer>.json-summary-child {
+    display: inline;
+}
+
+.json-summary-type {
+	color: var(--snippets-cyan);
+}
+.json-summary-type.json-summary-type-string {
+	color: var(--snippets-green);
+}
+
+.json-summary-name {
+	color: var(--snippets-red);
+}
+
+.json-summary-length {
+	color: var(--snippets-blue);
+}
+
+.json-summary-circular {
+	color: var(--snippets-violet);
+}
+
+:root {
+    /* using colors from the solarized light theme */
+    --snippets-base03:    #002b36;
+    --snippets-base02:    #073642;
+    --snippets-base01:    #586e75;
+    --snippets-base00:    #657b83;
+    --snippets-base0:     #839496;
+    --snippets-base1:     #93a1a1;
+    --snippets-base2:     #eee8d5;
+    --snippets-base3:     #fdf6e3;
+    --snippets-yellow:    #b58900;
+    --snippets-orange:    #cb4b16;
+    --snippets-red:       #dc322f;
+    --snippets-magenta:   #d33682;
+    --snippets-violet:    #6c71c4;
+    --snippets-blue:      #268bd2;
+    --snippets-cyan:      #2aa198;
+    --snippets-green:     #859900;
 }

@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global ace d3 displayUI interactor wsio SAGE2_SnippetExporter CodeSnippetCompiler, snippetOverlayManager */
+/* global ace d3 displayUI interactor wsio SAGE2_SnippetExporter CodeSnippetCompiler snippetOverlayManager SAGE2_SnippetsUtil */
 
 let SAGE2_SnippetEditor = (function () {
 	// api examples to be inserted in the editor
@@ -695,11 +695,19 @@ let SAGE2_SnippetEditor = (function () {
 		function showLogMessages(log) {
 			let apps = Object.keys(log);
 
+			console.log(log);
+
 			let errors = [];
 			let consoleLog = [];
 
 			for (let appID of apps) {
 				for (let entry of log[appID]) {
+					try {
+						entry.content = JSON.parse(entry.content);
+					} catch (err) {
+						// isn't a json format
+					}
+
 					if (entry.type === "console") {
 						consoleLog.push(Object.assign({ appID }, entry));
 					} else {
@@ -768,7 +776,12 @@ let SAGE2_SnippetEditor = (function () {
 
 				let content = document.createElement("div");
 				content.className = "content";
-				content.innerText = logEntry.content;
+
+				if (logEntry.content instanceof Object) {
+					content.innerHTML = SAGE2_SnippetsUtil.printSummarizedJSON(logEntry.content);
+				} else {
+					content.innerHTML = logEntry.content;
+				}
 
 				let source = document.createElement("div");
 				source.className = "source";
