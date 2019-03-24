@@ -777,19 +777,29 @@ let SAGE2_SnippetEditor = (function () {
 				let content = document.createElement("div");
 				content.className = "content";
 
-				if (logEntry.content instanceof Object) {
-					content.innerHTML = SAGE2_SnippetsUtil.printSummarizedJSON(logEntry.content);
-				} else {
-					content.innerHTML = logEntry.content;
-				}
-
 				let source = document.createElement("div");
 				source.className = "source";
 				source.innerText = `(${logEntry.appID})`;
 
-				message.appendChild(timestamp);
-				message.appendChild(content);
-				message.appendChild(source);
+				if (logEntry.content instanceof Object) {
+					content.innerHTML = SAGE2_SnippetsUtil.printSummarizedJSON(logEntry.content);
+
+					content.style.flexBasis = "100%";
+
+					message.style.flexWrap = "wrap";
+					message.style.justifyContent = "space-between";
+
+					message.appendChild(timestamp);
+					message.appendChild(source);
+					message.appendChild(content);
+				} else {
+					content.innerHTML = logEntry.content;
+
+					message.appendChild(timestamp);
+					message.appendChild(content);
+					message.appendChild(source);
+				}
+
 
 				self.consoleLogContainer.appendChild(message);
 

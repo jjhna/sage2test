@@ -391,7 +391,22 @@ body {
 .snippetsExecutionOrderBlock:after {
 	border-left-color: inherit;
 	border-width: 13px;
-	/* margin-top: - */
+}
+
+.json-summary-checkbox {
+  display: none;
+}
+
+.json-summary-layer {
+    display: inline;
+}
+
+.json-summary-layer>.json-summary-keys {
+    display: none;
+}
+
+.json-summary-child {
+    display: inline;
 }
 
 .json-summary-type {

@@ -17,6 +17,7 @@ let SAGE2_SnippetsUtil = (function() {
 		// config for Summarized JSON printer
 		indentation: " ", // or "\t"
 		indentCount: 2,
+		showExampleValue: true,
 		maxLevel: 4
 	};
 
@@ -128,6 +129,10 @@ let SAGE2_SnippetsUtil = (function() {
 		} else if (data.type === "Object") {
 			string += "{";
 
+			let keys = data.keys.map(k => `'${k}'`).join(", ");
+
+			string += wrapInHTML(keys, "keys");
+
 			let childStrings = data.keys.map(key => {
 				return printSummaryLevel(data.items[key], l + 1);
 			});
@@ -146,9 +151,10 @@ let SAGE2_SnippetsUtil = (function() {
 						childStringCombined += ",";
 					}
 
-					childStringCombined += "\n" + self.indentation.repeat(l * self.indentCount);
-
+					childStringCombined += "\n";
 				}
+
+				childStringCombined += self.indentation.repeat(l * self.indentCount);
 
 				string += wrapInHTML(childStringCombined, "child");
 			}
@@ -182,14 +188,19 @@ let SAGE2_SnippetsUtil = (function() {
 			// string = wrapInHTML(string, "layer");
 		} else {
 			string += wrapInHTML(data.type, "type");
+
+			if (self.showExampleValue) {
+				string += wrapInHTML(data.example, "value", data.type);
+			}
 		}
 
 		return string;
 	}
 
-	function wrapInHTML(value, type) {
+	function wrapInHTML(value, role, type) {
 		let tags = {
 			type: `<span class="json-summary json-summary-type json-summary-type-${value}">&lt;${value}&gt;</span>`,
+			value: `<span class="json-summary json-summary-value json-summary-value-${type}">${value}</span>`,
 			name: `<span class="json-summary json-summary-name">${value}</span>`,
 			length: `<span class="json-summary json-summary-length">${value}</span>`,
 			circular: `<span class="json-summary json-summary-circular">${value}</span>`,
@@ -199,10 +210,11 @@ let SAGE2_SnippetsUtil = (function() {
 						me.parentNode.classList.toggle('checked');console.log('click');
 					})(this)"></span>
 				</span><div class="json-summary json-summary-layer">${value}</div>`,
-			child: `<div class="json-summary json-summary-child">${value}</div>`
+			child: `<div class="json-summary json-summary-child">${value}</div>`,
+			keys: `<span class="json-summary json-summary-keys">${value}</span>`
 		};
 
-		return tags[type];
+		return tags[role];
 	}
 
 	return {

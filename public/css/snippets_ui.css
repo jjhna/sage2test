@@ -329,15 +329,14 @@
 }
 
 
-
 #codeSnippetEditor #snippetLoggingWrapper .message .timestamp {
-    flex: 0 0;
+    flex: 0 1;
     word-break: normal;
     white-space: nowrap;
     color: gray;
 
     display: flex;
-    align-items: center;
+    align-items: flex-start;
 }
 
 
@@ -935,6 +934,16 @@
     display: inline;
 }
 
+.json-summary-layer>.json-summary-keys {
+    display: none;
+    /* display: inline; */
+    color: var(--snippets-red);
+
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 .json-summary-layer>.json-summary-child {
     display: none;
 }
@@ -943,11 +952,45 @@
     display: inline;
 }
 
-.json-summary-type {
-	color: var(--snippets-cyan);
+.json-summary-checkbox.checked+.json-summary-layer>.json-summary-keys {
+    display: none;
 }
+
+.json-summary-type {
+    cursor: help;
+    color: var(--snippets-cyan);
+}
+
 .json-summary-type.json-summary-type-string {
 	color: var(--snippets-green);
+}
+
+.json-summary-value {
+    display: none;
+    color: var(--snippets-base01);
+
+    margin-left: 4px;
+    font-style: italic;
+}
+
+.json-summary-value.json-summary-value::before {
+	content: "(";
+}
+
+.json-summary-value.json-summary-value::after {
+	content: ")";
+}
+
+.json-summary-value.json-summary-value-string::before {
+	content: "('";
+}
+
+.json-summary-value.json-summary-value-string::after {
+	content: "')";
+}
+
+.json-summary-type:hover + .json-summary-value {
+    display: inline;
 }
 
 .json-summary-name {
