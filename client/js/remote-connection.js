@@ -1,7 +1,8 @@
 // Renaming require keyword to be able to use jQuery and node in electron, load node modules with nodeRequire()
 window.nodeRequire = require;
 delete window.require;
-delete window.exports; delete window.module;
+delete window.exports;
+delete window.module;
 
 const electron = nodeRequire('electron');
 const fs = nodeRequire('fs');
@@ -12,12 +13,16 @@ const favorites_path = '/tmp/sage2_favorite_sites.json';
 // DOM Element declaration
 const favoriteHeart = document.getElementById("favorite_heart");
 const favoriteCarousel = document.getElementById("favorites_carousel");
+const favoriteList = document.getElementById("favorites_list");
 const idDropdown = document.getElementById('ids_dropdown');
 const idDropName = document.getElementById('id_drop');
 const siteDropdown = document.getElementById('sites_dropdown');
 const check1 = document.getElementById('check_1');
 const check2 = document.getElementById('check_2');
 const urlInput = document.getElementById('url');
+const okayBtn = document.getElementById('okay_btn');
+const cancelBtn = document.getElementById('cancel_btn');
+const switchFavoritesUI = document.getElementById('switch_favorites_ui');
 const loadSiteInfoBtn = document.getElementById('load-site-info-btn');
 const loadSiteInfoBtnText = document.getElementById('load-site-info-btn-text');
 // const pwdControl = document.getElementById('pwd-control');
@@ -56,7 +61,7 @@ fs.readFile(favorites_path, 'utf8', function readFileCallback(err, data) {
 		favorites = JSON.parse(data); //convert json to object
 		if (favorites.list.length > 0) {
 			clearCarousel();
-			populateCarousel(favorites.list);
+			populateFavorites(favorites.list);
 			updateInitCarousel();
 		}
 	}
@@ -105,15 +110,16 @@ function setEmptyHeart() {
 
 
 /**
- * Populates the carousel with the given array of sites objects
+ * Populates the carousel and list with the given array of sites objects
  *
  * @param  {Array of sites objects} favorites_list
  */
-function populateCarousel(favorites_list) {
+function populateFavorites(favorites_list) {
 	if (!favorites_list) {
 		return;
 	}
 	favorites_list.forEach(addItemToCarousel);
+	favorites_list.forEach(addItemToList);
 	// attachBehaviorDropdownSites();
 }
 
@@ -140,6 +146,29 @@ function disablePassword() {
 }
 
 /**
+ * Adds an item to the UI list of favorites
+ *
+ * @param  {site object} item a site object
+ * @param  {int} index the index in the array of objects
+ * @return {void}
+ */
+function addItemToList(item, index) {
+	let it = document.createElement("LI");
+	addClass(it, "collection-item blue-grey darken-2 z-depth-3");
+	let htmlCode = `<div><span>${item.name}</span> <span>${item.host}</span><a href="#!" class="secondary-content">
+                        <i class="material-icons style="color:${offlineColor};">favorite</i>
+                            </a>
+                    </div>`;
+	it.innerHTML = htmlCode;
+
+	it.firstElementChild.firstElementChild.addEventListener('click', selectFavoriteSite);
+	it.firstElementChild.firstElementChild.style.cursor = "pointer";
+	it.firstElementChild.lastElementChild.addEventListener('click', removeFavoriteSiteList);
+	favoriteList.appendChild(it);
+	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, 1000);
+}
+
+/**
  * Adds an item to the carousel of favorites
  *
  * @param  {site object} item a site object
@@ -148,20 +177,21 @@ function disablePassword() {
  */
 function addItemToCarousel(item, index) {
 	let it = document.createElement("DIV");
-	addClass(it, "card blue-grey darken-2 carousel-item z-depth-3");
+	addClass(it, "card small blue-grey darken-2 carousel-item z-depth-3");
 	let htmlCode = `<div class="card-content white-text">
                                 <span class="card-title">${item.name}</span><p>${item.host}</p>
                                 </div>
                                 <div class="card-action">
-                                    <a onclick="selectFavoriteSite(this)" href="#"><i
-                                            class="material-icons prefix" style="color:${offlineColor}">add_to_queue</i></a>
-                                    <a onclick="removeFavoriteSite(this)" href="#"><i
+                                    <a href="#"><i
                                             class="small material-icons prefix" style="color:${offlineColor}">favorite</i></a>
                                 </div>`;
 	it.innerHTML = htmlCode;
 
+	it.firstElementChild.firstElementChild.addEventListener('click', selectFavoriteSite);
+	it.firstElementChild.firstElementChild.style.cursor = "pointer";
+	it.firstElementChild.nextElementSibling.firstElementChild.addEventListener('click', removeFavoriteSite);
 	favoriteCarousel.appendChild(it);
-	setOnlineStatus(buildConfigURL(item.host), it, 1000);
+	setOnlineStatus(buildConfigURL(item.host), it.lastChild.firstElementChild.firstElementChild, 1000);
 }
 
 /**
@@ -170,10 +200,9 @@ function addItemToCarousel(item, index) {
  * @param  {<a> element} element the clicked <a> element
  * @return {void}
  */
-function selectFavoriteSite(element) {
-	let host = element.parentElement.parentElement.firstElementChild.lastElementChild.innerText;
-	let name = element.parentElement.parentElement.firstElementChild.firstElementChild.innerText;
-
+function selectFavoriteSite(event) {
+	let host = event.target.nextElementSibling.innerText;
+	let name = event.target.innerText;
 	urlInput.value = host;
 	urlInput.setAttribute("data-name", name); // store site name in data-name attr of url
 	//check if in favorites, if it is color heart in black, if not color it in white
@@ -191,8 +220,26 @@ function selectFavoriteSite(element) {
  * @method removeFromFavorites
  * @param {<a> element}
  */
-function removeFavoriteSite(element) {
-	var url = element.parentElement.parentElement.firstElementChild.lastElementChild.innerText;
+function removeFavoriteSite(event) {
+	var url = event.target.parentElement.parentElement.parentElement.firstElementChild.lastElementChild.innerText;
+	let URL_in_form = urlInput.value;
+	removeFromFavorites(url);
+	if (URL_in_form === url) {
+		setEmptyHeart();
+	}
+}
+
+/**
+ * Onclick function for clicking on the heart on a card in the list
+ * Remove from favorites JSON, write JSON file, update list removing the site,
+ * color heart in white if the url in #url is the
+ * same as the one just unselected
+ *
+ * @method removeFromFavorites
+ * @param {<a> element}
+ */
+function removeFavoriteSiteList(event) {
+	var url = event.target.parentElement.parentElement.firstElementChild.nextElementSibling.innerText;
 	let URL_in_form = urlInput.value;
 	removeFromFavorites(url);
 	if (URL_in_form === url) {
@@ -211,8 +258,9 @@ function addToFavorites(favorite_item) {
 	if (!alreadyInFavorites(favorite_item.host)) {
 		favorites.list.push(favorite_item);
 		writeFavoritesOnFile(favorites);
+		clearList();
 		clearCarousel();
-		populateCarousel(favorites.list);
+		populateFavorites(favorites.list);
 		updateInitCarousel();
 	}
 }
@@ -226,6 +274,7 @@ function alreadyInFavorites(host) {
 	if (favorites.list.length === 0) {
 		return false;
 	}
+	var favorite = 0;
 	for (favorite of favorites.list) {
 		if (favorite.host === host) {
 			return true;
@@ -245,6 +294,16 @@ function clearCarousel() {
 }
 
 /**
+ * Clears the favorites list, removing all inner elems
+ *
+ * @method clearList
+ * @return {void}
+ */
+function clearList() {
+	favoriteList.innerHTML = "";
+}
+
+/**
  * Removes the favorite site from the list in the favorites object, writes back to the JSON, handles UI refreshing
  *
  * @method removeFromFavorites
@@ -256,8 +315,9 @@ function removeFromFavorites(favorite_url) {
 		if (favorite_url === favorites.list[i].host) {
 			favorites.list.splice(i, 1);
 			writeFavoritesOnFile(favorites);
+			clearList();
 			clearCarousel();
-			populateCarousel(favorites.list);
+			populateFavorites(favorites.list);
 			updateInitCarousel();
 		}
 	}
@@ -495,7 +555,7 @@ function cancelOnClick() {
 }
 
 function okayOnClick() {
-	l("okau on click");
+	l("okay on click");
 	let URL = formatProperly(urlInput.value);
 	// sending URL to electron.js, params: key value pair (id,URL)
 	ipcRenderer.send('connect-url', URL);
@@ -560,6 +620,8 @@ function fetchWithTimeout(url, delay, onTimeout) {
  * @return void
  */
 function setOnlineStatus(url, elem, delay) {
+	// Setting offline as default
+	elem.style.color = offlineColor;
 	const timer = new Promise((resolve) => {
 		setTimeout(resolve, delay, {
 			timeout: true
@@ -571,12 +633,12 @@ function setOnlineStatus(url, elem, delay) {
 		timer
 	]).then((response) => {
 		if (response.timeout) {
-			elem.lastChild.firstElementChild.firstElementChild.style.color = offlineColor;
-			elem.lastChild.lastElementChild.firstElementChild.style.color = offlineColor;
+			elem.style.color = offlineColor;
+			// elem.lastChild.lastElementChild.firstElementChild.style.color = offlineColor;
 			return;
 		} else {
-			elem.lastChild.firstElementChild.firstElementChild.style.color = onlineColor;
-			elem.lastChild.lastElementChild.firstElementChild.style.color = onlineColor;
+			elem.style.color = onlineColor;
+			// elem.lastChild.lastElementChild.firstElementChild.style.color = onlineColor;
 		}
 	});
 }
@@ -596,7 +658,7 @@ function resetSiteInfo() {
  */
 function setLoadInfoButtonOnline() {
 	removeClass(loadSiteInfoBtn, buttonColorClass);
-	loadSiteInfoBtnText.textContent = "Site Online";
+	// loadSiteInfoBtnText.textContent = "Site Online";
 	loadSiteInfoBtn.style.background = onlineColor;
 }
 
@@ -606,7 +668,7 @@ function setLoadInfoButtonOnline() {
  */
 function setLoadInfoButtonOffline() {
 	removeClass(loadSiteInfoBtn, buttonColorClass);
-	loadSiteInfoBtnText.textContent = "Site Offline";
+	// loadSiteInfoBtnText.textContent = "Site Offline";
 	loadSiteInfoBtn.style.background = offlineColor;
 }
 
@@ -650,6 +712,22 @@ function updateInitCarousel() {
 	}
 }
 
+function switchToListUI() {
+	favoriteCarousel.hidden = true;
+	favoriteList.parentElement.hidden = false;
+}
+
+function switchToCarouselUI() {
+	favoriteList.parentElement.hidden = true;
+	favoriteCarousel.hidden = false;
+	updateInitCarousel();
+}
+// Functions finished
+
+favoriteList.parentElement.hidden = true;
+
+// Adding event listeners to html elems
+
 // Initialize dropdown and carousel with sites
 document.addEventListener('DOMContentLoaded', function () {
 	var elems = document.querySelectorAll('.dropdown-trigger');
@@ -685,6 +763,20 @@ check2.addEventListener('click', (e) => {
 		removeClass(idDropName, 'scale-in');
 	}
 });
+
+switchFavoritesUI.addEventListener('click', (e) => {
+	var checked = e.target.checked;
+	if (checked) {
+		switchToListUI();
+	} else {
+		switchToCarouselUI();
+	}
+});
+
+okayBtn.addEventListener('click', okayOnClick);
+cancelBtn.addEventListener('click', cancelOnClick);
+loadSiteInfoBtn.addEventListener('click', loadCurrentSiteInfo);
+
 
 // Checks if modified url input contains host of a site in favorite and sets the heart status and loads site information
 urlInput.addEventListener("input", (e) => {

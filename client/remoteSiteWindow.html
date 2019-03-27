@@ -43,10 +43,9 @@
                                     <!-- <li><a class='clickable'>canopus.evl.uic.edu</a></li> -->
                                 </ul>
                             </div>
-                            <div class="col s7"><a id="load-site-info-btn"
-                                    class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'
-                                    onclick="loadCurrentSiteInfo()">
-                                    <span id="load-site-info-btn-text">Load site info</span><i
+                            <div class="col s5"><a id="load-site-info-btn"
+                                    class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>
+                                    <span id="load-site-info-btn-text"></span><i
                                         class="material-icons right">refresh</i>
                                 </a>
                             </div>
@@ -65,6 +64,17 @@
                                             class="small material-icons prefix">favorite</i></a>
                                 </div>
                             </div>
+                        </div>
+                        <div 
+                        style="
+                        height:299px;
+                        overflow-y: scroll;
+                        color: white;
+                        max-height:300px;">
+                            <ul id="favorites_list" class="collection with-header">
+                                <!-- <li class="collection-header"><h4>First Names</h4></li> -->
+                                
+                            </ul>
                         </div>
                     </div>
                     <div class="col s4"><label>Options</label>
@@ -103,21 +113,32 @@
                                 <label id="pwd-control" for="password">Password</label>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col s12">
+                                <div id="switch_favorites_ui" class="switch">
+                                    <label>
+                                        Carousel
+                                        <input type="checkbox">
+                                        <span class="lever"></span>
+                                        List
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
 
                         <br><br><br><br><br><br>
                         <div class="divider"></div>
                         <div class="section">
                             <div class="row">
-                                <div class="col s6"><a id="cancel_btn" onclick="cancelOnClick()"
+                                <div class="col s6"><a id="cancel_btn"
                                         class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>Cancel</a>
                                 </div>
                                 <div class="col s6">
                                     <!-- disabled 
                                 TODO added pulse class for 2 second on enable-->
-                                    <a id="okay_btn" onclick="okayOnClick()"
-                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>
+                                    <a id="okay_btn" class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>
                                         <!-- <i class="material-icons left">screen_share</i> -->
-                                        Okay</a></div>
+                                        Connect</a></div>
                             </div>
                         </div>
 
