@@ -1,16 +1,28 @@
-// Renaming require keyword to be able to use jQuery and node in electron, load node modules with nodeRequire()
-window.nodeRequire = require;
-delete window.require;
-delete window.exports;
-delete window.module;
+/**
+ * Handles behavior of remoteSiteWindow.html web page.
+ * Bring up page with cmd+k on Mac, ctrl+k on windows.
+ * This gives a user-friendly navigation/connection to different SAGE2 sites.
+ * The user can see the remote sites connected to the current one, see their
+ * online/offline status, add them in a persistent favorites list, choose
+ * the ClientID among the available ones, default is Full Screen.
+ * If a password is required the user is also given the possibility to
+ * insert one. The password hash is automatically saved locally.
+ *
+ * @class electron
+ * @module remote-connection
+ * @submodule electron
+ * @requires electron, fs, os, path,
+ */
+'use strict';
 
-const electron = nodeRequire('electron');
-const fs = nodeRequire('fs');
+/******************************* Node modules ********************************/
+const electron = require('electron');
+const fs = require('fs');
 const { ipcRenderer } = electron;
+const { platform, homedir } = require("os");
+const { join } = require("path");
 
-const favorites_path = '/tmp/sage2_favorite_sites.json';
-
-// DOM Element declaration
+/************************* DOM element declaration ***************************/
 const favoriteHeart = document.getElementById("favorite_heart");
 const favoriteCarousel = document.getElementById("favorites_carousel");
 const favoriteList = document.getElementById("favorites_list");
@@ -23,37 +35,37 @@ const urlInput = document.getElementById('url');
 const okayBtn = document.getElementById('okay_btn');
 const cancelBtn = document.getElementById('cancel_btn');
 const switchFavoritesUI = document.getElementById('switch_favorites_ui');
-const loadSiteInfoBtn = document.getElementById('load-site-info-btn');
-const loadSiteInfoBtnText = document.getElementById('load-site-info-btn-text');
-// const pwdControl = document.getElementById('pwd-control');
+const loadSiteInfoBtn = document.getElementById('current_status_btn');
 const pwdInput = document.getElementById('password');
 
-
+/********************** html classes and attribute values ********************/
 const buttonColorClass = "blue-grey darken-2";
-// const offlineColorClass = "deep-orange accent-1";
-// const onlineColorClass = "green lighten-1";
+const pulseClass = "pulse";
 const onlineColor = "#60d277";
 const offlineColor = "#d5715d";
+
+const favorites_file_name = 'sage2_favorite_sites.json';
 
 //JS object containing list of favorites sites
 var favorites = {
 	list: []
+	// example of favorites object structure
 	// list: [{
 	//     host: 'orion-win.evl.uic.edu',
-	//     name: 'CAVE2'
+	//     name: 'CAVE2',
+	//     hash: B0A0C534BE83D0342E38D233643BDABB
 	// },
 	// {
 	//     host: 'test.edu',
 	//     name: 'CAVE3'
-	// },
-	// {
-	//     host: 'hhhg.sds.ds',
-	//     name: 'CAVE4'
 	// }]
 };
+// Variables for the current site
+let passwordRequired = false;
+let isHashSaved = false;
 
 // Reading the favorites json file
-fs.readFile(favorites_path, 'utf8', function readFileCallback(err, data) {
+fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
 	if (err) { // most likely no json file (first use), write empty favorites on file
 		console.log(err);
 		writeFavoritesOnFile(favorites);
@@ -67,7 +79,77 @@ fs.readFile(favorites_path, 'utf8', function readFileCallback(err, data) {
 	}
 });
 
+/********************************* Functions *********************************/
 
+/**
+ * Gets the windows path to a temporary folder to store data
+ *
+ * @return {String} the path
+ */
+function getWindowPath() {
+	return join(homedir(), "AppData");
+}
+
+/**
+ * Gets the Mac path to a temporary folder to store data (/tmp)
+ *
+ * @return {String} the path
+ */
+function getMacPath() {
+	return '/tmp';
+}
+
+/**
+ * Gets the Linux path to a temporary folder to store data
+ *
+ * @return {String} the path
+ */
+function getLinuxPath() {
+	return join(homedir(), ".config");
+}
+
+/**
+ * In case the platform is among the known ones (for the potential
+ * future os platforms)
+ *
+ * @return {String} the path
+ */
+function getFallback() {
+	if (platform().startsWith("win")) {
+		return getWindowPath();
+	}
+	return getLinuxPath();
+}
+
+
+/**
+ * Creates the path to the file in a platform-independent way
+ *
+ * @param  {String} file_name the name of the file
+ * @return the path to the file
+ */
+function getAppDataPath(file_name) {
+	let appDataPath = '';
+	switch (platform()) {
+		case "win32":
+			appDataPath = getWindowPath();
+			break;
+		case "darwin":
+			appDataPath = getMacPath();
+			break;
+		case "linux":
+			appDataPath = getLinuxPath();
+			break;
+		default:
+			appDataPath = getFallback();
+
+	}
+	if (file_name === undefined) {
+		return appDataPath;
+	} else {
+		return join(appDataPath, file_name);
+	}
+}
 
 /**
  * add on click listener to heart (add/remove from favorites)
@@ -108,7 +190,6 @@ function setEmptyHeart() {
 	favoriteHeart.innerHTML = 'favorite_border';
 }
 
-
 /**
  * Populates the carousel and list with the given array of sites objects
  *
@@ -123,6 +204,13 @@ function populateFavorites(favorites_list) {
 	// attachBehaviorDropdownSites();
 }
 
+/**
+ * Adds a class or more classes to the html element
+ *
+ * @param  {HTML element} elem the html element
+ * @param  {String} classes space separated classes identifiers
+ * @return {void}
+ */
 function addClass(elem, classes) {
 	let arr = classes.split(" ");
 	for (let i = 0; i < arr.length; i++) {
@@ -130,6 +218,13 @@ function addClass(elem, classes) {
 	}
 }
 
+/**
+ * Removes a class or more classes from the html element
+ *
+ * @param  {HTML element} elem the html element
+ * @param  {String} classes space separated classes identifiers
+ * @return {void}
+ */
 function removeClass(elem, classes) {
 	let arr = classes.split(" ");
 	for (let i = 0; i < arr.length; i++) {
@@ -137,11 +232,23 @@ function removeClass(elem, classes) {
 	}
 }
 
+/**
+ * Enables the password input field
+ *
+ * @return {void}
+ */
 function enablePassword() {
+	passwordRequired = true;
 	pwdInput.removeAttribute("disabled");
 }
 
+/**
+ * Disables the password input field
+ *
+ * @return {void}
+ */
 function disablePassword() {
+	passwordRequired = false;
 	pwdInput.setAttribute("disabled", "");
 }
 
@@ -195,7 +302,10 @@ function addItemToCarousel(item, index) {
 }
 
 /**
- * Onclick function for clicking on a favorite site in the favorite carousel, select the site
+ * Onclick function for clicking on a favorite site in the favorites carousel or list, select the site,
+ * it inserts in the url input the current host, loads the information about the site, color heart,
+ * check if the hash of the password was previously saved and in case it is, it inserts it into the
+ * password field and also sets the isHashSaved variable to true
  *
  * @param  {<a> element} element the clicked <a> element
  * @return {void}
@@ -205,7 +315,7 @@ function selectFavoriteSite(event) {
 	let name = event.target.innerText;
 	urlInput.value = host;
 	urlInput.setAttribute("data-name", name); // store site name in data-name attr of url
-	//check if in favorites, if it is color heart in black, if not color it in white
+	// color heart in black
 	setFullHeart();
 	// fetch config file and update list
 	loadSiteInfo(host);
@@ -305,6 +415,7 @@ function clearList() {
 
 /**
  * Removes the favorite site from the list in the favorites object, writes back to the JSON, handles UI refreshing
+ * TODO popup with UNDO
  *
  * @method removeFromFavorites
  * @param  {String} favorite_url the url of the site
@@ -330,7 +441,7 @@ function removeFromFavorites(favorite_url) {
  * @param {Object} favorites_obj the object containing the list of favorites
  */
 function writeFavoritesOnFile(favorites_obj) {
-	fs.writeFile(favorites_path, JSON.stringify(favorites_obj), 'utf8', () => { });
+	fs.writeFile(getAppDataPath(favorites_file_name), JSON.stringify(favorites_obj), 'utf8', () => { });
 }
 
 /**
@@ -356,9 +467,10 @@ function buildConfigURL(domain) {
 
 
 /**
- * Onclick function for a site in the sites dropdown: puts the host in the URL input, stores in the data-name attribute
- * of the URL input the name of the site, updates the heart according to if the site is in the favorites list,
- * fetches the new config file and repopulates the dropdowns
+ * Onclick function for a site in the sites dropdown: puts the host in the
+ * URL input, stores in the data-name attribute of the URL input the name of
+ * the site, updates the heart according to if the site is in the favorites
+ * list, fetches the new config file and repopulates the dropdowns
  *
  * @param  {Object} e the click event
  * @return {void}
@@ -434,8 +546,38 @@ function populateUI(config_json) {
 
 	if (config_json.passwordProtected) {
 		enablePassword();
+		handlePasswordHash(config_json.host);
 	} else {
-		disablePassword();
+		resetPasswordStatus();
+	}
+}
+
+/**
+ * Resets the password input field value by removing the content and disabling it
+ *
+ * @return {void}
+ */
+function resetPasswordStatus() {
+	pwdInput.value = "";
+	isHashSaved = false;
+	disablePassword();
+}
+
+/**
+ * If the hash of the password was previously saved and in case it is, it inserts it into the
+ * password field and also sets the isHashSaved variable to true
+ *
+ * @param  {String} host the host of the site loaded
+ * @return {void}
+ */
+function handlePasswordHash(host) {
+	for (let i = 0; i < favorites.list.length; i++) {
+		if (favorites.list[i].host === host) {
+			if (favorites.list[i].hash !== undefined) {
+				pwdInput.value = favorites.list[i].hash;
+				isHashSaved = true;
+			}
+		}
 	}
 }
 
@@ -496,7 +638,7 @@ function createDropItemIds(item, index) {
 }
 
 /**
- * Take site's host and format it properly as a URL
+ * Take site's host and format it properly as a URL, handling clientID and password
  *
  * @method formatProperly
  * @param  {String} url the host site url to be formatted
@@ -508,7 +650,7 @@ function formatProperly(url) {
 		url = url_start + url;
 	}
 
-	// If display number is toggled then take the ID, if NaN do full sscreen
+	// If display number is toggled then take the ID, if NaN do full screen
 	if (check1.checked) {
 		var id = isNaN(parseInt(idDropName.innerHTML)) ? -1 : parseInt(idDropName.innerHTML);
 
@@ -518,69 +660,61 @@ function formatProperly(url) {
 	} else {
 		url = url + '/display.html?clientID=-1';
 	}
+	if (passwordRequired) {
+		var pwd = pwdInput.value;
+		if (pwd == "") { // if the password field is empty try to connect without using a password
+			return url;
+		} else {
+			if (isHashSaved) { // Correct hash previously saved locally
+				url = url + '&hash=' + pwd;
+			} else { // Normal password
+				url = url + '&session=' + pwd;
+			}
+		}
+	}
 	return url;
 }
 
 /**
- * Okay button handler. Creates the url based on user input and sends it to the main electron.js to connect to the selected site
+ * Sends a message to the main electron window to say to close this menu
+ *
+ * @return {void}
  */
-// const form = document.querySelector('form');
-// form.addEventListener('submit', (e) => {
-//     l(e.target.id)
-//     l(e.target)
-// 	if (e.target.id == "cancel_btn") {
-// 		ipcRenderer.send('close-connect-page', "0");
-// 	} else {
-// 		e.preventDefault();
-// 		let URL = urlInput.value;
-
-// 		URL = formatProperly(URL);
-// 		//sending URL to electron.js, params: key value pair (id,URL)
-// 		// ipcRenderer.send('connect-url', URL);
-// 	}
-// });
-
-// cancelBtn.addEventListener('click', (e) => {
-//     ipcRenderer.send('close-connect-page', "0");
-// });
-
-// okayBtn.addEventListener('click', (e) => {
-//     e.preventDefault();
-//     URL = formatProperly(urlInput.value);
-// });
-
 function cancelOnClick() {
-	l("cancel on click");
 	ipcRenderer.send('close-connect-page', "0");
 }
 
+/**
+ * Sends a message to the main electron window to request the connection to the specified page
+ * @return {void}
+ */
 function okayOnClick() {
-	l("okay on click");
 	let URL = formatProperly(urlInput.value);
 	// sending URL to electron.js, params: key value pair (id,URL)
 	ipcRenderer.send('connect-url', URL);
 }
 
-ipcRenderer.on('current-location', (e, host) => {
-	loadSiteInfo(host);
-});
-
 /**
- * Handles the UI update if the current site is down
+ * Handles the UI update if the current site is down by removing the
+ * list of IDs and Connected sites from the relative dropdowns, disables
+ * the connect button and colors the Info Button in red
  * @return {void}
  */
 function onCurrentSiteDown() {
+	resetPasswordStatus();
 	removePreviousDropdownItem("sites_dropdown");
 	removePreviousDropdownItem("ids_dropdown");
 	setLoadInfoButtonOffline();
+	disableConnection();
 	l('Site server down, timeout reached, refresh to try again');
 }
 
 
 /**
- * fetches the config JSON from the site's url provided, executes the onTimeout function
- * if the delay is passed without hearing back from the fetch callback.
- * otherwise it populates the UI with the JSON containing the list of connected sites
+ * fetches the config JSON from the site's url provided, executes the
+ * onTimeout function if the delay is passed without hearing back from
+ * the fetch callback. Otherwise it populates the UI with the JSON
+ * containing the list of connected sites
  *
  * @param {String} url the url to fetch from
  * @param {int} delay the timeout time in ms
@@ -606,6 +740,7 @@ function fetchWithTimeout(url, delay, onTimeout) {
 	}).then((json) => {
 		if (json) {
 			populateUI(json);
+			enableConnection();
 			setLoadInfoButtonOnline();
 		}
 	});
@@ -649,7 +784,7 @@ function setOnlineStatus(url, elem, delay) {
  */
 function resetSiteInfo() {
 	addClass(loadSiteInfoBtn, buttonColorClass);
-	loadSiteInfoBtnText.textContent = "Load Site Info";
+	// loadSiteInfoBtnText.textContent = "Load Site Info";
 }
 
 /**
@@ -658,8 +793,33 @@ function resetSiteInfo() {
  */
 function setLoadInfoButtonOnline() {
 	removeClass(loadSiteInfoBtn, buttonColorClass);
-	// loadSiteInfoBtnText.textContent = "Site Online";
 	loadSiteInfoBtn.style.background = onlineColor;
+}
+
+function pulseOnce(elem) {
+	addClass(elem, pulseClass);
+	setInterval(() => {
+		removeClass(elem, pulseClass);
+	}, 1000);
+}
+
+/**
+ * Enables the connect button
+ *
+ * @return {void}
+ */
+function enableConnection() {
+	removeClass(okayBtn, 'disabled');
+	pulseOnce(okayBtn);
+}
+
+/**
+ * Disables the connect button
+ *
+ * @return {void}
+ */
+function disableConnection() {
+	addClass(okayBtn, 'disabled');
 }
 
 /**
@@ -681,7 +841,7 @@ function loadCurrentSiteInfo() {
 }
 
 /**
- * Loads information about a site given itss host. Populates dropdowns, sets online/offline status
+ * Loads information about a site given its host. Populates dropdowns, sets online/offline status
  * @param  {String} host the host of the site to load
  * @return {void}
  */
@@ -712,21 +872,37 @@ function updateInitCarousel() {
 	}
 }
 
+/**
+ * Swtiches the favorites UI to a vertical scrollable list
+ *
+ * @return {void}
+ */
 function switchToListUI() {
 	favoriteCarousel.hidden = true;
 	favoriteList.parentElement.hidden = false;
 }
 
+/**
+ * Swtiches the favorites UI to the carousel
+ *
+ * @return {void}
+ */
 function switchToCarouselUI() {
 	favoriteList.parentElement.hidden = true;
 	favoriteCarousel.hidden = false;
 	updateInitCarousel();
 }
-// Functions finished
 
+/**************************** Functions finished *****************************/
 favoriteList.parentElement.hidden = true;
 
-// Adding event listeners to html elems
+// Catches the message sent from the main electron window that is providing the current location
+ipcRenderer.on('current-location', (e, host) => {
+	urlInput.value = host;
+	loadSiteInfo(host);
+});
+
+/******************* Adding event listeners to html elems ********************/
 
 // Initialize dropdown and carousel with sites
 document.addEventListener('DOMContentLoaded', function () {
@@ -744,6 +920,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	attachBehaviorDropdownSites();
 });
 
+// Adds behavior to ClientID checkbox1 input
 check1.addEventListener('click', (e) => {
 	var checked = e.target.checked;
 	if (checked) {
@@ -754,6 +931,7 @@ check1.addEventListener('click', (e) => {
 	}
 });
 
+// Adds behavior to ClientID checkbox2 input
 check2.addEventListener('click', (e) => {
 	var checked = e.target.checked;
 	if (checked) {
@@ -764,6 +942,7 @@ check2.addEventListener('click', (e) => {
 	}
 });
 
+// Adds behavior to the favorites UI switch
 switchFavoritesUI.addEventListener('click', (e) => {
 	var checked = e.target.checked;
 	if (checked) {
@@ -778,14 +957,17 @@ cancelBtn.addEventListener('click', cancelOnClick);
 loadSiteInfoBtn.addEventListener('click', loadCurrentSiteInfo);
 
 
-// Checks if modified url input contains host of a site in favorite and sets the heart status and loads site information
+// Checks if modified url input contains host of a site in favorite and sets the heart status and loads site information,
+// Removes password and disables password input
 urlInput.addEventListener("input", (e) => {
 	let host = urlInput.value;
+	resetPasswordStatus();
 	if (alreadyInFavorites(host)) {
 		setFullHeart();
 		loadSiteInfo(host);
 	} else {
 		setEmptyHeart();
 		resetSiteInfo();
+		disableConnection();
 	}
 });

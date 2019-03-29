@@ -20,10 +20,22 @@
 'use strict';
 
 const path = require('path');
+const { join } = path;
 const electron = require('electron');
+const querystring = require('querystring');
+const fs = require('fs');
+
+// To make it work in both files (electron.js in /sage2 and electron.js in /sage2/client)
+var md5 = null;
+if (__dirname.substr(__dirname.length - 6) === 'client') {
+	md5 = require('../src/md5');
+} else {
+	md5 = require('./src/md5');
+}
 
 // Get platform and hostname
 var os = require('os');
+const { platform, homedir } = os;
 
 //
 // handle install/update for Windows
@@ -173,6 +185,13 @@ var parsedURL = url.parse(commander.server);
 var domains   = "localhost,127.0.0.1";
 // Store current site domain
 var currentDomain = parsedURL.hostname;
+// Filename of favorite sites file
+const favorites_file_name = 'sage2_favorite_sites.json';
+//JS object containing list of favorites sites
+var favorites = {
+	list: []
+};
+
 if (parsedURL.hostname) {
 	// add the hostname
 	domains +=  "," + parsedURL.hostname;
@@ -277,6 +296,75 @@ function openWindow() {
 	} else {
 		// Once all done, prevent changing the fullscreen state
 		mainWindow.setFullScreenable(false);
+	}
+}
+
+/**
+ * Gets the windows path to a temporary folder to store data
+ *
+ * @return {String} the path
+ */
+function getWindowPath() {
+	return join(homedir(), "AppData");
+}
+
+/**
+ * Gets the Mac path to a temporary folder to store data (/tmp)
+ *
+ * @return {String} the path
+ */
+function getMacPath() {
+	return '/tmp';
+}
+
+/**
+ * Gets the Linux path to a temporary folder to store data
+ *
+ * @return {String} the path
+ */
+function getLinuxPath() {
+	return join(homedir(), ".config");
+}
+
+/**
+ * In case the platform is among the known ones (for the potential
+ * future os platforms)
+ *
+ * @return {String} the path
+ */
+function getFallback() {
+	if (platform().startsWith("win")) {
+		return getWindowPath();
+	}
+	return getLinuxPath();
+}
+
+/**
+ * Creates the path to the file in a platform-independent way
+ *
+ * @param  {String} file_name the name of the file
+ * @return the path to the file
+ */
+function getAppDataPath(file_name) {
+	let appDataPath = '';
+	switch (platform()) {
+		case "win32":
+			appDataPath = getWindowPath();
+			break;
+		case "darwin":
+			appDataPath = getMacPath();
+			break;
+		case "linux":
+			appDataPath = getLinuxPath();
+			break;
+		default:
+			appDataPath = getFallback();
+
+	}
+	if (file_name === undefined) {
+		return appDataPath;
+	} else {
+		return join(appDataPath, file_name);
 	}
 }
 
@@ -431,15 +519,26 @@ function createWindow() {
 		var location = URL;
 		// Update current domain
 		currentDomain = url.parse(URL).hostname;
+		var queryParams = querystring.parse(url.parse(URL).query);
+		// If a password is provided, the md5 hash needed to connect to the site is stored locally
+		if (queryParams.session) {
+			var hash = generatePasswordHash(queryParams.session);
+			fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
+				if (err) { // most likely no json file (first use), write empty favorites on file
+					console.log(err);
+				} else {
+					favorites = JSON.parse(data); //convert json to object
+					for (let i = 0; i < favorites.list.length; i++) {
+						if (favorites.list[i].host === currentDomain) {
+							favorites.list[i].hash = hash;
+						}
+					}
+					writeFavoritesOnFile(favorites);
+				}
+			});
+		}
 		// Close input window
 		remoteSiteInputWindow.close();
-		if (commander.hash) {
-			// add the password hash to the URL
-			location += '&hash=' + commander.hash;
-		} else if (commander.password) {
-			// add the password hash to the URL
-			location += '?session=' + commander.password;
-		}
 		mainWindow.loadURL(location);
 	});
 
@@ -493,6 +592,16 @@ function createWindow() {
 			mainWindow.webContents.send('performanceData', perfData);
 		});
 	});
+}
+
+/**
+ * Writes favorites in a persistent way on local machine
+ *
+ * @method writeFavoritesOnFile
+ * @param {Object} favorites_obj the object containing the list of favorites
+ */
+function writeFavoritesOnFile(favorites_obj) {
+	fs.writeFile(getAppDataPath(favorites_file_name), JSON.stringify(favorites_obj), 'utf8', () => { });
 }
 
 /**
@@ -606,6 +715,15 @@ function createRemoteSiteInputWindow() {
 
 	// No menu needed in this window
 	remoteSiteInputWindow.setMenu(null);
+}
+
+/**
+ * Generates the md5 hash of a string, used to hash the password
+ * @param  {String} password
+ * @return the hash of the password
+ */
+function generatePasswordHash(password) {
+	return md5.getHash(password);
 }
 
 
