@@ -45,10 +45,13 @@ const onlineColor = "#60d277";
 const offlineColor = "#d5715d";
 
 const favorites_file_name = 'sage2_favorite_sites.json';
+const FAVORITES_LIST_UI = 2;
+const FAVORITES_CAROUSEL_UI = 1;
 
 //JS object containing list of favorites sites
 var favorites = {
-	list: []
+	list: [],
+	UIswitchPosition: FAVORITES_CAROUSEL_UI
 	// example of favorites object structure
 	// list: [{
 	//     host: 'orion-win.evl.uic.edu',
@@ -75,6 +78,10 @@ fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallba
 			clearCarousel();
 			populateFavorites(favorites.list);
 			updateInitCarousel();
+			if (favorites.UIswitchPosition === FAVORITES_LIST_UI) {
+				switchToListUI();
+				switchFavoritesUI.firstElementChild.firstElementChild.checked = true;
+			}
 		}
 	}
 });
@@ -880,6 +887,8 @@ function updateInitCarousel() {
 function switchToListUI() {
 	favoriteCarousel.hidden = true;
 	favoriteList.parentElement.hidden = false;
+	favorites.UIswitchPosition = FAVORITES_LIST_UI;
+	writeFavoritesOnFile(favorites);
 }
 
 /**
@@ -890,6 +899,8 @@ function switchToListUI() {
 function switchToCarouselUI() {
 	favoriteList.parentElement.hidden = true;
 	favoriteCarousel.hidden = false;
+	favorites.UIswitchPosition = FAVORITES_CAROUSEL_UI;
+	writeFavoritesOnFile(favorites);
 	updateInitCarousel();
 }
 
