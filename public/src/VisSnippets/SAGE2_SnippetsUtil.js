@@ -78,7 +78,7 @@ let SAGE2_SnippetsUtil = (function() {
 			type = "Object";
 		}
 
-		if (item["*snippets_mark*"]) {
+		if (item && item["*snippets_mark*"]) {
 			return {
 				type: type,
 				circular: true
@@ -99,7 +99,7 @@ let SAGE2_SnippetsUtil = (function() {
 	}
 
 	function unmarkObject(obj) {
-		if (obj["*snippets_mark*"]) {
+		if (obj && obj["*snippets_mark*"]) {
 			delete obj["*snippets_mark*"];
 
 			// recurse to the next level
@@ -187,7 +187,12 @@ let SAGE2_SnippetsUtil = (function() {
 
 			// string = wrapInHTML(string, "layer");
 		} else {
-			string += wrapInHTML(data.type, "type");
+			console.log(data);
+			if (data.example == null || data.example == undefined) {
+				string += wrapInHTML("?", "type");
+			} else {
+				string += wrapInHTML(data.type, "type");
+			}
 
 			if (self.showExampleValue) {
 				string += wrapInHTML(data.example, "value", data.type);

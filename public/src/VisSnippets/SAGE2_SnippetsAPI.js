@@ -41,7 +41,7 @@ var SAGE2 = SAGE2 || {};
 			link.inputs[specification.name] = newInput;
 
 			// create input element on app
-			let inputDiv = d3.select(link.getChild().inputs).append("div")
+			let inputDiv = link.getChild().inputs.append("div")
 				.attr("id", specification.name)
 				.style("font-size", ui.titleBarHeight * 0.5 + "px")
 				.attr("class", "snippetsInputDiv");
@@ -93,10 +93,13 @@ var SAGE2 = SAGE2 || {};
 
 		// if the app doesn't have a vis element, create one
 		if (!app.snippetsVisElement) {
-			app.snippetsVisElement = d3.select(app.content)
+			console.log(app.content);
+
+			app.snippetsVisElement = app.content
 				.append(type)
 				.style("position", "absolute")
-				// .style("top", ui.titleBarHeight * 2 + "px")
+				.style("left", 0)
+				.style("top", 0)
 				.style("background", "white")
 				.style("box-sizing", "border-box").node();
 		}

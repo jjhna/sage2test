@@ -280,6 +280,11 @@ function setupFocusHandlers() {
  * @param      {<type>}  event   The event
  */
 function pasteHandler(event) {
+	// bail if the snippet editor is open and don't paste
+	if (snippetEditor.isOpen()) {
+		return;
+	}
+
 	// get the clipboard data
 	let items = event.clipboardData;
 	// Iterate over the various types

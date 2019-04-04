@@ -45,12 +45,14 @@ var Snippets_View = SAGE2_App.extend({
       .style("white-space", "pre")
       .style("padding", "8px 10px")
       .style("color", "#abb2bf")
+      .style("font-size", ui.titleBarHeight / 2 + "px")
       .style("background-color", "#282c34");
 
     this.inputs = d3.select(this.element).append("div")
       .attr("class", "snippetsInputWrapper")
       .style("position", "absolute")
       .style("left", this.sage2_width + "px")
+      .style("width", "300px")
       .style("top", 0)
       .style("min-height", "100%")
       .style("padding", ui.titleBarHeight * 1.5 + 8 + "px 10px")
@@ -75,7 +77,6 @@ var Snippets_View = SAGE2_App.extend({
       .style("padding","10px")
       .style("fontFamily", "monospace")
       .style("whiteSpace", "normal");
-
 
     this.errorBox.style("display", "none");
 
@@ -149,7 +150,7 @@ var Snippets_View = SAGE2_App.extend({
     this.dataset = data;
 
     
-    if (!this.snippetsVisElement) {
+    if (!this.snippetsVisElement && data) {
       let summary = SAGE2_SnippetsUtil.summarizeJSON(data);
       let printedSummary = SAGE2_SnippetsUtil.printSummarizedJSON(summary);
 
@@ -248,7 +249,7 @@ var Snippets_View = SAGE2_App.extend({
     this.content.style("width", contentWidth + "px");
     this.content.style("height", this.sage2_height - ui.titleBarHeight * 1.5 + "px");
 
-    this.inputs.style.left = contentWidth + "px";
+    this.inputs.style("left", contentWidth + "px");
 
     // update ancestor list size
     this.ancestry.attr("width", this.sage2_width);

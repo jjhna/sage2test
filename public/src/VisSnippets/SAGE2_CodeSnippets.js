@@ -730,7 +730,7 @@ let SAGE2_CodeSnippets = (function() {
 					if (!app.state.inputsOpen) {
 						app.inputsClosedHeight = app.sage2_height;
 
-						let newHeight = Math.max(app.sage2_height, app.inputs.clientHeight);
+						let newHeight = Math.max(app.sage2_height, app.inputs.node().clientHeight);
 
 						app.state.inputsOpen = true;
 						app.sendResize(app.sage2_width + 300, newHeight);
@@ -1065,8 +1065,6 @@ let SAGE2_CodeSnippets = (function() {
 		// helper method
 		function createSubtree(link, linkID) {
 			let inputs = {};
-
-			console.log(link, link.getChild());
 
 			for (let input of Object.keys(link.inputs)) {
 				inputs[input] = {

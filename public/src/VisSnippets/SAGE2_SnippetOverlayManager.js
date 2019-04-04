@@ -244,6 +244,9 @@ let SAGE2_SnippetOverlayManager = (function() {
 			self.associations = data;
 			self.appMapping = {};
 
+			// clean link object to handle deleted links before reprocessing
+			self.snippetLinks = {};
+
 			for (let app of data.apps) {
 				self.appMapping[app.snippetsID] = app.appID;
 			}
@@ -492,6 +495,13 @@ let SAGE2_SnippetOverlayManager = (function() {
 				.enter().append("path")
 				.each(function(linkID) {
 					let link = self.snippetLinks[linkID];
+
+					if (
+						!displayUI.applications[link.parent.appID] ||
+						!displayUI.applications[link.child.appID]
+					) {
+						return;
+					}
 
 					let {
 						left: left1,

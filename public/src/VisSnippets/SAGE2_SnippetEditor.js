@@ -195,6 +195,10 @@ let SAGE2_SnippetEditor = (function () {
 			self.div.classList.remove("open");
 		}
 
+		function editorIsOpen() {
+			return self.div.classList.contains("open");
+		}
+
 
 		/**
 		 * Handles setting the state value regarding whether there are unsaved changes to the snippet,
@@ -810,6 +814,7 @@ let SAGE2_SnippetEditor = (function () {
 		return {
 			open: openEditor,
 			hide: hideEditor,
+			isOpen: editorIsOpen,
 
 			updateSnippetStates,
 			getSnippetStates,

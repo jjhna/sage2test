@@ -11437,7 +11437,7 @@ function wsSnippetSaveIntoServer(wsio, data) {
 	let fileString = JSON.stringify(fileContents);
 
 	// if the specified name is the same as it previously was
-	if (oldname !== "null" && filename && oldname.split("-")[1] === filename.split("-")[1] && !fs.existsSync(fullpath)) {
+	if (oldname !== null && filename && oldname.split("-")[1] === filename.split("-")[1] && !fs.existsSync(fullpath)) {
 		// reuse old name if possible
 		filename = oldname;
 		fullpath = path.join(snippetWritePath, filename);
