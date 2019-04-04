@@ -20,17 +20,21 @@
 "use strict";
 
 var path = require('path');
-var swPrecache = require('sw-precache');
+const workboxBuild = require('workbox-build');
 
 var rootDir = 'public';
 
 function generate() {
-	swPrecache.write(path.join(rootDir, 'service-worker.js'), {
+	workboxBuild.generateSW({
+		swDest: path.join(rootDir, 'service-worker.js'),
 		cacheId: "SAGE2",
-		handleFetch: true,
-		logger: function() {},
-		verbose: false,
-		staticFileGlobs: [
+		// handleFetch: true,
+		// logger: function() {},
+		// verbose: false,
+		// stripPrefix: rootDir
+		importWorkboxFrom: 'local',
+		globDirectory: '.',
+		globPatterns: [
 			rootDir + '/favicon.ico',
 			rootDir + '/css/*.css',
 			rootDir + '/css/Arimo*.woff',
@@ -53,11 +57,11 @@ function generate() {
 			rootDir + '/lib/moment.min.js',
 			rootDir + '/src/*.js'
 		],
-		stripPrefix: rootDir
 	}, function() {
-		// console.log('ServiceWorker>	Cache generated');
+		console.log('ServiceWorker>	Cache generated');
 	});
 }
+generate();
 
 module.exports = generate;
 
