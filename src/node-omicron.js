@@ -210,6 +210,8 @@ function OmicronManager(sysConfig) {
 
 	this.enableStuckTouchDetection = this.config.enableStuckTouchDetection === undefined ?
 		true : this.config.enableStuckTouchDetection;
+	this.stuckTouchDetectionInterval = this.config.stuckTouchDetectionInterval === undefined ?
+		500 : this.config.stuckTouchDetectionInterval;
 
 	// Config: Omicron
 	if (this.config.host === undefined) {
@@ -299,19 +301,19 @@ function OmicronManager(sysConfig) {
 
 	// Check for stuck touches
 	setInterval(function() {
-		if (this.enableStuckTouchDetection === true) {
+		if (omicronManager.enableStuckTouchDetection === true) {
 			var curTime = Date.now();
 			for (var tp of omicronManager.touchList.keys()) {
 				var data = omicronManager.touchList.get(tp);
 				var dt = curTime - data.timestamp;
-				if (dt > 1000) {
+				if (dt > omicronManager.stuckTouchDetectionInterval) {
 					omicronManager.hidePointer(tp);
 					sageutils.log('Omicron', 'Removed stuck touch: ' + tp);
 					omicronManager.touchList.delete(tp);
 				}
 			}
 		}
-	}, 1500);
+	}, omicronManager.stuckTouchDetectionInterval);
 }
 
 OmicronManager.prototype.setTouchEnabled = function(val) {
@@ -982,10 +984,6 @@ OmicronManager.prototype.processIncomingEvent = function(msg, rinfo) {
  * @param offset {Integer} Current offset position of msg
  */
 OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY, msg, offset, address) {
-	if (sourceID === 0) {
-		return;
-	}
-
 	// TouchGestureManager Flags:
 	// 1 << 18 = User flag start (as of 8/3/14)
 	// User << 1 = Unprocessed
@@ -1061,6 +1059,10 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		return;
 	}
 
+	omicronManager.touchList.set(address, {
+		pointerX: posX, pointerY: posY, timestamp: omicronManager.curTime, address: address
+	});
+
 	var initX = 0;
 	var initY = 0;
 
@@ -1127,6 +1129,76 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		initY = posY;
 	}
 
+	if (e.type === 5) { // EventType: DOWN
+		// Create the pointer
+		omicronManager.createSagePointer(address);
+
+		// Set the pointer style
+		var pointerStyle = "Touch";
+		if (omicronManager.config.style !== undefined) {
+			pointerStyle = omicronManager.config.style;
+		}
+		omicronManager.showPointer(address, {
+			label:  "Touch: " + sourceID,
+			color: "rgba(242, 182, 15, 1.0)",
+			sourceType: pointerStyle
+		});
+
+		if (mode === "App") {
+			omicronManager.pointerChangeMode(address);
+		}
+
+		// Set the initial pointer position
+		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
+
+		// Send 'click' event
+		if (e.flags === FLAG_SINGLE_TOUCH) {
+			omicronManager.pointerPress(address, posX, posY, { button: "left", sourceType: "touch" });
+			if (omicronManager.gestureDebug) {
+				console.log("Pointer click - ID: " + sourceID);
+			}
+		}
+	} else if (e.type === 4) { // EventType: MOVE
+		if (mode === "Window") {
+			// Exaggerate window drag movement
+			var angle = Math.atan2(posY - initY, posX - initX);
+			distance = Math.sqrt(Math.pow(Math.abs(posX - initX), 2) + Math.pow(Math.abs(posY - initY), 2));
+			distance *= omicronManager.acceleratedDragScale;
+			posX = posX + distance * Math.cos(angle);
+			posY = posY + distance * Math.sin(angle);
+		}
+		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
+	} else if (e.type === 6) { // EventType: UP
+		// Hide pointer
+		omicronManager.hidePointer(address);
+
+		// Release event
+		omicronManager.pointerRelease(address, posX, posY, { button: "left" });
+
+		omicronManager.touchList.delete(address);
+	} else if (e.type === 15) {
+		// zoom
+		if (omicronManager.enableTwoFingerZoom) {
+			// Omicron zoom event extra data:
+			// 0 = touchWidth (parsed above)
+			// 1 = touchHeight (parsed above)
+			// 2 = initX (parsed above)
+			// 3 = initY (parsed above)
+			// 4 = event second type ( parsed above: 1 = Down, 2 = Move, 3 = Up )
+			// 5 = zoom delta
+		}
+		if (secondaryEventFlag === 1) {
+			if (omicronManager.gestureDebug) {
+				console.log("Touch zoom start - ID: " + sourceID);
+			}
+		} else {
+			if (omicronManager.gestureDebug) {
+				console.log("Touch zoom - ID: " + sourceID);
+			}
+		}
+	}
+
+	/*
 	if (e.type === 4) { // EventType: MOVE
 
 		if (omicronManager.gestureDebug) {
@@ -1360,6 +1432,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	} else {
 		console.log("\t UNKNOWN event type ", e.type, typeStrings[e.type]);
 	}
+	*/
 };
 
 module.exports = OmicronManager;
