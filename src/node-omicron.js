@@ -123,11 +123,12 @@ function OmicronManager(sysConfig) {
 	this.pointerState = {};
 
 	// Default Gestures
-	this.enableDoubleClickMaximize = false;
+	this.enableDoubleClickMaximize = true;
 	this.enableThreeFingerRightClick = true;
 	this.enableTwoFingerWindowDrag = false;
 	this.enableTwoFingerZoom = true;
 	this.enableFiveFingerCloseApp = false;
+	this.enableBigTouchPushToBack = true;
 
 	var clientParameters = 0;
 	//clientParameters |= 1 << 0;	// Sending data to server (instead of receiving - default: off)
@@ -205,8 +206,10 @@ function OmicronManager(sysConfig) {
 		this.enableTwoFingerWindowDrag : this.config.enableTwoFingerWindowDrag;
 	this.enableTwoFingerZoom =  this.config.enableTwoFingerZoom === undefined ?
 		this.enableTwoFingerZoom : this.config.enableTwoFingerZoom;
-	this.enableFiveFingerCloseApp =  this.config.enableFiveFingerCloseApp === undefined ?
+	this.enableFiveFingerCloseApp = this.config.enableFiveFingerCloseApp === undefined ?
 		this.enableFiveFingerCloseApp : this.config.enableFiveFingerCloseApp;
+	this.enableBigTouchPushToBack = this.config.enableBigTouchPushToBack === undefined ?
+		this.enableBigTouchPushToBack : this.config.enableBigTouchPushToBack;
 
 	this.enableStuckTouchDetection = this.config.enableStuckTouchDetection === undefined ?
 		true : this.config.enableStuckTouchDetection;
@@ -421,7 +424,8 @@ OmicronManager.prototype.setCallbacks = function(
 	omi_pointerChangeModeCB,
 	kinectInputCB,
 	remoteInteractionCB,
-	wsCallFunctionOnAppCB) {
+	wsCallFunctionOnAppCB,
+	pointerSendToBackCB) {
 	this.sagePointers        = sagePointerList;
 	this.createSagePointer   = createSagePointerCB;
 	this.showPointer         = showPointerCB;
@@ -443,6 +447,7 @@ OmicronManager.prototype.setCallbacks = function(
 	this.pointerChangeMode = omi_pointerChangeModeCB;
 	this.remoteInteraction = remoteInteractionCB;
 	this.callFunctionOnApp = wsCallFunctionOnAppCB;
+	this.pointerSendToBack = pointerSendToBackCB;
 	// sageutils.log('Omicron', "Server callbacks set");
 };
 
@@ -1156,6 +1161,24 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			omicronManager.pointerPress(address, posX, posY, { button: "left", sourceType: "touch" });
 			if (omicronManager.gestureDebug) {
 				console.log("Pointer click - ID: " + sourceID);
+			}
+		}
+		// Send 'double click' event
+		if (e.flags === FLAG_DOUBLE_CLICK) {
+			if (this.enableDoubleClickMaximize === true) {
+				omicronManager.pointerDblClick(address, posX, posY);
+			}
+			if (omicronManager.gestureDebug) {
+				console.log("Pointer double click - ID: " + sourceID);
+			}
+		}
+		// Send 'big touch' event
+		if (e.flags === FLAG_BIG_TOUCH) {
+			if (this.enableBigTouchPushToBack === true) {
+				omicronManager.pointerSendToBack(address, posX, posY);
+			}
+			if (omicronManager.gestureDebug) {
+				console.log("Pointer big touch - ID: " + sourceID);
 			}
 		}
 	} else if (e.type === 4) { // EventType: MOVE

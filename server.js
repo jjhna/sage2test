@@ -8903,6 +8903,27 @@ function pointerScrollEnd(uniqueID) {
 	}
 }
 
+function pointerSendToBack(uniqueID, pointerX, pointerY) {
+	if (sagePointers[uniqueID] === undefined) {
+		return;
+	}
+
+	var obj = interactMgr.searchGeometry({x: pointerX, y: pointerY});
+	if (obj === null) {
+		return;
+	}
+
+	switch (obj.layerId) {
+		case "applications": {
+			wsCallFunctionOnApp(uniqueID, {func: "SAGE2SendToBack", app: obj.id});
+			break;
+		}
+		case "portals": {
+			break;
+		}
+	}
+}
+
 function checkForSpecialKeys(uniqueID, code, flag) {
 	switch (code) {
 		case 16: {
@@ -9755,7 +9776,8 @@ omicronManager.setCallbacks(
 	omi_pointerChangeMode,
 	undefined, // sendKinectInput
 	remoteInteraction,
-	wsCallFunctionOnApp);
+	wsCallFunctionOnApp,
+	pointerSendToBack);
 omicronManager.linkDrawingManager(drawingManager);
 
 /* ****** Radial Menu section ************************************************************** */
