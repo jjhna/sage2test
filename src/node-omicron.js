@@ -1080,6 +1080,14 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	var touchGroupChildrenIDs = new Map();
 	var secondaryEventFlag = -1;
 
+	var centerX = e.orw * omicronManager.totalWidth;
+	var centerY = e.orx * omicronManager.totalHeight;
+	centerX += omicronManager.touchOffset[0];
+	centerY += omicronManager.touchOffset[1];
+
+	// var groupDiameter = e.ory;
+	// var groupLongRangeDiameter = e.orz;
+
 	// Set pointer mode
 	var mode = "Window";
 	if (omicronManager.config.interactionMode !== undefined) {
@@ -1131,6 +1139,8 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 				touchGroupChildrenIDs.set(subTouchID, { pointerX: subTouchPosX, pointerY: subTouchPosY });
 			}
+		} else if (e.extraDataItems >= 6) {
+			touchGroupSize = msg.readFloatLE(offset); offset += 4;
 		}
 	} else {
 		initX = posX;
@@ -1169,7 +1179,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		// Send 'double click' event
 		if (e.flags === FLAG_DOUBLE_CLICK) {
 			if (this.enableDoubleClickMaximize === true) {
-				omicronManager.pointerDblClick(address, posX, posY);
+				omicronManager.pointerDblClick(address, posX, posY, { sourceType: "touch" });
 			}
 			if (omicronManager.gestureDebug) {
 				console.log("Pointer double click - ID: " + sourceID);
@@ -1184,7 +1194,11 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			posX = posX + distance * Math.cos(angle);
 			posY = posY + distance * Math.sin(angle);
 		}
-		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
+
+		// Only window drag if not zooming
+		if (omicronManager.pointerState[sourceID].zoomTriggered === false) {
+			omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
+		}
 	} else if (e.type === 6) { // EventType: UP
 		// Send 'big touch' event
 		if (e.flags === FLAG_BIG_TOUCH ||
@@ -1192,7 +1206,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			touchHeight > omicronManager.bigTouchMinSize) {
 
 			if (this.enableBigTouchPushToBack === true) {
-				omicronManager.pointerSendToBack(address, posX, posY);
+				omicronManager.pointerSendToBack(address, posX, posY, { sourceType: "touch" });
 			}
 			if (omicronManager.gestureDebug) {
 				console.log("Pointer big touch - ID: " + sourceID);
@@ -1206,8 +1220,9 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		omicronManager.pointerRelease(address, posX, posY, { button: "left" });
 
 		omicronManager.touchList.delete(address);
-	} else if (e.type === 15) {
-		// zoom
+	} else if (e.type === 15) { // zoom
+		var zoomDelta = touchGroupSize;
+
 		if (omicronManager.enableTwoFingerZoom) {
 			// Omicron zoom event extra data:
 			// 0 = touchWidth (parsed above)
@@ -1216,14 +1231,24 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			// 3 = initY (parsed above)
 			// 4 = event second type ( parsed above: 1 = Down, 2 = Move, 3 = Up )
 			// 5 = zoom delta
-		}
-		if (secondaryEventFlag === 1) {
-			if (omicronManager.gestureDebug) {
-				console.log("Touch zoom start - ID: " + sourceID);
-			}
-		} else {
-			if (omicronManager.gestureDebug) {
-				console.log("Touch zoom - ID: " + sourceID);
+
+			if (secondaryEventFlag === 1) {
+				if (omicronManager.gestureDebug) {
+					console.log("Touch zoom start - ID: " + sourceID + " " + centerX + ", " + centerY);
+				}
+				omicronManager.pointerScrollStart(address, centerX, centerY, { sourceType: "touch" });
+				omicronManager.pointerState[sourceID].zoomTriggered = true;
+			} else if (secondaryEventFlag === 2) {
+				if (omicronManager.gestureDebug) {
+					console.log("Touch zoom move - ID: " + sourceID + " " + wheelDelta);
+				}
+				// Zoom gesture
+				var wheelDelta = -zoomDelta * omicronManager.touchZoomScale;
+				omicronManager.pointerScroll(address, { wheelDelta: wheelDelta, sourceType: "touch" });
+			} else {
+				// End zoom gesture
+				omicronManager.pointerScrollEnd(address, centerX, centerY, { sourceType: "touch" });
+				omicronManager.pointerRelease(address, centerX, centerY, { button: "left", sourceType: "touch" });
 			}
 		}
 	}
