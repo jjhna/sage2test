@@ -129,6 +129,7 @@ function OmicronManager(sysConfig) {
 	this.enableTwoFingerZoom = true;
 	this.enableFiveFingerCloseApp = false;
 	this.enableBigTouchPushToBack = true;
+	this.bigTouchMinSize = 75;
 
 	var clientParameters = 0;
 	//clientParameters |= 1 << 0;	// Sending data to server (instead of receiving - default: off)
@@ -210,6 +211,8 @@ function OmicronManager(sysConfig) {
 		this.enableFiveFingerCloseApp : this.config.enableFiveFingerCloseApp;
 	this.enableBigTouchPushToBack = this.config.enableBigTouchPushToBack === undefined ?
 		this.enableBigTouchPushToBack : this.config.enableBigTouchPushToBack;
+	this.enableTouchMinSize = this.config.enableTouchMinimumSize === undefined ?
+		this.enableTouchMinSize : this.config.enableTouchMinimumSize;
 
 	this.enableStuckTouchDetection = this.config.enableStuckTouchDetection === undefined ?
 		true : this.config.enableStuckTouchDetection;
@@ -1172,15 +1175,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				console.log("Pointer double click - ID: " + sourceID);
 			}
 		}
-		// Send 'big touch' event
-		if (e.flags === FLAG_BIG_TOUCH) {
-			if (this.enableBigTouchPushToBack === true) {
-				omicronManager.pointerSendToBack(address, posX, posY);
-			}
-			if (omicronManager.gestureDebug) {
-				console.log("Pointer big touch - ID: " + sourceID);
-			}
-		}
 	} else if (e.type === 4) { // EventType: MOVE
 		if (mode === "Window") {
 			// Exaggerate window drag movement
@@ -1192,6 +1186,19 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		}
 		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
 	} else if (e.type === 6) { // EventType: UP
+		// Send 'big touch' event
+		if (e.flags === FLAG_BIG_TOUCH ||
+			touchWidth > omicronManager.bigTouchMinSize ||
+			touchHeight > omicronManager.bigTouchMinSize) {
+
+			if (this.enableBigTouchPushToBack === true) {
+				omicronManager.pointerSendToBack(address, posX, posY);
+			}
+			if (omicronManager.gestureDebug) {
+				console.log("Pointer big touch - ID: " + sourceID);
+			}
+		}
+
 		// Hide pointer
 		omicronManager.hidePointer(address);
 
