@@ -6905,9 +6905,19 @@ function pointerPressOnApplication(uniqueID, pointerX, pointerY, data, obj, loca
 			if (remoteInteraction[uniqueID].appInteractionMode()) {
 				sendPointerPressToApplication(uniqueID, obj.data, pointerX, pointerY, data);
 			} else {
-				selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
-				if (data.sourceType === "touch") {
-					sendPointerPressToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+
+				if (data.sourceType !== "touch") { // Normal SAGEPointer case
+					selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+				} else {
+					if (obj.data.application !== "Webview") {
+						// Dual interaction mode to allow non-Webview apps like PDF viewer
+						// to have interactable widgets, but still allow window drag
+						selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+						sendPointerPressToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+					} else {
+						// Disable window drag for Webviews since we want direct interaction
+						// Do not interact with Webviews - assuming native touch will handle this
+					}
 				}
 			}
 		}
