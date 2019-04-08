@@ -28,6 +28,7 @@ config/whiteboard-cfg.json
 # generated content
 doc/api
 public/service-worker.js
+public/manifest.webmanifest
 
 # Dependency directory
 node_modules

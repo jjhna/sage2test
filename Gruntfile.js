@@ -13,6 +13,7 @@ module.exports = function(grunt) {
 					src: [
 						"server.js",
 						"electron.js",
+						"client/electron.js",
 						"install_dependencies.js",
 						"src/*.js",
 						"bin/*.js",

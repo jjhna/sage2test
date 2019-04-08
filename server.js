@@ -3051,24 +3051,24 @@ function listClients() {
 
 function listMediaStreams() {
 	var i, c, key;
-	console.log("Block streams (%d)\n------------", Object.keys(mediaBlockStreams).length);
+	sageutils.log("Streams", "Block streams", Object.keys(mediaBlockStreams).length);
 	i = 0;
 	for (key in mediaBlockStreams) {
 		var numclients = Object.keys(mediaBlockStreams[key].clients).length;
-		console.log(sprint("%2d: %s ready:%s clients:%d", i, key, mediaBlockStreams[key].ready, numclients));
+		sageutils.log("Streams", sprint("%2d: %s ready:%s clients:%d", i, key, mediaBlockStreams[key].ready, numclients));
 		var cstr = " ";
 		for (c in mediaBlockStreams[key].clients) {
 			cstr += c + "(" + mediaBlockStreams[key].clients[c] + ") ";
 		}
-		console.log("\t", cstr);
+		sageutils.log("Streams", "\t", cstr);
 		i++;
 	}
 
-	console.log("Media streams\n------------");
+	sageutils.log("Streams", "Media streams", Object.keys(SAGE2Items.applications.list).length);
 	for (key in SAGE2Items.applications.list) {
 		var app = SAGE2Items.applications.list[key];
 		if (app.application === "media_stream") {
-			console.log(sprint("%2d: %s %s %s",
+			sageutils.log("Streams", sprint("%2d: %s %s %s",
 				i, app.id, app.application, app.title));
 			i++;
 		}
@@ -3082,10 +3082,10 @@ function listMediaBlockStreams() {
 function listApplications() {
 	var i = 0;
 	var key;
-	console.log("Applications\n------------");
+	sageutils.log("Applications", "List");
 	for (key in SAGE2Items.applications.list) {
 		var app = SAGE2Items.applications.list[key];
-		console.log(sprint("%2d: %s %s [%dx%d +%d+%d] %s (v%s) by %s",
+		sageutils.log("Applications", sprint("%2d: %s %s [%dx%d +%d+%d] %s (v%s) by %s",
 			i, app.id, app.application,
 			app.width, app.height,
 			app.left,  app.top,
