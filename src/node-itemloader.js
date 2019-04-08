@@ -56,19 +56,19 @@ function AppLoader(publicDir, hostOrigin, config, imOptions, ffmpegOptions) {
 
 
 AppLoader.prototype.scaleAppToFitDisplay = function(appInstance) {
-	var wallRatio   = this.displayWidth / (this.displayHeight - this.titleBarHeight);
+	var wallRatio   = this.displayWidth / this.displayHeight;
 	var iWidth      = appInstance.native_width;
 	var iHeight     = appInstance.native_height;
 	var aspectRatio = iWidth / iHeight;
 	// Image wider than wall
-	if (iWidth > (this.displayWidth - (2 * this.titleBarHeight)) && appInstance.aspect >= wallRatio) {
+	if (iWidth > this.displayWidth && appInstance.aspect >= wallRatio) {
 		// Image wider than wall
-		iWidth  = this.displayWidth - (2 * this.titleBarHeight);
+		iWidth  = this.displayWidth;
 		iHeight = iWidth / appInstance.aspect;
-	} else if (iHeight > (this.displayHeight - (3 * this.titleBarHeight)) && appInstance.aspect < wallRatio) {
+	} else if (iHeight > (this.displayHeight - (2 * this.titleBarHeight)) && appInstance.aspect < wallRatio) {
 		// Image taller than wall
 		// Wall wider than image
-		iHeight = this.displayHeight - (3 * this.titleBarHeight);
+		iHeight = this.displayHeight - (2 * this.titleBarHeight);
 		iWidth  = iHeight * appInstance.aspect;
 	}
 
