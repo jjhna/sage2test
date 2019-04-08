@@ -26,9 +26,16 @@ var rootDir = 'public/';
 
 function generate() {
 	workboxBuild.generateSW({
+		// filename of the generated service worker
 		swDest: path.join(rootDir, 'service-worker.js'),
+		// We provide our own copy of workbox
+		importWorkboxFrom: 'disabled',
+		importScripts: [
+			'lib/workbox/workbox-sw.js',
+			'lib/workbox/workbox-core.prod.js',
+			'lib/workbox/workbox-precaching.prod.js'
+		],
 		cacheId: "SAGE2",
-		importWorkboxFrom: 'local',
 		globDirectory: rootDir,
 		globPatterns: [
 			'favicon.ico',
@@ -52,7 +59,7 @@ function generate() {
 			'lib/webix/skins/compact.css',
 			'lib/moment.min.js',
 			'src/*.js'
-		],
+		]
 	}).then(function(e) {
 		let workerSize = e.size / (1000 * 1000);
 		console.log('WebCache>	', 'Cache generated:', e.count, "files in", workerSize.toFixed(2), "MB");

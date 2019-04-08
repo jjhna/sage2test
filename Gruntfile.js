@@ -15,6 +15,7 @@ module.exports = function(grunt) {
 						"electron.js",
 						"client/electron.js",
 						"install_dependencies.js",
+						"generate-service-worker.js",
 						"src/*.js",
 						"bin/*.js",
 						"public/uploads/apps/welcome/plugin.js",
