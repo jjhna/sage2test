@@ -48,6 +48,8 @@ const favorites_file_name = 'sage2_favorite_sites.json';
 const FAVORITES_LIST_UI = 2;
 const FAVORITES_CAROUSEL_UI = 1;
 
+const PREDEFINED_LOCAL_PORT = "9090";
+
 //JS object containing list of favorites sites
 var favorites = {
 	list: [],
@@ -275,10 +277,11 @@ function addItemToList(item, index) {
                     </div>`;
 	it.innerHTML = htmlCode;
 
-	it.firstElementChild.firstElementChild.addEventListener('click', selectFavoriteSite);
-	it.firstElementChild.firstElementChild.style.cursor = "pointer";
+	it.addEventListener('click', selectFavoriteSite);
+	it.style.cursor = "pointer";
 	it.firstElementChild.lastElementChild.addEventListener('click', removeFavoriteSiteList);
-	favoriteList.appendChild(it);
+	// favoriteList.appendChild(it);
+	favoriteList.insertBefore(it, favoriteList.firstChild);
 	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, 1000);
 }
 
@@ -318,14 +321,23 @@ function addItemToCarousel(item, index) {
  * @return {void}
  */
 function selectFavoriteSite(event) {
-	let host = event.target.nextElementSibling.innerText;
-	let name = event.target.innerText;
-	urlInput.value = host;
-	urlInput.setAttribute("data-name", name); // store site name in data-name attr of url
-	// color heart in black
-	setFullHeart();
-	// fetch config file and update list
-	loadSiteInfo(host);
+	var elem = event.target;
+	if (elem.tagName === "SPAN") {
+		elem = elem.parentElement;
+	}
+	if (elem.tagName === "DIV") {
+		elem = elem.parentElement;
+	}
+	if (elem.tagName === "LI") {
+		let host = elem.firstElementChild.firstElementChild.nextElementSibling.innerText;
+		let name = elem.firstElementChild.firstElementChild.innerText;
+		urlInput.value = host;
+		urlInput.setAttribute("data-name", name); // store site name in data-name attr of url
+		// color heart in black
+		setFullHeart();
+		// fetch config file and update list
+		loadSiteInfo(host);
+	}
 }
 
 /**
@@ -469,6 +481,9 @@ function l(item) {
  * @return the URL for the config file
  */
 function buildConfigURL(domain) {
+	if (domain === "localhost" || domain === "127.0.0.1") {
+		domain = domain + ":" + PREDEFINED_LOCAL_PORT;
+	}
 	return 'https://' + domain + '/config';
 }
 
@@ -550,6 +565,8 @@ function populateUI(config_json) {
 
 	populateDropdownSites(config_json.remote_sites);
 	populateDropdownIds(config_json.displays);
+
+	urlInput.setAttribute("data-name", config_json.name);
 
 	if (config_json.passwordProtected) {
 		enablePassword();
@@ -653,6 +670,9 @@ function createDropItemIds(item, index) {
  */
 function formatProperly(url) {
 	const url_start = 'https://';
+	if (url === "localhost" || url == '127.0.0.1') {
+		url = url + ":" + PREDEFINED_LOCAL_PORT;
+	}
 	if (!url.startsWith('http://') || !url.startsWith('https://')) {
 		url = url_start + url;
 	}
