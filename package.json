@@ -76,11 +76,13 @@
 		"electron-squirrel-startup": "latest",
 		"systeminformation": "latest",
 		"strip-ansi": "latest",
-		"ws": "^3.3.1",
+		"ws": "latest",
 		"ytdl-core": "latest",
 		"jszip": "latest"
 	},
 	"optionalDependencies": {
+		"bufferutil": "latest",
+		"utf-8-validate": "latest",
 		"node-demux": "https://github.com/renambot-uic/node-demux.git"
 	},
 	"devDependencies": {
