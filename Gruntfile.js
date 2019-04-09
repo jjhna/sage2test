@@ -93,24 +93,15 @@ module.exports = function(grunt) {
 					]
 				}
 			}
-		},
-		mochacli: {
-			options: {
-				bail: true,
-				exit: true
-			},
-			all: ['test/*.js']
 		}
 	});
 
 	// Load the dependencies
 	grunt.loadNpmTasks('grunt-eslint');
 	grunt.loadNpmTasks('grunt-contrib-yuidoc');
-	grunt.loadNpmTasks('grunt-mocha-cli');
 	grunt.loadNpmTasks('grunt-prompt');
 
 	// this would be run by typing "grunt test" on the command line
-	// grunt.registerTask('all', ['eslint', 'yuidoc', 'mochacli']);
 	grunt.registerTask('all', ['eslint', 'yuidoc']);
 
 	// the default task can be run just by typing "grunt" on the command line

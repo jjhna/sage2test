@@ -91,12 +91,8 @@
 		"grunt-eslint": "latest",
 		"grunt-contrib-yuidoc": "latest",
 		"grunt-prompt": "latest",
-		"grunt-mocha-cli": "latest",
 		"nodemon": "latest",
-		"kthxbai": "latest",
-		"mocha": "latest",
-		"istanbul": "latest",
-		"coveralls": "latest"
+		"kthxbai": "latest"
 	},
 	"engines": {
 		"node": ">=8.x"
@@ -109,9 +105,6 @@
 		"doc": "grunt yuidoc",
 		"newapp": "grunt newapp",
 		"test": "grunt all",
-		"in": "node ./install_dependencies.js",
-		"inprod": "node ./install_dependencies.js --prod",
-		"indev": "node ./install_dependencies.js --dev",
 		"electron": "electron electron.js -s http://localhost:9292 -d 0"
 	},
 	"license": "SEE LICENSE IN LICENSE.txt"
