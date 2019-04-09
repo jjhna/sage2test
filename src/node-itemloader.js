@@ -34,7 +34,6 @@ var exiftool     = require('../src/node-exiftool');        // gets exif tags for
 var assets       = require('../src/node-assets');          // asset management
 var sageutils    = require('../src/node-utils');           // provides utility functions
 var registry     = require('../src/node-registry');        // Registry Manager
-var jsonfile     = require('jsonfile');
 var cheerio      = require('cheerio');
 
 var imageMagick;
@@ -840,7 +839,10 @@ AppLoader.prototype.loadUnityAppFromZip = function(appLoader, unityLoader, zipFo
 				author: "",
 				license: "SAGE2-Software-License"
 			};
-			jsonfile.writeFileSync(data.instuctionsFile, obj);
+			fs.writeFileSync(
+				data.instuctionsFile,
+				JSON.stringify(obj, null, 4)
+			);
 		}
 
 		fs.readFile(data.instuctionsFile, 'utf8', function(err1, json_str) {
