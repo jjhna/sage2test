@@ -24,6 +24,8 @@
 
 "use strict";
 
+var overview = false;
+
 /**
  * Convert a file size (number) to pretty string
  *
@@ -394,6 +396,33 @@ function FileManager(wsio, mydiv, uniqueID) {
 			tooltip: "Captures a screenshot of the wall and opens it up",
 			callback: function (evt) {
 				wsio.emit("startWallScreenshot");
+			}
+		},
+		separator4: {value: "separator"},
+		hidebuttons_menu: {value: "Show overview client",
+			tooltip: "Shows the overview client at the bottom of the page",
+			callback: function (evt) {
+				console.log('overview', self.overview)
+				if (self.overview) {
+					document.getElementById('overview').remove();
+					let elt = document.getElementById('fileManager').firstElementChild;
+					elt.style.display = "block";
+					self.overview = false;
+					SAGE2_resize();
+				} else {
+					let elt = document.getElementById('fileManager').firstElementChild;
+					elt.style.display = "none";
+					let overview = document.createElement("iframe");
+					overview.id = "overview";
+					overview.src = "https://" + window.location.hostname + _this.https_port +  "/display.html?clientID=-1";
+					overview.style.width = "98%";
+					overview.style.height = (window.innerHeight - document.getElementById('sage2UICanvas').height) + "px";
+					overview.style.margin = "0 auto";
+					overview.style.frameborder = 0;
+					document.getElementById("fileManager").appendChild(overview);
+					self.overview = true;
+					SAGE2_resize();
+				}
 			}
 		}
 	};
