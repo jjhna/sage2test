@@ -60,7 +60,7 @@
 		"mime": "latest",
 		"mv": "latest",
 		"node-json-db": "latest",
-		"node-pre-gyp": "0.8.0",
+		"node-pre-gyp": "latest",
 		"normalizeurl": "latest",
 		"qr-image": "latest",
 		"rbush": ">=2",
