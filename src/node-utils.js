@@ -41,7 +41,7 @@ var semver    = require('semver');            // parse version numbers
 var fsmonitor = require('fsmonitor');         // file system monitoring
 var sanitizer = require('sanitizer');         // Caja's HTML Sanitizer as a Node.js module
 var chalk     = require('chalk');             // colorize console output
-var stripansi = require('strip-ansi');        // remove ANSI color codes (dep. of chalk)
+var stripansi = require('strip-ansi');        // remove ANSI color codes
 var rimraf    = require('rimraf');            // command rm -rf for node
 
 /**
