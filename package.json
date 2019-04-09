@@ -69,7 +69,7 @@
 		"sanitizer": "latest",
 		"semver": "latest",
 		"sprint": "latest",
-		"sw-precache": "latest",
+		"workbox-build": "latest",
 		"websocketio": "https://github.com/renambot-uic/websocketio.git",
 		"rimraf": "latest",
 		"electron": "latest",
@@ -100,7 +100,7 @@
 	},
 	"scripts": {
 		"start": "node server.js -l",
-		"sw": "node generate-service-worker.js",
+		"workbox": "node generate-service-worker.js",
 		"monitor": "nodemon -e json,js,html -I -L -i public/uploads -i public/service-worker.js server.js -l",
 		"lint": "grunt eslint",
 		"doc": "grunt yuidoc",
