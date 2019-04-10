@@ -165,6 +165,16 @@ function OmicronManager(sysConfig) {
 		this.config.msgPort = 28000;
 	}
 
+	var defaultTouchExcludedApps = [
+		"Webview",
+		"googlemaps",
+		"zoom"
+	];
+
+	// This is intentionally before the config disable check
+	this.appsExcludedFromTouchInteraction = this.config.appsExcludedFromTouchInteraction === undefined ?
+		defaultTouchExcludedApps : this.config.appsExcludedFromTouchInteraction;
+
 	if (this.config.enable === false) {
 		return;
 	}
@@ -342,6 +352,15 @@ OmicronManager.prototype.sendToWebSocketClient = function(data) {
 	omicronManager.wsServer.broadcast(JSON.stringify(data));
 };
 
+OmicronManager.prototype.isExcludedTouchApplication = function(val) {
+	for (var i = 0; i < omicronManager.appsExcludedFromTouchInteraction.length; i++) {
+		var appName = omicronManager.appsExcludedFromTouchInteraction[i];
+		if (val == appName) {
+			return true;
+		}
+	}
+	return false;
+};
 
 /**
  * Initializes connection with Omicron input server

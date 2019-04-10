@@ -6909,7 +6909,7 @@ function pointerPressOnApplication(uniqueID, pointerX, pointerY, data, obj, loca
 				if (data.sourceType !== "touch") { // Normal SAGEPointer case
 					selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
 				} else {
-					if (obj.data.application !== "Webview") {
+					if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
 						// Dual interaction mode to allow non-Webview apps like PDF viewer
 						// to have interactable widgets, but still allow window drag
 						selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
@@ -8675,7 +8675,7 @@ function pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt
 			if (data === undefined || data.sourceType !== "touch") { // Normal SAGEPointer case
 				toggleApplicationFullscreen(uniqueID, obj.data, true);
 			} else {
-				if (obj.data.application !== "Webview") {
+				if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
 					toggleApplicationFullscreen(uniqueID, obj.data, true);
 				} else {
 					// Disable window drag for Webviews since we want direct interaction
@@ -8758,7 +8758,7 @@ function pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, loca
 			if (data === undefined || data.sourceType !== "touch") { // Normal SAGEPointer case
 				selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
 			} else {
-				if (obj.data.application !== "Webview") {
+				if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
 					selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
 				} else {
 					// Disable window drag for Webviews since we want direct interaction
@@ -8863,8 +8863,8 @@ function pointerScroll(uniqueID, data) {
 				if (data === undefined || data.sourceType !== "touch") { // Normal SAGEPointer case
 					sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
 				} else {
-					if (obj.data.application !== "Webview") {
-						// sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+					if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
+						sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
 					} else {
 						// Disable window drag for Webviews since we want direct interaction
 						// Do not interact with Webviews - assuming native touch will handle this
