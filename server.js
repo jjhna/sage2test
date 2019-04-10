@@ -8864,7 +8864,7 @@ function pointerScroll(uniqueID, data) {
 					sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
 				} else {
 					if (obj.data.application !== "Webview") {
-						sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+						// sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
 					} else {
 						// Disable window drag for Webviews since we want direct interaction
 						// Do not interact with Webviews - assuming native touch will handle this
