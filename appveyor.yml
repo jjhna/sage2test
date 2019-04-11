@@ -29,8 +29,8 @@ init:
   - dir C:\Dev\ffmpeg-win64-dev\lib
 
 install:
-  - ps: Get-NodeJsLatestBuild 10.6
-  - ps: Install-Product node 10.6.0 x64
+  - ps: Get-NodeJsLatestBuild 11.9
+  - ps: Install-Product node 11.9.0 x64
   - dir C:\avvm\node
   - node -v
   - cd %APPVEYOR_BUILD_FOLDER%
