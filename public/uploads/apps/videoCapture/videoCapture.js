@@ -165,7 +165,6 @@ var videoCapture = SAGE2_App.extend({
 			w = 640;
 			h = 360;
 		}
-		console.log('DeviceID', this.videoID)
 		// building a constraint request
 		let constraints = {
 			audio: {deviceId: (this.audioInID !== "none") ? {exact: this.audioInID} : undefined},
