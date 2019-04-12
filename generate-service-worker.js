@@ -6,7 +6,7 @@
 //
 // See full text, terms and conditions in the LICENSE.txt included file
 //
-// Copyright (c) 2016
+// Copyright (c) 2016-18
 
 /**
  * Generate a pre-caching service worker
@@ -14,50 +14,62 @@
  * @class generate-service-worker
  * @module server
  * @submodule generate-service-worker.js`
- * @requires sw-precache
+ * @requires workbox-build
  */
 
 "use strict";
 
 var path = require('path');
-var swPrecache = require('sw-precache');
+const workboxBuild = require('workbox-build');
 
-var rootDir = 'public';
+var rootDir = 'public/';
 
 function generate() {
-	swPrecache.write(path.join(rootDir, 'service-worker.js'), {
-		cacheId: "SAGE2",
-		handleFetch: true,
-		logger: function() {},
-		verbose: false,
-		staticFileGlobs: [
-			rootDir + '/favicon.ico',
-			rootDir + '/css/*.css',
-			rootDir + '/css/Arimo*.woff',
-			rootDir + '/css/Arimo*.woff2',
-			rootDir + '/images/blank.png',
-			rootDir + '/images/*.svg',
-			rootDir + '/images/ui/*.svg',
-			rootDir + '/images/radialMenu/*.svg',
-			rootDir + '/images/appUi/*.svg',
-			rootDir + '/images/icons/*.png',
-			// HTML pages
-			rootDir + 'audioManager.html',
-			rootDir + 'index.html',
-			rootDir + 'display.html',
-			rootDir + 'sageUI.html',
-			// not caching session.html
-			rootDir + '/lib/webix/webix.js',
-			rootDir + '/lib/webix/webix.css',
-			rootDir + '/lib/webix/skins/compact.css',
-			rootDir + '/lib/moment.min.js',
-			rootDir + '/src/*.js'
+	workboxBuild.generateSW({
+		// filename of the generated service worker
+		swDest: path.join(rootDir, 'service-worker.js'),
+		// We provide our own copy of workbox
+		importWorkboxFrom: 'disabled',
+		importScripts: [
+			'lib/workbox/workbox-sw.js',
+			'lib/workbox/workbox-core.prod.js',
+			'lib/workbox/workbox-precaching.prod.js'
 		],
-		stripPrefix: rootDir
-	}, function() {
-		// console.log('ServiceWorker>	Cache generated');
+		cacheId: "SAGE2",
+		globDirectory: rootDir,
+		globPatterns: [
+			'favicon.ico',
+			'css/*.css',
+			'css/Arimo*.woff',
+			'css/Arimo*.woff2',
+			'images/blank.png',
+			'images/*.svg',
+			'images/ui/*.svg',
+			'images/radialMenu/*.svg',
+			'images/appUi/*.svg',
+			'images/icons/*.png',
+			// HTML pages
+			'audioManager.html',
+			'index.html',
+			'display.html',
+			'sageUI.html',
+			// not caching session.html
+			'lib/webix/webix.js',
+			'lib/webix/webix.css',
+			'lib/webix/skins/compact.css',
+			'lib/moment.min.js',
+			'src/*.js'
+		]
+	}).then(function(e) {
+		let workerSize = e.size / (1000 * 1000);
+		console.log('WebCache>	', 'Cache generated:', e.count, "files in", workerSize.toFixed(2), "MB");
 	});
 }
 
-module.exports = generate;
+// Run the function if ran directly from node (instead of import)
+if (require.main === module) {
+	generate();
+}
 
+// Export the function
+module.exports = generate;
