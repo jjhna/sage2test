@@ -201,7 +201,7 @@ fileBufferManager = new FileBufferManager();
 // Create structure to handle automated placement of apps
 var appLaunchPositioning = {
 	xStart: 10,
-	yStart: 50,
+	yStart: config.ui.titleBarHeight || 50,
 	xLast: -1,
 	yLast: -1,
 	widthLast: -1,
@@ -1389,14 +1389,12 @@ function initializeExistingSagePointers(wsio) {
 function initializeExistingWallUI(wsio) {
 	var menuInfo;
 	if (config.ui.reload_wallui_on_refresh === false) {
-		// console.log("WallUI reload on display client refresh: Disabled");
 		for (key in SAGE2Items.radialMenus.list) {
 			menuInfo = SAGE2Items.radialMenus.list[key].getInfo();
 			hideRadialMenu(menuInfo.id);
 		}
 		return;
 	}
-	// console.log("WallUI reload on display client refresh: Enabled (default)");
 	var key;
 	for (key in SAGE2Items.radialMenus.list) {
 		menuInfo = SAGE2Items.radialMenus.list[key].getInfo();
@@ -2559,9 +2557,9 @@ function wsSaveSession(wsio, data) {
 
 function printListSessions() {
 	var thelist = listSessions();
-	console.log("Sessions\n---------");
+	sageutils.log("Sessions", thelist.length, "sessions(s)");
 	for (var i = 0; i < thelist.length; i++) {
-		console.log(sprint("%2d: Name: %s\tSize: %.0fKB\tDate: %s",
+		sageutils.log("Sessions", sprint("%02d: Name: %s\tSize: %.0fKB\tDate: %s",
 			i, thelist[i].exif.FileName, thelist[i].exif.FileSize / 1024.0, thelist[i].exif.FileDate
 		));
 	}
@@ -3339,7 +3337,7 @@ function deleteAllApplications(wsio) {
 	// Reset structure to handle automated placement of apps
 	appLaunchPositioning = {
 		xStart: 10,
-		yStart: 50,
+		yStart: config.ui.titleBarHeight || 50,
 		xLast: -1,
 		yLast: -1,
 		widthLast: -1,
@@ -3448,7 +3446,7 @@ function wsLoadApplication(wsio, data) {
 			// Use the position as center of drop location
 			appInstance.top  = position[1] - appInstance.height / 2;
 			if (appInstance.top < 0) {
-				appInstance.top = 0;
+				appInstance.top = config.ui.titleBarHeight;
 			}
 		}
 
@@ -3564,7 +3562,7 @@ function wsLoadImageFromBuffer(wsio, data) {
 				// Use the position as center of drop location
 				appInstance.top  = position[1] - appInstance.height / 2;
 				if (appInstance.top < 0) {
-					appInstance.top = 0;
+					appInstance.top = config.ui.titleBarHeight;
 				}
 			}
 
@@ -3616,7 +3614,7 @@ function wsLoadFileFromServer(wsio, data) {
 				// Use the position as center of drop location
 				appInstance.top  = position[1] - appInstance.height / 2;
 				if (appInstance.top < 0) {
-					appInstance.top = 0;
+					appInstance.top = config.ui.titleBarHeight;
 				}
 			}
 
@@ -3926,7 +3924,7 @@ function wsAddNewWebElement(wsio, data) {
 			// Use the position as center of drop location
 			appInstance.top  = position[1] - appInstance.height / 2;
 			if (appInstance.top < 0) {
-				appInstance.top = 0;
+				appInstance.top = config.ui.titleBarHeight;
 			}
 		}
 
@@ -4085,7 +4083,6 @@ function wsLoopVideo(wsio, data) {
 // **************  Remote Server Content *****************
 
 function wsAddNewElementFromRemoteServer(wsio, data) {
-	console.log("add element from remote server");
 	var i;
 
 	appLoader.loadApplicationFromRemoteServer(data, function(appInstance, videohandle) {
@@ -4796,7 +4793,6 @@ function wsHideWidgetFromControl(wsio, data) {
 }
 
 function wsOpenRadialMenuFromControl(wsio, data) {
-	console.log("radial menu");
 	var ctrl = SAGE2Items.widgets.list[data.id];
 	createRadialMenu(wsio.id, ctrl.left, ctrl.top);
 }
@@ -5583,7 +5579,8 @@ function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
 					}
 					appInstance.top  = position[1] - appInstance.height / 2;
 					if (appInstance.top < 0) {
-						appInstance.top = 0;
+						// avoid the titlebar
+						appInstance.top = config.ui.titleBarHeight;
 					}
 				}
 
@@ -6760,7 +6757,6 @@ function pointerPressOnRadialMenu(uniqueID, pointerX, pointerY, data, obj, local
 		}
 	} else if (obj.id.indexOf("menu_thumbnail") !== -1) {
 		// Pressing on thumbnail window
-		// console.log("Pointer press on thumbnail window");
 		data = { button: data.button, color: sagePointers[uniqueID].color };
 		radialMenuEvent({type: "pointerPress", id: uniqueID, x: pointerX, y: pointerY, data: data});
 	} else {
@@ -7594,7 +7590,6 @@ function pointerMoveOnRadialMenu(uniqueID, pointerX, pointerY, data, obj, localP
 
 	if (obj.id.indexOf("menu_radial_button") !== -1) {
 		// Pressing on radial menu button
-		// console.log("over radial button: " + obj.id);
 		// data = { buttonID: obj.id, button: data.button, color: sagePointers[uniqueID].color };
 		// radialMenuEvent({type: "pointerMove", id: uniqueID, x: pointerX, y: pointerY, data: data});
 		var menuStateChange = existingRadialMenu.onButtonEvent(obj.id, uniqueID, "pointerMove", color);
@@ -7603,7 +7598,6 @@ function pointerMoveOnRadialMenu(uniqueID, pointerX, pointerY, data, obj, localP
 		}
 	} else if (obj.id.indexOf("menu_thumbnail") !== -1) {
 		// PointerMove on thumbnail window
-		// console.log("Pointer move on thumbnail window");
 		data = { button: data.button, color: sagePointers[uniqueID].color };
 		radialMenuEvent({type: "pointerMove", id: uniqueID, x: pointerX, y: pointerY, data: data});
 	} else {
@@ -8476,7 +8470,6 @@ function pointerReleaseOnRadialMenu(uniqueID, pointerX, pointerY, data, obj) {
 	if (obj === undefined) {
 		for (var key in SAGE2Items.radialMenus.list) {
 			radialMenu = SAGE2Items.radialMenus.list[key];
-			// console.log(data.id+"_menu: " + radialMenu);
 			if (radialMenu !== undefined) {
 				radialMenu.onRelease(uniqueID);
 			}
@@ -8489,7 +8482,6 @@ function pointerReleaseOnRadialMenu(uniqueID, pointerX, pointerY, data, obj) {
 		var radialMenu = obj.data;
 		if (obj.id.indexOf("menu_radial_button") !== -1) {
 			// Pressing on radial menu button
-			// console.log("pointer release on radial button: " + obj.id);
 			radialMenu.onRelease(uniqueID);
 			var menuState = radialMenu.onButtonEvent(obj.id, uniqueID, "pointerRelease");
 			if (menuState !== undefined) {
@@ -8497,7 +8489,6 @@ function pointerReleaseOnRadialMenu(uniqueID, pointerX, pointerY, data, obj) {
 			}
 		}  else if (obj.id.indexOf("menu_thumbnail") !== -1) {
 			// PointerRelease on thumbnail window
-			// console.log("Pointer release on thumbnail window");
 			data = { button: data.button, color: sagePointers[uniqueID].color };
 			radialMenuEvent({type: "pointerRelease", id: uniqueID, x: pointerX, y: pointerY, data: data});
 		} else {
@@ -9763,7 +9754,6 @@ function createRadialMenu(uniqueID, pointerX, pointerY) {
 						Math.pow(Math.abs(newMenuPos.y - prevMenuPos.y), 2));
 		if (existingRadialMenu.visible && distance < existingRadialMenu.radialMenuSize.x) {
 			// validLocation = false;
-			// console.log("Menu is too close to existing menu");
 		}
 	}
 
@@ -9888,7 +9878,6 @@ function radialMenuEvent(data) {
 function updateRadialMenuPointerPosition(uniqueID, pointerX, pointerY) {
 	for (var key in SAGE2Items.radialMenus.list) {
 		var radialMenu = SAGE2Items.radialMenus.list[key];
-		// console.log(data.id+"_menu: " + radialMenu);
 		if (radialMenu !== undefined && radialMenu.dragState === true) {
 			var offset = radialMenu.getDragOffset(uniqueID, {x: pointerX, y: pointerY});
 			moveRadialMenu(radialMenu.id, offset.x, offset.y);

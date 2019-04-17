@@ -34,7 +34,6 @@ var exiftool     = require('../src/node-exiftool');        // gets exif tags for
 var assets       = require('../src/node-assets');          // asset management
 var sageutils    = require('../src/node-utils');           // provides utility functions
 var registry     = require('../src/node-registry');        // Registry Manager
-var jsonfile     = require('jsonfile');
 var cheerio      = require('cheerio');
 
 var imageMagick;
@@ -56,19 +55,19 @@ function AppLoader(publicDir, hostOrigin, config, imOptions, ffmpegOptions) {
 
 
 AppLoader.prototype.scaleAppToFitDisplay = function(appInstance) {
-	var wallRatio   = this.displayWidth / (this.displayHeight - this.titleBarHeight);
+	var wallRatio   = this.displayWidth / this.displayHeight;
 	var iWidth      = appInstance.native_width;
 	var iHeight     = appInstance.native_height;
 	var aspectRatio = iWidth / iHeight;
 	// Image wider than wall
-	if (iWidth > (this.displayWidth - (2 * this.titleBarHeight)) && appInstance.aspect >= wallRatio) {
+	if (iWidth > this.displayWidth && appInstance.aspect >= wallRatio) {
 		// Image wider than wall
-		iWidth  = this.displayWidth - (2 * this.titleBarHeight);
+		iWidth  = this.displayWidth;
 		iHeight = iWidth / appInstance.aspect;
-	} else if (iHeight > (this.displayHeight - (3 * this.titleBarHeight)) && appInstance.aspect < wallRatio) {
+	} else if (iHeight > (this.displayHeight - (2 * this.titleBarHeight)) && appInstance.aspect < wallRatio) {
 		// Image taller than wall
 		// Wall wider than image
-		iHeight = this.displayHeight - (3 * this.titleBarHeight);
+		iHeight = this.displayHeight - (2 * this.titleBarHeight);
 		iWidth  = iHeight * appInstance.aspect;
 	}
 
@@ -840,7 +839,10 @@ AppLoader.prototype.loadUnityAppFromZip = function(appLoader, unityLoader, zipFo
 				author: "",
 				license: "SAGE2-Software-License"
 			};
-			jsonfile.writeFileSync(data.instuctionsFile, obj);
+			fs.writeFileSync(
+				data.instuctionsFile,
+				JSON.stringify(obj, null, 4)
+			);
 		}
 
 		fs.readFile(data.instuctionsFile, 'utf8', function(err1, json_str) {
