@@ -80,7 +80,6 @@
 		"ytdl-core": "latest",
 		"exiftool-vendored": "latest",
 		"sharp": "latest",
-		"canvas": "latest",
 		"node-ensure": "latest",
 		"jszip": "latest"
 	},

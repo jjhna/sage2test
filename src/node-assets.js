@@ -32,9 +32,11 @@ var json5     = require('json5');
 var mv        = require('mv');
 var chalk     = require('chalk');
 
+var exec      = require('child_process').exec;  // execute external application
+
 const sharp    = require('sharp');  // Image processing lib
-var   Canvas   = require('canvas'); // offscreen rendering for pdf
-var   pdfjsLib = require('../public/lib/pdf.js');
+// var   Canvas   = require('canvas'); // offscreen rendering for pdf
+// var   pdfjsLib = require('../public/lib/pdf.js');
 
 var exiftool  = require('../src/node-exiftool'); // gets exif tags for images
 var sageutils = require('../src/node-utils');    // provides utility functions
@@ -43,6 +45,7 @@ var registry  = require('../src/node-registry');
 // Global variable to handle imageMagick configuration
 var imageMagick = null;
 var config = null;
+
 
 
 /**
@@ -267,18 +270,6 @@ var generatePdfThumbnailHelper = function(intermediate, infile, outfile, sizes, 
 		return;
 	}
 
-	// imageMagick(intermediate).in("-density", "96").in("-depth", "8").in("-quality", "70")
-	// 	.in("-resize", sizes[index] + "x" + sizes[index]).in("-gravity", "center")
-	// 	.in("-background", "rgb(71,71,71)").in("-extent", sizes[index] + "x" + sizes[index])
-	// 	.out("-quality", "70").write(outfile + '_' + sizes[index] + '.jpg', function(err) {
-	// 		if (err) {
-	// 			sageutils.log("Assets", "cannot generate " + sizes[index] + "x" + sizes[index] +
-	// 				" thumbnail for:" + infile + ' -- ' + err);
-	// 			return;
-	// 		}
-	// 		// recursive call to generate the next size
-	// 		generatePdfThumbnailHelper(intermediate, infile, outfile, sizes, index + 1, callback);
-	// 	});
 	sharp(intermediate)
 		.resize({
 			width:  sizes[index],
@@ -301,50 +292,58 @@ var generatePdfThumbnailHelper = function(intermediate, infile, outfile, sizes, 
 
 var generatePdfThumbnail = function(infile, outfile, width, height, sizes, index, callback) {
 	// create a temporary file (cant use the buffer API since GS spits out on stdout)
-	var tmpfile = path.join(os.tmpdir(), path.basename(infile) + ".jpg");
+	var tmpfile = path.join(os.tmpdir(), path.basename(infile));
 
-	// imageMagick(width, height, "#ffffff").append(infile + "[0]").colorspace("RGB").noProfile().flatten()
-	// 	.write(tmpfile, function(err, buffer) {
-	// 		if (err) {
-	// 			sageutils.log("Assets", "cannot generate thumbnails for:" + infile + ' -- ' + err);
-	// 			return;
-	// 		}
-	// 		generatePdfThumbnailsHelper(tmpfile, infile, outfile, sizes, index, callback);
-	// 	});
+	let execCmd = 'pdftoppm -jpeg -singlefile -r 72 -jpegopt quality=70 "'
+		+ infile + '" "' + tmpfile + '"';
 
-	// Read the PDF file into a typed array so PDF.js can load it
-	var rawData = new Uint8Array(fs.readFileSync(infile));
-
-	// Load the PDF file
-	var loadingTask = pdfjsLib.getDocument(rawData);
-	loadingTask.promise.then(function(pdfDocument) {
-		// Get the first page
-		pdfDocument.getPage(1).then(function (page) {
-			// Render the page on a Node canvas with 100% scale
-			var viewport = page.getViewport(1.0);
-			var canvasFactory = new NodeCanvasFactory();
-			var canvasAndContext =
-			canvasFactory.create(viewport.width, viewport.height);
-			var renderContext = {
-				canvasContext: canvasAndContext.context,
-				viewport: viewport,
-				canvasFactory: canvasFactory
-			};
-
-			var renderTask = page.render(renderContext);
-			renderTask.promise.then(function() {
-				// Convert the canvas to an image buffer
-				var image = canvasAndContext.canvas.toBuffer();
-
-				fs.writeFileSync(tmpfile, image);
-				generatePdfThumbnailHelper(tmpfile, infile, outfile, sizes, index, callback);
-			});
-		});
-	}).catch(function(reason) {
-		console.log('PDF error', reason);
+	exec(execCmd, { timeout: 3000}, function(err, stdout, stderr) {
+		if (err) {
+			sageutils.log("Assets", "cannot generate thumbnails for:" + infile + ' -- ' + err);
+			return;
+		}
+		generatePdfThumbnailHelper(tmpfile + ".jpg", infile, outfile, sizes, index, callback);
 	});
-
 };
+
+
+// var generatePdfThumbnailJS = function(infile, outfile, width, height, sizes, index, callback) {
+// 	// create a temporary file (cant use the buffer API since GS spits out on stdout)
+// 	var tmpfile = path.join(os.tmpdir(), path.basename(infile) + ".jpg");
+
+// 	// Read the PDF file into a typed array so PDF.js can load it
+// 	var rawData = new Uint8Array(fs.readFileSync(infile));
+
+// 	// Load the PDF file
+// 	var loadingTask = pdfjsLib.getDocument(rawData);
+// 	loadingTask.promise.then(function(pdfDocument) {
+// 		// Get the first page
+// 		pdfDocument.getPage(1).then(function (page) {
+// 			// Render the page on a Node canvas with 100% scale
+// 			var viewport = page.getViewport(1.0);
+// 			var canvasFactory = new NodeCanvasFactory();
+// 			var canvasAndContext =
+// 			canvasFactory.create(viewport.width, viewport.height);
+// 			var renderContext = {
+// 				canvasContext: canvasAndContext.context,
+// 				viewport: viewport,
+// 				canvasFactory: canvasFactory
+// 			};
+
+// 			var renderTask = page.render(renderContext);
+// 			renderTask.promise.then(function() {
+// 				// Convert the canvas to an image buffer
+// 				var image = canvasAndContext.canvas.toBuffer();
+
+// 				fs.writeFileSync(tmpfile, image);
+// 				generatePdfThumbnailHelper(tmpfile, infile, outfile, sizes, index, callback);
+// 			});
+// 		});
+// 	}).catch(function(reason) {
+// 		console.log('PDF error', reason);
+// 	});
+
+// };
 
 var generateVideoThumbnail = function(infile, outfile, width, height, sizes, index, callback) {
 	// initial call, index is not specified
@@ -1242,32 +1241,32 @@ var moveAsset = function(source, destination, callback) {
 
 // CANVAS
 
-function NodeCanvasFactory() {}
-NodeCanvasFactory.prototype = {
-	create: function NodeCanvasFactory_create(width, height) {
-		var canvas = new Canvas.createCanvas(width, height);
-		var context = canvas.getContext('2d');
-		return {
-			canvas: canvas,
-			context: context
-		};
-	},
+// function NodeCanvasFactory() {}
+// NodeCanvasFactory.prototype = {
+// 	create: function NodeCanvasFactory_create(width, height) {
+// 		var canvas = new Canvas.createCanvas(width, height);
+// 		var context = canvas.getContext('2d');
+// 		return {
+// 			canvas: canvas,
+// 			context: context
+// 		};
+// 	},
 
-	reset: function NodeCanvasFactory_reset(canvasAndContext, width, height) {
-		canvasAndContext.canvas.width  = width;
-		canvasAndContext.canvas.height = height;
-	},
+// 	reset: function NodeCanvasFactory_reset(canvasAndContext, width, height) {
+// 		canvasAndContext.canvas.width  = width;
+// 		canvasAndContext.canvas.height = height;
+// 	},
 
-	destroy: function NodeCanvasFactory_destroy(canvasAndContext) {
+// 	destroy: function NodeCanvasFactory_destroy(canvasAndContext) {
 
-		// Zeroing the width and height cause Firefox to release graphics
-		// resources immediately, which can greatly reduce memory consumption
-		canvasAndContext.canvas.width  = 0;
-		canvasAndContext.canvas.height = 0;
-		canvasAndContext.canvas  = null;
-		canvasAndContext.context = null;
-	}
-};
+// 		// Zeroing the width and height cause Firefox to release graphics
+// 		// resources immediately, which can greatly reduce memory consumption
+// 		canvasAndContext.canvas.width  = 0;
+// 		canvasAndContext.canvas.height = 0;
+// 		canvasAndContext.canvas  = null;
+// 		canvasAndContext.context = null;
+// 	}
+// };
 
 exports.initialize     = initialize;
 exports.refresh        = refreshAssets;
