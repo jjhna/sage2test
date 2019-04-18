@@ -4083,7 +4083,7 @@ function wsCommand(wsio, data) {
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
 	// use the window position if specified
-	let position   = data.position || [0, config.ui.titleBarHeight];
+	let position   = data.position; // || [0, config.ui.titleBarHeight];
 	// use the window size if specified
 	let dimensions = data.dimensions || null;
 	wsLoadApplication(wsio, {
