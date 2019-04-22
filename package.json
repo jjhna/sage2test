@@ -60,7 +60,7 @@
 		"mime": "latest",
 		"mv": "latest",
 		"node-json-db": "latest",
-		"node-pre-gyp": "0.8.0",
+		"node-pre-gyp": "latest",
 		"normalizeurl": "latest",
 		"qr-image": "latest",
 		"rbush": ">=2",
@@ -69,18 +69,25 @@
 		"sanitizer": "latest",
 		"semver": "latest",
 		"sprint": "latest",
-		"sw-precache": "latest",
+		"workbox-build": "latest",
 		"websocketio": "https://github.com/renambot-uic/websocketio.git",
 		"rimraf": "latest",
 		"electron": "latest",
 		"electron-squirrel-startup": "latest",
 		"systeminformation": "latest",
-		"ws": "^3.3.1",
+		"strip-ansi": "latest",
+		"ws": "latest",
 		"ytdl-core": "latest",
 		"jszip": "latest"
 	},
 	"optionalDependencies": {
+<<<<<<< HEAD
 		"node-demux": "git+https://github.com/renambot-uic/node-demux.git"
+=======
+		"bufferutil": "latest",
+		"utf-8-validate": "latest",
+		"node-demux": "https://github.com/renambot-uic/node-demux.git"
+>>>>>>> origin
 	},
 	"devDependencies": {
 		"grunt": "latest",
@@ -88,27 +95,20 @@
 		"grunt-eslint": "latest",
 		"grunt-contrib-yuidoc": "latest",
 		"grunt-prompt": "latest",
-		"grunt-mocha-cli": "latest",
 		"nodemon": "latest",
-		"kthxbai": "latest",
-		"mocha": "latest",
-		"istanbul": "latest",
-		"coveralls": "latest"
+		"kthxbai": "latest"
 	},
 	"engines": {
 		"node": ">=8.x"
 	},
 	"scripts": {
 		"start": "node server.js -l",
-		"sw": "node generate-service-worker.js",
+		"workbox": "node generate-service-worker.js",
 		"monitor": "nodemon -e json,js,html -I -L -i public/uploads -i public/service-worker.js server.js -l",
 		"lint": "grunt eslint",
 		"doc": "grunt yuidoc",
 		"newapp": "grunt newapp",
 		"test": "grunt all",
-		"in": "node ./install_dependencies.js",
-		"inprod": "node ./install_dependencies.js --prod",
-		"indev": "node ./install_dependencies.js --dev",
 		"electron": "electron electron.js -s http://localhost:9292 -d 0"
 	},
 	"license": "SEE LICENSE IN LICENSE.txt"
