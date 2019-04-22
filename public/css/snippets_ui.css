@@ -880,7 +880,7 @@
 /* == Code Snippets JSON logger Styling == */
 /* ======================================= */
 
-.json-summary {
+/* .json-summary {
     font-family: monospace;
 }
 
@@ -936,7 +936,6 @@
 
 .json-summary-layer>.json-summary-keys {
     display: none;
-    /* display: inline; */
     color: var(--snippets-red);
 
     overflow: hidden;
@@ -1003,7 +1002,7 @@
 
 .json-summary-circular {
 	color: var(--snippets-violet);
-}
+} */
 
 :root {
     /* using colors from the solarized light theme */

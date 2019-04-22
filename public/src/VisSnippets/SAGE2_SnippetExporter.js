@@ -21,7 +21,7 @@ let SAGE2_SnippetExporter = (function() {
 	getSnippetsInputCode.onload = function() {
 		snippetInputsCode = getSnippetsInputCode.responseText;
 	};
-	getSnippetsInputCode.open("GET", "./src/API/CodeSnippetInput.js");
+	getSnippetsInputCode.open("GET", "./src/VisSnippets/CodeSnippetInput.js");
 	getSnippetsInputCode.send();
 
 	// fetch the same snippetinput.css stylesheet used in display (for consisentency)

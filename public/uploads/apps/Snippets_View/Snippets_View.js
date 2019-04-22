@@ -7,7 +7,7 @@
 
 "use strict";
 
-/* global d3 */
+/* global d3 jsonSummary */
 
 var Snippets_View = SAGE2_App.extend({
   init: function(data) {
@@ -151,8 +151,12 @@ var Snippets_View = SAGE2_App.extend({
 
     
     if (!this.snippetsVisElement && data) {
-      let summary = SAGE2_SnippetsUtil.summarizeJSON(data);
-      let printedSummary = SAGE2_SnippetsUtil.printSummarizedJSON(summary);
+      // let summary = SAGE2_SnippetsUtil.summarizeJSON(data);
+      // let printedSummary = SAGE2_SnippetsUtil.printSummarizedJSON(summary);
+
+      let summary = jsonSummary.summarize(data);
+      let printedSummary = jsonSummary.printSummary(summary);
+      console.log(summary);
 
       this.errorBox.style.display = "none";
 

@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global wsio d3 CodeSnippetCompiler SAGE2_SnippetsUtil */
+/* global wsio d3 CodeSnippetCompiler SAGE2_SnippetsUtil jsonSummary */
 
 let SAGE2_CodeSnippets = (function() {
 	let self = {
@@ -1197,7 +1197,8 @@ let SAGE2_CodeSnippets = (function() {
 								// revisit how to handle sending objects
 								// string = JSON.stringify(a).substring(0, 1500);
 
-								string = JSON.stringify(SAGE2_SnippetsUtil.summarizeJSON(a));
+								// string = JSON.stringify(SAGE2_SnippetsUtil.summarizeJSON(a));
+								string = JSON.stringify(jsonSummary.summarize(a));
 							} catch (e) {
 								console.log(e);
 

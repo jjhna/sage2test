@@ -10,7 +10,7 @@
 
 "use strict";
 
-/* global ace d3 displayUI interactor wsio SAGE2_SnippetExporter CodeSnippetCompiler snippetOverlayManager SAGE2_SnippetsUtil */
+/* global ace d3 displayUI interactor wsio SAGE2_SnippetExporter CodeSnippetCompiler snippetOverlayManager SAGE2_SnippetsUtil jsonSummary */
 
 let SAGE2_SnippetEditor = (function () {
 	// api examples to be inserted in the editor
@@ -786,7 +786,8 @@ let SAGE2_SnippetEditor = (function () {
 				source.innerText = `(${logEntry.appID})`;
 
 				if (logEntry.content instanceof Object) {
-					content.innerHTML = SAGE2_SnippetsUtil.printSummarizedJSON(logEntry.content);
+					content.innerHTML = jsonSummary.printSummary(logEntry.content);
+					// content.innerHTML = SAGE2_SnippetsUtil.printSummarizedJSON(logEntry.content);
 
 					content.style.flexBasis = "100%";
 
