@@ -81,13 +81,9 @@
 		"jszip": "latest"
 	},
 	"optionalDependencies": {
-<<<<<<< HEAD
-		"node-demux": "git+https://github.com/renambot-uic/node-demux.git"
-=======
 		"bufferutil": "latest",
 		"utf-8-validate": "latest",
 		"node-demux": "https://github.com/renambot-uic/node-demux.git"
->>>>>>> origin
 	},
 	"devDependencies": {
 		"grunt": "latest",
