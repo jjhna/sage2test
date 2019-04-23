@@ -43,7 +43,7 @@ var Snippets_View = SAGE2_App.extend({
       .style("height", "100%")
       .style("font-family", "monospace")
       .style("white-space", "pre")
-      .style("padding", "8px 10px")
+      // .style("padding", "8px 10px")
       .style("color", "#abb2bf")
       .style("font-size", ui.titleBarHeight / 2 + "px")
       .style("background-color", "#282c34");
@@ -155,13 +155,15 @@ var Snippets_View = SAGE2_App.extend({
       // let printedSummary = SAGE2_SnippetsUtil.printSummarizedJSON(summary);
 
       let summary = jsonSummary.summarize(data);
-      let printedSummary = jsonSummary.printSummary(summary);
+      let printedSummary = jsonSummary.printSummary(summary, {theme: "monokai", startExpanded: true});
       console.log(summary);
 
       this.errorBox.style.display = "none";
 
       // draw
       this.dataView.html(printedSummary);
+
+      this.dataView.selectAll(".theme, .json-summary-wrapper").style("height", "100%");
     }
 
     this.updateChildren();

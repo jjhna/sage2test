@@ -393,7 +393,7 @@ body {
 	border-width: 13px;
 }
 
-.json-summary-checkbox {
+/* .json-summary-checkbox {
   display: none;
 }
 
@@ -450,7 +450,7 @@ body {
 
 .json-summary-circular {
 	color: var(--snippets-purple);
-}
+} */
 
 :root {
 	--snippets-yellow: #e5c07b;

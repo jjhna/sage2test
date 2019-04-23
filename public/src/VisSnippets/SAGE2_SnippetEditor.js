@@ -786,7 +786,7 @@ let SAGE2_SnippetEditor = (function () {
 				source.innerText = `(${logEntry.appID})`;
 
 				if (logEntry.content instanceof Object) {
-					content.innerHTML = jsonSummary.printSummary(logEntry.content);
+					content.innerHTML = jsonSummary.printSummary(logEntry.content, {theme: "light"});
 					// content.innerHTML = SAGE2_SnippetsUtil.printSummarizedJSON(logEntry.content);
 
 					content.style.flexBasis = "100%";

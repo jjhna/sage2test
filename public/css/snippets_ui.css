@@ -1004,6 +1004,10 @@
 	color: var(--snippets-violet);
 } */
 
+#consoleMessages .json-summary-wrapper {
+    border-width: 0 !important;
+}
+
 :root {
     /* using colors from the solarized light theme */
     --snippets-base03:    #002b36;
