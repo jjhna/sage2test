@@ -837,31 +837,47 @@ var SAGE2PointerToNativeMouseEvent = {
 		px += appBoundingRect.left;
 		py += appBoundingRect.top;
 
+		var rootzindex = window.getComputedStyle(appStart, null).getPropertyValue("z-index");
 		// then go through each child, and its children...etc
-		this.traverseChildNodesForCandidates(appStart, candidate, px, py);
+		this.traverseChildNodesForCandidates(appStart, candidate, px, py, rootzindex);
 		return candidate.element;
 	},
 
-	traverseChildNodesForCandidates: function(element, candidate, px, py) {
+	traverseChildNodesForCandidates: function(element, candidate, px, py, parentZIndex) {
 		// track data for debug
 		candidate.traversalCount++;
 		var computedZ;
+		var inside = false;
 		// first check this node, because later declared notes are visually on top of previous
 		if (this.checkIfPointerInElementBoundingBox(px, py, element)) {
-			computedZ = this.computeZIndex(element);
+			computedZ = this.computeZIndex(element, parentZIndex);
 			if (computedZ >= candidate.zIndex) {
 				candidate.element = element;
 				candidate.zIndex = computedZ;
+				// We have a candidate.
+				// In case its children are only special nodes such as 'text'
+				// we don't check more children and return
+				inside = true;
+			}
+
+			// then go through children, since they will be on top unless zindex is altered.
+			var children = element.childNodes;
+			for (let i = 0; i < children.length; i++) {
+				if (children[i].id === candidate.stateSkipId) {
+					continue;
+				}
+				// skip text-nodes as they don't have a bounday to test for
+				if (children[i].nodeType == 3) {
+					continue;
+				}
+				// now test all children and depending on the return value we skip the rest of the children
+				inside = this.traverseChildNodesForCandidates(children[i], candidate, px, py, computedZ);
+				if (inside) {
+					break;
+				}
 			}
 		}
-		// then go through children, since they will be on top unless zindex is altered.
-		var children = element.childNodes;
-		for (let i = 0; i < children.length; i++) {
-			if (children[i].id === candidate.stateSkipId) {
-				continue;
-			}
-			this.traverseChildNodesForCandidates(children[i], candidate, px, py);
-		}
+		return inside;
 	},
 
 	checkIfPointerInElementBoundingBox: function(px, py, element) {
@@ -881,11 +897,11 @@ var SAGE2PointerToNativeMouseEvent = {
 		return true;
 	},
 
-	computeZIndex: function(element) {
+	computeZIndex: function(element, parentZIndex) {
 		try {
 			var zIndex = window.getComputedStyle(element, null).getPropertyValue("z-index");
 			if (isNaN(zIndex)) {
-				return this.computeZIndex(element.parentNode);
+				return parentZIndex;
 			} else {
 				return zIndex;
 			}
