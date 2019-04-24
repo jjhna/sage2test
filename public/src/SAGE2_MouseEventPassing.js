@@ -459,8 +459,8 @@ var SAGE2PointerToNativeMouseEvent = {
 			eventData.clickCount = 1;
 		} else if (pointerInfo.type === "pointerScroll") {
 			eventData.type =  "mouseWheel";
-			eventData.x = 0;
-			eventData.y = 0;
+			//eventData.x = 0;
+			//eventData.y = 0;
 			eventData.deltaX = 0;
 			eventData.deltaY = -1 * pointerInfo.data.wheelDelta;
 			eventData.canScroll = true;
