@@ -33,15 +33,21 @@ var leftSpeakers = {};
 var rightSpeakers = {};
 var audioGainNodes   = {};
 var audioPannerNodes = {};
+var SAGEutilitySounds = {};
+
+//arrays for assigning arbitrary wall speaker setups
 var speakerWalls = [];
 var wallsSpeakers = [];
 var wallOffsets = [];
-var wall = 1;
+var wallInUse = 1;
 
 // Number of sound instances being played at once
 var numberOfSounds    = 0;
 // Max number of sound played at once
 var maxNumberOfSounds = 5;
+
+// folder for audio files (relative to public/)
+var audioPath   = "sounds/";
 
 // Explicitely close web socket when web browser is closed
 window.onbeforeunload = function() {
@@ -67,12 +73,12 @@ function SAGE2_init() {
 	// SoundJS library
 	//
 	// Load the SoundJS library and plugins
-	if (!createjs.Sound.initializeDefaultPlugins()) {
-		console.log('SoundJS> cannot load library');
-		return;
-	} else {
-		console.log('SoundJS> library loaded - version', createjs.SoundJS.version);
-	}
+	// if (!createjs.Sound.initializeDefaultPlugins()) {
+		// console.log('SoundJS> cannot load library');
+		// return;
+	// } else {
+		// console.log('SoundJS> library loaded - version', createjs.SoundJS.version);
+	// }
 	///////////
 
 	// Detect which browser is being used
@@ -153,30 +159,82 @@ function SAGE2_init() {
 	});
 }
 
+//Called from audioManager.html
+//Assigns number of speakers to each wall.
 function routeSpeakers() {
 	var speakerOrderingFromHTML = document.getElementById("speakerWalls").value;
 	speakerWalls = speakerOrderingFromHTML.split(',');
 	console.log("Speaker Wall Ordering: ");
 
 	var totalSpeakers = 0;
-	for(var wall = 0; wall < speakerWalls.length; wall++)
+	for(var wall = 0; wall < speakerWalls.length; wall++) //for each wall
 	{
-		for(var wallsSpeaker = 0; wallsSpeaker < speakerWalls[wall]; wallsSpeaker++)
+		for(var wallsSpeaker = 0; wallsSpeaker < speakerWalls[wall]; wallsSpeaker++) //for each speaker on each wall
 		{
 			totalSpeakers++;
-			wallsSpeakers[totalSpeakers - +1] = wall + +1;
-			
+			wallsSpeakers[totalSpeakers] = wall + +1; //speaker 'totalSpeakers' is on wall 'wall'
 			console.log((wallsSpeaker + +1) + "-th Speaker " + totalSpeakers + " set to wall: " + wallsSpeakers[totalSpeakers]);
 		}
 	}
+
 	
 	for(var w = 0; w < speakerWalls.length; w++)
 	{
 		if(w!=0)
-			wallOffsets[w] = wallOffsets[w - 1] + +speakerWalls[w];
+			wallOffsets[w] = wallOffsets[w - 1] + +speakerWalls[w - 1];
 		else
-			wallOffsets[w] = +speakerWalls[w];
+			wallOffsets[w] = 0;
 		console.log("wall offsets for wall" + w + ": " + wallOffsets[w]);
+	}
+}
+
+function playUtilitySound(soundFileName, data, volume) {
+	if (numberOfSounds < maxNumberOfSounds) {
+		numberOfSounds = numberOfSounds + 1;
+		console.log("deleteElement " + data);
+		// Play an audio blop
+		// var deleteSound = createjs.Sound.play("deleteapp");
+
+		var panX, deleteSound, channelToPlaySound;
+		channelToPlaySound = leftSpeakers[data];
+		if(channelToPlaySound < wallOffsets[wallInUse])
+			channelToPlaySound = wallOffsets[wallInUse];
+		console.log("channelToPlaySound in playUtilitySound " + channelToPlaySound);
+		audioCtx.audioWorklet.addModule('/src/panX.js').then(() => {
+			console.log("top of add audioworklet");
+			panX = new AudioWorkletNode(audioCtx, 'panX', {
+				channelCount: channelCount,
+				channelCountMode: 'explicit',
+				channelInterpretation: 'discrete'
+			});
+			panX.port.onmessage = (event) => {
+				// Handling data from the processor.
+				//console.log(event.data);
+			};
+			panX.port.postMessage(true);
+
+			//let deleteSound = SAGEutilitySounds['deleteapp'];
+			let URL = audioPath + soundFileName + ".mp3";
+		
+			window.fetch(URL)
+				.then(response => response.arrayBuffer())
+				.then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+				.then(audioBuffer => {
+					console.log("in audiobuffer then ");
+					let source = audioCtx.createBufferSource();
+					source.buffer = audioBuffer;
+					source.connect(panX);
+					panX.connect(audioCtx.destination);
+					var leftSpeakerParameter = panX.parameters.get('leftChannel'); //just get left channel because Utility sounds are mono
+					let volumeParameter = panX.parameters.get('gain');
+					volumeParameter.setTargetAtTime(volume, audioCtx.currentTime, 0);
+					leftSpeakerParameter.setTargetAtTime(channelToPlaySound, audioCtx.currentTime, 0);
+					source.start();
+					source.addEventListener('ended', (event) => {
+						numberOfSounds = numberOfSounds - 1;
+					});
+				});
+		});
 	}
 }
 
@@ -221,8 +279,6 @@ function setupListeners() {
 			jingle = json_cfg.ui.startup_sound;
 		}
 
-		// folder for audio files (relative to public/)
-		var audioPath   = "sounds/";
 		// Default settings
 		var defaults =  {
 			volume: initialVolume / 20, // volume [0:1] - value 0-10 and half volume for special effects
@@ -245,12 +301,28 @@ function setupListeners() {
 			{id: "send",      src: "send.mp3",      defaultPlayProps: defaults},
 			{id: "down",      src: "down.mp3",      defaultPlayProps: lowdefaults}
 		];
+		
+		//for all of the SAGE Utility Sounds (newapp, deleteapp, etc...) 
+		//create a buffer Source Node and store in SAGEutilitySounds
+		soundAssets.forEach(function(element) {
+		let URL = audioPath + element.src;
+			
+			window.fetch(URL)
+				.then(response => response.arrayBuffer())
+				.then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+				.then(audioBuffer => {
+					let source = audioCtx.createBufferSource();
+					source.buffer = audioBuffer;
+					SAGEutilitySounds[element.id] = source;
+				});
+		});
+		
 		// If the file cannot load, try other formats (need the files)
-		createjs.Sound.alternateExtensions = ["ogg", "mp3"];
+		// createjs.Sound.alternateExtensions = ["ogg", "mp3"];
 		// Callback when the assets are loaded
-		createjs.Sound.on("fileload", handleSoundJSLoad);
+		// createjs.Sound.on("fileload", handleSoundJSLoad);
 		// Load the assets (will trigger the callbac when done)
-		createjs.Sound.registerSounds(soundAssets, audioPath);
+		// createjs.Sound.registerSounds(soundAssets, audioPath);
 
 		// Main audio context (for low-level operations)
 		audioCtx = new(window.AudioContext || window.webkitAudioContext)();
@@ -267,17 +339,8 @@ function setupListeners() {
 
 	wsio.on('createAppWindow', function(data) {
 		// Limit the number of sounds
-		if (numberOfSounds < maxNumberOfSounds) {
-			numberOfSounds = numberOfSounds + 1;
-
-			// Play an audio blip
-			var newAppSound = createjs.Sound.play("newapp");
-
-			// Callback when sound is done playing
-			newAppSound.on('complete', function(evt) {
-				numberOfSounds = numberOfSounds - 1;
-			});
-		}
+		leftSpeakers[data.id] = wallOffsets[wallInUse];
+		playUtilitySound("newapp2", data.id, 0.75);
 
 		if (data.application === "movie_player") {
 			var main = document.getElementById('main');
@@ -439,7 +502,7 @@ function setupListeners() {
 		}
 	});
 
-	wsio.on('setItemPosition', function (data) {		
+	wsio.on('setItemPosition', function (data) {
 		if (audioPannerNodes[data.elemId]) {
 			// Calculate center of the application window
 			var halfTotalWidth = totalWidth / 2;
@@ -460,9 +523,11 @@ function setupListeners() {
 			var leftSpeakerParameter = panNode.parameters.get('leftChannel');
 			var rightSpeakerParameter = panNode.parameters.get('rightChannel');
 			
-			var leftChannel = Math.floor((data.elemLeft / totalWidth) * speakerWalls[wall]) + +wallOffsets[wall - +1] + +2;
-			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * speakerWalls[wall]) + +wallOffsets[wall - +1] + +2;
-			
+			var leftChannel = Math.floor((data.elemLeft / totalWidth) * speakerWalls[wallInUse]) + +wallOffsets[wallInUse];
+			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * speakerWalls[wallInUse]) + +wallOffsets[wallInUse];
+			// var panDistribution = (data.elemLeft / totalWidth) * speakerWalls[wallInUse] % 1;
+			// gain.setTargetAtTime(panDistribution, audioCtx.currentTime, 0.0);
+
 			if(leftChannel < 0)
 				leftChannel = 0;
 			if(rightChannel < 0)
@@ -472,11 +537,9 @@ function setupListeners() {
 			if(leftChannel == channelCount)
 				leftChannel = channelCount - +1;
 			if(rightChannel == channelCount)
-				rightChannel = channelCount - +1;			
+				rightChannel = channelCount - +1;
 			
 			//if(speakerOrdering[leftChannel] == leftChannel - 1)
-			console.log("leftchan: " + leftChannel);
-			
 			gain.setTargetAtTime(1, audioCtx.currentTime, 0);
 			if(leftChannel != leftSpeakers[data.elemId] || rightChannel != rightSpeakers[data.elemId])
 			{
@@ -511,9 +574,10 @@ function setupListeners() {
 			var leftSpeakerParameter = panNode.parameters.get('leftChannel');
 			var rightSpeakerParameter = panNode.parameters.get('rightChannel');
 			
-			var leftChannel = Math.floor((data.elemLeft / totalWidth) * speakerWalls[wall]) + +wallOffsets[wall - +1] + +2;
-			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * speakerWalls[wall]) + +wallOffsets[wall - +1] + +2;
-			
+			var leftChannel = Math.floor((data.elemLeft / totalWidth) * speakerWalls[wallInUse]) + +wallOffsets[wallInUse];
+			var rightChannel = Math.floor(((data.elemLeft + data.elemWidth) / totalWidth) * speakerWalls[wallInUse]) + +wallOffsets[wallInUse];
+			// var panDistribution = (data.elemLeft / totalWidth) * speakerWalls[wallInUse] % 1;
+			// gain.setTargetAtTime(panDistribution, audioCtx.currentTime, 0.0);
 			if(leftChannel < 0)
 				leftChannel = 0;
 			if(rightChannel < 0)
@@ -523,13 +587,13 @@ function setupListeners() {
 			if(leftChannel == channelCount)
 				leftChannel = channelCount - +1;
 			if(rightChannel == channelCount)
-				rightChannel = channelCount - +1;			
+				rightChannel = channelCount - +1;
 
 			if(leftChannel != leftSpeakers[data.elemId] || rightChannel != rightSpeakers[data.elemId])
 			{
 				leftSpeakers[data.elemId] = leftChannel;
 				rightSpeakers[data.elemId] = rightChannel;
-				//gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+				//gain.setTargetAtTime(panDistribution, audioCtx.currentTime, 0.0);
 				//gain.setTargetAtTime(1, audioCtx.currentTime, 1.0);
 				leftSpeakerParameter.setTargetAtTime(leftChannel, audioCtx.currentTime, 0);
 				rightSpeakerParameter.setTargetAtTime(rightChannel, audioCtx.currentTime, 0);
@@ -621,17 +685,7 @@ function setupListeners() {
 
 	wsio.on('deleteElement', function(data) {
 		// Limit the number of sounds
-		if (numberOfSounds < maxNumberOfSounds) {
-			numberOfSounds = numberOfSounds + 1;
-
-			// Play an audio blop
-			var deleteSound = createjs.Sound.play("deleteapp");
-
-			// Callback when sound is done playing
-			deleteSound.on('complete', function(evt) {
-				numberOfSounds = numberOfSounds - 1;
-			});
-		}
+		playUtilitySound("deleteapp", data.id, 0.6);
 
 		// Stop video
 		var vid = document.getElementById(data.elemId);
@@ -640,15 +694,15 @@ function setupListeners() {
 		}
 
 		// Clean up the DOM
-		deleteElement(data.elemId);
-		deleteElement(data.elemId + "_row");
-		deleteElement(data.elemId + "_row2");
+		deleteElement(data.id);
+		deleteElement(data.id + "_row");
+		deleteElement(data.id + "_row2");
 
 		// Delete also the webaudio nodes
-		delete audioPannerNodes[data.elemId];
-		delete audioGainNodes[data.elemId];
-		delete leftSpeakers[data.elemId];
-		delete rightSpeakers[data.elemId];
+		delete audioPannerNodes[data.id];
+		delete audioGainNodes[data.id];
+		delete leftSpeakers[data.id];
+		delete rightSpeakers[data.id];
 	});
 
 	wsio.on('connectedToRemoteSite', function(data) {
@@ -705,11 +759,9 @@ function handleSoundJSLoad(event) {
 		// }
 
 	// });
-
-
 		
 	// }
-	console.log('SoundJS> asset loaded', event.id);
+	// console.log('SoundJS> asset loaded', event.id);
 }
 
 
