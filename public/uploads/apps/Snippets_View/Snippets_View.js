@@ -154,7 +154,7 @@ var Snippets_View = SAGE2_App.extend({
       // let summary = SAGE2_SnippetsUtil.summarizeJSON(data);
       // let printedSummary = SAGE2_SnippetsUtil.printSummarizedJSON(summary);
 
-      let summary = jsonSummary.summarize(data);
+      let summary = jsonSummary.summarize(data, {arraySampleCount: 100});
       let printedSummary = jsonSummary.printSummary(summary, {theme: "monokai", startExpanded: true});
       console.log(summary);
 
@@ -261,7 +261,8 @@ var Snippets_View = SAGE2_App.extend({
     this.ancestry.attr("width", this.sage2_width);
     this.createAncestorList();
 
-    if (this.parentLink) {
+    // if it has a visualization in the view
+    if (this.parentLink && this.snippetVisElement) {
       this.parentLink.update(); // redraw
     }
 

@@ -452,6 +452,13 @@ body {
 	color: var(--snippets-purple);
 } */
 
+.json-summary-value {
+	display: inline !important;
+}
+
+.json-summary-range {
+	display: inline !important;
+}
 :root {
 	--snippets-yellow: #e5c07b;
 	--snippets-blue: #61afef;

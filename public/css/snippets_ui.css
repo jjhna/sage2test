@@ -1008,6 +1008,11 @@
     border-width: 0 !important;
 }
 
+#consoleMessages .json-summary-bar, #consoleMessages .json-summary-percentage {
+    padding: 0 !important;
+    box-sizing: border-box;
+}
+
 :root {
     /* using colors from the solarized light theme */
     --snippets-base03:    #002b36;

@@ -1198,7 +1198,7 @@ let SAGE2_CodeSnippets = (function() {
 								// string = JSON.stringify(a).substring(0, 1500);
 
 								// string = JSON.stringify(SAGE2_SnippetsUtil.summarizeJSON(a));
-								string = JSON.stringify(jsonSummary.summarize(a));
+								string = JSON.stringify(jsonSummary.summarize(a, {arraySampleCount: 100}));
 							} catch (e) {
 								console.log(e);
 
