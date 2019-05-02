@@ -319,6 +319,8 @@ function createWindow() {
 		backgroundColor: "#565656",
 		// resizable: !commander.fullscreen,
 		webPreferences: {
+			// Enable webviews
+			webviewTag: true,
 			nodeIntegration: true,
 			webSecurity: true,
 			backgroundThrottling: false,
