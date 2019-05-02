@@ -3423,30 +3423,79 @@ function wsLoadApplication(wsio, data) {
 		}
 
 		// Get the drop position and convert it to wall coordinates
-		var position = data.position || [0, config.ui.titleBarHeight];
-
-		if (position[0] > 1) {
-			// value in pixels, used as origin
-			appInstance.left = position[0];
-		} else {
-			// value in percent
-			position[0] = Math.round(position[0] * config.totalWidth);
-			// Use the position as center of drop location
-			appInstance.left = position[0] - appInstance.width / 2;
-			if (appInstance.left < 0) {
-				appInstance.left = 0;
+		var position;
+		// = data.position || [0, config.ui.titleBarHeight];
+		if (data.position) {
+			position = data.position;
+			if (position[0] > 1) {
+				// value in pixels, used as origin
+				appInstance.left = position[0];
+			} else {
+				// value in percent
+				position[0] = Math.round(position[0] * config.totalWidth);
+				// Use the position as center of drop location
+				appInstance.left = position[0] - appInstance.width / 2;
+				if (appInstance.left < 0) {
+					appInstance.left = 0;
+				}
 			}
-		}
-		if (position[1] > 1) {
-			// value in pixels, used as origin
-			appInstance.top = position[1];
+			if (position[1] > 1) {
+				// value in pixels, used as origin
+				appInstance.top = position[1];
+			} else {
+				// value in percent
+				position[1] = Math.round(position[1] * config.totalHeight);
+				// Use the position as center of drop location
+				appInstance.top  = position[1] - appInstance.height / 2;
+				if (appInstance.top < 0) {
+					appInstance.top = config.ui.titleBarHeight;
+				}
+			}
 		} else {
-			// value in percent
-			position[1] = Math.round(position[1] * config.totalHeight);
-			// Use the position as center of drop location
-			appInstance.top  = position[1] - appInstance.height / 2;
-			if (appInstance.top < 0) {
-				appInstance.top = config.ui.titleBarHeight;
+			let xApp, yApp;
+			// if this is the first app.
+			if (appLaunchPositioning.xLast === -1) {
+				xApp = appLaunchPositioning.xStart;
+				yApp = appLaunchPositioning.yStart;
+			} else {
+				// if not the first app, check that this app fits in the current row
+				let fit = false;
+				if (appLaunchPositioning.xLast + appLaunchPositioning.widthLast
+				+ appLaunchPositioning.padding + appInstance.width < config.totalWidth) {
+					fit = true;
+				}
+				// if the app fits, then let use the modified position
+				if (fit) {
+					xApp = appLaunchPositioning.xLast + appLaunchPositioning.widthLast
+					+ appLaunchPositioning.padding;
+					yApp = appLaunchPositioning.yLast;
+				} else {
+					// need to see if fits on next row or restart.
+					// either way changing row, set this app's height as tallest in row.
+					appLaunchPositioning.tallestInRow = appInstance.height;
+					// if fits on next row, put it there
+					if (appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
+					+ appLaunchPositioning.padding + appInstance.height < config.totalHeight) {
+						xApp = appLaunchPositioning.xStart;
+						yApp = appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
+						+ appLaunchPositioning.padding;
+					} else {
+						// doesn't fit, restart
+						xApp = appLaunchPositioning.xStart;
+						yApp = appLaunchPositioning.yStart;
+					}
+				}
+			}
+			// set the app values
+			appInstance.left = xApp;
+			appInstance.top  = yApp;
+			// track the values to position adjust next app
+			appLaunchPositioning.xLast = appInstance.left;
+			appLaunchPositioning.yLast = appInstance.top;
+			appLaunchPositioning.widthLast  = appInstance.width;
+			appLaunchPositioning.heightLast = appInstance.height;
+			if (appInstance.height > appLaunchPositioning.tallestInRow) {
+				appLaunchPositioning.tallestInRow = appInstance.height;
 			}
 		}
 
@@ -3487,7 +3536,8 @@ function wsLoadApplication(wsio, data) {
 					xApp = appLaunchPositioning.xLast + appLaunchPositioning.widthLast
 					+ appLaunchPositioning.padding;
 					yApp = appLaunchPositioning.yLast;
-				} else { // need to see if fits on next row or restart.
+				} else {
+					// need to see if fits on next row or restart.
 					// either way changing row, set this app's height as tallest in row.
 					appLaunchPositioning.tallestInRow = appInstance.height;
 					// if fits on next row, put it there
@@ -3504,7 +3554,7 @@ function wsLoadApplication(wsio, data) {
 			}
 			// set the app values
 			appInstance.left = xApp;
-			appInstance.top = yApp;
+			appInstance.top  = yApp;
 			// track the values to position adjust next app
 			appLaunchPositioning.xLast = appInstance.left;
 			appLaunchPositioning.yLast = appInstance.top;
@@ -3901,30 +3951,81 @@ function wsAddNewWebElement(wsio, data) {
 		broadcast('storedFileList', getSavedFilesList());
 
 		// Get the drop position and convert it to wall coordinates
-		var position = data.position || [0, config.ui.titleBarHeight];
-
-		if (position[0] > 1) {
-			// value in pixels, used as origin
-			appInstance.left = position[0];
-		} else {
-			// value in percent
-			position[0] = Math.round(position[0] * config.totalWidth);
-			// Use the position as center of drop location
-			appInstance.left = position[0] - appInstance.width / 2;
-			if (appInstance.left < 0) {
-				appInstance.left = 0;
+		var position;
+		if (data.position) {
+			// We got a position specification, use it
+			position = data.position;
+			if (position[0] > 1) {
+				// value in pixels, used as origin
+				appInstance.left = position[0];
+			} else {
+				// value in percent
+				position[0] = Math.round(position[0] * config.totalWidth);
+				// Use the position as center of drop location
+				appInstance.left = position[0] - appInstance.width / 2;
+				if (appInstance.left < 0) {
+					appInstance.left = 0;
+				}
 			}
-		}
-		if (position[1] > 1) {
-			// value in pixels, used as origin
-			appInstance.top = position[1];
+			if (position[1] > 1) {
+				// value in pixels, used as origin
+				appInstance.top = position[1];
+			} else {
+				// value in percent
+				position[1] = Math.round(position[1] * config.totalHeight);
+				// Use the position as center of drop location
+				appInstance.top  = position[1] - appInstance.height / 2;
+				if (appInstance.top < 0) {
+					appInstance.top = config.ui.titleBarHeight;
+				}
+			}
 		} else {
-			// value in percent
-			position[1] = Math.round(position[1] * config.totalHeight);
-			// Use the position as center of drop location
-			appInstance.top  = position[1] - appInstance.height / 2;
-			if (appInstance.top < 0) {
-				appInstance.top = config.ui.titleBarHeight;
+			// no position specified, so use a heuristic
+			let xApp, yApp;
+			// if this is the first app.
+			if (appLaunchPositioning.xLast === -1) {
+				xApp = appLaunchPositioning.xStart;
+				yApp = appLaunchPositioning.yStart;
+			} else {
+				// if not the first app, check that this app fits in the current row
+				let fit = false;
+				if (appLaunchPositioning.xLast + appLaunchPositioning.widthLast
+				+ appLaunchPositioning.padding + appInstance.width < config.totalWidth) {
+					// I dont consider the height here (app will be made to fit later)
+					fit = true;
+				}
+				// if the app fits, then let use the modified position
+				if (fit) {
+					xApp = appLaunchPositioning.xLast + appLaunchPositioning.widthLast
+					+ appLaunchPositioning.padding;
+					yApp = appLaunchPositioning.yLast;
+				} else {
+					// need to see if fits on next row or restart.
+					// either way changing row, set this app's height as tallest in row.
+					appLaunchPositioning.tallestInRow = appInstance.height;
+					// if fits on next row, put it there
+					if (appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
+					+ appLaunchPositioning.padding + appInstance.height < config.totalHeight) {
+						xApp = appLaunchPositioning.xStart;
+						yApp = appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
+						+ appLaunchPositioning.padding;
+					} else {
+						// doesn't fit, restart
+						xApp = appLaunchPositioning.xStart;
+						yApp = appLaunchPositioning.yStart;
+					}
+				}
+			}
+			// set the app position
+			appInstance.left = xApp;
+			appInstance.top  = yApp;
+			// track the values to position adjust next app
+			appLaunchPositioning.xLast = appInstance.left;
+			appLaunchPositioning.yLast = appInstance.top;
+			appLaunchPositioning.widthLast  = appInstance.width;
+			appLaunchPositioning.heightLast = appInstance.height;
+			if (appInstance.height > appLaunchPositioning.tallestInRow) {
+				appLaunchPositioning.tallestInRow = appInstance.height;
 			}
 		}
 
@@ -3976,7 +4077,7 @@ function wsCommand(wsio, data) {
 function wsOpenNewWebpage(wsio, data) {
 	sageutils.log('Webview', "opening", data.url);
 	// use the window position if specified
-	let position   = data.position || [0, config.ui.titleBarHeight];
+	let position   = data.position; // || [0, config.ui.titleBarHeight];
 	// use the window size if specified
 	let dimensions = data.dimensions || null;
 	wsLoadApplication(wsio, {

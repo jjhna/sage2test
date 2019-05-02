@@ -295,7 +295,6 @@ function pasteHandler(event) {
 					wsio.emit('addNewWebElement', {
 						type: "application/url",
 						url: str,
-						position: [0, 0],
 						id: interactor.uniqueID,
 						SAGE2_ptrName:  localStorage.SAGE2_ptrName,
 						SAGE2_ptrColor: localStorage.SAGE2_ptrColor
@@ -506,7 +505,6 @@ function SAGE2_init() {
 			wsio.emit('addNewWebElement', {
 				type: "application/url",
 				url: event.data.url,
-				position: [0, 0],
 				id: interactor.uniqueID,
 				SAGE2_ptrName:  localStorage.SAGE2_ptrName,
 				SAGE2_ptrColor: localStorage.SAGE2_ptrColor
@@ -1545,7 +1543,6 @@ function handleClick(element) {
 								wsio.emit('addNewWebElement', {
 									type: "application/url",
 									url: url,
-									position: [0, 0],
 									id: interactor.uniqueID,
 									SAGE2_ptrName:  localStorage.SAGE2_ptrName,
 									SAGE2_ptrColor: localStorage.SAGE2_ptrColor
@@ -1591,7 +1588,7 @@ function handleClick(element) {
 				if (url) {
 					wsio.emit('addNewWebElement', {
 						type: "application/url",
-						url: url, position: [0, 0],
+						url: url,
 						id: interactor.uniqueID,
 						SAGE2_ptrName:  localStorage.SAGE2_ptrName,
 						SAGE2_ptrColor: localStorage.SAGE2_ptrColor
