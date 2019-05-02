@@ -119,8 +119,10 @@ var Webview = SAGE2_App.extend({
 			this.contentType = "vimeo";
 			// ask for a HD resize
 			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
-		} else if (view_url.endsWith('.ipynb')) {
+		} else if (view_url.endsWith('.ipynb') &&
+			view_url.indexOf('mybinder.org') === -1) {
 			// ipython notebook file are link to nbviewer.jupyter.org online
+			// except if it's a link to binder.org, which does its own rendering.
 			var host = this.config.host + ':' + this.config.port;
 			view_url = "https://nbviewer.jupyter.org/url/" + host + view_url;
 			this.contentType = "ipython";
