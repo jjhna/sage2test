@@ -2608,7 +2608,10 @@ function noteMakerDialog(mode, params, app) {
 		"\n\"formatting \" +" +
 		"\n\"section\";\n" +
 		"alert(s);\n" +
-		"```\n";
+		"```\n" +
+		"\n" +
+		"For more information see the [showdownjs documentation page]" +
+		"(https://github.com/showdownjs/showdown/wiki/Showdown's-Markdown-syntax)";
 
 	let renderText = '<div style="font-family: \'Oxygen Mono\'; font-size: 10px;' +
 		'box-sizing: border-box; list-style-position: inside;">' +
@@ -2656,7 +2659,12 @@ function noteMakerDialog(mode, params, app) {
 		'<br>"formatting " +' +
 		'<br>"section";' +
 		'<br>alert(s);' +
-		'</code></pre></div>';
+		'</code></pre>' +
+		'<br>' +
+		'For more information see the ' +
+		'<a href="https://github.com/showdownjs/showdown/wiki/Showdown\'s-Markdown-syntax" style="font-family:\'Oxygen Mono\'">' +
+		'showdownjs documentation page</a><br>' +
+		'</div>';
 
 	// Build a webix dialog
 	webix.ui({
