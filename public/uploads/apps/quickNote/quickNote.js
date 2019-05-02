@@ -39,6 +39,8 @@ var quickNote = SAGE2_App.extend({
 		this.markdownDiv.style.fontSize = ui.titleTextSize + "px";
 		this.markdownDiv.style.boxSizing = "border-box";
 		this.markdownDiv.style.listStylePosition = "inside";
+		// Support for overflow
+		this.markdownDiv.style.overflow = "scroll";
 		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
@@ -330,7 +332,8 @@ var quickNote = SAGE2_App.extend({
 	},
 
 	event: function(eventType, position, user_id, data, date) {
-		if (eventType === "specialKey") {
+		// Font increase if alt is used with arrows
+		if (data.status && data.status.ALT) {
 			if (data.code === 40 && data.state === "down") {
 				// arrow down
 				this.adjustFontSize({ modifier: "decrease" });
@@ -338,6 +341,19 @@ var quickNote = SAGE2_App.extend({
 				// arrow up
 				this.adjustFontSize({ modifier: "increase" });
 			}
+		} else { // else scrolling
+			if (data.code === 40 && data.state === "down") { // arrow down
+				this.markdownDiv.scrollBy(0, ui.titleBarHeight * this.state.scale);
+			} else if (data.code === 38 && data.state === "down") { // arrow up
+				this.markdownDiv.scrollBy(0, -1 * ui.titleBarHeight * this.state.scale);
+			} else if (data.code === 37 && data.state === "down") { // arrow left
+				this.markdownDiv.scrollBy(-1 * ui.titleBarHeight * this.state.scale, 0);
+			} else if (data.code === 39 && data.state === "down") { // arrow right
+				this.markdownDiv.scrollBy(ui.titleBarHeight * this.state.scale, 0);
+			}
+		}
+		if (eventType === "pointerScroll"){
+			this.markdownDiv.scrollBy(0, data.wheelDelta);
 		}
 	},
 
@@ -454,7 +470,7 @@ var quickNote = SAGE2_App.extend({
 
 		entries.push({
 			description: "Increase font size",
-			accelerator: "\u2191",     // up-arrow
+			accelerator: "Alt \u2191",     // up-arrow
 			callback: "adjustFontSize",
 			parameters: {
 				modifier: "increase"
@@ -462,7 +478,7 @@ var quickNote = SAGE2_App.extend({
 		});
 		entries.push({
 			description: "Decrease font size",
-			accelerator: "\u2193",     // down-arrow
+			accelerator: "Alt \u2193",     // down-arrow
 			callback: "adjustFontSize",
 			parameters: {
 				modifier: "decrease"
