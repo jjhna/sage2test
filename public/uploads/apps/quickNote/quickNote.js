@@ -81,7 +81,7 @@ var quickNote = SAGE2_App.extend({
 			let components = this.markdownDiv.children;
 			let totalHeight = 0;
 			let largestWidth = 0;
-			for (let i = 0; i < components.length;i++) {
+			for (let i = 0; i < components.length; i++) {
 				totalHeight += parseInt(window.getComputedStyle(components[i]).height) + 1;
 				if (parseInt(window.getComputedStyle(components[i]).width) > largestWidth) {
 					largestWidth = parseInt(window.getComputedStyle(components[i]).width) + 1;
@@ -101,7 +101,7 @@ var quickNote = SAGE2_App.extend({
 				// 	elemWidth: widthToBecome,
 				// 	elemHeight: heightToBecome
 				// }});
-				wsio.emit("updateApplicationPosition", {appPositionAndSize:{
+				wsio.emit("updateApplicationPosition", { appPositionAndSize: {
 					elemId: this.id,
 					elemLeft: this.sage2_x,
 					elemTop: this.sage2_y,
@@ -352,8 +352,36 @@ var quickNote = SAGE2_App.extend({
 				this.markdownDiv.scrollBy(ui.titleBarHeight * this.state.scale, 0);
 			}
 		}
-		if (eventType === "pointerScroll"){
+		if (eventType === "pointerScroll") {
 			this.markdownDiv.scrollBy(0, data.wheelDelta);
+		} else if (eventType === "pointerPress") {
+			this.determineIfLinkIsClicked(Math.round(position.y));
+		}
+	},
+
+	determineIfLinkIsClicked: function(y) {
+		// Based on click location, need to determine if there was a link.
+
+		let components = this.markdownDiv.getElementsByTagName("a");
+		let totalOffsetTop, parentNode;
+		for (let i = 0; i < components.length; i++) {
+			totalOffsetTop = components[i].offsetTop;
+			parentNode = components[i].parentNode;
+			// Find the showdown container
+			while (!parentNode.classList.contains("showdown")) {
+				parentNode = parentNode.parentNode;
+			}
+			// Subtract scroll from container
+			totalOffsetTop -= parentNode.scrollTop;
+
+			if ((y > totalOffsetTop) && (y < totalOffsetTop + components[i].offsetHeight)) {
+				let data = { action: "address", clientInput: components[i].href};
+				this.launchAppWithValues("Webview",
+					data,
+					this.sage2_x + this.sage2_width, this.sage2_y,
+					"navigation"); // (appName, paramObj, x, y, funcToPassParams)
+				break;
+			}
 		}
 	},
 
