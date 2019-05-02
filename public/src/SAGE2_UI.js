@@ -66,6 +66,25 @@ if (!String.prototype.startsWith) {
 /* eslint-enable */
 //
 
+/**
+ * Handling Progressive Web App installation
+ *
+ */
+var deferredInstallationPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+	console.log('PWA> beforeinstallprompt');
+	// we are now allow to install as an application
+	deferredInstallationPrompt = e;
+});
+
+
+window.addEventListener('appinstalled', (evt) => {
+	console.log('PWA> SAGE2 Application installed');
+	deferredInstallationPrompt = null;
+});
+
+
 var wsio;
 var displayUI;
 var interactor;
@@ -147,8 +166,6 @@ window.addEventListener('load', function(event) {
 window.addEventListener('resize', function(event) {
 	SAGE2_resize();
 });
-
-
 
 // Get Browser-Specifc Prefix
 function getBrowserPrefix() {
@@ -278,7 +295,6 @@ function pasteHandler(event) {
 					wsio.emit('addNewWebElement', {
 						type: "application/url",
 						url: str,
-						position: [0, 0],
 						id: interactor.uniqueID,
 						SAGE2_ptrName:  localStorage.SAGE2_ptrName,
 						SAGE2_ptrColor: localStorage.SAGE2_ptrColor
@@ -489,7 +505,6 @@ function SAGE2_init() {
 			wsio.emit('addNewWebElement', {
 				type: "application/url",
 				url: event.data.url,
-				position: [0, 0],
 				id: interactor.uniqueID,
 				SAGE2_ptrName:  localStorage.SAGE2_ptrName,
 				SAGE2_ptrColor: localStorage.SAGE2_ptrColor
@@ -1528,7 +1543,6 @@ function handleClick(element) {
 								wsio.emit('addNewWebElement', {
 									type: "application/url",
 									url: url,
-									position: [0, 0],
 									id: interactor.uniqueID,
 									SAGE2_ptrName:  localStorage.SAGE2_ptrName,
 									SAGE2_ptrColor: localStorage.SAGE2_ptrColor
@@ -1574,7 +1588,7 @@ function handleClick(element) {
 				if (url) {
 					wsio.emit('addNewWebElement', {
 						type: "application/url",
-						url: url, position: [0, 0],
+						url: url,
 						id: interactor.uniqueID,
 						SAGE2_ptrName:  localStorage.SAGE2_ptrName,
 						SAGE2_ptrColor: localStorage.SAGE2_ptrColor
@@ -2092,7 +2106,8 @@ function handleDblClick(element) {
 function pointerScroll(event) {
 	if (event.target.id === "sage2UICanvas") {
 		displayUI.pointerScroll(pointerX, pointerY, event.deltaY);
-		event.preventDefault();
+		// Not needed anymore (chrome 73)
+		// event.preventDefault();
 	}
 }
 

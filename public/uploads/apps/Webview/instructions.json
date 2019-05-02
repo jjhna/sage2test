@@ -10,7 +10,7 @@
 	"load": {
 		"url": "/uploads/web/index.html",
 		"favicon": "",
-		"zoom": 1.2,
+		"zoom": 1.0,
 		"mode": "desktop"
 	},
 	"title": "Webview",
