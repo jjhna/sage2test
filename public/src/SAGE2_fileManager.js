@@ -402,7 +402,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 		hidebuttons_menu: {value: "Show overview client",
 			tooltip: "Shows the overview client at the bottom of the page",
 			callback: function (evt) {
-				console.log('overview', self.overview)
 				if (self.overview) {
 					document.getElementById('overview').remove();
 					let elt = document.getElementById('fileManager').firstElementChild;
