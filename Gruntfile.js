@@ -57,6 +57,7 @@ module.exports = function(grunt) {
 						"public/uploads/apps/welcome/welcome.js",
 						"public/uploads/apps/Webview/Webview.js",
 						"public/uploads/apps/WhiteboardPalette/WhiteboardPalette.js",
+						"public/uploads/apps/videoCapture/videoCapture.js",
 						"public/uploads/apps/zoom/zoom.js"
 					]
 				},
