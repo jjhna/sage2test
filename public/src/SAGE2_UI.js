@@ -2548,8 +2548,10 @@ function loadSelectedFile() {
 function noteMakerDialog(mode, params, app) {
 	// Default mode is 'create' a new note
 	let okButton = "Make Note [Shift-Enter]";
+	// use markdown
+	let useMarkdown = (getCookie('SAGE2_noteUseMarkdown') === "0") ? false : true; // webix uses 1 for true and 0 for false
 	// not anonymous
-	let isAnon = false;
+	let isAnon = (getCookie('SAGE2_noteIsAnon') === "1") ? true : false;
 	// empty note
 	let noteText = '';
 	// default is yellow
@@ -2684,6 +2686,22 @@ function noteMakerDialog(mode, params, app) {
 									{
 										view: "label",
 										width: 90,
+										label: "Use Markdown"
+									},
+									{
+										// Text box
+										view: "checkbox",
+										id: "quicknote_markdown",
+										name: "markdown",
+										value: useMarkdown
+									}
+								]
+							},
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
 										label: "Anonymous"
 									},
 									{
@@ -2767,6 +2785,11 @@ function noteMakerDialog(mode, params, app) {
 												if (values.anon) {
 													data.parameters.clientName = "Anonymous";
 												}
+												if (!values.markdown) {
+													data.parameters.useMarkdown = false;
+												}
+												addCookie('SAGE2_noteUseMarkdown', values.markdown); // Keep preferences for markdown and anon
+												addCookie('SAGE2_noteIsAnon', values.anon);
 												data.parameters.colorChoice = values.color;
 												// Send update message to server
 												wsio.emit('callFunctionOnApp', data);
@@ -2779,6 +2802,11 @@ function noteMakerDialog(mode, params, app) {
 												if (values.anon) {
 													data.customLaunchParams.clientName = "Anonymous";
 												}
+												if (!values.markdown) {
+													data.customLaunchParams.useMarkdown = false;
+												}
+												addCookie('SAGE2_noteUseMarkdown', values.markdown); // Keep preferences for markdown and anon
+												addCookie('SAGE2_noteIsAnon', values.anon);
 												data.customLaunchParams.colorChoice = values.color;
 												// Send creation message to server
 												wsio.emit('launchAppWithValues', data);

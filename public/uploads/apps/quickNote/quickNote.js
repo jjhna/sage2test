@@ -193,7 +193,13 @@ var quickNote = SAGE2_App.extend({
 
 		// set the text, currently innerHTML matters to render <br> and allow for html tags
 		this.state.clientInput = msgParams.clientInput;
-		this.markdownDiv.innerHTML = this.showdown_converter.makeHtml(msgParams.clientInput);
+		this.lastClientInput = this.state.clientInput;
+		if (msgParams.useMarkdown === false) {
+			let newLinesAsBr = msgParams.clientInput.replace(/\n/gi, "<BR>"); // replace is only first match without regex
+			this.markdownDiv.innerHTML = newLinesAsBr;
+		} else {
+			this.markdownDiv.innerHTML = this.showdown_converter.makeHtml(msgParams.clientInput);
+		}
 
 		// save if didn't come from file
 		if (msgParams.fileDefined !== true) {
@@ -234,7 +240,9 @@ var quickNote = SAGE2_App.extend({
 	},
 
 	load: function(date) {
-		if (this.state.clientInput !== undefined && this.state.clientInput !== null) {
+		if ((this.state.clientInput !== undefined)
+			&& (this.state.clientInput !== null)
+			&& (this.state.clientInput != this.lastClientInput)) {
 			this.setMessage({
 				clientName:   this.state.clientName,
 				clientInput:  this.state.clientInput,
@@ -244,7 +252,6 @@ var quickNote = SAGE2_App.extend({
 			this.adjustFontSize();
 			this.showOrHideArrow();
 		}
-		this.resize(date);
 	},
 
 	saveNote: function(date) {
