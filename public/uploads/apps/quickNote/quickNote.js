@@ -355,11 +355,11 @@ var quickNote = SAGE2_App.extend({
 		if (eventType === "pointerScroll") {
 			this.markdownDiv.scrollBy(0, data.wheelDelta);
 		} else if (eventType === "pointerPress") {
-			this.determineIfLinkIsClicked(Math.round(position.y));
+			this.determineIfLinkIsClicked(Math.round(position.y), user_id);
 		}
 	},
 
-	determineIfLinkIsClicked: function(y) {
+	determineIfLinkIsClicked: function(y, user_id) {
 		// Based on click location, need to determine if there was a link.
 
 		let components = this.markdownDiv.getElementsByTagName("a");
@@ -375,11 +375,13 @@ var quickNote = SAGE2_App.extend({
 			totalOffsetTop -= parentNode.scrollTop;
 
 			if ((y > totalOffsetTop) && (y < totalOffsetTop + components[i].offsetHeight)) {
-				let data = { action: "address", clientInput: components[i].href};
-				this.launchAppWithValues("Webview",
-					data,
-					this.sage2_x + this.sage2_width, this.sage2_y,
-					"navigation"); // (appName, paramObj, x, y, funcToPassParams)
+				wsio.emit("openNewWebpage", {
+					id: this.id,
+					url: components[i].href,
+					position: [this.sage2_x + this.sage2_width + 5,
+						this.sage2_y - this.config.ui.titleBarHeight],
+					dimensions: [this.sage2_width, this.sage2_width * 1440 / 1280] // Using webview instructions.json ratio and basing on this note's width
+				});
 				break;
 			}
 		}
