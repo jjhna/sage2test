@@ -18,9 +18,9 @@
 /******************************* Node modules ********************************/
 const electron = require('electron');
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { ipcRenderer } = electron;
-const { platform, homedir } = require("os");
-const { join } = require("path");
 
 /************************* DOM element declaration ***************************/
 const favoriteHeart = document.getElementById("favorite_heart");
@@ -44,16 +44,14 @@ const pulseClass = "pulse";
 const onlineColor = "#60d277";
 const offlineColor = "#d5715d";
 
-const favorites_file_name = 'sage2_favorite_sites.json';
-const FAVORITES_LIST_UI = 2;
+const favorites_file_name = 'sage2_sites.json';
 const FAVORITES_CAROUSEL_UI = 1;
+const FAVORITES_LIST_UI = 2;
 
-const PREDEFINED_LOCAL_PORT = "9090";
-
-//JS object containing list of favorites sites
+// Object containing list of favorites sites
 var favorites = {
 	list: [],
-	UIswitchPosition: FAVORITES_CAROUSEL_UI
+	UIswitchPosition: FAVORITES_LIST_UI
 	// example of favorites object structure
 	// list: [{
 	//     host: 'orion-win.evl.uic.edu',
@@ -71,7 +69,8 @@ let isHashSaved = false;
 
 // Reading the favorites json file
 fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
-	if (err) { // most likely no json file (first use), write empty favorites on file
+	if (err) {
+		// most likely no json file (first use), write empty favorites on file
 		console.log(err);
 		writeFavoritesOnFile(favorites);
 	} else {
@@ -96,7 +95,7 @@ fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallba
  * @return {String} the path
  */
 function getWindowPath() {
-	return join(homedir(), "AppData");
+	return path.join(os.homedir(), "AppData");
 }
 
 /**
@@ -105,7 +104,7 @@ function getWindowPath() {
  * @return {String} the path
  */
 function getMacPath() {
-	return '/tmp';
+	return path.join(os.homedir(), ".config");
 }
 
 /**
@@ -114,7 +113,7 @@ function getMacPath() {
  * @return {String} the path
  */
 function getLinuxPath() {
-	return join(homedir(), ".config");
+	return path.join(os.homedir(), ".config");
 }
 
 /**
@@ -124,7 +123,7 @@ function getLinuxPath() {
  * @return {String} the path
  */
 function getFallback() {
-	if (platform().startsWith("win")) {
+	if (os.platform().startsWith("win")) {
 		return getWindowPath();
 	}
 	return getLinuxPath();
@@ -139,7 +138,7 @@ function getFallback() {
  */
 function getAppDataPath(file_name) {
 	let appDataPath = '';
-	switch (platform()) {
+	switch (os.platform()) {
 		case "win32":
 			appDataPath = getWindowPath();
 			break;
@@ -156,7 +155,7 @@ function getAppDataPath(file_name) {
 	if (file_name === undefined) {
 		return appDataPath;
 	} else {
-		return join(appDataPath, file_name);
+		return path.join(appDataPath, file_name);
 	}
 }
 
@@ -168,13 +167,15 @@ favoriteHeart.addEventListener('click', (e) => {
 	let URL = urlInput.value;
 	let sitename = urlInput.getAttribute('data-name');
 	if (URL) {
-		if (!checked) { //item added to favorites
+		if (!checked) {
+			// item added to favorites
 			setFullHeart();
 			addToFavorites({
 				name: sitename || 'Unknown name',
 				host: URL
 			});
-		} else { //item removed from favorites
+		} else {
+			//item removed from favorites
 			setEmptyHeart();
 			removeFromFavorites(URL);
 		}
@@ -282,7 +283,7 @@ function addItemToList(item, index) {
 	it.firstElementChild.lastElementChild.addEventListener('click', removeFavoriteSiteList);
 	// favoriteList.appendChild(it);
 	favoriteList.insertBefore(it, favoriteList.firstChild);
-	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, 1000);
+	setOnlineStatus(item.host, it.firstElementChild.lastElementChild.firstElementChild, 1000);
 }
 
 /**
@@ -308,7 +309,7 @@ function addItemToCarousel(item, index) {
 	it.firstElementChild.firstElementChild.style.cursor = "pointer";
 	it.firstElementChild.nextElementSibling.firstElementChild.addEventListener('click', removeFavoriteSite);
 	favoriteCarousel.appendChild(it);
-	setOnlineStatus(buildConfigURL(item.host), it.lastChild.firstElementChild.firstElementChild, 1000);
+	setOnlineStatus(item.host, it.lastChild.firstElementChild.firstElementChild, 1000);
 }
 
 /**
@@ -460,31 +461,10 @@ function removeFromFavorites(favorite_url) {
  * @param {Object} favorites_obj the object containing the list of favorites
  */
 function writeFavoritesOnFile(favorites_obj) {
-	fs.writeFile(getAppDataPath(favorites_file_name), JSON.stringify(favorites_obj), 'utf8', () => { });
-}
-
-/**
- * TODO remove
- * logging function
- * @param  {any} item
- * @return {void}
- */
-function l(item) {
-	console.log(item);
-}
-
-/**
- * Creates the config file URL from site domain
- *
- * @method buildConfigURL
- * @param  {String} domain the site domain
- * @return the URL for the config file
- */
-function buildConfigURL(domain) {
-	if (domain === "localhost" || domain === "127.0.0.1") {
-		domain = domain + ":" + PREDEFINED_LOCAL_PORT;
-	}
-	return 'https://' + domain + '/config';
+	fs.writeFile(getAppDataPath(favorites_file_name),
+		JSON.stringify(favorites_obj, null, 4), 'utf8', () => {
+			// done
+		});
 }
 
 
@@ -669,14 +649,6 @@ function createDropItemIds(item, index) {
  * @return {String} the formatted url
  */
 function formatProperly(url) {
-	const url_start = 'https://';
-	if (url === "localhost" || url == '127.0.0.1') {
-		url = url + ":" + PREDEFINED_LOCAL_PORT;
-	}
-	if (!url.startsWith('http://') || !url.startsWith('https://')) {
-		url = url_start + url;
-	}
-
 	// If display number is toggled then take the ID, if NaN do full screen
 	if (check1.checked) {
 		var id = isNaN(parseInt(idDropName.innerHTML)) ? -1 : parseInt(idDropName.innerHTML);
@@ -733,7 +705,7 @@ function onCurrentSiteDown() {
 	removePreviousDropdownItem("ids_dropdown");
 	setLoadInfoButtonOffline();
 	disableConnection();
-	l('Site server down, timeout reached, refresh to try again');
+	console.log('Site server down, timeout reached, refresh to try again');
 }
 
 
@@ -796,11 +768,9 @@ function setOnlineStatus(url, elem, delay) {
 	]).then((response) => {
 		if (response.timeout) {
 			elem.style.color = offlineColor;
-			// elem.lastChild.lastElementChild.firstElementChild.style.color = offlineColor;
 			return;
 		} else {
 			elem.style.color = onlineColor;
-			// elem.lastChild.lastElementChild.firstElementChild.style.color = onlineColor;
 		}
 	});
 }
@@ -873,7 +843,7 @@ function loadCurrentSiteInfo() {
  * @return {void}
  */
 function loadSiteInfo(host) {
-	fetchWithTimeout(buildConfigURL(host), 1000, () => {
+	fetchWithTimeout(host + '/config', 1000, () => {
 		onCurrentSiteDown();
 	})
 		.catch(err => {
@@ -945,8 +915,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	};
 	M.Dropdown.init(elems, options);
 
-	//carousel init
-	updateInitCarousel();
+	// carousel init
+	// updateInitCarousel();
 
 	attachBehaviorDropdownSites();
 });

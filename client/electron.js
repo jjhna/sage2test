@@ -20,22 +20,14 @@
 'use strict';
 
 const path = require('path');
-const { join } = path;
 const electron = require('electron');
 const querystring = require('querystring');
 const fs = require('fs');
-
-// To make it work in both files (electron.js in /sage2 and electron.js in /sage2/client)
-var md5 = null;
-if (__dirname.substr(__dirname.length - 6) === 'client') {
-	md5 = require('../src/md5');
-} else {
-	md5 = require('./src/md5');
-}
-
 // Get platform and hostname
 var os = require('os');
-const { platform, homedir } = os;
+
+var md5 = require('./src/md5');
+
 
 //
 // handle install/update for Windows
@@ -172,10 +164,8 @@ if (commander.plugins) {
 }
 
 // Reset the desktop scaling
-//if (os.platform() === "win32") {
 app.commandLine.appendSwitch("force-device-scale-factor", "1");
 app.commandLine.appendSwitch("ignore-gpu-blacklist");
-//}
 
 // Remove the limit on the number of connections per domain
 //  the usual value is around 6
@@ -184,11 +174,12 @@ var parsedURL = url.parse(commander.server);
 // default domais are local
 var domains   = "localhost,127.0.0.1";
 // Store current site domain
-var currentDomain = parsedURL.hostname;
+var currentDomain = commander.server; // parsedURL.hostname;
+
 // Filename of favorite sites file
-const favorites_file_name = 'sage2_favorite_sites.json';
-//JS object containing list of favorites sites
-var favorites = {
+const favoritesFilename = 'sage2_favorite_sites.json';
+// Object containing list of favorites sites
+var favoritesSites = {
 	list: []
 };
 
@@ -309,7 +300,7 @@ function openWindow() {
  * @return {String} the path
  */
 function getWindowPath() {
-	return join(homedir(), "AppData");
+	return path.join(os.homedir(), "AppData");
 }
 
 /**
@@ -327,7 +318,7 @@ function getMacPath() {
  * @return {String} the path
  */
 function getLinuxPath() {
-	return join(homedir(), ".config");
+	return path.join(os.homedir(), ".config");
 }
 
 /**
@@ -337,7 +328,7 @@ function getLinuxPath() {
  * @return {String} the path
  */
 function getFallback() {
-	if (platform().startsWith("win")) {
+	if (os.platform().startsWith("win")) {
 		return getWindowPath();
 	}
 	return getLinuxPath();
@@ -351,7 +342,7 @@ function getFallback() {
  */
 function getAppDataPath(file_name) {
 	let appDataPath = '';
-	switch (platform()) {
+	switch (os.platform()) {
 		case "win32":
 			appDataPath = getWindowPath();
 			break;
@@ -368,7 +359,7 @@ function getAppDataPath(file_name) {
 	if (file_name === undefined) {
 		return appDataPath;
 	} else {
-		return join(appDataPath, file_name);
+		return path.join(appDataPath, file_name);
 	}
 }
 
@@ -554,17 +545,19 @@ function createWindow() {
 		// If a password is provided, the md5 hash needed to connect to the site is stored locally
 		if (queryParams.session) {
 			var hash = generatePasswordHash(queryParams.session);
-			fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
-				if (err) { // most likely no json file (first use), write empty favorites on file
+			fs.readFile(getAppDataPath(favoritesFilename), 'utf8', function readFileCallback(err, data) {
+				if (err) {
+					// most likely no json file (first use), write empty favorites on file
 					console.log(err);
 				} else {
-					favorites = JSON.parse(data); //convert json to object
-					for (let i = 0; i < favorites.list.length; i++) {
-						if (favorites.list[i].host === currentDomain) {
-							favorites.list[i].hash = hash;
+					// Convert json to object
+					favoritesSites = JSON.parse(data);
+					for (let i = 0; i < favoritesSites.list.length; i++) {
+						if (favoritesSites.list[i].host === currentDomain) {
+							favoritesSites.list[i].hash = hash;
 						}
 					}
-					writeFavoritesOnFile(favorites);
+					writeFavoritesOnFile(favoritesSites);
 				}
 			});
 		}
@@ -626,13 +619,17 @@ function createWindow() {
 }
 
 /**
- * Writes favorites in a persistent way on local machine
+ * Writes favoritesSites in a persistent way on local machine
  *
  * @method writeFavoritesOnFile
  * @param {Object} favorites_obj the object containing the list of favorites
  */
-function writeFavoritesOnFile(favorites_obj) {
-	fs.writeFile(getAppDataPath(favorites_file_name), JSON.stringify(favorites_obj), 'utf8', () => { });
+function writeFavoritesOnFile(favoritesObj) {
+	fs.writeFile(getAppDataPath(favoritesFilename),
+		JSON.stringify(favoritesObj, null, 4), 'utf8',
+		() => {
+			// done
+		});
 }
 
 /**

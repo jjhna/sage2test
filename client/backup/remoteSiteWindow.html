@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Connect to Remote Site</title>
+    <link rel="stylesheet" href="css/materialize.min.css">
+    <link href="css/material.icons.css" rel="stylesheet">
+    <script src="src/materialize.min.js"></script>
+
+
+</head>
+
+<style>
+    .carousel .indicators .indicator-item {
+        background-color: #455a64;
+    }
+</style>
+
+<body class="grey lighten-4">
+    <div class='container'>
+        <form action="">
+            <div class="section">
+                <h3>Connect to remote site</h3>
+                <div class="row">
+                    <div class="col s8">
+                                <label>Enter URL of Remote Site</label>
+                            <div class="col s10">
+                                <div class="input-field">
+
+                                    <i id="favorite_heart" class="material-icons prefix"
+                                        style="cursor: pointer">favorite_border</i>
+                                    <input type="text" id="url" data-name="" autofocus>
+                                </div>
+                            </div>
+                            <div class="col s2">
+                                    <a id="current_status_btn" class="btn-floating btn-small waves-effect waves-light blue-grey darken-2 z-depth-3">
+                                        <i class="material-icons">refresh</i></a>
+
+                            </div>
+                        <div class="row">
+                            <div class="col s5">
+                                <!-- Dropdown Trigger -->
+                                <a class='dropdown-trigger btn blue-grey darken-2 z-depth-3' href='#'
+                                    data-target='sites_dropdown'>Connected
+                                    sites</a>
+                                <!-- Dropdown Structure -->
+                                <ul id='sites_dropdown' class='dropdown-content'>
+                                </ul>
+                            </div>
+                            <div class="col s7">
+                                    <div id="switch_favorites_ui" class="switch">
+                                        <label>
+                                            Carousel
+                                            <input type="checkbox">
+                                            <span class="lever"></span>
+                                            List
+                                        </label>
+                                    </div>
+                                </div>
+                        </div>
+                        <div id='favorites_carousel' class="carousel" style="zoom:80%;">
+                        </div>
+                        <div style="
+                        height:299px;
+                        overflow-y: scroll;
+                        color: white;
+                        max-height:300px;">
+                            <ul id="favorites_list" class="collection with-header">
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col s4"><label>Options</label>
+
+                        <br><br>
+                        <p>
+                            <label>
+                                <input class='checkb' id='check_2' type="checkbox" checked='true' />
+                                <span>Display Full Wall</span>
+                            </label>
+                        </p>
+                        <div class="row">
+                            <div class="col s10">
+                                <p>
+                                    <label>
+                                        <input class='checkb' id='check_1' type="checkbox" />
+                                        <span>Display client ID</span>
+                                    </label>
+                                </p>
+                            </div>
+                            <div class="col s1">
+                                <div id='display-id-div'>
+                                    <!-- Dropdown Trigger -->
+                                    <a id="id_drop"
+                                        class='dropdown-trigger btn blue-grey darken-2 z-depth-3 scale-transition scale-out'
+                                        href='#' data-target='ids_dropdown'>ID</a>
+                                    <!-- Dropdown Structure -->
+                                    <ul id='ids_dropdown' class='dropdown-content'>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-field col s12">
+                                <input disabled id="password" type="password" class="validate">
+                                <label id="pwd-control" for="password">Password</label>
+                            </div>
+                        </div>
+
+                        <br><br><br><br><br><br>
+                        <div class="divider"></div>
+                        <div class="section">
+                            <div class="row">
+                                <div class="col s6"><a id="cancel_btn"
+                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>Cancel</a>
+                                </div>
+                                <div class="col s6">
+                                    <a id="okay_btn"
+                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3 disabled'>
+                                        Connect</a></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+        </form>
+    </div>
+    <script src="src/remote-connection.js"></script>
+</body>
+
+</html>
