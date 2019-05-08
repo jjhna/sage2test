@@ -42,8 +42,8 @@ function SAGE2_interaction(wsio) {
 	this.mediaVideo  = null;
 	this.mediaResolution = 2;
 	this.mediaQuality    = 9;
-	// By default, do not use WebRTC
-	this.mediaUseRTC     = getCookie('SAGE2_useRTC') === "true" ? true : false;
+	// By default, USE WebRTC
+	this.mediaUseRTC     = getCookie('SAGE2_useRTC') === "false" ? false : true;
 
 	this.chromeDesktopCaptureEnabled = false;
 	this.broadcasting  = false;
