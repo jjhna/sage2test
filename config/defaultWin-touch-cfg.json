@@ -80,7 +80,7 @@
 
 			// Touch gestures
 			gestureDebug: false,
-			touchOffset: [ 0, -25 ], // in pixels
+			touchOffset: [ 0, 0 ], // in pixels
 			enableGestures: true,
 			
 			acceleratedDragScale: 1,
@@ -102,13 +102,7 @@
 				"googlemaps",
 				"zoom"
 			],
-			
-			// Wand
-			wandNames:
-			{
-				"1": {label: "Wand (Config Named)", color: "rgba(50, 250, 150, 1.0)"}
-			},
-			
+
 			// Advanced
 			moveEventLimit: 100,				// if 100, sends 1/100 of move events received
 			enableStuckTouchDetection: true,
