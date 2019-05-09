@@ -43,10 +43,10 @@
 		viewing_distance: 0.71	// in meters
 	},
 	resolution: {
-		width: 3840,
-		height: 2160
-		//width: 2560,
-		//height: 1600
+		//width: 3840,
+		//height: 2160
+		width: 2560,
+		height: 1600
 		//width: 1366,
 		//height: 768
 	},
@@ -72,13 +72,13 @@
 		},
 		{
 			name: "Continuum Wall",
-			host: "bigpipe.evl.uic.edu",
+			host: "canopus.evl.uic.edu",
 			port: 443,
 			secure: true,
 		},
 		{
 			name: "CAVE2",
-			host: "lyra.evl.uic.edu",
+			host: "orion-win.evl.uic.edu",
 			port: 443,
 			secure: true,
 		},
@@ -93,14 +93,14 @@
 	
 	experimental: {
 		omicron: {
-			enable: true,
+			enable: false,
 			
 			// Port SAGE will listen for a oinputserver connection
 			msgPort: 28000,
 			
 			// If specified, SAGE will actively attempt to connect to
 			// an oinputserver on the specified IP and data port
-			inputServerIP: "131.193.183.183",
+			inputServerIP: "localhost",
 			dataPort: 30005,
 			
 			eventDebug: false,
@@ -109,26 +109,33 @@
 			enableWand: true,
 			enableMocap: true,
 						
-			style: "Touch", // Display as "Touch" or "Pointer"
-			interactionMode: "App", // "Window" or "App"
+			style: "Pointer", // Display as "Touch" or "Pointer"
+			interactionMode: "Window", // "Window" or "App"
 
 			// Touch gestures
 			gestureDebug: false,
-			touchOffset: [ 12, 5 ], // in pixels
+			touchOffset: [ 0, -25 ], // in pixels
 			enableGestures: true,
 			
-			acceleratedDragScale: 3,
+			acceleratedDragScale: 1,
 			
 			enableDoubleClickMaximize: true,
 			enableThreeFingerRightClick: false,
 			
-			enableTwoFingerWindowDrag: true,
+			enableTwoFingerWindowDrag: false,
 			zoomToMoveGestureMinimumDistance: 100,
 			
 			enableTwoFingerZoom: true,
 			zoomGestureScale: 2000,
 			
 			enableFiveFingerCloseApp: true,
+			
+			appsExcludedFromTouchInteraction:
+			[
+				"Webview",
+				"googlemaps",
+				"zoom"
+			],
 			
 			// Wand
 			wandNames:
