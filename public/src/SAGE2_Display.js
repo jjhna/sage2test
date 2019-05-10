@@ -347,11 +347,11 @@ function pointerPress(event) {
 		btn = btnName[event.button];
 	}
 	wsio.emit('pointerPress', {id: id, button: btn});
-	
+
 	event.stopPropagation();
 	event.preventDefault();
 }
-	
+
 function pointerRelease(event) {
 	var id = uniqueID;
 	var btn;
@@ -377,18 +377,16 @@ function pointerRelease(event) {
 
 function pointerMove(event) {
 	var id = uniqueID;
-	if(pointerTimer != null) {
+	if (pointerTimer != null) {
 		clearTimeout(pointerTimer);
-	}
-	else {
+	} else {
 		wsio.emit('startSagePointer', {label: "Master", color: "#FFFFFF", sourceType: "Pointer"});
 	}
 	pointerTimer = setTimeout(() => {
 		wsio.emit('stopSagePointer', {id: id});
 		pointerTimer = null;
 	}, 10000);
-	
-	var id = uniqueID;
+
 	var x, y;
 	if (event.type === "touchmove") {
 		var touchId = event.changedTouches[0].identifier;
