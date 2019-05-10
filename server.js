@@ -906,7 +906,7 @@ function wsAddClient(wsio, data) {
 			// Send a message back to server
 			wsio.emit('remoteConnection', {status: "refused", reason: 'wrong session hash'});
 			// If server protected and wrong hash, close the socket and byebye
-			wsio.ws.close();
+			wsio.ws.close(1001, "wrongSessionHash");
 			// For debugging connections and slow down. This one logs failed connection attemps.
 			sharedServerData.updateInformationAboutConnectionsFailedRemoteSite(wsio);
 			return;
