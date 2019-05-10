@@ -424,6 +424,10 @@ function SAGE2_init() {
 		// show a popup
 		showSAGE2Message("Server unreachable: you are offline or the server is down");
 		// try to reload every few seconds
+		if ((evt.code === 1001) && (evt.reason === "wrongSessionHash")) {
+			window.location = "session.html";
+			return;
+		}
 		var refresh = setInterval(function() {
 			reloadIfServerRunning(function() {
 				clearInterval(refresh);
