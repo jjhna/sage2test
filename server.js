@@ -3540,7 +3540,10 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 
 	if( app != null ){
 		console.log("arraylength2 " + pointedToApps.length);
-		var targetAppID = mostOccurrenceItem(pointedToApps);
+		var targetAppID = null; 
+		if( pointedToApps.length > 0 ){
+			targetAppID = orderedItems[0]; //mostOccurrenceItem(pointedToApps);
+		}
 		// var realTarget = selectTarget(orderedItems); 
 		console.log("targetAppID in server " + targetAppID);
 		// console.log("target: ")
@@ -3872,9 +3875,157 @@ function cleanUpKinectPointers(){
 
 }
 
+
+// let cur_app_id;
+
+// function wsPointingGesturePositionNotUsed(wsio, data){
+// 	var rightPointing = false;
+
+// 	if (sagePointers[data.id] === undefined) {
+// 		// console.log("making the kinect pointer");
+// 		createSagePointer(data.id);
+// 		showPointer(data.id, {label: data.id, color: data.color, sourceType: "kinect"});
+
+// 	}
+
+// 	sagePointers[data.id].lastUsed = new Date();
+// 	sagePointers[data.id].isKinect = true;
+
+// 	pointerPosition(data.id, {pointerX: data.x, pointerY: data.y} );
+
+// 	var obj = interactMgr.searchGeometry({x: data.x, y: data.y});
+// 	console.log("POINTING AT");
+// 	console.log(obj); 
+
+// }
+
+
+
+// var obj = interactMgr.searchGeometry({x: data.x, y: data.y}); //object on top pointed at given an x and y coordinate HERE! 		// console.log("obj: " + JSON.stringify(obj) );
+// 	// console.log("POINTING AT");
+// 	// console.log(obj); 
+
+// 	if(obj.data.title != "machineLearning" && obj.data.title != "articulate_ui_chat" && obj.data.title != "articulate_ui"  && obj.data.title != "articulate_ui_v2" && obj.data.title != "background"){
+// 		rightPointing = true;
+// 		if( data.recognitionStatus ){
+// 			// pointedToApps[pointedToApps.length]= {appId: app.id, pointerId: data.id};
+
+// 			//console.log("pointing to the app!");
+
+// 			pointedToApps.push({appId: obj.data.id, pointerId: data.id});
+// 			if(obj.data.id !== cur_app_id){
+// 				cur_app_id = obj.data.id;
+// 			}
+
+// 			//get position <-> send pointed to app to kinect app
+// 				//Always send pointed to app to machine learning app
+// 				var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
+// 				if( ml != null ){
+// 					var data = {id: ml.id, data: app, date: Date.now()};
+// 					//broadcast('pointedToApp', data);// turn this on to drag and drop JILLIAN
+// 				}
+// 		}
+// 	}
+
 //receiving pointing positions and finding pointed to apps
 let cur_app_id;
+
 function wsPointingGesturePosition(wsio, data){
+	//console.log("tracking the pointing gesture....")
+	var rightPointing = false;
+	//make a pointer on screen
+	//  see if kinect pointer exists (for now just one)
+	if (sagePointers[data.id] === undefined) {
+		// console.log("making the kinect pointer");
+		createSagePointer(data.id);
+		showPointer(data.id, {label: data.id, color: data.color, sourceType: "kinect"});
+
+	}
+//	broadcast('pointerPosition', data);
+	sagePointers[data.id].lastUsed = new Date();
+	sagePointers[data.id].isKinect = true;
+	// showPointer(data.id, {label: data.id, color: data.color, sourceType: "kinect"});
+
+
+	//show sage pointer
+	//data.label, data.color, data.sourceType
+	pointerPosition(data.id, {pointerX: data.x, pointerY: data.y} );
+
+	var obj = interactMgr.searchGeometry({x: data.x, y: data.y}); //object on top pointed at given an x and y coordinate HERE! 		// console.log("obj: " + JSON.stringify(obj) );
+		if( obj != null ){
+				console.log("POINTING AT-----------");
+				console.log(obj.data.id); 
+				console.log(obj.data.data.plotTitle); 
+		}
+
+		if(obj != null && obj.data.title != "machineLearning" && obj.data.title != "articulate_ui_chat" && obj.data.title != "articulate_ui"  && obj.data.title != "articulate_ui_v2" && obj.data.title != "background"){
+			//console.log(obj);
+			rightPointing = true;
+			if( data.recognitionStatus ){
+
+				pointedToApps.push({appId: obj.data.id, pointerId: data.id});
+				if(obj.data.id !== cur_app_id){
+					cur_app_id = obj.data.id;
+				}
+
+				//get position <-> send pointed to app to kinect app
+					//Always send pointed to app to machine learning app
+					// var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
+					// if( ml != null ){
+					// 	var data = {id: ml.id, data: app, date: Date.now()};
+					// 	//broadcast('pointedToApp', data);// turn this on to drag and drop JILLIAN
+					// }
+			}
+		}
+
+
+	// console.log("position " + data.x + " " + data.y);
+
+	//if( data.recognitionStatus ){ //only check for the apps they point to when recognition status is on
+
+	// var obj = interactMgr.searchGeometry({x: data.x, y: data.y}); //object on top pointed at given an x and y coordinate HERE! 		// console.log("obj: " + JSON.stringify(obj) );
+	// console.log("POINTING AT");
+	// console.log(obj); 
+	// for (var key in SAGE2Items.applications.list){
+	// 	var app = SAGE2Items.applications.list[key];
+	// 	if(app.title != "machineLearning" && app.title != "articulate_ui_chat" && app.title != "articulate_ui"  && app.title != "articulate_ui_v2" && app.title != "background"){
+	// 		//console.log("data.x " + data.x + " data.y " + data.y );
+	// 		//console.log("app.left " + app.left + " app.y " + app.y + "app.width" + app.width + " app.height " + app.height );
+	// 		if(data.x >= app.left && data.x <= (app.left + app.width) && data.y >= app.top && data.y <= (app.top + app.height)){//*****
+	// 			rightPointing = true;
+	// 			//console.log("data recognition status: " + data.recognitionStatus);
+	// 			if( data.recognitionStatus ){
+	// 				// pointedToApps[pointedToApps.length]= {appId: app.id, pointerId: data.id};
+
+	// 				//console.log("pointing to the app!");
+
+	// 				// pointedToApps.push({appId: app.id, pointerId: data.id});
+	// 				// if(app.id !== cur_app_id){
+	// 				// 	cur_app_id = app.id;
+	// 				// }
+	// 			}
+	// 			//get position <-> send pointed to app to kinect app
+	// 			//Always send pointed to app to machine learning app
+	// 			// var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
+	// 			// if( ml != null ){
+	// 			// 	// var data = {id: ml.id, data: app, date: Date.now()};
+	// 			// 	//broadcast('pointedToApp', data);// turn this on to drag and drop JILLIAN
+	// 			// }
+	// 		}
+	// 	}
+	// }
+	if(!rightPointing){
+		var ml = SAGE2Items.applications.getFirstItemWithTitle("machineLearning");
+		if( ml != null ){
+			var data = {id: ml.id, data: null, date: Date.now()};
+			//broadcast('leftHandPointingToApp', data); //JILLIAN TURNED OFF
+		}
+	}
+}
+
+
+
+function wsPointingGesturePositionOld(wsio, data){
 	//console.log("tracking the pointing gesture....")
 	var rightPointing = false;
 	//make a pointer on screen
@@ -3899,7 +4050,8 @@ function wsPointingGesturePosition(wsio, data){
 	//if( data.recognitionStatus ){ //only check for the apps they point to when recognition status is on
 
 	var obj = interactMgr.searchGeometry({x: data.x, y: data.y}); //object on top pointed at given an x and y coordinate HERE! 		// console.log("obj: " + JSON.stringify(obj) );
-
+	console.log("POINTING AT");
+	console.log(obj); 
 	for (var key in SAGE2Items.applications.list){
 		var app = SAGE2Items.applications.list[key];
 		if(app.title != "machineLearning" && app.title != "articulate_ui_chat" && app.title != "articulate_ui"  && app.title != "articulate_ui_v2" && app.title != "background"){
@@ -4005,6 +4157,8 @@ function wsLeftHandPosition(wsio, data){
 	var pointing = false;
 
 	var obj = interactMgr.searchGeometry({x: data.x, y: data.y});
+
+	//JILLIAN!!!!
 
 	for (var key in SAGE2Items.applications.list){
 		var app = SAGE2Items.applications.list[key];

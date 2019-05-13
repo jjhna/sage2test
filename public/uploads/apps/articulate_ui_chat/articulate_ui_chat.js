@@ -625,7 +625,7 @@ articulateDebugInfo: function(data, date){
 
 			console.log("make a vis!");
 			plotTitle = specificationObj["plotHeadline"]["shortSummary"];
-			console.log(plotTitle);
+			//console.log(plotTitle);
 
 			type = specificationObj["plotHeadline"]["plotType"].toLowerCase(); //what kind of plot: bar chart, map, line chart
 			x = specificationObj["horizontalAxis"];//.toLowerCase();//changed: specificationObj["horizontalGroupAxis"].toLowerCase()
@@ -937,7 +937,7 @@ articulateDebugInfo: function(data, date){
 //		id = y;
 //		y = id;
 		var name = "all";
-		if( plotTitle.includes(" by ") ){
+		if( plotTitle != null && plotTitle.includes(" by ") ){
 			name = plotTitle.split(" by ")[0];
 		}
 
