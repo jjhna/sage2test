@@ -3542,7 +3542,7 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 		console.log("arraylength2 " + pointedToApps.length);
 		var targetAppID = null; 
 		if( pointedToApps.length > 0 ){
-			targetAppID = orderedItems[0]; //mostOccurrenceItem(pointedToApps);
+			targetAppID = orderedItems[0]["name"]; //mostOccurrenceItem(pointedToApps);
 		}
 		// var realTarget = selectTarget(orderedItems); 
 		console.log("targetAppID in server " + targetAppID);
@@ -4050,8 +4050,8 @@ function wsPointingGesturePositionOld(wsio, data){
 	//if( data.recognitionStatus ){ //only check for the apps they point to when recognition status is on
 
 	var obj = interactMgr.searchGeometry({x: data.x, y: data.y}); //object on top pointed at given an x and y coordinate HERE! 		// console.log("obj: " + JSON.stringify(obj) );
-	console.log("POINTING AT");
-	console.log(obj); 
+	console.log("POINTING AT------");
+	// console.log(obj); 
 	for (var key in SAGE2Items.applications.list){
 		var app = SAGE2Items.applications.list[key];
 		if(app.title != "machineLearning" && app.title != "articulate_ui_chat" && app.title != "articulate_ui"  && app.title != "articulate_ui_v2" && app.title != "background"){
@@ -4066,6 +4066,7 @@ function wsPointingGesturePositionOld(wsio, data){
 					//console.log("pointing to the app!");
 
 					pointedToApps.push({appId: app.id, pointerId: data.id});
+					console.log(pointedToApps[pointedToApps.length-1]);
 					if(app.id !== cur_app_id){
 						cur_app_id = app.id;
 					}
