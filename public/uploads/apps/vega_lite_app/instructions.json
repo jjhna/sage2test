@@ -16,6 +16,7 @@
 		"id": "id",
 		"hub_id": "hub_id",
     "plotTitle": "visualization",
+    "viewCount": 0,
 		"vegaLiteSpec" : {
 		    "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
    		    "description": "Title",

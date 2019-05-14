@@ -224,6 +224,9 @@ var machineLearning = SAGE2_App.extend( {
 		this.resizeEvents = "continuous";
 		this.moveEvents   = "continuous";
 
+		this.updateTitle("gesture tracker");
+
+
 		// SAGE2 Application Settings
 		//
 		// Control the frame rate for an animation application
@@ -736,8 +739,8 @@ drawSkeletonLines: function(){
 
 			// draw trial number
 			this.ctx.fillStyle = "white";
-			this.ctx.fillText("Trial: " + this.trialNumber, 30, 20);
-			this.ctx.fillText("Right foot: " + this.rightFootCalibration,500, 100);
+			//this.ctx.fillText("Trial: " + this.trialNumber, 30, 20);
+			//this.ctx.fillText("Right foot: " + this.rightFootCalibration,500, 100);
 
 			//HERE I GO
 

@@ -1078,7 +1078,7 @@ var SAGE2_App = Class.extend({
 	* @method launchNewChild
 	* @param childAppType is the type of app (custom, pdf, image, etc)
 	*/
-	launchNewChild: function( childAppType, childAppName, initState, message ){
+	launchNewChild: function( childAppType, childAppName, initState, message, position ){
 		data = {
 			applicationType: childAppType,
 			application: childAppName,
@@ -1087,6 +1087,7 @@ var SAGE2_App = Class.extend({
 			msg: message,
 			childId: "",
 			initState: initState,  //note: doesn't get updated as child's state changes...
+			position: position
 		};
 		//this.childList.push( data );
 		if( isMaster ){

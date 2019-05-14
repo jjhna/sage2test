@@ -3117,6 +3117,7 @@ function createAppFromDescription(app, callback) {
 }
 
 function loadSession(filename) {
+	console.log(filename);
 	filename = filename || 'default.json';
 
 	var fullpath;
@@ -3160,13 +3161,18 @@ function loadSession(filename) {
 							left: element.left,
 							top: element.top,
 							isSnapping: element.isSnapping
+							//isTiled: element.isTiled
 						},
 						element.color
 					);
 
 					ptn.innerMaximization = element.innerMaximization;
 					ptn.innerTiling = element.innerTiling;
-
+					console.log(ptn.innerTiling)
+					if( element.innerTiling ){
+							ptn.toggleInnerTiling();
+							updatePartitionInnerLayout(ptn, true);
+						}
 					broadcast('partitionWindowTitleUpdate', ptn.getTitle());
 				});
 			}
@@ -3507,6 +3513,11 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 	//console.log(data);
 	console.log(JSON.stringify(data));
 
+	if( data.text == "hello articulate" ){
+		console.log("load articulate session");
+		loadSession("Articulate demo.json");
+		return;
+	}
 
 	var orderedItems = mostItems(pointedToApps);
 	console.log("ordered items: ");
@@ -3952,10 +3963,10 @@ function wsPointingGesturePosition(wsio, data){
 	pointerPosition(data.id, {pointerX: data.x, pointerY: data.y} );
 
 	var obj = interactMgr.searchGeometry({x: data.x, y: data.y}); //object on top pointed at given an x and y coordinate HERE! 		// console.log("obj: " + JSON.stringify(obj) );
-		if( obj != null ){
+		if( obj != null && !obj.data.id.includes("ptn") ){
 				console.log("POINTING AT-----------");
 				console.log(obj.data.id); 
-				console.log(obj.data.data.plotTitle); 
+				//console.log(obj.data.data.plotTitle); 
 		}
 
 		if(obj != null && obj.data.title != "machineLearning" && obj.data.title != "articulate_ui_chat" && obj.data.title != "articulate_ui"  && obj.data.title != "articulate_ui_v2" && obj.data.title != "background"){

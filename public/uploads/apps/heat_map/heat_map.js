@@ -24,6 +24,7 @@ var heat_map = SAGE2_App.extend( {
 		// Not adding controls but making the default buttons available
 		this.controls.finishedAddingControls();
 		this.enableControls = true;
+		this.updateTitle(this.state.viewCount);
 
 
 		this.map          = null;

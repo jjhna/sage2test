@@ -15,7 +15,7 @@ var vega_lite_app = SAGE2_App.extend( {
 		this.element.style.backgroundColor = 'white';
 
 		// move and resize callbacks
-		this.resizeEvents = "onfinish"; // continuous
+		this.resizeEvents = "continuous"; // continuous
 
 		this.content = document.createElement("div");
 		this.content.className = "viewBox";
@@ -32,11 +32,11 @@ var vega_lite_app = SAGE2_App.extend( {
 		this.initContent(); 
 		
 		// move and resize callbacks
-		this.resizeEvents = "onfinish"; // continuous
+		//this.resizeEvents = "onfinish"; // continuous
 
-		this.updateTitle(this.state.plotTitle);
+		this.updateTitle(this.state.viewCount);
 
-		console.log( this.state.plotTitle);
+		console.log( this.state.viewCount );
 		
 		
 		// SAGE2 Application Settings
@@ -49,7 +49,7 @@ var vega_lite_app = SAGE2_App.extend( {
 
 
 	
-	    this.updateTitle(this.state.plotTitle);
+	    this.updateTitle(this.state.viewCount);
 		console.log(this.state.plotTitle);
 	
 
@@ -267,8 +267,8 @@ var vega_lite_app = SAGE2_App.extend( {
 	    //	this.parentLink.update(); // redraw
 	    //}
 
-	    this.updateTitle(this.state.plotTitle);
-		console.log(this.state.plotTitle);
+	    this.updateTitle(this.state.viewCount);
+		console.log(this.state.viewCount);
 
 	    this.refresh(date);
 	},

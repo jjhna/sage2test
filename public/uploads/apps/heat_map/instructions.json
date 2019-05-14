@@ -16,7 +16,8 @@
 		  ],
 		"maxValue": 100,
 		"hub_id": 0,
-		"title": "visualization response"
+		"title": "visualization response",
+		"viewCount": 0
 	},
 	"title": "heat_map",
 	"version": "1.0.0",

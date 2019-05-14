@@ -22,6 +22,7 @@ var articulate_ui_chat = SAGE2_App.extend( {
 		console.log("using master? " + this.useMaster);
 
 		this.requestCount = 0;
+		this.viewCount = 0; 
 
 
 		this.listOfCommandsForTesting = 
@@ -681,8 +682,11 @@ articulateDebugInfo: function(data, date){
 					value: 10,
 					hub_id: hub_id,
 					plotTitle: plotTitle,
-					vegaLiteSpec: this.vegaLiteSpec
-				};
+					vegaLiteSpec: this.vegaLiteSpec,
+					viewCount: "view"+this.viewCount				
+					};
+				this.viewCount++;
+
 			}
 			if( specificationObj["plotHeadline"]["plotType"] == "BAR" && c != null ){
 				dataToVisualize = this.parseBar(specificationObj["dataQueryResult"], c, specificationObj["horizontalAxis"]);
@@ -690,7 +694,7 @@ articulateDebugInfo: function(data, date){
 				//launch app
 				applicationType ="custom",
 				application = "apps/vega_vis_app"; 	 //its a vega app
-				msg = "this is a message from articulate_ui", //not used so much, but could
+				msg = "", //not used so much, but could
 				console.log(dataToVisualize);
 
 				if( x == "time"){
@@ -762,8 +766,11 @@ articulateDebugInfo: function(data, date){
 					value: 10,
 					hub_id: hub_id,
 					plotTitle: plotTitle,
-					vegaLiteSpec: this.vegaLiteSpec
+					vegaLiteSpec: this.vegaLiteSpec,
+					viewCount: "view"+this.viewCount
 				};
+				this.viewCount++;
+
 			}
 			if( specificationObj["plotHeadline"]["plotType"] == "MAP"){
 
@@ -811,14 +818,15 @@ articulateDebugInfo: function(data, date){
 					data: dataToVisualize, //here is where I send the locations and number of crimes at this location, which came from the nlp smart hub
 					maxValue: maxVal,
 					title: plotTitle,
-					hub_id: hub_id
+					hub_id: hub_id,
+					viewCount: "view"+this.viewCount
 				};
 
-
+				this.viewCount++;
 			}//end maps
 			console.log("launch");
 			if( isMaster || !this.useMaster )
-					this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
+					this.launchNewChild(applicationType, application, initState, msg, [.5,.5]);//defined in sage2 app
 
 		}
 		else { //generic-
@@ -860,7 +868,7 @@ articulateDebugInfo: function(data, date){
 				  "color": "steelblue"
 			};
 			if( isMaster || !this.useMaster )
-					this.launchNewChild(applicationType, application, initState, msg);//defined in sage2 app
+					this.launchNewChild(applicationType, application, initState, msg, [.5,.5]);//defined in sage2 app
 		}
 	},
 
