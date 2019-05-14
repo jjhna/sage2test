@@ -1,0 +1,35 @@
+{
+	"main_script": "poll_vis.js",
+	"icon": "poll_vis.png",
+	"width": 1200,
+	"height": 600,
+	"resize": "free",
+	"dependencies": [
+		"scripts/d3.min.js",
+		"scripts/d3.geo.projection.min.js",
+		"scripts/d3.layout.cloud.js",
+		"scripts/topojson.js",			
+		"scripts/vega.min.js"
+	],
+	"load": {
+		"value": 4,
+		"type": "bar",
+		"x": "x",
+		"y": "value",
+		"id": "id",
+		"data": [
+		    {"x": 1, "id":"id1", "y": 0},
+		    {"x": 2, "id":"id2", "y": 0},
+		    {"x": 3, "id":"id3", "y": 0},
+		    {"x": 4, "id":"id4", "y": 0},
+		  	{"x": 5, "id":"id1", "y": 0}   	   
+		  ],
+		  "color": "steelblue"
+	},
+	"title": "vega_vis_app",
+	"version": "1.0.0",
+	"description": "SAGE2 application vega_vis_app",
+	"keywords": [ "sage2", "vega_vis_app" ],
+	"author": "Jillian Aurisano <jillian.aurisano@gmail.com>",
+	"license": "SAGE2-Software-License"
+}
