@@ -6071,19 +6071,21 @@ function processInputCommand(line) {
 					pos = [parseFloat(command[2]), parseFloat(command[3])];
 				}
 				var mt = assets.getMimeType(getSAGE2Path(file));
+				var defaultApp = registry.getDefaultApp(file);
 				if (mt === "application/custom") {
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
 						position: pos
 					});
+				} else if (defaultApp === "movie_player") {
+					wsLoadFileFromServer({id: "127.0.0.1:42"}, {
+						application: defaultApp,
+						filename: file,
+						user: "127.0.0.1:42",
+						position: pos
+					});
 				} else {
-					// wsLoadFileFromServer({id: "127.0.0.1:42"}, {
-					// 	application: "something",
-					// 	filename: file,
-					// 	user: "127.0.0.1:42",
-					// 	position: pos
-					// });
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
