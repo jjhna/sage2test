@@ -6065,19 +6065,21 @@ function processInputCommand(line) {
 					pos = [parseFloat(command[2]), parseFloat(command[3])];
 				}
 				var mt = assets.getMimeType(getSAGE2Path(file));
+				var defaultApp = registry.getDefaultApp(file);
 				if (mt === "application/custom") {
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
 						position: pos
 					});
+				} else if (defaultApp === "movie_player") {
+					wsLoadFileFromServer({id: "127.0.0.1:42"}, {
+						application: defaultApp,
+						filename: file,
+						user: "127.0.0.1:42",
+						position: pos
+					});
 				} else {
-					// wsLoadFileFromServer({id: "127.0.0.1:42"}, {
-					// 	application: "something",
-					// 	filename: file,
-					// 	user: "127.0.0.1:42",
-					// 	position: pos
-					// });
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
@@ -6996,7 +6998,20 @@ function pointerPressOnApplication(uniqueID, pointerX, pointerY, data, obj, loca
 			if (remoteInteraction[uniqueID].appInteractionMode()) {
 				sendPointerPressToApplication(uniqueID, obj.data, pointerX, pointerY, data);
 			} else {
-				selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+
+				if (data.sourceType !== "touch") { // Normal SAGEPointer case
+					selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+				} else {
+					if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
+						// Dual interaction mode to allow non-Webview apps like PDF viewer
+						// to have interactable widgets, but still allow window drag
+						selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+						sendPointerPressToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+					} else {
+						// Disable window drag for Webviews since we want direct interaction
+						// Do not interact with Webviews - assuming native touch will handle this
+					}
+				}
 			}
 		}
 		return;
@@ -8717,7 +8732,7 @@ function sendPointerReleaseToApplication(uniqueID, app, pointerX, pointerY, data
 	broadcast('eventInItem', event);
 }
 
-function pointerDblClick(uniqueID, pointerX, pointerY) {
+function pointerDblClick(uniqueID, pointerX, pointerY, data) {
 	if (sagePointers[uniqueID] === undefined) {
 		return;
 	}
@@ -8730,7 +8745,7 @@ function pointerDblClick(uniqueID, pointerX, pointerY) {
 	var localPt = globalToLocal(pointerX, pointerY, obj.type, obj.geometry);
 	switch (obj.layerId) {
 		case "applications": {
-			pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt);
+			pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt, data);
 			break;
 		}
 		case "portals": {
@@ -8739,13 +8754,22 @@ function pointerDblClick(uniqueID, pointerX, pointerY) {
 	}
 }
 
-function pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt) {
+function pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt, data) {
 	var btn = SAGE2Items.applications.findButtonByPoint(obj.id, localPt);
 
 	// pointer press on app window
 	if (btn === null) {
 		if (remoteInteraction[uniqueID].windowManagementMode()) {
-			toggleApplicationFullscreen(uniqueID, obj.data, true);
+			if (data === undefined || data.sourceType !== "touch") { // Normal SAGEPointer case
+				toggleApplicationFullscreen(uniqueID, obj.data, true);
+			} else {
+				if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
+					toggleApplicationFullscreen(uniqueID, obj.data, true);
+				} else {
+					// Disable window drag for Webviews since we want direct interaction
+					// Do not interact with Webviews - assuming native touch will handle this
+				}
+			}
 		} else {
 			sendPointerDblClickToApplication(uniqueID, obj.data, pointerX, pointerY);
 		}
@@ -8772,7 +8796,7 @@ function pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt
 	}
 }
 
-function pointerScrollStart(uniqueID, pointerX, pointerY) {
+function pointerScrollStart(uniqueID, pointerX, pointerY, data) {
 	if (sagePointers[uniqueID] === undefined) {
 		return;
 	}
@@ -8795,7 +8819,7 @@ function pointerScrollStart(uniqueID, pointerX, pointerY) {
 			break;
 		}
 		case "applications": {
-			pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, localPt);
+			pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, localPt, data);
 			break;
 		}
 		case "portals": {
@@ -8804,7 +8828,7 @@ function pointerScrollStart(uniqueID, pointerX, pointerY) {
 	}
 }
 
-function pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, localPt) {
+function pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, localPt, data) {
 	var btn = SAGE2Items.applications.findButtonByPoint(obj.id, localPt);
 
 	interactMgr.moveObjectToFront(obj.id, obj.layerId);
@@ -8819,7 +8843,16 @@ function pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, loca
 	// pointer scroll on app window
 	if (btn === null) {
 		if (remoteInteraction[uniqueID].windowManagementMode()) {
-			selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
+			if (data === undefined || data.sourceType !== "touch") { // Normal SAGEPointer case
+				selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
+			} else {
+				if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
+					selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
+				} else {
+					// Disable window drag for Webviews since we want direct interaction
+					// Do not interact with Webviews - assuming native touch will handle this
+				}
+			}
 		} else if (remoteInteraction[uniqueID].appInteractionMode()) {
 			remoteInteraction[uniqueID].selectWheelItem = obj.data;
 			remoteInteraction[uniqueID].selectWheelDelta = 0;
@@ -8915,7 +8948,16 @@ function pointerScroll(uniqueID, data) {
 				break;
 			}
 			case "applications": {
-				sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+				if (data === undefined || data.sourceType !== "touch") { // Normal SAGEPointer case
+					sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+				} else {
+					if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
+						sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+					} else {
+						// Disable window drag for Webviews since we want direct interaction
+						// Do not interact with Webviews - assuming native touch will handle this
+					}
+				}
 				break;
 			}
 		}
@@ -8982,6 +9024,27 @@ function pointerScrollEnd(uniqueID) {
 				};
 				addEventToUserLog(uniqueID, {type: "applicationInteraction", data: eLogData, time: Date.now()});
 			}
+		}
+	}
+}
+
+function pointerSendToBack(uniqueID, pointerX, pointerY) {
+	if (sagePointers[uniqueID] === undefined) {
+		return;
+	}
+
+	var obj = interactMgr.searchGeometry({x: pointerX, y: pointerY});
+	if (obj === null) {
+		return;
+	}
+
+	switch (obj.layerId) {
+		case "applications": {
+			wsCallFunctionOnApp(uniqueID, {func: "SAGE2SendToBack", app: obj.id});
+			break;
+		}
+		case "portals": {
+			break;
 		}
 	}
 }
@@ -9837,7 +9900,9 @@ omicronManager.setCallbacks(
 	createRadialMenu,
 	omi_pointerChangeMode,
 	undefined, // sendKinectInput
-	remoteInteraction);
+	remoteInteraction,
+	wsCallFunctionOnApp,
+	pointerSendToBack);
 omicronManager.linkDrawingManager(drawingManager);
 
 /* ****** Radial Menu section ************************************************************** */
