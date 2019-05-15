@@ -622,6 +622,28 @@ function setupListeners() {
 		}
 	});
 
+	wsio.on('videoPlaying', function(data) {
+		var app = applications[data.id];
+		if (app !== undefined && app !== null) {
+			app.state.paused = false;
+			app.htmlSetSeekTime();
+			app.htmlSetLoopStatus();
+			app.htmlSetPlayPauseStatus();
+			app.getFullContextMenuAndUpdate();
+		}
+	});
+
+	wsio.on('videoPaused', function(data) {
+		var app = applications[data.id];
+		if (app !== undefined && app !== null) {
+			app.state.paused = true;
+			app.htmlSetSeekTime();
+			app.htmlSetLoopStatus();
+			app.htmlSetPlayPauseStatus();
+			app.getFullContextMenuAndUpdate();
+		}
+	});
+
 	wsio.on('updateValidStreamBlocks', function(data) {
 		if (applications[data.id] !== undefined && applications[data.id] !== null) {
 			applications[data.id].validBlocks = data.blockList;
