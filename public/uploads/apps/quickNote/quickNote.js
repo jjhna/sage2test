@@ -90,17 +90,14 @@ var quickNote = SAGE2_App.extend({
 			// If the needed height is larger than the sage2 height, adjust to include.
 			// Maybe ratio is bad, some lines can't be joined together.
 			if (totalHeight > this.sage2_height) {
-				// let ratio = this.sage2_height / this.sage2_width;
-				// let totalAreaNeeded = this.sage2_width * totalHeight;
-				// let widthToBecome = parseInt(Math.sqrt(totalAreaNeeded / ratio)) + 1;
-				// let heightToBecome = widthToBecome * ratio;
-				// wsio.emit("updateApplicationPosition", {appPositionAndSize:{
-				// 	elemId: this.id,
-				// 	elemLeft: this.sage2_x,
-				// 	elemTop: this.sage2_y,
-				// 	elemWidth: widthToBecome,
-				// 	elemHeight: heightToBecome
-				// }});
+				// Keep note resize within wall height.
+				let totalWallHeight = ui.json_cfg.resolution.height * ui.json_cfg.layout.rows;
+				if (totalHeight > totalWallHeight) {
+					totalHeight = totalWallHeight - ui.titleBarHeight * 2;
+					if (largestWidth <= this.sage2_width + ui.titleBarHeight) {
+						largestWidth = this.sage2_width * 2;
+					}
+				}
 				wsio.emit("updateApplicationPosition", { appPositionAndSize: {
 					elemId: this.id,
 					elemLeft: this.sage2_x,
