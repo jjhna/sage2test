@@ -401,23 +401,27 @@ function initializeSage2Server() {
 		config.passwordProtected = true;
 		// New password, regenerate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
+	} else if (sageutils.fileExists(passwordFile) && (typeof program.password  === "string")) {
+		// If a password file exists, and the password flag was used but was empty, load from the file
+		// This is to allow sabi to launch using passwords, while still removing passwd on non password flag launches.
+		var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
+		var passwordFileJson       = JSON.parse(passwordFileJsonString);
+		if (passwordFileJson.pwd !== null) {
+			global.__SESSION_ID = passwordFileJson.pwd;
+			sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
+			// the session is protected
+			config.passwordProtected = true;
+		} else {
+			sageutils.log("Secure", "Invalid hash file", passwordFile);
+		}
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
 	} else if (sageutils.fileExists(passwordFile)) {
 		// remove pasword file, if option not specified
 		fs.unlinkSync(passwordFile);
+
 		// Now, generate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
-
-		// // If a password file exists, load it
-		// var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
-		// var passwordFileJson       = JSON.parse(passwordFileJsonString);
-		// if (passwordFileJson.pwd !== null) {
-		// 	global.__SESSION_ID = passwordFileJson.pwd;
-		// 	sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
-		// 	// the session is protected
-		// 	config.passwordProtected = true;
-		// } else {
-		// 	sageutils.log("Secure", "Invalid hash file", passwordFile);
-		// }
 	} else {
 		// Now, generate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
@@ -902,7 +906,7 @@ function wsAddClient(wsio, data) {
 			// Send a message back to server
 			wsio.emit('remoteConnection', {status: "refused", reason: 'wrong session hash'});
 			// If server protected and wrong hash, close the socket and byebye
-			wsio.ws.close();
+			wsio.ws.close(1001, "wrongSessionHash");
 			// For debugging connections and slow down. This one logs failed connection attemps.
 			sharedServerData.updateInformationAboutConnectionsFailedRemoteSite(wsio);
 			return;
@@ -6071,19 +6075,21 @@ function processInputCommand(line) {
 					pos = [parseFloat(command[2]), parseFloat(command[3])];
 				}
 				var mt = assets.getMimeType(getSAGE2Path(file));
+				var defaultApp = registry.getDefaultApp(file);
 				if (mt === "application/custom") {
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
 						position: pos
 					});
+				} else if (defaultApp === "movie_player") {
+					wsLoadFileFromServer({id: "127.0.0.1:42"}, {
+						application: defaultApp,
+						filename: file,
+						user: "127.0.0.1:42",
+						position: pos
+					});
 				} else {
-					// wsLoadFileFromServer({id: "127.0.0.1:42"}, {
-					// 	application: "something",
-					// 	filename: file,
-					// 	user: "127.0.0.1:42",
-					// 	position: pos
-					// });
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
