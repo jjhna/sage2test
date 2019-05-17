@@ -71,47 +71,42 @@ var quickNote = SAGE2_App.extend({
 		}
 		this.adjustFontSize();
 		this.showOrHideArrow();
-		this.adjustForInitialSize();
+		window.requestAnimationFrame(() => {
+			this.adjustForInitialSize();
+		});
 	},
 
 	adjustForInitialSize: function() {
-		// The point of this is that the original size of a not doesn't always show the entirely of it, making it difficult to read
+		// The point of this is that the original size of a note doesn't always show the entirely of it, making it difficult to read
+		let components = this.markdownDiv.children;
+		let totalHeight = 0;
+		let largestWidth = 0;
+		for (let i = 0; i < components.length; i++) {
+			totalHeight += parseInt(window.getComputedStyle(components[i]).height) + 1;
+			if (parseInt(window.getComputedStyle(components[i]).width) > largestWidth) {
+				largestWidth = parseInt(window.getComputedStyle(components[i]).width) + 1;
+			}
+		}
+		// If the needed height is larger than the sage2 height, adjust to include.
+		// Maybe ratio is bad, some lines can't be joined together.
+		if (totalHeight > this.sage2_height) {
+			// Keep note resize within wall height.
+			let totalWallHeight = ui.json_cfg.totalHeight;
+			if (totalHeight > totalWallHeight) {
+				totalHeight = totalWallHeight - ui.titleBarHeight * 2;
+				if (largestWidth <= this.sage2_width + ui.titleBarHeight) {
+					largestWidth = this.sage2_width * 2;
+				}
+			}
+			wsio.emit("updateApplicationPositionAndSize", { appPositionAndSize: {
+				elemId: this.id,
+				elemLeft: this.sage2_x,
+				elemTop: this.sage2_y,
+				elemWidth: largestWidth,
+				elemHeight: totalHeight
+			}});
 
-		setTimeout(() => {
-			let components = this.markdownDiv.children;
-			let totalHeight = 0;
-			let largestWidth = 0;
-			for (let i = 0; i < components.length; i++) {
-				totalHeight += parseInt(window.getComputedStyle(components[i]).height) + 1;
-				if (parseInt(window.getComputedStyle(components[i]).width) > largestWidth) {
-					largestWidth = parseInt(window.getComputedStyle(components[i]).width) + 1;
-				}
-			}
-			// If the needed height is larger than the sage2 height, adjust to include.
-			// Maybe ratio is bad, some lines can't be joined together.
-			if (totalHeight > this.sage2_height) {
-				// Keep note resize within wall height.
-				let totalWallHeight = ui.json_cfg.resolution.height * ui.json_cfg.layout.rows;
-				if (totalHeight > totalWallHeight) {
-					totalHeight = totalWallHeight - ui.titleBarHeight * 2;
-					if (largestWidth <= this.sage2_width + ui.titleBarHeight) {
-						largestWidth = this.sage2_width * 2;
-					}
-				}
-				wsio.emit("updateApplicationPosition", { appPositionAndSize: {
-					elemId: this.id,
-					elemLeft: this.sage2_x,
-					elemTop: this.sage2_y,
-					elemWidth: largestWidth,
-					elemHeight: totalHeight
-				}});
-				// The send resize seems necessary since updateApplicationPosition will visually update
-				setTimeout(() => {
-					// this.sendResize(widthToBecome, heightToBecome);
-					this.sendResize(largestWidth, totalHeight);
-				}, 100);
-			}
-		}, 100); // Mainly just wait after the render
+		}
 	},
 
 	makeHighlightExtension: function () {
