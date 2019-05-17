@@ -149,8 +149,6 @@ function OmicronManager(sysConfig) {
 	//clientParameters |= 1 << 10;	// Image
 	clientParameters |= 1 << 13;	// Audio
 
-	this.config.clientFlags = clientParameters;
-
 	// Default config
 	if (this.config === undefined) {
 		this.config = {};
@@ -164,6 +162,9 @@ function OmicronManager(sysConfig) {
 
 		this.config.msgPort = 28000;
 	}
+
+	this.config.clientFlags = clientParameters;
+
 
 	var defaultTouchExcludedApps = [
 		"Webview",

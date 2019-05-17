@@ -44,7 +44,9 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 
 		// Determine if should use HTML player mode
 		if (this.isOnlyDisplay() && this.isFileTypeSupportedByHtmlPlayer(this.state.video_url)) {
-			this.makeHtmlPlayer(this.state.video_url);
+			if (!((ui.json_cfg.experimental) && (ui.json_cfg.experimental.disableHTMLPlayer === true))) {
+				this.makeHtmlPlayer(this.state.video_url);
+			}
 		}
 	},
 
