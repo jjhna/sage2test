@@ -115,13 +115,15 @@ var scriptExecutionFunction		= require('./src/script').Script;
 var commandExecutionFunction	= require('./src/script').Command;
 var spawn = require('child_process').spawn;
 
-var currentSabiVersion = "20180921";
+var currentSabiVersion = "20190313";
 var detectedSabiVersion = "00000000";
 
 /*
 	Version list:
 		20180419 - Changed start process to use https
 		20180919 - Changed the off script, process renamed to SAGE2
+		20180921 - Command line argument updates to work better with commander
+		20190313 - Modified auto start script to include -p "", that trips the password check and should use the passwd file.
 */
 
 // ---------------------------------------------
