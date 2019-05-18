@@ -695,7 +695,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 						{
 							id: "tree1",
 							view: "tree",
-							type:"lineTree",
+							type: "lineTree",
 							select: "select",
 							navigation: true,
 							drag: true,
