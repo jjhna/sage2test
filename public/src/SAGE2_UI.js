@@ -548,18 +548,17 @@ function SAGE2_init() {
 // if time given as parameter in seconds, close after delay
 //
 function showSAGE2Message(message, delay) {
-	var aMessage = webix.alert({
+	webix.alert({
 		type:  "alert-warning",
 		title: "SAGE2 Message",
 		ok:    "OK",
+		id:    "message",
 		width: "40%",
 		text:  "<span style='font-weight:bold;'>" + message + "</span>"
 	});
 	if (delay) {
 		setTimeout(function() {
-			if (aMessage) {
-				webix.modalbox.hide(aMessage);
-			}
+			webix.modalbox.hide("message");
 		}, delay * 1000);
 	}
 }
@@ -1136,7 +1135,6 @@ function fileDrop(event) {
 }
 
 var msgOpen = false;
-var uploadMessage, msgui;
 
 /**
  * File upload start callback
@@ -1187,11 +1185,12 @@ function fileUploadStart(files) {
 	// Add the progress bar element from template
 	form.push({id: 'progressBar', view: 'ProgressBar'});
 
-	// Create a modal window wit empty div
-	uploadMessage = webix.modalbox({
+	// Create a modal window with empty div
+	webix.modalbox({
 		title: aTitle,
 		buttons: ["Cancel"],
 		margin: 25,
+		id: "uploadMessage",
 		text: "<div id='box_content' style='width:100%; height:100%'></div>",
 		width: "80%",
 		position: "center",
@@ -1202,7 +1201,7 @@ function fileUploadStart(files) {
 		}
 	});
 	// Add the form into the div
-	msgui = webix.ui({
+	webix.ui({
 		container: "box_content",
 		height: panelHeight,
 		rows: form
@@ -1235,7 +1234,7 @@ function fileUploadProgress(percent) {
 function fileUploadComplete() {
 	// close the modal window if still open
 	if (msgOpen) {
-		webix.modalbox.hide(uploadMessage);
+		webix.modalbox.hide("uploadMessage");
 	}
 
 	// Seems useful, sometimes (at the end of upload)
