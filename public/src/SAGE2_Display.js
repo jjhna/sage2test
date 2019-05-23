@@ -58,6 +58,7 @@ var storedFileListEventHandlers = [];
 var ui;
 var uiTimer = null;
 var uiTimerDelay;
+var remoteSiteInfo;
 
 // Global variables for screenshot functionality
 var makingScreenshotDialog = null;
@@ -390,6 +391,8 @@ function setupListeners() {
 			}, uiTimerDelay * 1000);
 		}
 		makeSvgBackgroundForWidgetConnectors(ui.main.style.width, ui.main.style.height);
+		// Make messages for remote site
+		remoteSiteInfo = new RemoteSiteInfoBuilder(json_cfg, clientID);
 	});
 
 	wsio.on('hideui', function(param) {
@@ -484,6 +487,9 @@ function setupListeners() {
 	wsio.on('updateSagePointerPosition', function(pointer_data) {
 		if (ui) {
 			ui.updateSagePointerPosition(pointer_data);
+		}
+		if (remoteSiteInfo) {
+			remoteSiteInfo.handleInteraction(pointer_data);
 		}
 		resetIdle();
 	});
@@ -1487,6 +1493,24 @@ function setupListeners() {
 			app.SAGE2Event('performanceData', null, null, data, data.date);
 		}
 	});
+
+	// Versioning and sharing controls
+	wsio.on('sageVersion', function (data) {
+		console.log("erase me, sageVersion", data);
+		// setupSAGE2Version does exist, but is a text manpulation for display on UI.
+	});
+	wsio.on('showRemoteSiteInfoDialog', function(data) {
+		if (data.message) {
+			remoteSiteInfo.showAcceptRejectMessage(data);
+		} else {
+			remoteSiteInfo.showAcceptRejectMessage({message: "No message given"});
+		}
+	});
+
+	wsio.on('hideRemoteSiteInfoDialog', function(data) {
+		remoteSiteInfo.hideAcceptRejectMessage();
+	});
+
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {

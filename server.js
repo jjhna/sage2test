@@ -482,6 +482,7 @@ function initializeSage2Server() {
 
 	// initialize dialog boxes
 	setUpDialogsAsInteractableObjects();
+	setUpRemoteSiteDialogsAsInteractableObjects();
 
 	// Setup the remote sites for collaboration
 	initalizeRemoteSites();
@@ -687,6 +688,37 @@ function setUpDialogsAsInteractableObjects() {
 	interactMgr.addGeometry("acceptDataSharingRequest", "staticUI", "rectangle", acceptGeometry, false, 2, null);
 	interactMgr.addGeometry("cancelDataSharingRequest", "staticUI", "rectangle", rejectCancelGeometry, false, 2, null);
 	interactMgr.addGeometry("rejectDataSharingRequest", "staticUI", "rectangle", rejectCancelGeometry, false, 2, null);
+}
+
+/*
+Increase by two lines.
+*/
+function setUpRemoteSiteDialogsAsInteractableObjects() {
+	var dialogGeometry = {
+		x: config.totalWidth / 2 - 13 * config.ui.titleBarHeight,
+		y: 2 * config.ui.titleBarHeight,
+		w: 26 * config.ui.titleBarHeight,
+		h: 10 * config.ui.titleBarHeight
+	};
+
+	var acceptGeometry = {
+		x: dialogGeometry.x + 0.25 * config.ui.titleBarHeight,
+		y: dialogGeometry.y + 6.75 * config.ui.titleBarHeight,
+		w: 9 * config.ui.titleBarHeight,
+		h: 3 * config.ui.titleBarHeight
+	};
+
+	var rejectCancelGeometry = {
+		x: dialogGeometry.x + 16.75 * config.ui.titleBarHeight,
+		y: dialogGeometry.y + 6.75 * config.ui.titleBarHeight,
+		w: 9 * config.ui.titleBarHeight,
+		h: 3 * config.ui.titleBarHeight
+	};
+
+	// Using the dataSharing sizing for dialogs...
+	// Don't yet know good names for their function.
+	interactMgr.addGeometry("acceptRemoteSiteInfoButton", "staticUI", "rectangle", acceptGeometry, false, 2, null);
+	interactMgr.addGeometry("rejectRemoteSiteInfoButton", "staticUI", "rectangle", rejectCancelGeometry, false, 2, null);
 }
 
 /**
@@ -913,7 +945,7 @@ function wsAddClient(wsio, data) {
 		}
 	}
 	// Send a message back to server
-	wsio.emit('remoteConnection', {status: "accepted"});
+	wsio.emit('remoteConnection', {status: "accepted", version: SAGE2_version, locationInformation: {host: config.host, alternate_hosts: config.alternate_hosts, remote_sites: config.remote_sites}});
 
 	// Just making sure the data is valid JSON (one gets strings from C++)
 	if (sageutils.isTrue(data.requests.config)) {
@@ -964,6 +996,20 @@ function wsAddClient(wsio, data) {
 			// 		manageRemoteConnection(wsio, element, index);
 			// 	}
 			// });
+
+			 /*
+			 This section is to detect if the local server knows about the incomming connection.
+			 */
+			let found = false;
+			for (var i = 0; i < config.remote_sites.length; i++) {
+				if (data.host === config.remote_sites[i].host) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				sageutils.log("Remote connection WARNING", chalk.bgRed("Incomming remote connection initiated by site '" + data.host + "(" + wsio.id + ")' not specified by local config"));
+			}
 		}
 	}
 
@@ -1297,6 +1343,20 @@ function setupListeners(wsio) {
 	// Message from a ScreenShare needing to connect with original ScreenShare client
 	wsio.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
 	wsio.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
+
+	// Testing versioning and sharing
+	// erase me, will maybe erase these functions after done testing.
+	wsio.on('requestingVersion', (wsio, data) => {
+		wsio.emit('sageVersion', SAGE2_version);
+	});
+	wsio.on('remoteSiteInfoBounceShow', (wsio, data) => {
+		// For testing, this should not be used otherwise
+		showRemoteSiteInfoButtons(true, data.message);
+	});
+	wsio.on('remoteSiteInfoBounceHide', (wsio, data) => {
+		// For testing, this should not be used otherwise
+		wsio.emit('hideRemoteSiteInfoDialog', data);
+	});
 }
 
 /**
@@ -5855,6 +5915,83 @@ function manageRemoteConnection(remote, site, index) {
 		} else {
 			sageutils.log("Remote", "Connected to", chalk.cyan(site.name));
 			remoteSites[index].connected = "on";
+
+			// Need to check if remote_sites given. Only exists after ~2019 05 update
+			let found = false;
+			if (data.locationInformation && data.locationInformation.remote_sites) {
+				for (var i = 0; i < data.locationInformation.remote_sites.length; i++) {
+					if (config.host === data.locationInformation.remote_sites[i].host) {
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					sageutils.log("Remote connection WARNING", chalk.bgRed("The site " + data.locationInformation.host + " doesn't know about this host. They may not be able to share anything back."));
+				}
+			}
+
+			// Versioning between remote sites.
+			let mismatch = false;
+			// Need to check if version given. Only exists after ~2019 05 update
+			if (data.version) {
+				let mismatchMessage = ["Warning mismatch with remote site" + site.name];
+				if (data.version.base !== SAGE2_version.base) {
+					mismatch = true;
+					mismatchMessage.push("Version base local("
+						+ SAGE2_version.base + ") remote(" + data.version.base + ")");
+					if (SAGE2_version.base > data.version.base) {
+						mismatchMessage.push("Remote site using older version");
+					} else {
+						mismatchMessage.push("Remote site using newer version");
+					}
+				}
+				if (data.version.branch !== SAGE2_version.branch) {
+					mismatch = true;
+					mismatchMessage.push("Version branch local("
+						+ SAGE2_version.branch + ") remote(" + data.version.branch + ")");
+					mismatchMessage.push("Branches do not match");
+				}
+				if (data.version.date !== SAGE2_version.date) {
+					mismatch = true;
+					mismatchMessage.push("Version date local("
+						+ SAGE2_version.date + ") remote(" + data.version.date + ")");
+					if (SAGE2_version.date > data.version.date) {
+						mismatchMessage.push("Remote site using older version");
+					} else {
+						mismatchMessage.push("Remote site using newer version");
+					}
+				}
+
+				if (mismatch) {
+					sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH DETECTED-----"));
+					mismatchMessage.forEach((line) => {
+						sageutils.log("Remote connection WARNING", line);
+					});
+					sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH END OF REPORT-----"));
+				}
+			} else {
+				mismatch = true;
+				sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH DETECTED-----"));
+				sageutils.log("Remote connection WARNING", chalk.bgRed("Remote site " + site.name + " has an older version and may not work well with this site"));
+				sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH END OF REPORT-----"));
+			}
+
+			let messageForDisplay = remotesocket.remoteAddress.address + "\r\n";
+			let shouldSendMessage = false;
+			if (!found) {
+				shouldSendMessage = true;
+				messageForDisplay += " Isn't aware of this site\r\n";
+			}
+			if (mismatch) {
+				shouldSendMessage = true;
+				messageForDisplay += " Doesn't have same version\r\n";
+			}
+			if (shouldSendMessage) {
+				messageForDisplay += " Sharing may not work correctly\r\n";
+				showRemoteSiteInfoButtons(true, {message: messageForDisplay, hideReject: true});
+			}
+
+
 		}
 		var update_site = {name: remoteSites[index].name, connected: remoteSites[index].connected};
 		broadcast('connectedToRemoteSite', update_site);
@@ -6671,7 +6808,7 @@ function pointerPressOnOpenSpace(uniqueID, pointerX, pointerY, data) {
 function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt) {
 	// If the remote site is active (green button)
 	// also disable action through the web ui (visible pointer)
-	if (obj.data.connected === "on" && sagePointers[uniqueID].visible) {
+	if (obj.data && (obj.data.connected === "on") && sagePointers[uniqueID].visible) {
 		// Validate the remote address
 		var remoteSite = findRemoteSiteByConnection(obj.data.wsio);
 
@@ -6702,6 +6839,19 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 			position: [pointerX, config.ui.titleBarHeight + 10],
 			dimensions: [400, 120]
 		});
+	}
+
+	// Mimicing the data sharing dialog
+	// Only possible to click on these if visible, they need to be hidden if clicked.
+	switch (obj.id) {
+		case "acceptRemoteSiteInfoButton": {
+			showRemoteSiteInfoButtons(false);
+			break;
+		}
+		case "rejectRemoteSiteInfoButton": {
+			showRemoteSiteInfoButtons(false);
+			break;
+		}
 	}
 
 	// don't allow data-pushing
@@ -6857,6 +7007,25 @@ function showRequestDialog(flag) {
 	interactMgr.editVisibility("dataSharingRequestDialog", "staticUI", flag);
 	interactMgr.editVisibility("acceptDataSharingRequest", "staticUI", flag);
 	interactMgr.editVisibility("rejectDataSharingRequest", "staticUI", flag);
+}
+
+function showRemoteSiteInfoButtons(flag, data) {
+	interactMgr.editVisibility("acceptRemoteSiteInfoButton", "staticUI", flag);
+	interactMgr.editVisibility("rejectRemoteSiteInfoButton", "staticUI", flag);
+	let packetName = flag ? "showRemoteSiteInfoDialog" : "hideRemoteSiteInfoDialog";
+	let foundDisplayToNotify = false;
+	for (let i = 0; i < clients.length; i++) {
+		if (clients[i].clientType === "display") {
+			clients[i].emit(packetName, data);
+			console.log("sending to display", clients[i].id);
+			foundDisplayToNotify = true;
+		}
+	}
+	if (!foundDisplayToNotify) {
+		setTimeout(() => {
+			showRemoteSiteInfoButtons(flag, data)
+		}, 5000);
+	}
 }
 
 function pointerPressOnRadialMenu(uniqueID, pointerX, pointerY, data, obj, localPt, color) {
