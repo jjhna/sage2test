@@ -640,7 +640,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		container: document.getElementById('mainMenuBar'),
 		id: "toplayout",
 		// CSS styling for colors
-		css: "my_style",
+		css: "topbar_style",
 		// Remove the css borders for full width
 		borderless: true,
 		rows: [{
