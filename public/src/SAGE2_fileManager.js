@@ -399,17 +399,28 @@ function FileManager(wsio, mydiv, uniqueID) {
 			}
 		},
 		separator4: {value: "separator"},
-		hidebuttons_menu: {value: "Show overview client",
-			tooltip: "Shows the overview client at the bottom of the page",
+		hidebuttons_menu: {value: "Show/Hide Wall",
+			tooltip: "Shows/Hides the overview client at the bottom of the page",
 			callback: function (evt) {
+				// Open/close the file manager
+				var fm = document.getElementById('fileManager');
+				// Add the wall overview
 				if (self.overview) {
 					document.getElementById('overview').remove();
-					let elt = document.getElementById('fileManager').firstElementChild;
+					let elt = fm.firstElementChild;
 					elt.style.display = "block";
 					self.overview = false;
 					SAGE2_resize();
+					// Hide file manager
+					fm.style.display = "none";
+					SAGE2_resize(1.0);
 				} else {
-					let elt = document.getElementById('fileManager').firstElementChild;
+					if (fm.style.display === "none") {
+						fm.style.display = "block";
+						SAGE2_resize(0.6);
+						fileManager.refresh();
+					}
+					let elt = fm.firstElementChild;
 					elt.style.display = "none";
 					let overview = document.createElement("iframe");
 					overview.id = "overview";
