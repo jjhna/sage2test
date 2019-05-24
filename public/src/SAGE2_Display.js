@@ -18,7 +18,7 @@
 /* global hideWidgetToAppConnectors */
 /* global createWidgetToAppConnector, getTextFromTextInputWidget */
 /* global SAGE2_Partition, require */
-/* global SAGE2RemoteSitePointer */
+/* global SAGE2RemoteSitePointer RemoteSiteInfoBuilder */
 /* global process */
 
 "use strict";

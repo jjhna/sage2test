@@ -75,12 +75,12 @@ function RemoteSiteInfoBuilder(json_cfg, clientID) {
 	};
 
 	this.setAcceptRejectButtonVisibility = function(whichButton, flag) {
-		this.displayMessages.acceptReject
+		this.displayMessages.acceptReject;
 		if (whichButton === "accept") {
-			this.displayMessages.acceptReject.accept.style.display = 
+			this.displayMessages.acceptReject.accept.style.display =
 				(flag) ? "block" : "none";
-		} else if (whichButton === "reject"){
-			this.displayMessages.acceptReject.reject.style.display = 
+		} else if (whichButton === "reject") {
+			this.displayMessages.acceptReject.reject.style.display =
 				(flag) ? "block" : "none";
 		}
 	};
@@ -96,13 +96,13 @@ function RemoteSiteInfoBuilder(json_cfg, clientID) {
 
 		// 1. Make message box:
 		ar.dialog =  document.createElement("div");
-		ar.id = "remoteSiteMessageAcceptReject"
+		ar.id = "remoteSiteMessageAcceptReject";
 		ar.dialog.id = ar.id + "Dialog";
-		// Most of these values match the data sharing request dialog
+		// Most of these values match the data sharing request dialog, the numbers match server UI element creation. See setUpRemoteSiteDialogsAsInteractableObjects.
 		let dialogWidth = 26; // units: ui title bar
 		let dialogHeight = 10;
 		let titleBarHeight = this.json_cfg.ui.titleBarHeight;
-		let titleTextSize = this.json_cfg.ui.titleTextSize;;
+		let titleTextSize = this.json_cfg.ui.titleTextSize;
 		ar.dialog.style.position = "absolute";
 		ar.dialog.style.top = (-this.offsetY + (2 * titleBarHeight)).toString() + "px";
 		ar.dialog.style.left = (-this.offsetX + (this.json_cfg.totalWidth / 2
@@ -118,7 +118,7 @@ function RemoteSiteInfoBuilder(json_cfg, clientID) {
 		// Keeping zIndez to match datasharing
 		ar.dialog.style.zIndex = 8999;
 		ar.dialog.style.display = "none";
-		// 2. Make  
+		// 2. Make
 		ar.text = document.createElement("p");
 		// Keeping convention from datasharing
 		ar.text.id = ar.id + "_text";
@@ -180,21 +180,15 @@ function RemoteSiteInfoBuilder(json_cfg, clientID) {
 	// Handling AcceptReject interaction
 	this.handleInteraction = function(pointer_data) {
 		let arDialog = this.displayMessages.acceptReject.dialog;
-
 		// Only allow interaction with visible pointers (pointer mode)
 		if (pointer_data.visible) {
 			// If block, then should be visible and prompting for accept / reject
 			if (arDialog.style.display === "block") {
-
-				// Detect if pointer over accept or reject
-	
-	
 				// Hide
 				arDialog.style.display === "none";
 			}
 		}
 	};
-	
 
 	// ------------------------------------------------------------------------
 

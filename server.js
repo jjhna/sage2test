@@ -945,7 +945,13 @@ function wsAddClient(wsio, data) {
 		}
 	}
 	// Send a message back to server
-	wsio.emit('remoteConnection', {status: "accepted", version: SAGE2_version, locationInformation: {host: config.host, alternate_hosts: config.alternate_hosts, remote_sites: config.remote_sites}});
+	wsio.emit('remoteConnection', {
+		status: "accepted",
+		version: SAGE2_version,
+		locationInformation: {
+			host: config.host,
+			alternate_hosts: config.alternate_hosts,
+			remote_sites: config.remote_sites}});
 
 	// Just making sure the data is valid JSON (one gets strings from C++)
 	if (sageutils.isTrue(data.requests.config)) {
@@ -997,9 +1003,9 @@ function wsAddClient(wsio, data) {
 			// 	}
 			// });
 
-			 /*
+			/*
 			 This section is to detect if the local server knows about the incomming connection.
-			 */
+			*/
 			let found = false;
 			for (var i = 0; i < config.remote_sites.length; i++) {
 				if (data.host === config.remote_sites[i].host) {
@@ -1008,7 +1014,9 @@ function wsAddClient(wsio, data) {
 				}
 			}
 			if (!found) {
-				sageutils.log("Remote connection WARNING", chalk.bgRed("Incomming remote connection initiated by site '" + data.host + "(" + wsio.id + ")' not specified by local config"));
+				sageutils.log("Remote connection WARNING",
+					chalk.bgRed("Incomming remote connection initiated by site '" + data.host
+						+ "(" + wsio.id + ")' not specified by local config"));
 			}
 		}
 	}
@@ -5926,7 +5934,9 @@ function manageRemoteConnection(remote, site, index) {
 					}
 				}
 				if (!found) {
-					sageutils.log("Remote connection WARNING", chalk.bgRed("The site " + data.locationInformation.host + " doesn't know about this host. They may not be able to share anything back."));
+					sageutils.log("Remote connection WARNING",
+						chalk.bgRed("The site " + data.locationInformation.host
+							+ " doesn't know about this host. They may not be able to share anything back."));
 				}
 			}
 
@@ -5972,7 +5982,8 @@ function manageRemoteConnection(remote, site, index) {
 			} else {
 				mismatch = true;
 				sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH DETECTED-----"));
-				sageutils.log("Remote connection WARNING", chalk.bgRed("Remote site " + site.name + " has an older version and may not work well with this site"));
+				sageutils.log("Remote connection WARNING",
+					chalk.bgRed("Remote site " + site.name + " has an older version and may not work well with this site"));
 				sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH END OF REPORT-----"));
 			}
 
@@ -7023,7 +7034,7 @@ function showRemoteSiteInfoButtons(flag, data) {
 	}
 	if (!foundDisplayToNotify) {
 		setTimeout(() => {
-			showRemoteSiteInfoButtons(flag, data)
+			showRemoteSiteInfoButtons(flag, data);
 		}, 5000);
 	}
 }
