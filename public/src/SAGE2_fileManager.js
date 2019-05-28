@@ -19,7 +19,7 @@
 
 /* global SAGE2_init, SAGE2_resize, escape, unescape, sage2Version, showDialog */
 /* global removeAllChildren, SAGE2_copyToClipboard, displayUI, dateToYYYYMMDDHHMMSS */
-/* global showSAGE2Message, pasteHandler */
+/* global showSAGE2Message, pasteHandler, fileManager */
 /* global SAGE2_speech, deferredInstallationPrompt */
 
 "use strict";
