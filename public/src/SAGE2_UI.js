@@ -424,6 +424,10 @@ function SAGE2_init() {
 		// show a popup
 		showSAGE2Message("Server unreachable: you are offline or the server is down");
 		// try to reload every few seconds
+		if ((evt.code === 1001) && (evt.reason === "wrongSessionHash")) {
+			window.location = "session.html";
+			return;
+		}
 		var refresh = setInterval(function() {
 			reloadIfServerRunning(function() {
 				clearInterval(refresh);
@@ -544,18 +548,17 @@ function SAGE2_init() {
 // if time given as parameter in seconds, close after delay
 //
 function showSAGE2Message(message, delay) {
-	var aMessage = webix.alert({
+	webix.alert({
 		type:  "alert-warning",
 		title: "SAGE2 Message",
 		ok:    "OK",
+		id:    "message",
 		width: "40%",
 		text:  "<span style='font-weight:bold;'>" + message + "</span>"
 	});
 	if (delay) {
 		setTimeout(function() {
-			if (aMessage) {
-				webix.modalbox.hide(aMessage);
-			}
+			webix.modalbox.hide("message");
 		}, delay * 1000);
 	}
 }
@@ -1132,7 +1135,6 @@ function fileDrop(event) {
 }
 
 var msgOpen = false;
-var uploadMessage, msgui;
 
 /**
  * File upload start callback
@@ -1183,11 +1185,12 @@ function fileUploadStart(files) {
 	// Add the progress bar element from template
 	form.push({id: 'progressBar', view: 'ProgressBar'});
 
-	// Create a modal window wit empty div
-	uploadMessage = webix.modalbox({
+	// Create a modal window with empty div
+	webix.modalbox({
 		title: aTitle,
 		buttons: ["Cancel"],
 		margin: 25,
+		id: "uploadMessage",
 		text: "<div id='box_content' style='width:100%; height:100%'></div>",
 		width: "80%",
 		position: "center",
@@ -1198,7 +1201,7 @@ function fileUploadStart(files) {
 		}
 	});
 	// Add the form into the div
-	msgui = webix.ui({
+	webix.ui({
 		container: "box_content",
 		height: panelHeight,
 		rows: form
@@ -1231,7 +1234,7 @@ function fileUploadProgress(percent) {
 function fileUploadComplete() {
 	// close the modal window if still open
 	if (msgOpen) {
-		webix.modalbox.hide(uploadMessage);
+		webix.modalbox.hide("uploadMessage");
 	}
 
 	// Seems useful, sometimes (at the end of upload)
@@ -2548,8 +2551,10 @@ function loadSelectedFile() {
 function noteMakerDialog(mode, params, app) {
 	// Default mode is 'create' a new note
 	let okButton = "Make Note [Shift-Enter]";
+	// use markdown
+	let useMarkdown = (getCookie('SAGE2_noteUseMarkdown') === "0") ? false : true; // webix uses 1 for true and 0 for false
 	// not anonymous
-	let isAnon = false;
+	let isAnon = (getCookie('SAGE2_noteIsAnon') === "1") ? true : false;
 	// empty note
 	let noteText = '';
 	// default is yellow
@@ -2606,7 +2611,10 @@ function noteMakerDialog(mode, params, app) {
 		"\n\"formatting \" +" +
 		"\n\"section\";\n" +
 		"alert(s);\n" +
-		"```\n";
+		"```\n" +
+		"\n" +
+		"For more information see the [showdownjs documentation page]" +
+		"(https://github.com/showdownjs/showdown/wiki/Showdown's-Markdown-syntax)";
 
 	let renderText = '<div style="font-family: \'Oxygen Mono\'; font-size: 10px;' +
 		'box-sizing: border-box; list-style-position: inside;">' +
@@ -2654,7 +2662,12 @@ function noteMakerDialog(mode, params, app) {
 		'<br>"formatting " +' +
 		'<br>"section";' +
 		'<br>alert(s);' +
-		'</code></pre></div>';
+		'</code></pre>' +
+		'<br>' +
+		'For more information see the ' +
+		'<a href="https://github.com/showdownjs/showdown/wiki/Showdown\'s-Markdown-syntax" style="font-family:\'Oxygen Mono\'">' +
+		'showdownjs documentation page</a><br>' +
+		'</div>';
 
 	// Build a webix dialog
 	webix.ui({
@@ -2679,6 +2692,22 @@ function noteMakerDialog(mode, params, app) {
 						padding: 5,
 						borderless: false,
 						elements: [
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Use Markdown"
+									},
+									{
+										// Text box
+										view: "checkbox",
+										id: "quicknote_markdown",
+										name: "markdown",
+										value: useMarkdown
+									}
+								]
+							},
 							{
 								cols: [
 									{
@@ -2767,6 +2796,11 @@ function noteMakerDialog(mode, params, app) {
 												if (values.anon) {
 													data.parameters.clientName = "Anonymous";
 												}
+												if (!values.markdown) {
+													data.parameters.useMarkdown = false;
+												}
+												addCookie('SAGE2_noteUseMarkdown', values.markdown); // Keep preferences for markdown and anon
+												addCookie('SAGE2_noteIsAnon', values.anon);
 												data.parameters.colorChoice = values.color;
 												// Send update message to server
 												wsio.emit('callFunctionOnApp', data);
@@ -2779,6 +2813,11 @@ function noteMakerDialog(mode, params, app) {
 												if (values.anon) {
 													data.customLaunchParams.clientName = "Anonymous";
 												}
+												if (!values.markdown) {
+													data.customLaunchParams.useMarkdown = false;
+												}
+												addCookie('SAGE2_noteUseMarkdown', values.markdown); // Keep preferences for markdown and anon
+												addCookie('SAGE2_noteIsAnon', values.anon);
 												data.customLaunchParams.colorChoice = values.color;
 												// Send creation message to server
 												wsio.emit('launchAppWithValues', data);
