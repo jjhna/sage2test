@@ -17,12 +17,12 @@
  * @submodule pdf_viewer
  */
 
-PDFJS.workerSrc       = 'lib/pdf.worker.js';
-PDFJS.disableWorker   = false;
-PDFJS.disableWebGL    = true;
-PDFJS.verbosity       = PDFJS.VERBOSITY_LEVELS.warnings;
-PDFJS.maxCanvasPixels = 67108864; // 8k2
-PDFJS.disableStream   = true;
+pdfjsLib.GlobalWorkerOptions.workerSrc       = 'lib/pdf.worker.js';
+pdfjsLib.GlobalWorkerOptions.disableWorker   = false;
+pdfjsLib.GlobalWorkerOptions.enableWebGL     = false;
+pdfjsLib.GlobalWorkerOptions.verbosity       = pdfjsLib.VerbosityLevel.WARNINGS;
+pdfjsLib.GlobalWorkerOptions.maxCanvasPixels = 67108864; // 8k2
+pdfjsLib.GlobalWorkerOptions.disableStream   = true;
 
 // List of icons
 var svgImages = [
@@ -135,7 +135,7 @@ var pdf_viewer = SAGE2_App.extend({
 
 	loadPDF: function(docURL) {
 		var _this = this;
-		PDFJS.getDocument(docURL).then(function(solver) {
+		pdfjsLib.getDocument(docURL).then(function(solver) {
 
 			// saving the solver
 			_this.solver = solver;

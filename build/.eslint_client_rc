@@ -10,7 +10,7 @@
 		Class: true, SAGE2_App: true, applications: true,
 		SAGE2_initialize: true, UIBuilder: true, DataSharing: true,
 		broadcast: true,
-		PDFJS: true, Snap: true, mina: true, webix: true, $$: true, moment: true,
+		pdfjsLib: true, Snap: true, mina: true, webix: true, $$: true, moment: true,
 		SAGE2_BlockStreamingApp: true, movie_player: true, SAGE2_WebGLApp: true,
 		formatHHMMSS: true, formatAMPM: true, format24Hr: true, cleanURL: true,
 		readFile: true, sage2Log: true,	getCookie: true, addCookie: true,
