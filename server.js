@@ -75,11 +75,12 @@ var StickyItems         = require('./src/node-stickyitems');
 var registry            = require('./src/node-registry');         // Registry Manager
 var FileBufferManager	= require('./src/node-filebuffer');
 var PartitionList       = require('./src/node-partitionlist');    // list of SAGE2 Partitions
-var SharedDataManager	= require('./src/node-sharedserverdata'); // manager for shared data
+var SharedDataManager	= require('./src/node-sharedserverdata');   // manager for shared data
 var userlist            = require('./src/node-userlist');         // list of users
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
 var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
 var VoiceActionManager	= require('./src/node-voiceToAction');    // manager for shared data
+var VersionManager      = require('./src/node-versionChecker');   // manager for version tracking
 
 //
 // Globals
@@ -521,6 +522,13 @@ function initializeSage2Server() {
 		if (users !== null) {
 			users.session.version = SAGE2_version;
 		}
+
+		var variablesUsedInVersionManger = {
+			config,
+			showGenericInfoPaneOnDisplay,
+			version: SAGE2_version
+		};
+		versionHandler = new VersionManager(variablesUsedInVersionManger);
 	});
 
 	// Initialize assets folders
@@ -796,6 +804,8 @@ var variablesUsedInVoiceHandler = {
 	voiceNameMarker: config.voice_commands.system_name
 };
 var voiceHandler = new VoiceActionManager(variablesUsedInVoiceHandler);
+var versionHandler = null;
+
 
 //
 // Catch the uncaught errors that weren't wrapped in a domain or try catch statement
@@ -988,35 +998,9 @@ function wsAddClient(wsio, data) {
 		wsio.clientID = -1;
 		sageutils.log("Connect", chalk.bold.green(wsio.id) + " (" + wsio.clientType + ")");
 		if (wsio.clientType === "remoteServer") {
-			// Remote info
-			// var remoteaddr = wsio.ws.upgradeReq.connection.remoteAddress;
-			// var remoteport = wsio.ws.upgradeReq.connection.remotePort;
-
-			// Checking if it's a known server
-			// bug: Seems to create a race condition and works without, so far
-			// config.remote_sites.forEach(function(element, index, array) {
-			// 	if (element.host === data.host &&
-			// 		element.port === data.port &&
-			// 		remoteSites[index].connected === "on") {
-			// 		sageutils.log("Connect", 'known remote site', data.host, ':', data.port);
-			// 		manageRemoteConnection(wsio, element, index);
-			// 	}
-			// });
-
-			/*
-			 This section is to detect if the local server knows about the incomming connection.
-			*/
-			let found = false;
-			for (var i = 0; i < config.remote_sites.length; i++) {
-				if (data.host === config.remote_sites[i].host) {
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				sageutils.log("Remote connection WARNING",
-					chalk.bgRed("Incomming remote connection initiated by site '" + data.host
-						+ "(" + wsio.id + ")' not specified by local config"));
+			// This section is to detect if the local server knows about the incomming connection.
+			if (versionHandler) {
+				versionHandler.doesThisServerKnowAboutRemoteSite(data.host, wsio);
 			}
 		}
 	}
@@ -1359,7 +1343,7 @@ function setupListeners(wsio) {
 	});
 	wsio.on('remoteSiteInfoBounceShow', (wsio, data) => {
 		// For testing, this should not be used otherwise
-		showRemoteSiteInfoButtons(true, data.message);
+		showGenericInfoPaneOnDisplay(true, data);
 	});
 	wsio.on('remoteSiteInfoBounceHide', (wsio, data) => {
 		// For testing, this should not be used otherwise
@@ -5924,85 +5908,9 @@ function manageRemoteConnection(remote, site, index) {
 			sageutils.log("Remote", "Connected to", chalk.cyan(site.name));
 			remoteSites[index].connected = "on";
 
-			// Need to check if remote_sites given. Only exists after ~2019 05 update
-			let found = false;
-			if (data.locationInformation && data.locationInformation.remote_sites) {
-				for (var i = 0; i < data.locationInformation.remote_sites.length; i++) {
-					if (config.host === data.locationInformation.remote_sites[i].host) {
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
-					sageutils.log("Remote connection WARNING",
-						chalk.bgRed("The site " + data.locationInformation.host
-							+ " doesn't know about this host. They may not be able to share anything back."));
-				}
-			}
-
-			// Versioning between remote sites.
-			let mismatch = false;
-			// Need to check if version given. Only exists after ~2019 05 update
-			if (data.version) {
-				let mismatchMessage = ["Warning mismatch with remote site" + site.name];
-				if (data.version.base !== SAGE2_version.base) {
-					mismatch = true;
-					mismatchMessage.push("Version base local("
-						+ SAGE2_version.base + ") remote(" + data.version.base + ")");
-					if (SAGE2_version.base > data.version.base) {
-						mismatchMessage.push("Remote site using older version");
-					} else {
-						mismatchMessage.push("Remote site using newer version");
-					}
-				}
-				if (data.version.branch !== SAGE2_version.branch) {
-					mismatch = true;
-					mismatchMessage.push("Version branch local("
-						+ SAGE2_version.branch + ") remote(" + data.version.branch + ")");
-					mismatchMessage.push("Branches do not match");
-				}
-				if (data.version.date !== SAGE2_version.date) {
-					mismatch = true;
-					mismatchMessage.push("Version date local("
-						+ SAGE2_version.date + ") remote(" + data.version.date + ")");
-					if (SAGE2_version.date > data.version.date) {
-						mismatchMessage.push("Remote site using older version");
-					} else {
-						mismatchMessage.push("Remote site using newer version");
-					}
-				}
-
-				if (mismatch) {
-					sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH DETECTED-----"));
-					mismatchMessage.forEach((line) => {
-						sageutils.log("Remote connection WARNING", line);
-					});
-					sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH END OF REPORT-----"));
-				}
-			} else {
-				mismatch = true;
-				sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH DETECTED-----"));
-				sageutils.log("Remote connection WARNING",
-					chalk.bgRed("Remote site " + site.name + " has an older version and may not work well with this site"));
-				sageutils.log("Remote connection WARNING", chalk.bgRed("-----VERSION MISMATCH END OF REPORT-----"));
-			}
-
-			let messageForDisplay = remotesocket.remoteAddress.address + "\r\n";
-			let shouldSendMessage = false;
-			if (!found) {
-				shouldSendMessage = true;
-				messageForDisplay += " Isn't aware of this site\r\n";
-			}
-			if (mismatch) {
-				shouldSendMessage = true;
-				messageForDisplay += " Doesn't have same version\r\n";
-			}
-			if (shouldSendMessage) {
-				messageForDisplay += " Sharing may not work correctly\r\n";
-				showRemoteSiteInfoButtons(true, {message: messageForDisplay, hideReject: true});
-			}
 
 
+			versionHandler.determineIfVersionMismatch(data, site, remotesocket.remoteAddress.address);
 		}
 		var update_site = {name: remoteSites[index].name, connected: remoteSites[index].connected};
 		broadcast('connectedToRemoteSite', update_site);
@@ -6856,11 +6764,13 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 	// Only possible to click on these if visible, they need to be hidden if clicked.
 	switch (obj.id) {
 		case "acceptRemoteSiteInfoButton": {
-			showRemoteSiteInfoButtons(false);
+			showGenericInfoPaneOnDisplay(false);
+			versionHandler.reportAccept();
 			break;
 		}
 		case "rejectRemoteSiteInfoButton": {
-			showRemoteSiteInfoButtons(false);
+			showGenericInfoPaneOnDisplay(false);
+			versionHandler.reportReject();
 			break;
 		}
 	}
@@ -7020,7 +6930,7 @@ function showRequestDialog(flag) {
 	interactMgr.editVisibility("rejectDataSharingRequest", "staticUI", flag);
 }
 
-function showRemoteSiteInfoButtons(flag, data) {
+function showGenericInfoPaneOnDisplay(flag, data) {
 	interactMgr.editVisibility("acceptRemoteSiteInfoButton", "staticUI", flag);
 	interactMgr.editVisibility("rejectRemoteSiteInfoButton", "staticUI", flag);
 	let packetName = flag ? "showRemoteSiteInfoDialog" : "hideRemoteSiteInfoDialog";
@@ -7034,7 +6944,7 @@ function showRemoteSiteInfoButtons(flag, data) {
 	}
 	if (!foundDisplayToNotify) {
 		setTimeout(() => {
-			showRemoteSiteInfoButtons(flag, data);
+			showGenericInfoPaneOnDisplay(flag, data);
 		}, 5000);
 	}
 }
