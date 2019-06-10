@@ -4665,7 +4665,9 @@ function wsUpdateApplicationPosition(wsio, data) {
 	app.width = data.appPositionAndSize.elemWidth;
 	app.height = data.appPositionAndSize.elemHeight;
 	var im = findInteractableManager(data.appPositionAndSize.elemId);
-	im.editGeometry(app.id, "applications", "rectangle", {x: app.left, y: app.top, w: app.width, h: app.height + titleBarHeight});
+	im.editGeometry(app.id, "applications", "rectangle", {
+		x: app.left, y: app.top,
+		w: app.width, h: app.height + titleBarHeight * 2});
 	broadcast('setItemPosition', data.appPositionAndSize);
 	if (SAGE2Items.renderSync.hasOwnProperty(app.id)) {
 		calculateValidBlocks(app, mediaBlockSize, SAGE2Items.renderSync[app.id]);
@@ -4699,7 +4701,9 @@ function wsUpdateApplicationPositionAndSize(wsio, data) {
 	app.width = data.appPositionAndSize.elemWidth;
 	app.height = data.appPositionAndSize.elemHeight;
 	var im = findInteractableManager(data.appPositionAndSize.elemId);
-	im.editGeometry(app.id, "applications", "rectangle", {x: app.left, y: app.top, w: app.width, h: app.height + titleBarHeight});
+	im.editGeometry(app.id, "applications", "rectangle", {
+		x: app.left, y: app.top,
+		w: app.width, h: app.height + titleBarHeight * 2});
 	handleApplicationResize(app.id);
 	broadcast('setItemPositionAndSize', data.appPositionAndSize);
 	if (SAGE2Items.renderSync.hasOwnProperty(app.id)) {
@@ -6786,7 +6790,7 @@ function createNewDataSharingSession(remoteName, remoteHost, remotePort, remoteW
 		x: dataSession.left,
 		y: dataSession.top,
 		w: dataSession.width,
-		h: dataSession.height + config.ui.titleBarHeight
+		h: dataSession.height + config.ui.titleBarHeight * 2
 	};
 
 	var cornerSize   = 0.2 * Math.min(geometry.w, geometry.h);
@@ -6812,7 +6816,8 @@ function createNewDataSharingSession(remoteName, remoteHost, remotePort, remoteW
 		{x: startButtons + buttonsPad + oneButton, y: 0, w: oneButton, h: config.ui.titleBarHeight}, 1);
 	SAGE2Items.portals.addButtonToItem(dataSession.id, "dragCorner", "rectangle",
 		{x: geometry.w - cornerSize, y: geometry.h + config.ui.titleBarHeight - cornerSize, w: cornerSize, h: cornerSize}, 2);
-
+	SAGE2Items.portals.addButtonToItem(dataSession.id, "dragBottomBar", "rectangle",
+		{x: 0, y: geometry.h + config.ui.titleBarHeight, w: geometry.w, h: config.ui.titleBarHeight}, 2);
 	SAGE2Items.portals.interactMgr[dataSession.id] = new InteractableManager();
 	SAGE2Items.portals.interactMgr[dataSession.id].addLayer("radialMenus",  2);
 	SAGE2Items.portals.interactMgr[dataSession.id].addLayer("widgets",      1);
@@ -7046,6 +7051,11 @@ function pointerPressOnApplication(uniqueID, pointerX, pointerY, data, obj, loca
 				selectApplicationForResize(uniqueID, obj.data, pointerX, pointerY, portalId);
 			}
 			break;
+		case "dragBottomBar":
+			if (drawingManager.paletteID !== uniqueID) {
+				selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+			}
+			break;
 		case "syncButton":
 			if (sagePointers[uniqueID].visible) {
 				// only if pointer on the wall, not the web UI
@@ -7098,6 +7108,9 @@ function pointerPressOnPartition(uniqueID, pointerX, pointerY, data, obj, localP
 			break;
 		case "dragCorner":
 			selectApplicationForResize(uniqueID, obj.data, pointerX, pointerY, portalId);
+			break;
+		case "dragBottomBar":
+			selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY);
 			break;
 		case "tileButton":
 			if (sagePointers[uniqueID].visible) {
@@ -7184,6 +7197,10 @@ function pointerPressOnDataSharingPortal(uniqueID, pointerX, pointerY, data, obj
 			if (remoteInteraction[uniqueID].windowManagementMode()) {
 				selectPortalForResize(uniqueID, obj.data, pointerX, pointerY);
 			}
+			break;
+		}
+		case "dragBottomBar": {
+			selectPortalForMove(uniqueID, obj.data, pointerX, pointerY);
 			break;
 		}
 		case "fullscreenButton": {
@@ -7829,6 +7846,10 @@ function pointerMoveOnApplication(uniqueID, pointerX, pointerY, data, obj, local
 			}
 			break;
 		}
+		case "dragBottomBar": {
+			removeExistingHoverCorner(uniqueID, portalId);
+			break;
+		}
 		case "fullscreenButton": {
 			removeExistingHoverCorner(uniqueID, portalId);
 			break;
@@ -7867,6 +7888,9 @@ function pointerMoveOnPartition(uniqueID, pointerX, pointerY, data, obj, localPt
 				remoteInteraction[uniqueID].setHoverCornerItem(obj.data);
 				broadcast('hoverOverItemCorner', {elemId: obj.data.id, flag: true});
 			}
+			break;
+		case "dragBottomBar":
+
 			break;
 		case "tileButton":
 
@@ -7950,6 +7974,10 @@ function pointerMoveOnDataSharingPortal(uniqueID, pointerX, pointerY, data, obj,
 			}
 			break;
 		}
+		case "dragBottomBar": {
+			removeExistingHoverCorner(uniqueID, obj.data.id);
+			break;
+		}
 		case "fullscreenButton": {
 			removeExistingHoverCorner(uniqueID, obj.data.id);
 			break;
@@ -7989,7 +8017,7 @@ function moveApplicationWindow(uniqueID, moveApp, portalId) {
 	if (im) {
 		drawingManager.applicationMoved(moveApp.elemId, moveApp.elemLeft, moveApp.elemTop);
 		im.editGeometry(moveApp.elemId, "applications", "rectangle",
-			{x: moveApp.elemLeft, y: moveApp.elemTop, w: moveApp.elemWidth, h: moveApp.elemHeight + titleBarHeight});
+			{x: moveApp.elemLeft, y: moveApp.elemTop, w: moveApp.elemWidth, h: moveApp.elemHeight + titleBarHeight * 2});
 		broadcast('setItemPosition', moveApp);
 		if (SAGE2Items.renderSync.hasOwnProperty(moveApp.elemId)) {
 			calculateValidBlocks(app, mediaBlockSize, SAGE2Items.renderSync[app.id]);
@@ -8009,7 +8037,7 @@ function moveApplicationWindow(uniqueID, moveApp, portalId) {
 			var stickyItem = updatedStickyItems[idx];
 			im.editGeometry(stickyItem.elemId, "applications", "rectangle", {
 				x: stickyItem.elemLeft, y: stickyItem.elemTop,
-				w: stickyItem.elemWidth, h: stickyItem.elemHeight + config.ui.titleBarHeight
+				w: stickyItem.elemWidth, h: stickyItem.elemHeight + config.ui.titleBarHeight * 2
 			});
 			broadcast('setItemPosition', updatedStickyItems[idx]);
 		}
@@ -8033,7 +8061,7 @@ function moveAndResizeApplicationWindow(resizeApp, portalId) {
 	drawingManager.applicationResized(resizeApp.elemId, resizeApp.elemWidth, resizeApp.elemHeight + titleBarHeight,
 		{x: resizeApp.elemLeft, y: resizeApp.elemTop});
 	im.editGeometry(resizeApp.elemId, "applications", "rectangle",
-		{x: resizeApp.elemLeft, y: resizeApp.elemTop, w: resizeApp.elemWidth, h: resizeApp.elemHeight + titleBarHeight});
+		{x: resizeApp.elemLeft, y: resizeApp.elemTop, w: resizeApp.elemWidth, h: resizeApp.elemHeight + titleBarHeight * 2});
 	handleApplicationResize(resizeApp.elemId);
 	broadcast('setItemPositionAndSize', resizeApp);
 	if (SAGE2Items.renderSync.hasOwnProperty(resizeApp.elemId)) {
@@ -8054,7 +8082,7 @@ function moveAndResizeApplicationWindow(resizeApp, portalId) {
 		var stickyItem = updatedStickyItems[idx];
 		im.editGeometry(stickyItem.elemId, "applications", "rectangle", {
 			x: stickyItem.elemLeft, y: stickyItem.elemTop,
-			w: stickyItem.elemWidth, h: stickyItem.elemHeight + config.ui.titleBarHeight
+			w: stickyItem.elemWidth, h: stickyItem.elemHeight + config.ui.titleBarHeight * 2
 		});
 		broadcast('setItemPosition', updatedStickyItems[idx]);
 	}
@@ -8106,7 +8134,7 @@ function updatePartitionInnerLayout(partition, animateAppMovement) {
 function moveDataSharingPortalWindow(movePortal) {
 	interactMgr.editGeometry(movePortal.elemId, "portals", "rectangle", {
 		x: movePortal.elemLeft, y: movePortal.elemTop,
-		w: movePortal.elemWidth, h: movePortal.elemHeight + config.ui.titleBarHeight
+		w: movePortal.elemWidth, h: movePortal.elemHeight + config.ui.titleBarHeight * 2
 	});
 	broadcast('setItemPosition', movePortal);
 }
@@ -8114,7 +8142,7 @@ function moveDataSharingPortalWindow(movePortal) {
 function moveAndResizeDataSharingPortalWindow(resizePortal) {
 	interactMgr.editGeometry(resizePortal.elemId, "portals", "rectangle",
 		{x: resizePortal.elemLeft, y: resizePortal.elemTop,
-			w: resizePortal.elemWidth, h: resizePortal.elemHeight + config.ui.titleBarHeight});
+			w: resizePortal.elemWidth, h: resizePortal.elemHeight + config.ui.titleBarHeight * 2});
 	handleDataSharingPortalResize(resizePortal.elemId);
 	broadcast('setItemPositionAndSize', resizePortal);
 }
@@ -8794,6 +8822,9 @@ function pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt
 		case "dragCorner": {
 			break;
 		}
+		case "dragBottomBar": {
+			break;
+		}
 		case "fullscreenButton": {
 			break;
 		}
@@ -8882,6 +8913,10 @@ function pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, loca
 				remoteInteraction[uniqueID].selectWheelItem = obj.data;
 				remoteInteraction[uniqueID].selectWheelDelta = 0;
 			}
+			break;
+		}
+		case "dragBottomBar": {
+			selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
 			break;
 		}
 		case "fullscreenButton": {
@@ -9676,7 +9711,7 @@ function handleNewApplication(appInstance, videohandle) {
 	var zIndex = SAGE2Items.applications.numItems + SAGE2Items.portals.numItems + 20;
 	interactMgr.addGeometry(appInstance.id, "applications", "rectangle", {
 		x: appInstance.left, y: appInstance.top,
-		w: appInstance.width, h: appInstance.height + config.ui.titleBarHeight},
+		w: appInstance.width, h: appInstance.height + config.ui.titleBarHeight * 2},
 	true, zIndex, appInstance);
 
 	var cornerSize   = 0.2 * Math.min(appInstance.width, appInstance.height);
@@ -9704,6 +9739,11 @@ function handleNewApplication(appInstance, videohandle) {
 		x: appInstance.width - cornerSize,
 		y: appInstance.height + config.ui.titleBarHeight - cornerSize,
 		w: cornerSize, h: cornerSize
+	}, 2);
+	SAGE2Items.applications.addButtonToItem(appInstance.id, "dragBottomBar", "rectangle", {
+		x: 0,
+		y: appInstance.height + config.ui.titleBarHeight,
+		w: appInstance.width, h: config.ui.titleBarHeight
 	}, 2);
 	if (appInstance.sticky === true) {
 		appInstance.pinned = true;
@@ -9735,7 +9775,7 @@ function handleNewApplicationInDataSharingPortal(appInstance, videohandle, porta
 	var titleBarHeight = SAGE2Items.portals.list[portalId].titleBarHeight;
 	SAGE2Items.portals.interactMgr[portalId].addGeometry(appInstance.id, "applications", "rectangle", {
 		x: appInstance.left, y: appInstance.top,
-		w: appInstance.width, h: appInstance.height + titleBarHeight
+		w: appInstance.width, h: appInstance.height + titleBarHeight * 2
 	}, true, zIndex, appInstance);
 
 	var cornerSize = 0.2 * Math.min(appInstance.width, appInstance.height);
@@ -9762,6 +9802,11 @@ function handleNewApplicationInDataSharingPortal(appInstance, videohandle, porta
 	SAGE2Items.applications.addButtonToItem(appInstance.id, "dragCorner", "rectangle", {
 		x: appInstance.width - cornerSize, y: appInstance.height + titleBarHeight - cornerSize,
 		w: cornerSize, h: cornerSize
+	}, 2);
+	SAGE2Items.applications.addButtonToItem(appInstance.id, "dragBottomBar", "rectangle", {
+		x: 0,
+		y: appInstance.height + config.ui.titleBarHeight,
+		w: appInstance.width, h: config.ui.titleBarHeight
 	}, 2);
 	if (appInstance.sticky === true) {
 		appInstance.pinned = true;
@@ -9809,6 +9854,8 @@ function handleApplicationResize(appId) {
 		{x: startButtons + (2 * (buttonsPad + oneButton)), y: 0, w: oneButton, h: titleBarHeight});
 	SAGE2Items.applications.editButtonOnItem(appId, "dragCorner", "rectangle",
 		{x: app.width - cornerSize, y: app.height + titleBarHeight - cornerSize, w: cornerSize, h: cornerSize});
+	SAGE2Items.applications.editButtonOnItem(appId, "dragBottomBar", "rectangle",
+		{x: 0, y: app.height + titleBarHeight, w: app.width, h: titleBarHeight});
 	if (app.sticky === true) {
 		SAGE2Items.applications.editButtonOnItem(app.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: titleBarHeight});
@@ -9846,7 +9893,8 @@ function handleDataSharingPortalResize(portalId) {
 		{x: startButtons + buttonsPad + oneButton, y: 0, w: oneButton, h: config.ui.titleBarHeight});
 	SAGE2Items.portals.editButtonOnItem(portalId, "dragCorner", "rectangle",
 		{x: portalWidth - cornerSize, y: portalHeight + config.ui.titleBarHeight - cornerSize, w: cornerSize, h: cornerSize});
-
+	SAGE2Items.portals.editButtonOnItem(portalId, "dragBottomBar", "rectangle",
+		{x: 0, y: portalHeight + config.ui.titleBarHeight, w: portalWidth, h: config.ui.titleBarHeight});
 }
 
 function findInteractableManager(appId) {
