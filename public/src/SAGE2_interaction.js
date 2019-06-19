@@ -40,7 +40,9 @@ function SAGE2_interaction(wsio) {
 	this.fileUploadComplete = null;
 	this.mediaStream = null;
 	this.mediaVideo  = null;
+	// HD resolution
 	this.mediaResolution = 2;
+	// High quality
 	this.mediaQuality    = 9;
 	// By default, USE WebRTC
 	this.mediaUseRTC     = getCookie('SAGE2_useRTC') === "false" ? false : true;
@@ -634,7 +636,6 @@ function SAGE2_interaction(wsio) {
 		}
 
 		var mediaVideo = document.getElementById('mediaVideo');
-		// mediaVideo.src = window.URL.createObjectURL(this.mediaStream);
 		mediaVideo.srcObject = this.mediaStream;
 		mediaVideo.play();
 
@@ -733,6 +734,8 @@ function SAGE2_interaction(wsio) {
 
 			mediaCanvas.width  = widths[this.mediaResolution];
 			mediaCanvas.height = height;
+
+			console.log("Media resolution: ", widths[this.mediaResolution], height);
 
 			var frame = this.captureMediaFrame();
 			this.pix  = frame;
@@ -1070,7 +1073,7 @@ function SAGE2_interaction(wsio) {
 	* @param value {Boolean} true/false for webrtc technique
 	*/
 	this.changeScreenShareWebRTCMethod = function(value) {
-		this.mediaUseRTC = value ? true : false;
+		this.mediaUseRTC = (value == 2) ? true : false;
 		console.log('WebRTC value changed', this.mediaUseRTC);
 		addCookie('SAGE2_useRTC', this.mediaUseRTC);
 	};
@@ -1082,14 +1085,25 @@ function SAGE2_interaction(wsio) {
 	* @param value {Number} a value corresponding to a resolution level
 	* @param resolution {String} resolution in the format "width x height"
 	*/
-	this.changeScreenShareResolutionMethod = function(value, resolution) {
-		this.mediaResolution = value;
-		var res = resolution.split("x");
-		if (res.length === 2) {
+	this.changeScreenShareResolutionMethod = function(value) {
+		// 1 to n --> 0 to n-1
+		this.mediaResolution = value - 1;
+
+		var mediaVideo = document.getElementById('mediaVideo');
+		if (mediaVideo.videoWidth > 0) {
+			let widths = [
+				Math.min(852,  mediaVideo.videoWidth),
+				Math.min(1280, mediaVideo.videoWidth),
+				Math.min(1920, mediaVideo.videoWidth),
+				mediaVideo.videoWidth
+			];
+			let height = widths[this.mediaResolution] * mediaVideo.videoHeight / mediaVideo.videoWidth;
 			var mediaCanvas = document.getElementById('mediaCanvas');
-			mediaCanvas.width  = parseInt(res[0], 10);
-			mediaCanvas.height = parseInt(res[1], 10);
-			console.log("Media resolution: " + resolution);
+			let w = widths[this.mediaResolution];
+			let h = height;
+			mediaCanvas.width  = w;
+			mediaCanvas.height = h;
+			console.log("Changed Media resolution: ", w, h);
 		}
 	};
 
@@ -1306,7 +1320,7 @@ function SAGE2_interaction(wsio) {
 			zIndex: 9999,
 			body: {
 				view: "form",
-				width: 400,
+				width: 450,
 				borderless: false,
 				elements: [
 					{
@@ -1338,7 +1352,8 @@ function SAGE2_interaction(wsio) {
 								id: "user_color",
 								label: "Color",
 								value: color,
-								width: 295, height: 100,
+								width: 324,
+								height: 100,
 								cols: 12, rows: 5,
 								minLightness: 0.3, maxLightness: 0.9
 							}
@@ -1368,7 +1383,9 @@ function SAGE2_interaction(wsio) {
 
 				elements.unshift(
 					{
-						view: "label", label: "Enter your name or nickname and choose a pointer color", align: "center"
+						view: "label",
+						label: "Enter your name or nickname and choose a pointer color",
+						align: "center"
 					},
 					{
 						type: "space",
@@ -1381,7 +1398,7 @@ function SAGE2_interaction(wsio) {
 						type: "space",
 						rows: [
 							{
-								view: "richselect",
+								view: "radio",
 								label: "Resolution",
 								id: "screen_resolution",
 								value: (this.mediaResolution + 1) || 3,
@@ -1393,7 +1410,7 @@ function SAGE2_interaction(wsio) {
 								]
 							},
 							{
-								view: "richselect",
+								view: "radio",
 								label: "Quality",
 								id: "screen_quality",
 								value: this.mediaQuality || 9,
@@ -1404,15 +1421,18 @@ function SAGE2_interaction(wsio) {
 								]
 							},
 							{
-								view: "checkbox",
-								label: "Use WebRTC",
-								id:   "use_webrtc",
-								value: this.mediaUseRTC
+							},
+							{
+								view: "radio",
+								label: "Speed",
+								id: "use_webrtc",
+								value: this.mediaUseRTC ? 2 : 1,
+								options: [
+									{id: 1, value: "Slow (cluster)"},
+									{id: 2, value: "Fast (webrtc)"}
+								]
 							}
 						]
-					},
-					{
-						view: "label"
 					}
 				);
 				break;
@@ -1435,7 +1455,7 @@ function SAGE2_interaction(wsio) {
 
 			let res = $$("screen_resolution");
 			res.attachEvent("onChange", () => {
-				this.changeScreenShareResolution(res.getValue() - 1, res.getText());
+				this.changeScreenShareResolution(res.getValue());
 			});
 
 			// change screen quality
