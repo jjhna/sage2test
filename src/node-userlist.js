@@ -18,7 +18,8 @@
 
 const pathModule  = require('path');
 const fs          = require('fs');
-const JsonDB      = require('node-json-db');
+const JsonDB      = require('node-json-db').JsonDB;
+
 const sageutils   = require('../src/node-utils');
 
 // folder to store the user DB
