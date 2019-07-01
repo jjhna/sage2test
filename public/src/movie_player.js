@@ -46,6 +46,9 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.isOnlyDisplay() && this.isFileTypeSupportedByHtmlPlayer(this.state.video_url)) {
 			if (!((ui.json_cfg.experimental) && (ui.json_cfg.experimental.disableHTMLPlayer === true))) {
 				this.makeHtmlPlayer(this.state.video_url);
+
+				// To control the video Plyr element
+				this.passSAGE2PointerAsMouseEvents = true;
 			}
 		}
 	},
@@ -820,20 +823,45 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	makeHtmlPlayer: function(url) {
 		// Create elements
 		this.videoElement = document.createElement("video");
-		this.videoElement.style.width = "100%";
+		this.videoElement.style.width  = "100%";
 		this.videoElement.style.height = "100%";
-		this.sourceElement = document.createElement("source");
-		this.sourceElement.src = url;
+		this.videoElement.src = url;
+
+		// this.sourceElement = document.createElement("source");
+		// this.sourceElement.src = url;
 		// Keep the HTML player muted, let the sound come through the audioManager.
-		this.videoElement.muted = true;
+		// this.videoElement.muted = true;
 		// Add Them
-		this.videoElement.appendChild(this.sourceElement);
+		// this.videoElement.appendChild(this.sourceElement);
+
 		this.element.appendChild(this.videoElement);
+
+		// Using thr Playr library to manage the video element
+		const player = new Plyr(this.videoElement, {
+			// debug: true,
+			title: this.title,
+			fullscreen: {
+				enabled: false
+			},
+			muted: true,
+			invertTime: false,
+			controls: [
+				'play', 'play-large', 'progress', 'current-time', 'captions'
+			],
+			captions: {
+				active: true, language: 'en', update: false
+			},
+			settings: ['captions'],
+			disableContextMenu: true,
+			youtube: {
+				showinfo: 0
+			}
+		});
 
 		// Hide default. This doesn't remove them.
 		this.canvas.style.display = "none";
-		this.canvas.style.width = "1px";
-		this.canvas.style.height = "1px";
+		this.canvas.style.width   = "1px";
+		this.canvas.style.height  = "1px";
 		// Remove the draw calculations, this prevents some cases of flickering while updating.
 		this.draw = function() {};
 		// Ignore updates from server caused by delay.
