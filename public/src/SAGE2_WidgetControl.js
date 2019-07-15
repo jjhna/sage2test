@@ -103,7 +103,44 @@ SAGE2WidgetControl.prototype.controlsReady = function() {
 	return this.specReady;
 };
 
+/*
+*	Sends an update request to the server
+*/
+SAGE2WidgetControl.prototype.updateControl = function(userId) {
+	if (isMaster) {
+		let idxP = userId.indexOf('_pointer');
+		if (idxP > 0)
+			userId = userId.substring(0, idxP);
 
+		wsio.emit('updateControl', {appId:this.id, uniqueID:userId});
+	}
+};
+
+
+/*
+*	Removes items that contain the identifier from the controls
+* 	If an app uses this function it needs to call
+*	SAGE2WidgetControl 'updateControl(userid)' function to update the server state
+*/
+SAGE2WidgetControl.prototype.removeItem = function(identifier) {
+	let prevlength = this.sideBarElements.length;
+	this.sideBarElements = this.sideBarElements.filter(elem=>{
+		// only return elements whose id does not end with our identifer
+		return elem.id.indexOf(identifier) != elem.id.length - identifier.length;
+	});
+	if (prevlength != this.sideBarElements.length) {
+		this.itemCount -= this.sideBarElements.length - prevlength;
+		return;
+	}
+		
+	Object.keys(this.buttonSequence).forEach(pos=>{
+		let elem = this.buttonSequence[pos];
+		if (elem.id.indexOf(identifier) == elem.id.length - identifier.length) {
+			delete this.buttonSequence[pos];
+			this.itemCount--;
+		}
+	})
+};
 
 
 /*
@@ -332,7 +369,16 @@ SAGE2WidgetControl.prototype.addColorPalette = function(data) {
 	}
 };
 
-
+/*
+*	Removes the color palette
+*/
+SAGE2WidgetControl.prototype.removeColorPalette = function() {
+	if (this.hasColorPalette) {
+		delete this.colorPalette;
+		this.hasColorPalette = false;
+		this.itemCount--;
+	}
+}
 /*
 *	Computes the dimensions of the widget control bar
 */

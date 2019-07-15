@@ -1225,6 +1225,7 @@ function setupListeners(wsio) {
 	wsio.on('updateApplicationStateOptions',          wsUpdateApplicationStateOptions);
 
 	wsio.on('addNewControl',                        wsAddNewControl);
+	wsio.on('updateControl',                        wsUpdateControl);
 	wsio.on('closeAppFromControl',                  wsCloseAppFromControl);
 	wsio.on('hideWidgetFromControl',                wsHideWidgetFromControl);
 	wsio.on('openRadialMenuFromControl',            wsOpenRadialMenuFromControl);
@@ -4889,6 +4890,16 @@ function wsAddNewControl(wsio, data) {
 		{id: app.id, type: app.application}}, time: Date.now()});
 }
 
+function wsUpdateControl(wsio, data) {
+	let controlsIdStr = data.appId + data.uniqueID + '_controls';
+	var oldwidget = SAGE2Items.widgets.list[controlsIdStr];
+
+	removeControlsForUser(data.uniqueID);
+
+	broadcast('requestNewControl', {elemId: data.appId, user_id: data.uniqueID,
+		user_label: sagePointers[data.uniqueID] ? sagePointers[data.uniqueID].label : "",
+		x: oldwidget.left + oldwidget.height/2, y: oldwidget.top + oldwidget.height/2, date: Date.now() });
+}
 
 function wsCloseAppFromControl(wsio, data) {
 	deleteApplication(data.appId, null, wsio);
