@@ -72,7 +72,7 @@
 		"workbox-build": "latest",
 		"websocketio": "https://github.com/renambot-uic/websocketio.git",
 		"rimraf": "latest",
-		"electron": "beta",
+		"electron": "latest",
 		"electron-squirrel-startup": "latest",
 		"systeminformation": "latest",
 		"strip-ansi": "latest",
