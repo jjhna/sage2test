@@ -208,7 +208,7 @@ var SAGE2_App = Class.extend({
 	SAGE2UpdateOptionsAfterLoad: function(parent) {
 		var key;
 		for (key in parent) {
-			if (parent.hasOwnProperty(key) && key[0] !== "_") {
+			if (Object.prototype.hasOwnProperty.call(parent, key) && key[0] !== "_") {
 				if (parent[key]._sync) {
 					parent[key]._name.setAttribute("state", "idle");
 					parent[key]._name.setAttribute("synced", true);
@@ -497,7 +497,7 @@ var SAGE2_App = Class.extend({
 	SAGE2StateSyncParent: function(node, parent) {
 		var key;
 		for (key in parent) {
-			if (parent.hasOwnProperty(key) && key[0] !== "_") {
+			if (Object.prototype.hasOwnProperty.call(parent, key) && key[0] !== "_") {
 				if (parent[key]._name === node) {
 					parent[key]._sync = true;
 					if (parent !== this.SAGE2StateOptions) {
@@ -518,7 +518,7 @@ var SAGE2_App = Class.extend({
 	SAGE2StateSyncChildren: function(node, parent, flag) {
 		var key;
 		for (key in parent) {
-			if (parent.hasOwnProperty(key) && key[0] !== "_") {
+			if (Object.prototype.hasOwnProperty.call(parent, key) && key[0] !== "_") {
 				if (parent[key]._name === node) {
 					parent[key]._sync = flag;
 					this.SAGE2StateSyncChildrenHelper(parent[key], flag);
@@ -542,7 +542,7 @@ var SAGE2_App = Class.extend({
 
 		var key;
 		for (key in parent) {
-			if (parent.hasOwnProperty(key) && key[0] !== "_") {
+			if (Object.prototype.hasOwnProperty.call(parent, key) && key[0] !== "_") {
 				this.SAGE2StateSyncChildrenHelper(parent[key], flag);
 			}
 		}

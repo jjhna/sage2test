@@ -176,10 +176,11 @@ SAGE2WidgetControl.prototype.addButton = function(data) {
 		} else {
 			button.id = "button" + ((this.itemCount < 10) ? "0" : "") + this.itemCount;
 		}
-		if (data.hasOwnProperty("label") && data.label !== undefined && data.label !== null) {
+		if (Object.prototype.hasOwnProperty.call(data, "label") &&
+			data.label !== undefined && data.label !== null) {
 			type = new this.buttonType.default();
 			type.label = data.label;
-		} else if (data.hasOwnProperty("type") && data.type !== undefined && data.type !== null) {
+		} else if (Object.prototype.hasOwnProperty.call(data, "type") && data.type !== undefined && data.type !== null) {
 			if (typeof data.type === "string") {
 				var TypeVar = this.buttonType[data.type];
 				if (typeof TypeVar === "function") {
@@ -213,11 +214,12 @@ SAGE2WidgetControl.prototype.addButton = function(data) {
 		}
 		button.type = type;
 		button.width = 1.5 * ui.widgetControlSize;
-		if (data.hasOwnProperty("position") && data.position !== undefined && data.position !== null) {
+		if (Object.prototype.hasOwnProperty.call(data, "position") &&
+			data.position !== undefined && data.position !== null) {
 			this.buttonSequence[data.position.toString()] = button;
 		} else {
 			for (var pos = 1; pos <= 30; pos++) {
-				if (this.buttonSequence.hasOwnProperty(pos.toString()) === false) {
+				if (Object.prototype.hasOwnProperty.call(this.buttonSequence, pos.toString()) === false) {
 					this.buttonSequence[pos] = button;
 					break;
 				}
