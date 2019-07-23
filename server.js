@@ -27,7 +27,10 @@
 // Don't make functions within a loop
 /* jshint -W083 */
 
-/*global mediaFolders */
+// need to rewrite the prototype calls
+/* eslint no-prototype-builtins: 0 */
+
+/* global mediaFolders */
 
 // require variables to be declared
 'use strict';
