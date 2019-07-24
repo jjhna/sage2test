@@ -104,8 +104,9 @@ HttpServer.prototype.notfound = function(res) {
  * @method redirect
  * @param res {Object} response
  * @param aurl {String} destination URL
+ * @param code {Number} HTTP code: 301 or 302 (default)
  */
-HttpServer.prototype.redirect = function(res, aurl) {
+HttpServer.prototype.redirect = function(res, aurl, code = 302) {
 	var header = this.buildHeader();
 	// Do not allow iframe
 	header["X-Frame-Options"] = "DENY";
@@ -113,33 +114,26 @@ HttpServer.prototype.redirect = function(res, aurl) {
 	//    causes issue with caching and cookies
 	// 302 HTTP code for found: redirect
 	header.Location = aurl;
-	res.writeHead(302, header);
+	res.writeHead(code, header);
 	res.end();
 };
 
-var hpkpPin1 = (function() {
-	var pin;
-	return function() {
-		if (!pin) {
-			pin = fs.readFileSync(path.join("keys", "pin1.sha256"), {encoding: 'utf8'});
-			pin = pin.trim();
-			// console.log('PIN1', pin);
-		}
-		return pin;
-	};
-}());
-
-var hpkpPin2 = (function() {
-	var pin;
-	return function() {
-		if (!pin) {
-			pin = fs.readFileSync(path.join("keys", "pin2.sha256"), {encoding: 'utf8'});
-			pin = pin.trim();
-			// console.log('PIN2', pin);
-		}
-		return pin;
-	};
-}());
+/**
+ * Clear the user's data caches and redirect to index.html
+ *
+ * @method clearSiteData
+ * @param res {Object} response
+ */
+HttpServer.prototype.clearSiteData = function(res) {
+	// Default header first
+	var header = this.buildHeader();
+	// Use the Clear-Site-Data header:
+	// https://www.w3.org/TR/clear-site-data/
+	header["Clear-Site-Data"] = '"cache","cookies","storage"';
+	header.Location = "index.html";
+	res.writeHead(302, header);
+	res.end();
+};
 
 /**
  * Build an HTTP header object
@@ -192,8 +186,9 @@ HttpServer.prototype.buildHeader = function() {
 	// default-src 'none' -> default policy that blocks absolutely everything
 	if (cfg.security && sageutils.isTrue(cfg.security.enableCSP)) {
 		// Pretty open
-		header["Content-Security-Policy"] = "default-src 'none';" +
-			" plugin-types image/svg+xml;" +
+		header["Content-Security-Policy"] = "default-src 'self';" +
+			// application/browser-plugin is for vtc
+			" plugin-types image/svg+xml application/browser-plugin;" +
 			" object-src 'self';" +
 			" child-src 'self' blob:;" +
 			" connect-src *;" +
@@ -202,37 +197,41 @@ HttpServer.prototype.buildHeader = function() {
 			" img-src * data: blob:;" +
 			" media-src 'self' blob:;" +
 			" style-src 'self' 'unsafe-inline' fonts.googleapis.com;" +
-			" script-src * 'unsafe-eval';";
+			" script-src * 'unsafe-eval' 'unsafe-inline';";
 	}
-	// More secure
-	// header["Content-Security-Policy"] = "default-src 'none';" +
-	// 	" plugin-types image/svg+xml;" +
-	// 	" object-src 'self';" +
-	// 	" child-src 'self' blob:;" +
-	// 	" connect-src 'self' wss: ws: https://query.yahooapis.com https://data.cityofchicago.org https://lyra.evl.uic.edu:9000;" +
-	// 	" font-src 'self';" +
-	// 	" form-action 'self';" +
-	// 	// " img-src 'self' data: http://openweathermap.org a.tile.openstreetmap.org b.tile.openstreetmap.org " +
-	// 	// "c.tile.openstreetmap.org http://www.webglearth.com http://server.arcgisonline.com http://radar.weather.gov " +
-	// 	// "http://cdn.abclocal.go.com http://www.glerl.noaa.gov " +
-	// 	// "https://lyra.evl.uic.edu:9000 https://maps.gstatic.com https://maps.googleapis.com https://khms0.googleapis.com " +
-	// 	// "https://khms1.googleapis.com https://khms2.googleapis.com https://csi.gstatic.com;" +
-	// 	" img-src *;" +
-	// 	" media-src 'self';" +
-	// 	" style-src 'self' 'unsafe-inline';" +
-	// 	" script-src 'self' http://www.webglearth.com https://maps.googleapis.com 'unsafe-eval';";
 
+	// Expect-CT allows a site to determine if they enforce their Certificate Transparency policy
+	if (cfg.security && sageutils.isTrue(cfg.security.enableExpectCertificateTransparency)) {
+		// set to enforce, and valid for 1 hour
+		header["Expect-CT"] = "enforce; max-age:3600;";
+	}
 
-	// HTTP PUBLIC KEY PINNING (HPKP)
-	// Key pinning is a trust-on-first-use (TOFU) mechanism.
-	// The first time a browser connects to a host it lacks the the information necessary to perform
-	// "pin validation" so it will not be able to detect and thwart a MITM attack.
-	// This feature only allows detection of these kinds of attacks after the first connection.
-	if (cfg.security && sageutils.isTrue(cfg.security.enableHPKP)) {
-		// 30 days expirations
-		header["Public-Key-Pins"] = "pin-sha256=\"" + hpkpPin1() +
-			"\"; pin-sha256=\"" + hpkpPin2() +
-			"\"; max-age=2592000; includeSubDomains";
+	// Referrer Policy allows a site to control how much information the browser includes
+	//   with navigations away from a document. Only set here for same origin site
+	if (cfg.security && sageutils.isTrue(cfg.security.enableReferrerPolicy)) {
+		header["Referrer-Policy"] = "same-origin";
+	}
+
+	// Feature Policy allows to enable and disable certain web platform features
+	//  in local pages and those they embed
+	if (cfg.security && sageutils.isTrue(cfg.security.enableFeaturePolicy)) {
+		header["Feature-Policy"] = "" +
+			"accelerometer 'none'" +
+			"; ambient-light-sensor 'none'" +
+			"; autoplay *" +
+			"; camera *" +
+			"; encrypted-media 'none'" +
+			"; fullscreen 'none'" +
+			"; geolocation *" +
+			"; gyroscope 'none'" +
+			"; magnetometer 'none'" +
+			"; microphone *" +
+			"; midi 'none'" +
+			"; payment 'none'" +
+			// "; picture-in-picture 'none'" +
+			"; speaker *" +
+			"; usb 'self'" +
+			"; vr 'self'";
 	}
 
 	return header;
@@ -263,7 +262,18 @@ HttpServer.prototype.onreq = function(req, res) {
 
 		// redirect root path to index.html
 		if (getName === "/") {
-			this.redirect(res, "index.html");
+			// Build the secure URL
+			let secureURL = "https://" + global.config.host +
+				(global.config.secure_port === 443 ? "" : ":" + global.config.secure_port) +
+				"/index.html";
+			this.redirect(res, secureURL, 301);
+			// this.redirect(res, "index.html");
+			return;
+		}
+
+		// Clear the user's cache and redirect to index.html
+		if (getName === "/logout") {
+			this.clearSiteData(res);
 			return;
 		}
 
@@ -355,7 +365,10 @@ HttpServer.prototype.onreq = function(req, res) {
 			var header = this.buildHeader();
 
 			if (path.extname(pathname) === ".html") {
-				if (pathname.endsWith("public/index.html")) {
+				if (pathname === path.resolve("public/index.html") ||
+					pathname === path.resolve("public/session.html") ||
+					pathname === path.resolve("public/display.html")
+				) {
 					// Allow embedding the UI page
 					delete header['X-Frame-Options'];
 				} else {

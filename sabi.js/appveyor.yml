@@ -1,6 +1,8 @@
 # version format
 version: 1.2.{build}
 
+image: Visual Studio 2017
+
 branches:
   only:
   - master
@@ -12,7 +14,8 @@ platform: x64
 # Install scripts
 install:
   # Get the latest stable version of Node.js or io.js
-  - ps: Install-Product node 5.0.0 x64
+  - ps: Get-NodeJsLatestBuild 9.4
+  - ps: Install-Product node 9.4.0 x64
 
   - npm -v
   - node -v

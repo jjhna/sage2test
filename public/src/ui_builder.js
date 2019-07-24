@@ -108,9 +108,7 @@ function UIBuilder(json_cfg, clientID) {
 			} else {
 				newratio = document.documentElement.clientHeight / wallHeight;
 			}
-			this.bg.style.webkitTransform = "scale(" + (newratio) + ")";
-			this.bg.style.mozTransform    = "scale(" + (newratio) + ")";
-			this.bg.style.transform       = "scale(" + (newratio) + ")";
+			this.bg.style.transform = "scale(" + (newratio) + ")";
 
 			this.main.style.width  = wallWidth  + "px";
 			this.main.style.height = wallHeight + "px";
@@ -125,9 +123,7 @@ function UIBuilder(json_cfg, clientID) {
 					} else {
 						newr = document.documentElement.clientHeight / wallHeight;
 					}
-					_this.bg.style.webkitTransform = "scale(" + (newr) + ")";
-					_this.bg.style.mozTransform    = "scale(" + (newr) + ")";
-					_this.bg.style.transform       = "scale(" + (newr) + ")";
+					_this.bg.style.transform = "scale(" + (newr) + ")";
 					_this.scale = newr;
 					// Rescale the box around the pointers
 					for (var key in _this.pointerItems) {
@@ -140,8 +136,6 @@ function UIBuilder(json_cfg, clientID) {
 				// keycode: f
 				if (event.keyCode === 70) {
 					if (_this.ratio === "fit") {
-						_this.bg.style.webkitTransform = "scale(1)";
-						_this.bg.style.mozTransform = "scale(1)";
 						_this.bg.style.transform = "scale(1)";
 						_this.ratio = "full";
 						_this.scale = 1;
@@ -153,9 +147,7 @@ function UIBuilder(json_cfg, clientID) {
 							newr = document.documentElement.clientHeight / wallHeight;
 						}
 						_this.scale = newr;
-						_this.bg.style.webkitTransform = "scale(" + _this.scale + ")";
-						_this.bg.style.mozTransform    = "scale(" + _this.scale + ")";
-						_this.bg.style.transform       = "scale(" + _this.scale + ")";
+						_this.bg.style.transform = "scale(" + _this.scale + ")";
 						_this.ratio = "fit";
 					}
 					// Rescale the box around the pointers
@@ -358,8 +350,6 @@ function UIBuilder(json_cfg, clientID) {
 		this.clock.style.left       = (-this.offsetX + this.titleBarHeight).toString() + "px";
 		// center vertically: position top 50% and then translate by -50%
 		this.clock.style.top        = "50%";
-		this.clock.style.webkitTransform  = "translateY(-50%)";
-		this.clock.style.mozTransform  = "translateY(-50%)";
 		this.clock.style.transform  = "translateY(-50%)";
 
 		machine.style.position   = "absolute";
@@ -368,8 +358,6 @@ function UIBuilder(json_cfg, clientID) {
 		machine.style.color      = textColor;
 		machine.style.left       = (-this.offsetX + (6 * this.titleBarHeight)).toString() + "px";
 		machine.style.top        = "50%";
-		machine.style.webkitTransform  = "translateY(-50%)";
-		machine.style.mozTransform  = "translateY(-50%)";
 		machine.style.transform  = "translateY(-50%)";
 
 		var rightOffset = this.offsetX - (this.json_cfg.totalWidth - this.width);
@@ -384,8 +372,6 @@ function UIBuilder(json_cfg, clientID) {
 			version.style.right  = ((6 * this.titleBarHeight) + rightOffset).toString() + "px";
 		}
 		version.style.top = "50%";
-		version.style.webkitTransform = "translateY(-50%)";
-		version.style.mozTransform = "translateY(-50%)";
 		version.style.transform = "translateY(-50%)";
 
 		// Load the logo (shown top left corner)
@@ -557,6 +543,8 @@ function UIBuilder(json_cfg, clientID) {
 			'/images/cheat-sheet.jpg',
 			"Mouse and keyboard operations and shortcuts");
 		this.main.appendChild(helpDialog);
+
+		this.showRadialWallUI = this.json_cfg.ui.showRadialWallUI !== undefined ? this.json_cfg.ui.showRadialWallUI : false;
 
 		this.uiHidden = false;
 		this.showInterface();
@@ -774,9 +762,7 @@ function UIBuilder(json_cfg, clientID) {
 
 		// Center the logo
 		logo.style.top = "50%";
-		logo.style.webkitTransform  = "translateY(-50%)";
-		logo.style.mozTransform     = "translateY(-50%)";
-		logo.style.transform        = "translateY(-50%)";
+		logo.style.transform = "translateY(-50%)";
 	};
 
 	/**
@@ -804,7 +790,10 @@ function UIBuilder(json_cfg, clientID) {
 			watermark.style.cursor = "none";
 		}
 		if (this.json_cfg.background.watermark.color) {
+			// change color of all the path elements
 			this.changeSVGColor(watermark, "path", null, this.json_cfg.background.watermark.color);
+			// change color of all the rect elements
+			this.changeSVGColor(watermark, "rect", null, this.json_cfg.background.watermark.color);
 		}
 
 		watermark.style.opacity  = 0.4;
@@ -985,7 +974,7 @@ function UIBuilder(json_cfg, clientID) {
 	* @param pointer_data {Object} pointer information
 	*/
 	this.createSagePointer = function(pointer_data) {
-		if (this.pointerItems.hasOwnProperty(pointer_data.id)) {
+		if (Object.prototype.hasOwnProperty.call(this.pointerItems, pointer_data.id)) {
 			return;
 		}
 
@@ -1026,8 +1015,9 @@ function UIBuilder(json_cfg, clientID) {
 	* @param pointer_data {Object} pointer information
 	*/
 	this.showSagePointer = function(pointer_data) {
-		var pointerElem = document.getElementById(pointer_data.id);
-		var translate;
+		// Get the DOM element from the data structure
+		let pointerElem = this.pointerItems[pointer_data.id].div;
+		let translate;
 		if (pointer_data.portal !== undefined && pointer_data.portal !== null) {
 			var left = pointer_data.left * dataSharingPortals[pointer_data.portal].scaleX;
 			var top = pointer_data.top * dataSharingPortals[pointer_data.portal].scaleY;
@@ -1037,9 +1027,7 @@ function UIBuilder(json_cfg, clientID) {
 		}
 
 		pointerElem.style.display = "block";
-		pointerElem.style.webkitTransform = translate;
-		pointerElem.style.mozTransform    = translate;
-		pointerElem.style.transform       = translate;
+		pointerElem.style.transform = translate;
 
 		this.pointerItems[pointerElem.id].setLabel(pointer_data.label);
 		this.pointerItems[pointerElem.id].setColor(pointer_data.color);
@@ -1057,9 +1045,13 @@ function UIBuilder(json_cfg, clientID) {
 	* @param pointer_data {Object} pointer information
 	*/
 	this.hideSagePointer = function(pointer_data) {
-		var pointerElem = document.getElementById(pointer_data.id);
-		pointerElem.style.display = "none";
-		this.pointerItems[pointerElem.id].isShown = false;
+		// Get the DOM element from the data structure
+		let pointerElem = this.pointerItems[pointer_data.id].div;
+		// making sure the element exists (it seems sometimes it's not)
+		if (pointerElem) {
+			pointerElem.style.display = "none";
+			this.pointerItems[pointerElem.id].isShown = false;
+		}
 	};
 
 	/**
@@ -1070,9 +1062,9 @@ function UIBuilder(json_cfg, clientID) {
 	*/
 	this.updateSagePointerPosition = function(pointer_data) {
 		if (this.pointerItems[pointer_data.id].isShown) {
-			var pointerElem = document.getElementById(pointer_data.id);
-
-			var translate;
+			// Get the DOM element from the data structure
+			let pointerElem = this.pointerItems[pointer_data.id].div;
+			let translate;
 			if (pointer_data.portal !== undefined && pointer_data.portal !== null) {
 				var left = pointer_data.left * dataSharingPortals[pointer_data.portal].scaleX;
 				var top = pointer_data.top * dataSharingPortals[pointer_data.portal].scaleY;
@@ -1080,11 +1072,8 @@ function UIBuilder(json_cfg, clientID) {
 			} else {
 				translate = "translate(" + pointer_data.left + "px," + pointer_data.top + "px)";
 			}
-
-			requestAnimationFrame(function() {
-				pointerElem.style.webkitTransform = translate;
-				pointerElem.style.mozTransform    = translate;
-				pointerElem.style.transform       = translate;
+			requestAnimationFrame(function(ts) {
+				pointerElem.style.transform = translate;
 			});
 		}
 	};
@@ -1107,7 +1096,7 @@ function UIBuilder(json_cfg, clientID) {
 	*/
 	this.createRadialMenu = function(data) {
 		var menuElem = document.getElementById(data.id + "_menu");
-		if (!menuElem && this.radialMenus[data.id + "_menu"] === undefined) {
+		if (this.showRadialWallUI === true && !menuElem && this.radialMenus[data.id + "_menu"] === undefined) {
 			var radialMenuContentWindowDiv = document.createElement("div");
 
 			radialMenuContentWindowDiv.id = data.id + "_menuDiv";
@@ -1177,35 +1166,38 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Object} menu data
 	*/
 	this.updateRadialMenu = function(data) {
-		var menuElem = document.getElementById(data.id + "_menu");
+		if (this.showRadialWallUI === true) {
+			var menuElem = document.getElementById(data.id + "_menu");
 
-		if (menuElem !== null) {
-			var menu = this.radialMenus[menuElem.id];
-			menu.setState(data);
-			if (data.visible === false) {
-				menu.closeMenu();
-			} else {
+			if (menuElem !== null) {
+				var menu = this.radialMenus[menuElem.id];
 				menu.setState(data);
-
-				menuElem.style.display = "block";
-				menu.thumbnailScrollWindowElement.style.display = "block";
-				if (data.thumbnailWindowState  !== 'closed') {
-					menu.thumbnailWindowDiv.style.display = "block";
+				if (data.visible === false) {
+					menu.closeMenu();
 				} else {
-					menu.thumbnailWindowDiv.style.display = "none";
+					menu.setState(data);
+
+					menuElem.style.display = "block";
+					menu.thumbnailScrollWindowElement.style.display = "block";
+					if (data.thumbnailWindowState  !== 'closed') {
+						menu.thumbnailWindowDiv.style.display = "block";
+					} else {
+						menu.thumbnailWindowDiv.style.display = "none";
+					}
+					menu.redraw();
+					menu.visible = true;
+
+					var rect = menuElem.getBoundingClientRect();
+					menu.moveMenu({x: data.x, y: data.y, windowX: rect.left, windowY: rect.top},
+						{x: this.offsetX, y: this.offsetY});
+
+					menuElem.style.left = (data.x - this.offsetX - menu.radialMenuCenter.x).toString() + "px";
+					menuElem.style.top  = (data.y - this.offsetY - menu.radialMenuCenter.y).toString()  + "px";
 				}
-				menu.redraw();
-				menu.visible = true;
-
-				var rect = menuElem.getBoundingClientRect();
-				menu.moveMenu({x: data.x, y: data.y, windowX: rect.left, windowY: rect.top}, {x: this.offsetX, y: this.offsetY});
-
-				menuElem.style.left = (data.x - this.offsetX - menu.radialMenuCenter.x).toString() + "px";
-				menuElem.style.top  = (data.y - this.offsetY - menu.radialMenuCenter.y).toString()  + "px";
+			} else {
+				// Show was called on non-existant menu (display client was likely reset)
+				this.createRadialMenu(data);
 			}
-		} else {
-			// Show was called on non-existant menu (display client was likely reset)
-			this.createRadialMenu(data);
 		}
 	};
 
@@ -1216,17 +1208,18 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Object} menu data
 	*/
 	this.updateRadialMenuPosition = function(data) {
+		if (this.showRadialWallUI === true) {
+			var menuElem = document.getElementById(data.id + "_menu");
 
-		var menuElem = document.getElementById(data.id + "_menu");
+			if (menuElem !== null) {
+				var menu = this.radialMenus[menuElem.id];
 
-		if (menuElem !== null) {
-			var menu = this.radialMenus[menuElem.id];
+				var rect = menuElem.getBoundingClientRect();
+				menu.moveMenu({x: data.x, y: data.y, windowX: rect.left, windowY: rect.top}, {x: this.offsetX, y: this.offsetY});
 
-			var rect = menuElem.getBoundingClientRect();
-			menu.moveMenu({x: data.x, y: data.y, windowX: rect.left, windowY: rect.top}, {x: this.offsetX, y: this.offsetY});
-
-			menuElem.style.left = (data.x - this.offsetX - menu.radialMenuCenter.x).toString() + "px";
-			menuElem.style.top  = (data.y - this.offsetY - menu.radialMenuCenter.y).toString()  + "px";
+				menuElem.style.left = (data.x - this.offsetX - menu.radialMenuCenter.x).toString() + "px";
+				menuElem.style.top  = (data.y - this.offsetY - menu.radialMenuCenter.y).toString()  + "px";
+			}
 		}
 	};
 
@@ -1237,39 +1230,41 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Event} event
 	*/
 	this.radialMenuEvent = function(data) {
-		if (data.type === "stateChange") {
-			// Update the button state
-			var menuState = data.menuState;
-			for (var buttonName in menuState.buttonState) {
-				this.radialMenus[data.menuID + "_menu"].setRadialButtonState(
-					buttonName, menuState.buttonState[buttonName], menuState.color);
-			}
-
-			// State also contains new actions
-			if (data.menuState.action !== undefined) {
-				if (data.menuState.action.type === "contentWindow") {
-					this.radialMenus[data.menuID + "_menu"].setToggleMenu(data.menuState.action.window + "ThumbnailWindow");
-				} else if (data.menuState.action.type === "close") {
-					this.radialMenus[data.menuID + "_menu"].closeMenu();
-				} else if (data.menuState.action.type === "toggleSubRadial") {
-					this.radialMenus[data.menuID + "_menu"].toggleSubRadialMenu(data.menuState.action.window);
+		if (this.showRadialWallUI === true) {
+			if (data.type === "stateChange") {
+				// Update the button state
+				var menuState = data.menuState;
+				for (var buttonName in menuState.buttonState) {
+					this.radialMenus[data.menuID + "_menu"].setRadialButtonState(
+						buttonName, menuState.buttonState[buttonName], menuState.color);
 				}
-			}
-		} else {
-			for (var menuID in this.radialMenus) {
-				var menuElem = document.getElementById(menuID);
-				var menu     = this.radialMenus[menuID];
 
-				if (menuElem !== null) {
-					var rect = menuElem.getBoundingClientRect();
+				// State also contains new actions
+				if (data.menuState.action !== undefined) {
+					if (data.menuState.action.type === "contentWindow") {
+						this.radialMenus[data.menuID + "_menu"].setToggleMenu(data.menuState.action.window + "ThumbnailWindow");
+					} else if (data.menuState.action.type === "close") {
+						this.radialMenus[data.menuID + "_menu"].closeMenu();
+					} else if (data.menuState.action.type === "toggleSubRadial") {
+						this.radialMenus[data.menuID + "_menu"].toggleSubRadialMenu(data.menuState.action.window);
+					}
+				}
+			} else {
+				for (var menuID in this.radialMenus) {
+					var menuElem = document.getElementById(menuID);
+					var menu     = this.radialMenus[menuID];
 
-					var pointerX = data.x - rect.left - this.offsetX;
-					var pointerY = data.y - rect.top - this.offsetY;
+					if (menuElem !== null) {
+						var rect = menuElem.getBoundingClientRect();
 
-					if (menu.visible) {
-						menu.onEvent(data.type, {
-							x: pointerX, y: pointerY, windowX: rect.left, windowY: rect.top
-						}, data.id, data.data);
+						var pointerX = data.x - rect.left - this.offsetX;
+						var pointerY = data.y - rect.top - this.offsetY;
+
+						if (menu.visible) {
+							menu.onEvent(data.type, {
+								x: pointerX, y: pointerY, windowX: rect.left, windowY: rect.top
+							}, data.id, data.data);
+						}
 					}
 				}
 			}
@@ -1283,10 +1278,12 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Object} data
 	*/
 	this.updateRadialMenuDocs = function(data) {
-		var menuElem = document.getElementById(data.id + "_menu");
-		if (menuElem !== null) {
-			this.radialMenus[menuElem.id].updateFileList(data.fileList);
-			this.radialMenus[menuElem.id].redraw();
+		if (this.showRadialWallUI === true) {
+			var menuElem = document.getElementById(data.id + "_menu");
+			if (menuElem !== null) {
+				this.radialMenus[menuElem.id].updateFileList(data.fileList);
+				this.radialMenus[menuElem.id].redraw();
+			}
 		}
 	};
 
@@ -1297,10 +1294,12 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Object} data
 	*/
 	this.updateRadialMenuApps = function(data) {
-		var menuElem = document.getElementById(data.id + "_menu");
-		if (menuElem !== null) {
-			this.radialMenus[menuElem.id].updateAppFileList(data.fileList);
-			this.radialMenus[menuElem.id].redraw();
+		if (this.showRadialWallUI === true) {
+			var menuElem = document.getElementById(data.id + "_menu");
+			if (menuElem !== null) {
+				this.radialMenus[menuElem.id].updateAppFileList(data.fileList);
+				this.radialMenus[menuElem.id].redraw();
+			}
 		}
 	};
 
@@ -1485,7 +1484,6 @@ function UIBuilder(json_cfg, clientID) {
 	* @method showInterface
 	*/
 	this.showInterface = function() {
-		var i;
 		if (this.uiHidden) {
 			// Show the top bar
 			this.upperBar.style.display = 'block';
@@ -1499,25 +1497,52 @@ function UIBuilder(json_cfg, clientID) {
 			}
 			// Show the apps top bar
 			var applist = document.getElementsByClassName("windowTitle");
-			for (i = 0; i < applist.length; i++) {
+			for (let i = 0; i < applist.length; i++) {
 				applist[i].style.display = 'block';
 			}
 			// Show the apps border
 			var itemlist = document.getElementsByClassName("windowItem");
-			for (i = 0; i < itemlist.length; i++) {
+			for (let i = 0; i < itemlist.length; i++) {
 				itemlist[i].classList.toggle("windowItemNoBorder");
 			}
 			// Show the partitions top bar
 			var ptnlist = document.getElementsByClassName("partitionTitle");
-			for (i = 0; i < ptnlist.length; i++) {
+			for (let i = 0; i < ptnlist.length; i++) {
 				ptnlist[i].style.display = 'block';
 			}
 			// Show the partitions background area
 			var ptntitlelist = document.getElementsByClassName("partitionArea");
-			for (i = 0; i < ptntitlelist.length; i++) {
+			for (let i = 0; i < ptntitlelist.length; i++) {
 				ptntitlelist[i].style.display = 'block';
 			}
 			this.uiHidden = false;
 		}
+	};
+
+	this.buildStandAlone = function() {
+		this.offsetX = 0;
+		this.offsetY = 0;
+		this.width   = this.json_cfg.totalWidth;
+		this.height  = this.json_cfg.totalHeight;
+		this.titleBarHeight = this.json_cfg.ui.titleBarHeight;
+		this.titleTextSize  = this.json_cfg.ui.titleTextSize;
+		this.pointerWidth   = this.json_cfg.ui.pointerSize * 3;
+		this.pointerHeight  = this.json_cfg.ui.pointerSize;
+		this.widgetControlSize = this.json_cfg.ui.widgetControlSize;
+		this.pointerOffsetX = Math.round(0.27917 * this.pointerHeight);
+		this.pointerOffsetY = Math.round(0.24614 * this.pointerHeight);
+	};
+
+	//Called when the browser of standalone app resizes
+	this.resizePointers = function(newScale) {
+		// Rescale the box around the pointers
+		for (var key in this.pointerItems) {
+			var ptr = this.pointerItems[key];
+			ptr.updateBox(this.scale);
+		}
+	};
+
+	this.isPointerShown = function(id) {
+		return this.pointerItems[id].isShown;
 	};
 }

@@ -88,10 +88,10 @@ var hserver;
 // the HTTP port
 var hport = 9000;
 
-// the HTTP server
+// the TCP server
 var tcp_server;
-// the HTTP port
-var tcp_port = 11000;
+// the TCP port
+var tcp_port = -1; // 11000;
 var tcp_clients = [];
 
 var platform = os.platform() === "win32" ? "Windows" : os.platform() === "darwin" ? "Mac OS X" : "Linux";
@@ -114,6 +114,17 @@ var pathToActivateGoWindowsCert = path.join(pathToSabiConfigFolder, "scripts", "
 var scriptExecutionFunction		= require('./src/script').Script;
 var commandExecutionFunction	= require('./src/script').Command;
 var spawn = require('child_process').spawn;
+
+var currentSabiVersion = "20190313";
+var detectedSabiVersion = "00000000";
+
+/*
+	Version list:
+		20180419 - Changed start process to use https
+		20180919 - Changed the off script, process renamed to SAGE2
+		20180921 - Command line argument updates to work better with commander
+		20190313 - Modified auto start script to include -p "", that trips the password check and should use the passwd file.
+*/
 
 // ---------------------------------------------
 //  Parse command line arguments
@@ -215,37 +226,41 @@ if (ConfigFile.indexOf("sage2") >= 0) {
 	if (!folderExists(sabiMediaCheck)) {
 		mkdirParent(sabiMediaCheck);
 	}
+
+	// Version check
+	var sabiVersionIsUpToDate = isSabiVersionCurrent();
+
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "config", "sage2.json");
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("config", "sage2.json");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts");
-	if (!folderExists(sabiMediaCheck)) {
+	if (!folderExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		mkdirParent(sabiMediaCheck);
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts", "sage2_on.bat");
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("scripts", "sage2_on.bat");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts", "s2_on_electron.bat");
-	if (!fileExists(sabiMediaCheck)) {
+	if ((!fileExists(sabiMediaCheck)) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("scripts", "s2_on_electron.bat");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts", "sage2_off.bat");
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("scripts", "sage2_off.bat");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToFindMonitorData);
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("scripts", "winScriptHelperWriteMonitorRes.exe");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
 	sabiMediaCheck = path.join(pathToSabiConfigFolder, "scripts", "GO-windows.bat");
-	if (!fileExists(sabiMediaCheck)) {
+	if (!fileExists(sabiMediaCheck) || !sabiVersionIsUpToDate) {
 		sabiMediaCopy = path.join("..", "keys", "GO-windows.bat");
 		fs.writeFileSync(sabiMediaCheck, fs.readFileSync(sabiMediaCopy));
 	}
@@ -259,6 +274,32 @@ if (ConfigFile.indexOf("sage2") >= 0) {
 //
 // Some utility functions
 //
+
+/**
+ * Checks if sabi version file exists in SAGE2_Media
+ * If it does returns the contents which should be a date
+ *
+ * @method isSabiVersionCurrent
+ * @return {Bool} null or date as yyyymmdd
+ */
+function isSabiVersionCurrent(dirPath) {
+	// Check if version file exists
+	var pathToSabiVersionFile = path.join(pathToSabiConfigFolder, "version");
+	var readVersion = null;
+	// If it doesn't exist write it
+	if (!fileExists(pathToSabiVersionFile)) {
+		fs.writeFileSync(pathToSabiVersionFile, currentSabiVersion);
+	} else {
+		readVersion = fs.readFileSync(pathToSabiVersionFile);
+		detectedSabiVersion = readVersion;
+	}
+
+	if (readVersion != currentSabiVersion) {
+		fs.writeFileSync(pathToSabiVersionFile, currentSabiVersion);
+		return false;
+	}
+	return true;
+}
 
 /**
  * Creates recursively a series of folders if needed (synchronous function and throws error)
@@ -783,11 +824,14 @@ function process_request(cfg, req, res) {
 			let filename   = cfg.actions[action].editor;
 			filename = path.resolve(untildify(filename));
 			var wstream    = fs.createWriteStream(filename);
+			var selfSign   = params.selfSign;
 
 			wstream.on('finish', function() {
 				// stream closed
 				console.log('HTTP>		PUT file has been written', filename, fileLength, 'bytes');
-				updateCertificates(); // keeping this if someone edits with basic / advanced
+				if (selfSign == "true") { // values from querystring will be a string, false will be "false" the string, not bool false
+					updateCertificates(); // keeping this if someone edits with basic / advanced
+				}
 			});
 			// Getting data
 			req.on('data', function(chunk) {
@@ -929,12 +973,13 @@ function newTCPSocket(socket) {
 	});
 }
 
-// Create a new server and provide a callback for when a connection occurs
-tcp_server = net.createServer(newTCPSocket);
-
-// Listen on port tcp_port
-tcp_server.listen(tcp_port);
-// console.log("TCP server running at localhost:" + tcp_port);
+if (tcp_port != -1) {
+	// Create a new server and provide a callback for when a connection occurs
+	tcp_server = net.createServer(newTCPSocket);
+	// Listen on port tcp_port
+	tcp_server.listen(tcp_port);
+	console.log("TCP server running at localhost:" + tcp_port);
+}
 
 
 // ---------------------------------------------
@@ -1079,6 +1124,10 @@ function processRPC(data, socket) {
 		console.log('Setting new launcher password', data.value[0]);
 		htdigest.htdigest_save("users.htpasswd", "sabi", "sage2", data.value[0]);
 	}
+	if (!found && data.method === "removeMeetingID") {
+		console.log('Removing meetingID');
+		removeMeetingID();
+	}
 	if (!found && data.method === "performGitUpdate") {
 		console.log('Rewriting launcher to initiate git update before launching sabi');
 
@@ -1112,6 +1161,14 @@ function getMeetingIDFromPasswd() {
 	var configdata = fs.readFileSync(pathToSageUiPwdFile);
 	var cfg = JSON5.parse(configdata);
 	return cfg.pwd;
+}
+
+function removeMeetingID() {
+	//if there is no passwd file, then can't do anything.
+	if (!fileExists(pathToSageUiPwdFile)) {
+		return null;
+	}
+	fs.unlinkSync(pathToSageUiPwdFile);
 }
 
 function updateCertificates() {
@@ -1415,7 +1472,7 @@ function getLaunchParameters(isElectron) {
 	}
 
 	dataReturn.push(pathToElectronConfig);
-	dataReturn.push(cfg.index_port);
+	dataReturn.push(cfg.port);
 
 	// electron bat is designed to get full resolution since it assumes only 1 electorn window.
 	if (isElectron != undefined && isElectron == "electron") {

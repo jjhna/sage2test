@@ -2,7 +2,6 @@
 	"global": {
 		"security"    : "true",
 		"server_port" : "10000", 
-		"tcp_port"    : "11000"
 	},
 	"main": {
 		"header" : "<h4>SAGE2 Control Interface</h4>",
@@ -20,6 +19,7 @@
 		"edit-assist":       { "openurl": "assistedConfig.html" },
 
 		"submitMA":          { "sendData": "forMA", "dataID": "inputMA", "sendPurpose": "makeNewMeetingID" },
+		"removeMA":          { "sendData": "forMA", "dataID": "removeMA", "sendPurpose": "removeMeetingID" },
 		"inputMA":           { "ignore" :  "Not sending"},
 
 		"submitLP":          { "sendData": "forLP", "dataID": "inputLP", "sendPurpose": "makeNewLauncherPassword" },
@@ -40,7 +40,7 @@
 		"groups" : [ "group1", "setMA" ],
 		"group1" : { 
 			"title": "Launch SAGE2",
-			"description": "Start and stop SAGE2. You can also set a meeting access code to protect access to your meeting.",
+			"description": "Start and stop SAGE2. You can also set a meeting password to protect access to SAGE2.",
 			"image": "images/display.png",
 			"actions": [
 				{"title": "Start", "action": "sage2-on-electron" },
@@ -48,12 +48,13 @@
 			]
 		},
 		"setMA" : { 
-			"title": "Set Meeting Access",
-			"description": "Allows changing the Meeting ID. SAGE2 must be restarted before changes take effect.",
+			"title": "Set Meeting Password",
+			"description": "Allows changing the Meeting Password. SAGE2 must be restarted before changes take effect. A blank meeting password can be set, requiring user to enter with a blank input field. To completely remove the prompt, use the Remove Meeting Password button.",
 			"image": "images/settings.png",
 			"actions": [
 				{"title": "", "action": "inputMA", "role": "inputPassword", "placeholder":"Enter new MeetingID here"},
-				{"title": "Set Meeting Access", "action": "submitMA", "theme": "b"}
+				{"title": "Set Meeting Password", "action": "submitMA", "theme": "b"},
+				{"title": "Remove Meeting Password", "action": "removeMA", "theme": "b"}
 			]
 		}
 	},

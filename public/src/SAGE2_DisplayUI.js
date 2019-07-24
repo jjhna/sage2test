@@ -64,6 +64,7 @@ SAGE2DisplayUI.prototype.init = function(config, wsio) {
 
 	var applicationsDiv = document.getElementById('applicationsDiv');
 	var logo = document.createElement('img');
+	logo.alt = 'watermark';
 	logo.style.opacity  = 0.4;
 	logo.style.position = "absolute";
 	logo.style.left     = "50%";
@@ -547,7 +548,7 @@ SAGE2DisplayUI.prototype.addPartitionBorder = function(data) {
 SAGE2DisplayUI.prototype.updateItemOrder = function(order) {
 	var key;
 	for (key in order) {
-		if (this.applications.hasOwnProperty(key)) {
+		if (Object.prototype.hasOwnProperty.call(this.applications, key)) {
 			var appWindow = document.getElementById(key);
 			appWindow.style.zIndex = order[key];
 		}
@@ -677,7 +678,7 @@ SAGE2DisplayUI.prototype.updateHighlightedPartition = function(data) {
 	} else {
 		var highlighted = document.getElementById(data.id + "_area");
 
-		if (this.partitions.hasOwnProperty(data.id) && highlighted) {
+		if (Object.prototype.hasOwnProperty.call(this.partitions, data.id) && highlighted) {
 
 			if (data.highlight) {
 				highlighted.style.backgroundColor = "rgba(1, 1, 1, 0.5)";
@@ -874,8 +875,11 @@ SAGE2DisplayUI.prototype.pointerMove = function(x, y) {
 	}
 	this.pointerX = x;
 	this.pointerY = y;
-	var globalX = this.pointerX / this.scale;
-	var globalY = this.pointerY / this.scale;
+	let globalX = this.pointerX / this.scale;
+	let globalY = this.pointerY / this.scale;
+	// Remove decimals, keep 2
+	globalX = Math.round(globalX * 100) / 100;
+	globalY = Math.round(globalY * 100) / 100;
 	this.wsio.emit('pointerPosition', {pointerX: globalX, pointerY: globalY});
 };
 
@@ -918,7 +922,6 @@ SAGE2DisplayUI.prototype.pointerDblClick = function() {
  */
 SAGE2DisplayUI.prototype.keyDown = function(x, y, keyCode) {
 	if (keyCode !== 27) { // not ESC key
-		this.pointerMove(x, y);
 		this.wsio.emit('keyDown', {code: keyCode});
 		if (keyCode === 9) { // tab is a special case - must emulate keyPress event
 			this.wsio.emit('keyPress', {code: keyCode, character: String.fromCharCode(keyCode)});
@@ -928,6 +931,8 @@ SAGE2DisplayUI.prototype.keyDown = function(x, y, keyCode) {
 			(keyCode >= 47 && keyCode <= 90) || (keyCode >= 94 && keyCode <= 111) ||
 			keyCode >= 146) {
 			return false;
+		} else {
+			this.pointerMove(x, y);
 		}
 	}
 	return true;

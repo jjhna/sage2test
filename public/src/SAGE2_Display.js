@@ -8,7 +8,7 @@
 //
 // Copyright (c) 2014-15
 
-/* global ignoreFields, hostAlias, SAGE2WidgetControlInstance */
+/* global ignoreFields, SAGE2WidgetControlInstance */
 /* global makeSvgBackgroundForWidgetConnectors, addStyleElementForTitleColor */
 /* global removeStyleElementForTitleColor */
 /* global clearConnectorColor, moveWidgetToAppConnector */
@@ -18,10 +18,7 @@
 /* global hideWidgetToAppConnectors */
 /* global createWidgetToAppConnector, getTextFromTextInputWidget */
 /* global SAGE2_Partition, require */
-/* global SAGE2RemoteSitePointer */
-
-
-/* global require */
+/* global SAGE2RemoteSitePointer, process */
 
 "use strict";
 
@@ -66,6 +63,10 @@ var uiTimerDelay;
 
 // Global variables for screenshot functionality
 var makingScreenshotDialog = null;
+
+// Distinction between display client and standalone browser
+// for a single application
+var isBrowser = false;
 
 // Explicitely close web socket when web browser is closed
 window.onbeforeunload = function() {
@@ -167,8 +168,14 @@ function setupFocusHandlers() {
 	});
 
 	if (__SAGE2__.browser.isElectron) {
+		// Get the version number for Electron
+		let electronVersion = process.versions.electron;
+		// Parse the string and get the Major version number
+		let majorVersion = parseInt(electronVersion.split('.')[0]);
+		let electron = require('electron');
+
 		// Display warning messages from the 'Main' Electron process
-		require('electron').ipcRenderer.on('warning', function(event, message) {
+		electron.ipcRenderer.on('warning', function(event, message) {
 			var problemDialog = ui.buildMessageBox('problemDialog', message);
 			ui.main.appendChild(problemDialog);
 			document.getElementById('problemDialog').style.display = "block";
@@ -179,15 +186,28 @@ function setupFocusHandlers() {
 		});
 
 		// Receive hardware info from the main process (electron node)
-		require('electron').ipcRenderer.on('hardwareData', function(event, message) {
+		electron.ipcRenderer.on('hardwareData', function(event, message) {
 			if (wsio !== undefined) {
 				// and send it to the server
 				wsio.emit('displayHardware', message);
 			}
 		});
-		// Receive hardware info from the main process (electron node)
-		require('electron').ipcRenderer.on('performanceData', function(event, message) {
+		// Receive performance info from the main process (electron node)
+		electron.ipcRenderer.on('performanceData', function(event, message) {
 			if (wsio !== undefined) {
+				// Add renderer process load info
+				var procCPU = process.getCPUUsage();
+				message.processLoad.cpuPercent += procCPU.percentCPUUsage;
+
+				if (majorVersion < 4) {
+					// for version 3 and below
+					var procMem = process.getProcessMemoryInfo();
+					message.processLoad.memResidentSet += procMem.workingSetSize;
+					message.processLoad.memPercent += (procMem.workingSetSize / message.mem.total) * 100;
+				} else {
+					// version 4 has new APIs
+					// ...
+				}
 				// and send it to the server
 				wsio.emit('performanceData', message);
 			}
@@ -229,7 +249,9 @@ function removeStoredFileListEventHandler(callback) {
 function resetIdle() {
 	if (uiTimer) {
 		clearTimeout(uiTimer);
-		ui.showInterface();
+		if (ui.uiHidden) {
+			ui.showInterface();
+		}
 		uiTimer = setTimeout(function() {
 			ui.hideInterface();
 		}, uiTimerDelay * 1000);
@@ -386,6 +408,7 @@ function setupSlaveListeners(anWsio) {
 function setupListeners(anWsio) {
 	anWsio.on('initialize', function(data) {
 		var startTime  = new Date(data.start);
+		wsio.UID = data.UID;
 
 		// Global initialization
 		SAGE2_initialize(startTime);
@@ -711,6 +734,28 @@ function setupListeners(anWsio) {
 		}
 	});
 
+	anWsio.on('videoPlaying', function(data) {
+		var app = applications[data.id];
+		if (app !== undefined && app !== null) {
+			app.state.paused = false;
+			app.htmlSetSeekTime();
+			app.htmlSetLoopStatus();
+			app.htmlSetPlayPauseStatus();
+			app.getFullContextMenuAndUpdate();
+		}
+	});
+
+	anWsio.on('videoPaused', function(data) {
+		var app = applications[data.id];
+		if (app !== undefined && app !== null) {
+			app.state.paused = true;
+			app.htmlSetSeekTime();
+			app.htmlSetLoopStatus();
+			app.htmlSetPlayPauseStatus();
+			app.getFullContextMenuAndUpdate();
+		}
+	});
+
 	anWsio.on('updateValidStreamBlocks', function(data) {
 		if (applications[data.id] !== undefined && applications[data.id] !== null) {
 			applications[data.id].validBlocks = data.blockList;
@@ -726,7 +771,8 @@ function setupListeners(anWsio) {
 	});
 
 	anWsio.on('createAppWindow', function(data) {
-		createAppWindow(data, anWsio, ui.main.id, ui.titleBarHeight, ui.titleTextSize, ui.offsetX, ui.offsetY);
+		createAppWindow(data, ui.main.id, ui.titleBarHeight, ui.titleTextSize, ui.offsetX, ui.offsetY);
+		anWsio.emit('appWindowCreated', {id: data.id});
 	});
 
 	/* Partition wsio calls */
@@ -744,7 +790,7 @@ function setupListeners(anWsio) {
 		partitions[data.id].updateTitle(data.title);
 	});
 	anWsio.on('updatePartitionBorders', function(data) {
-		if (data && partitions.hasOwnProperty(data.id)) {
+		if (data && Object.prototype.hasOwnProperty.call(partitions, data.id)) {
 			partitions[data.id].updateSelected(data.highlight);
 		} else {
 			for (var p in partitions) {
@@ -754,12 +800,12 @@ function setupListeners(anWsio) {
 		}
 	});
 	wsio.on('updatePartitionColor', function(data) {
-		if (data && partitions.hasOwnProperty(data.id)) {
+		if (data && Object.prototype.hasOwnProperty.call(partitions, data.id)) {
 			partitions[data.id].updateColor(data.color);
 		}
 	});
 	wsio.on('updatePartitionSnapping', function(data) {
-		if (data && partitions.hasOwnProperty(data.id)) {
+		if (data && Object.prototype.hasOwnProperty.call(partitions, data.id)) {
 			partitions[data.id].setSnappedBorders(data.snapping);
 			partitions[data.id].setAnchoredBorders(data.anchor);
 			partitions[data.id].updateBorders();
@@ -875,16 +921,12 @@ function setupListeners(anWsio) {
 		} else {
 			var translate = "translate(" + position_data.elemLeft + "px," + position_data.elemTop + "px)";
 			var selectedElemTitle = document.getElementById(position_data.elemId + "_title");
-			selectedElemTitle.style.webkitTransform = translate;
-			selectedElemTitle.style.mozTransform    = translate;
-			selectedElemTitle.style.transform       = translate;
-
 			var selectedElem = document.getElementById(position_data.elemId);
-			selectedElem.style.webkitTransform = translate;
-			selectedElem.style.mozTransform    = translate;
-			selectedElem.style.transform       = translate;
+			requestAnimationFrame(function(ts) {
+				selectedElemTitle.style.transform = translate;
+				selectedElem.style.transform = translate;
+			});
 		}
-
 
 		var app = applications[position_data.elemId];
 		if (app !== undefined) {
@@ -906,7 +948,9 @@ function setupListeners(anWsio) {
 		if (position_data.elemId in controlObjects) {
 			var hOffset = (ui.titleBarHeight + position_data.elemHeight) / 2;
 			for (var item in controlItems) {
-				if (controlItems.hasOwnProperty(item) && item.indexOf(position_data.elemId) > -1 && controlItems[item].show) {
+				if (Object.prototype.hasOwnProperty.call(controlItems, item) &&
+					item.indexOf(position_data.elemId) > -1 &&
+					controlItems[item].show) {
 					var control = controlItems[item].divHandle;
 					var cLeft = parseInt(control.style.left);
 					var cTop = parseInt(control.style.top);
@@ -998,14 +1042,10 @@ function setupListeners(anWsio) {
 		if (position_data.elemAnimate) {
 			moveItemWithAnimation(position_data);
 		} else {
-			selectedElemTitle.style.webkitTransform = translate;
-			selectedElemTitle.style.mozTransform    = translate;
-			selectedElemTitle.style.transform       = translate;
-
-			selectedElem.style.webkitTransform = translate;
-			selectedElem.style.mozTransform    = translate;
-			selectedElem.style.transform       = translate;
-
+			requestAnimationFrame(function(ts) {
+				selectedElemTitle.style.transform = translate;
+				selectedElem.style.transform      = translate;
+			});
 		}
 
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
@@ -1060,7 +1100,9 @@ function setupListeners(anWsio) {
 		if (position_data.elemId in controlObjects) {
 			var hOffset = (ui.titleBarHeight + position_data.elemHeight) / 2;
 			for (var item in controlItems) {
-				if (controlItems.hasOwnProperty(item) && item.indexOf(position_data.elemId) > -1 && controlItems[item].show) {
+				if (Object.prototype.hasOwnProperty.call(controlItems, item) &&
+					item.indexOf(position_data.elemId) > -1 &&
+					controlItems[item].show) {
 					var control = controlItems[item].divHandle;
 					var cLeft = parseInt(control.style.left);
 					var cTop = parseInt(control.style.top);
@@ -1135,8 +1177,6 @@ function setupListeners(anWsio) {
 
 	anWsio.on('eventInItem', function(event_data) {
 		var app = applications[event_data.id];
-
-		// console.log(event_data, app, applications);
 
 		if (app) {
 			var date = new Date(event_data.date);
@@ -1479,12 +1519,12 @@ function setupListeners(anWsio) {
 
 	wsio.on('sendServerWallScreenshot', function(data) {
 		// first tell user that screenshot is happening, because screen will freeze
-		makingScreenshotDialog = ui.buildMessageBox('makingScreenshotDialog',
-			'Please wait, wall is taking a screenshot');
+		// makingScreenshotDialog = ui.buildMessageBox('makingScreenshotDialog',
+		// 	'Please wait, wall is taking a screenshot');
 		// Add to the DOM
-		ui.main.appendChild(makingScreenshotDialog);
+		// ui.main.appendChild(makingScreenshotDialog);
 		// Make the dialog visible
-		makingScreenshotDialog.style.display = "block";
+		// makingScreenshotDialog.style.display = "block";
 		// now do check and perform capture if can
 		if (!__SAGE2__.browser.isElectron) {
 			wsio.emit("wallScreenshotFromDisplay", {capable: false});
@@ -1509,7 +1549,7 @@ function setupListeners(anWsio) {
 					imageData: imageData
 				});
 				// Close the dialog
-				deleteElement('makingScreenshotDialog');
+				// deleteElement('makingScreenshotDialog');
 			});
 		}
 	});
@@ -1581,9 +1621,7 @@ function createAppWindow(data, anWsio, parentId, titleBarHeight, titleTextSize, 
 	windowTitle.style.height = titleBarHeight.toString() + "px";
 	windowTitle.style.left   = (-offsetX).toString() + "px";
 	windowTitle.style.top    = (-offsetY).toString() + "px";
-	windowTitle.style.webkitTransform = translate;
-	windowTitle.style.mozTransform    = translate;
-	windowTitle.style.transform       = translate;
+	windowTitle.style.transform = translate;
 	windowTitle.style.zIndex = itemCount.toString();
 	if (ui.noDropShadow === true) {
 		windowTitle.style.boxShadow = "none";
@@ -1658,14 +1696,12 @@ function createAppWindow(data, anWsio, parentId, titleBarHeight, titleTextSize, 
 
 	var windowItem = document.createElement("div");
 	windowItem.id = data.id;
-	windowItem.className      = "windowItem";
-	windowItem.style.left     = (-offsetX).toString() + "px";
-	windowItem.style.top      = (titleBarHeight - offsetY).toString() + "px";
-	windowItem.style.webkitTransform = translate;
-	windowItem.style.mozTransform    = translate;
-	windowItem.style.transform       = translate;
-	windowItem.style.overflow = "hidden";
-	windowItem.style.zIndex   = (itemCount + 1).toString();
+	windowItem.className       = "windowItem";
+	windowItem.style.left      = (-offsetX).toString() + "px";
+	windowItem.style.top       = (titleBarHeight - offsetY).toString() + "px";
+	windowItem.style.transform = translate;
+	windowItem.style.overflow  = "hidden";
+	windowItem.style.zIndex    = (itemCount + 1).toString();
 	if (ui.noDropShadow === true) {
 		windowItem.style.boxShadow = "none";
 	}
@@ -1688,8 +1724,6 @@ function createAppWindow(data, anWsio, parentId, titleBarHeight, titleTextSize, 
 	windowStateContatiner.style.position = "absolute";
 	windowStateContatiner.style.top = "0px";
 	windowStateContatiner.style.left = "0px";
-	windowStateContatiner.style.webkitTransform = "translate(0px,0px)";
-	windowStateContatiner.style.mozTransform = "translate(0px,0px)";
 	windowStateContatiner.style.transform = "translate(0px,0px)";
 	windowState.appendChild(windowStateContatiner);
 	windowItem.appendChild(windowState);

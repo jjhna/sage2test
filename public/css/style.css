@@ -15,7 +15,7 @@
 
 * {
 	margin: 0;
-	padding: 0;
+	/* padding: 0; */
 }
 
 p {
@@ -334,4 +334,16 @@ body {
 }
 .fa-spinner:before {
   content: "\f110";
+}
+
+.a-canvas.a-grab-cursor:hover{
+	cursor:none !important
+}
+.a-canvas.a-grab-cursor:active,.a-grabbing{
+	cursor:none !important
+}
+
+/* quickNote text */
+.showdown * {
+	font-family: Oxygen Mono;
 }

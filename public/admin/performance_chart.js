@@ -18,8 +18,8 @@
  * @class Performance_Chart
  */
 
-/*global d3: true, performanceMetrics: true, durationInMinutes: true,
-  getNiceNumber: true, clients: true, buttonClicked: true */
+/*global d3: true, performanceMetrics: true, durationInMinutes: true, getNewColor: true
+  getNiceNumber: true, clients: true, buttonClicked: true, clientColorMap: true */
 
 // Object to hold chart references
 var charts = {};
@@ -394,6 +394,111 @@ function drawDisplaySM() {
 		'membar', 'System Memory', systemMemoryBarWidth);
 }
 
+function drawDisplaySMMinimal(l, h) {
+	var filterFunc = function(d) {
+		return (d !== null && d !== undefined && d.date > l && d.date < h);
+	};
+	var clientIDs = clients.history.filter(filterFunc).map(function(d) {
+		return d.clientID;
+	});
+
+	var ids = clients.history.filter(filterFunc).map(function(d) {
+		return d.id;
+	});
+	clientIDs = [... new Set(clientIDs)];
+	ids = [... new Set(ids)];
+
+	ids.forEach(id => {
+		if (Object.prototype.hasOwnProperty.call(clientColorMap, id) === false) {
+			clientColorMap[id] = getNewColor(clientColorMap);
+		}
+	});
+
+	var data = ids;
+	if (data.length === 0) {
+		d3.selectAll('.displaySM').remove();
+		return;
+	}
+
+	var smId = 'smallmultiplediv';
+	var smDiv = document.getElementById(smId);
+	var margin = {left: 18, right: 18, top: 15, bottom: 15};
+	var width = 150;
+	var height = 40;
+	var ncols = parseInt(smDiv.clientWidth / (width + margin.left + margin.right));
+	var nrows = Math.round(0.4 + data.length / ncols);
+
+	var barHeight = 30;
+	var divHeight = nrows * (height + margin.top + margin.bottom);
+
+	smDiv.style.height = divHeight + "px";
+
+	var chart;
+	if (charts[smId]) {
+		chart = charts[smId];
+	} else {
+		chart = makeSvg(smId, {
+			width: smDiv.clientWidth,
+			height: divHeight,
+			left: 0,
+			right: 0,
+			top: 0,
+			bottom: 0
+		});
+		charts[smId] = {
+			svg: chart.svg
+		};
+	}
+
+	var smallMultiples = chart.svg.selectAll('.displaySM')
+		.data(ids);
+
+	smallMultiples.exit().remove();
+
+	smallMultiples.select('#displaytext')
+		.text(function(d, i) {
+			return 'Display ' + clientIDs[i];
+		});
+
+	var clientSM = smallMultiples.enter().append('g')
+		.attr('class', 'displaySM')
+		.attr('transform', function(d, i) {
+			var r = parseInt(i / ncols);
+			var c = i % ncols;
+			return 'translate(' + (margin.left + c * (width + margin.left + margin.right))
+				+ ',' + (margin.top + r * (height + margin.top + margin.bottom)) + ')';
+		});
+	clientSM.append('rect')
+		.attr('class', 'clickable')
+		.attr('width', width + 10)
+		.attr('height', height)
+		.attr('x', 0)
+		.attr('y', 0)
+		.attr('fill', 'none')
+		.attr('stroke', function(d) {
+			return clientColorMap[d];
+		})
+		.attr('stroke-width', 4);
+
+	clientSM.append('rect')
+		.attr('class', 'clickable')
+		.attr('width', width)
+		.attr('height', height - 10)
+		.attr('x', 5)
+		.attr('y', 5)
+		.attr('fill', 'rgb(80, 80, 80)')
+		.attr('stroke', 'white');
+	clientSM.append('text')
+		.attr('id', 'displaytext')
+		.attr('x', 5 + width / 2)
+		.attr('text-anchor', 'middle')
+		.attr('alignment-baseline', 'middle')
+		.attr('y', 5 + barHeight * 0.5)
+		.attr('class', 'title')
+		.text(function(d, i) {
+			return 'Display ' + clientIDs[i];
+		});
+}
 
 function makeBarWithText(selection, box, id, text, widthFunc) {
 	var grp = selection.append('g')

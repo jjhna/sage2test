@@ -28,7 +28,7 @@
  * @type {Object}
  */
 var __SAGE2__ = {};
-__SAGE2__.version = "3.0.0";
+__SAGE2__.version = "4.0.0";
 
 
 /**
@@ -58,39 +58,6 @@ function SAGE2_initialize(data_seed) {
 function SAGE2_browser() {
 	var browser = {};
 	var userAgent = window.navigator.userAgent.toLowerCase();
-	// Internet Explorer 6-11
-	browser.isIE       = /*@cc_on!@*/false || !!document.documentMode;
-	// Edge 20+
-	browser.isEdge     = !browser.isIE && !!window.StyleMedia;
-	browser.isOpera    = userAgent.indexOf("opr") >= 0;
-	browser.isChrome   = !browser.isIE && userAgent.indexOf("chrome") >= 0;
-	browser.isWebKit   = userAgent.indexOf("webkit") >= 0;
-	browser.isSafari   = !browser.isChrome && !browser.isIE && userAgent.indexOf("safari") >= 0;
-	browser.isGecko    = !browser.isWebKit && userAgent.indexOf("gecko") >= 0;
-	browser.isFirefox  = browser.isGecko && userAgent.indexOf("firefox") >= 0;
-	browser.isWinPhone = userAgent.indexOf("windows phone") >= 0;
-	browser.isIPhone   = userAgent.indexOf("iphone") >= 0;
-	browser.isIPad     = userAgent.indexOf("ipad") >= 0;
-	browser.isIPod     = userAgent.indexOf("ipod") >= 0;
-	browser.isIOS      = !browser.isWinPhone && (browser.isIPhone || browser.isIPad || browser.isIPod);
-	browser.isAndroid  = userAgent.indexOf("android") >= 0;
-	browser.isAndroidTablet = (userAgent.indexOf("android") >= 0) && !(userAgent.indexOf("mobile") >= 0);
-	browser.isWindows  = userAgent.indexOf("windows") >= 0 || userAgent.indexOf("win32") >= 0;
-	browser.isMac      = !browser.isIOS && (userAgent.indexOf("macintosh") >= 0 || userAgent.indexOf("mac os x") >= 0);
-	browser.isLinux    = userAgent.indexOf("linux") >= 0;
-	browser.isElectron = (typeof window !== 'undefined' && window.process && window.process.type === "renderer") === true;
-	// Mobile clients
-	browser.isMobile   = browser.isWinPhone || browser.isIOS || browser.isAndroid;
-
-	// Store a string for the type of browser
-	var browserType = browser.isElectron ? "Electron" :
-		browser.isIE ? "Explorer" :
-			browser.isEdge ? "Edge" :
-				browser.isFirefox ? "Firefox" :
-					browser.isSafari ? "Safari" :
-						browser.isOpera ? "Opera" :
-							browser.isChrome ? "Chrome" : "---";
-	browser.browserType  = browserType;
 
 	// Detecting version
 	var _browser = {};
@@ -119,6 +86,41 @@ function SAGE2_browser() {
 	}
 	browser.version = _browser.version;
 	// version done
+
+	// Internet Explorer 6-11
+	browser.isIE       = /*@cc_on!@*/false || !!document.documentMode;
+	// Edge 20+
+	browser.isEdge     = !browser.isIE && !!window.StyleMedia;
+	browser.isEdge17   = browser.isEdge && parseInt(browser.version) >= 17; // Edge 17 supports more features
+	browser.isOpera    = userAgent.indexOf("opr") >= 0;
+	browser.isChrome   = !browser.isIE && !browser.isEdge && userAgent.indexOf("chrome") >= 0;
+	browser.isWebKit   = userAgent.indexOf("webkit") >= 0;
+	browser.isSafari   = !browser.isChrome && !browser.isIE && userAgent.indexOf("safari") >= 0;
+	browser.isGecko    = !browser.isWebKit && userAgent.indexOf("gecko") >= 0;
+	browser.isFirefox  = browser.isGecko && userAgent.indexOf("firefox") >= 0;
+	browser.isWinPhone = userAgent.indexOf("windows phone") >= 0;
+	browser.isIPhone   = userAgent.indexOf("iphone") >= 0;
+	browser.isIPad     = userAgent.indexOf("ipad") >= 0;
+	browser.isIPod     = userAgent.indexOf("ipod") >= 0;
+	browser.isIOS      = !browser.isWinPhone && (browser.isIPhone || browser.isIPad || browser.isIPod);
+	browser.isAndroid  = userAgent.indexOf("android") >= 0;
+	browser.isAndroidTablet = (userAgent.indexOf("android") >= 0) && !(userAgent.indexOf("mobile") >= 0);
+	browser.isWindows  = userAgent.indexOf("windows") >= 0 || userAgent.indexOf("win32") >= 0;
+	browser.isMac      = !browser.isIOS && (userAgent.indexOf("macintosh") >= 0 || userAgent.indexOf("mac os x") >= 0);
+	browser.isLinux    = userAgent.indexOf("linux") >= 0;
+	browser.isElectron = (typeof window !== 'undefined' && window.process && window.process.type === "renderer") === true;
+	// Mobile clients
+	browser.isMobile   = browser.isWinPhone || browser.isIOS || browser.isAndroid;
+
+	// Store a string for the type of browser
+	var browserType = browser.isElectron ? "Electron" :
+		browser.isIE ? "Explorer" :
+			browser.isEdge ? "Edge" :
+				browser.isFirefox ? "Firefox" :
+					browser.isSafari ? "Safari" :
+						browser.isOpera ? "Opera" :
+							browser.isChrome ? "Chrome" : "---";
+	browser.browserType  = browserType;
 
 	// Keep a copy of the UA
 	browser.userAgent  = userAgent;
@@ -272,7 +274,8 @@ SAGE2types.isaDate = function(obj) {
 
 SAGE2types.create = function(val) {
 	if (_typeOf(val) === 'object') {
-		if (val.hasOwnProperty('lat') && val.hasOwnProperty('lng')) {
+		if (Object.prototype.hasOwnProperty.call(val, 'lat') &&
+			Object.prototype.hasOwnProperty.call(val, 'lng')) {
 			return new SAGE2types.LatLng(val.lat, val.lng);
 		}
 		return new SAGE2types.Object(val);
@@ -321,8 +324,8 @@ function _typeOf(value) {
  */
 function sage2Log(msgObject) {
 	// Local console print
-	console.log("%c[%s] %c%s", "color: cyan;", msgObject.app,
-		"color: grey;", JSON.stringify(msgObject.message));
+	console.log.apply(console, ["%c[%s] %c%s"].concat("color: cyan;",
+		msgObject.app, "color: grey;", msgObject.message));
 
 	// Add the display node ID to the message
 	msgObject.node = clientID;

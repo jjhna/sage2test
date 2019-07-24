@@ -25,6 +25,8 @@ var Webview = SAGE2_App.extend({
 			// Add it to the layer
 			this.layer.appendChild(this.pre);
 			this.console = false;
+			// Add certificate error handler, it needs electron reference
+			// this.handleCertificateError();
 		} else {
 			// Create div into the DOM
 			this.SAGE2Init("div", data);
@@ -60,12 +62,9 @@ var Webview = SAGE2_App.extend({
 		this.element.fullscreenable = false;
 		this.element.fullscreen = false;
 		// add the preload clause
-		this.addPreloadFile();
+		// this.addPreloadFile();
 		// security or not: this seems to be an issue often on Windows
 		this.element.disablewebsecurity = false;
-
-		// Set a session per webview, so not zoom sharing per origin
-		this.element.partition = data.id;
 
 		// initial size
 		this.element.minwidth  = data.width;
@@ -77,6 +76,9 @@ var Webview = SAGE2_App.extend({
 		// Get the URL from parameter or session
 		var view_url = data.params || this.state.file || this.state.url;
 		var video_id, ampersandPosition;
+
+		// Is the page hosted by SAGE server
+		this.connectingToSageHostedFile = this.isHostedBySelf(view_url);
 
 		// A youtube URL with a 'watch' video
 		if (view_url.startsWith('https://www.youtube.com')) {
@@ -91,11 +93,22 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
 			}
 			this.contentType = "youtube";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
+		} else if (view_url.startsWith('https://www.ted.com/talks')) {
+			// Handler for TED talks
+			let talk = view_url.replace('https://www.ted.com/talks', 'https://embed.ted.com/talks');
+			this.contentType = "tedtalk";
+			view_url = talk;
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.startsWith('https://youtu.be')) {
 			// youtube short URL (used in sharing)
 			video_id = view_url.split('/').pop();
 			view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
 			this.contentType = "youtube";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.indexOf('vimeo') >= 0) {
 			// Search for the Vimeo ID
 			var m = view_url.match(/^.+vimeo.com\/(.*\/)?([^#?]*)/);
@@ -104,8 +117,12 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://player.vimeo.com/video/' + vimeo_id;
 			}
 			this.contentType = "vimeo";
-		} else if (view_url.endsWith('.ipynb')) {
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
+		} else if (view_url.endsWith('.ipynb') &&
+			view_url.indexOf('mybinder.org') === -1) {
 			// ipython notebook file are link to nbviewer.jupyter.org online
+			// except if it's a link to binder.org, which does its own rendering.
 			var host = this.config.host + ':' + this.config.port;
 			view_url = "https://nbviewer.jupyter.org/url/" + host + view_url;
 			this.contentType = "ipython";
@@ -122,18 +139,40 @@ var Webview = SAGE2_App.extend({
 				view_url = 'https://player.twitch.tv/?!autoplay&video=v' + twitch_id;
 			}
 			this.contentType = "twitch";
-		} else if (view_url.includes("http://" + this.config.host) && view_url.includes("/user/apps")) {
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
+		} else if (view_url.includes(this.config.host) && view_url.includes("/user/apps")) {
 			// Locally hosted WebViews are assumed to be Unity applications
 			// Move to more dedicated url later? //users/apps/unity ?
 			this.contentType = "unity";
 		} else if (view_url.indexOf('docs.google.com/presentation') >= 0) {
 			this.contentType = "google_slides";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.indexOf('appear.in') >= 0) {
 			if (!view_url.endsWith('?widescreen')) {
 				// to enable non-cropped mode, in widescreen
 				view_url += '?widescreen';
 			}
 			this.contentType = "appearin";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
+		} else if (view_url.indexOf('scp.tv') >= 0) {
+			this.contentType = "periscope";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
+		} else if (view_url.endsWith('.pptx')) {
+			// try to handle Office file. Starting with PPTX
+			let localurl = view_url;
+			view_url = "https://view.officeapps.live.com/op/embed.aspx?src=";
+			// alternativ using Google docs
+			// https://docs.google.com/viewer?url= URL &embedded=true&chrome=false
+			let host = this.config.host + ':' + this.config.port + '/';
+			view_url += encodeURIComponent('http://' + host + localurl);
+			view_url += "&wdAr=1.7777777777777777";
+			this.contentType = "msoffice";
+			// ask for a HD resize
+			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		}
 
 		// Store the zoom level, when in desktop emulation
@@ -154,12 +193,30 @@ var Webview = SAGE2_App.extend({
 
 		// Intent to navigate: allows quick sync when the webview is shared
 		this.element.addEventListener("will-navigate", function(evt) {
-			// save the url
-			_this.state.url = evt.url;
-			// set the zoom value
-			_this.element.setZoomFactor(_this.state.zoom);
-			// sync the state object
-			_this.SAGE2Sync(true);
+			if (evt.url && evt.url.endsWith('.pdf') && isMaster) {
+				// Dont try to download a PDF
+				evt.preventDefault();
+				_this.element.stop();
+				_this.element.getWebContents().stop();
+
+				// calculate a position right next to the parent view
+				let pos = [_this.sage2_x + _this.sage2_width + 5,
+					_this.sage2_y - _this.config.ui.titleBarHeight];
+				// Open the PDF viewer
+				wsio.emit('addNewWebElement', {
+					url: evt.url,
+					type: "application/pdf",
+					id: _this.id,
+					position: pos
+				});
+			} else {
+				// save the url
+				_this.state.url = evt.url;
+				// set the zoom value
+				_this.element.setZoomFactor(_this.state.zoom);
+				// sync the state object
+				_this.SAGE2Sync(true);
+			}
 		});
 
 		// done loading
@@ -171,6 +228,8 @@ var Webview = SAGE2_App.extend({
 			_this.getFullContextMenuAndUpdate();
 			_this.isLoading = false;
 			_this.changeWebviewTitle();
+			// recalculate the scaling
+			_this.resize();
 		});
 
 		// To handle navigation whithin the page (ie. anchors)
@@ -193,6 +252,51 @@ var Webview = SAGE2_App.extend({
 			_this.SAGE2Sync(true);
 		});
 
+		// Capturing right-click context menu inside webview
+		this.element.addEventListener("context-menu", function(evt) {
+			let params = evt.params;
+			// calculate a position right next to the parent view
+			let pos = [_this.sage2_x + _this.sage2_width + 5,
+				_this.sage2_y - _this.config.ui.titleBarHeight];
+			// if it's an image, open the link in a new webview
+			if (params.mediaType === "image" && params.hasImageContents && isMaster) {
+				// Open the image viewer
+				wsio.emit('addNewWebElement', {
+					url: params.srcURL,
+					type: "image/jpeg",
+					id: _this.id,
+					position: pos
+				});
+			} else if (params.linkURL && params.linkURL.endsWith('.pdf') && isMaster) {
+				// Open the PDF viewer
+				wsio.emit('addNewWebElement', {
+					url: params.linkURL,
+					type: "application/pdf",
+					id: _this.id,
+					position: pos
+				});
+			} else if (params.linkURL && isMaster &&
+				(params.linkURL.endsWith('.jpg') || params.linkURL.endsWith('.jpeg') ||
+				params.linkURL.endsWith('.gif') || params.linkURL.endsWith('.png'))) {
+				// Open the image viewer
+				wsio.emit('addNewWebElement', {
+					url: params.linkURL,
+					type: "image/jpeg",
+					id: _this.id,
+					position: pos
+				});
+			} else if (params.mediaType === "none" && params.linkURL && isMaster) {
+				// It's a link with a URL
+				wsio.emit('openNewWebpage', {
+					id: _this.id,
+					url: params.linkURL,
+					position: pos,
+					// inherits the window size
+					dimensions: [_this.sage2_width, _this.sage2_height]
+				});
+			}
+		});
+
 		// Error loading a page
 		// Source: https://cs.chromium.org/chromium/src/net/base/net_error_list.h
 		//
@@ -206,15 +310,21 @@ var Webview = SAGE2_App.extend({
 		// The server's response was insecure (e.g. there was a cert error).
 
 		this.element.addEventListener("did-fail-load", function(event) {
+			console.log('Webview> Did fail load', event);
 			// not loading anymore
 			_this.isLoading = false;
 			// Check the return code
 			if (event.errorCode ===   -3 ||
 				event.errorCode ===  -27 ||
-				event.errorCode === -501 ||
 				event.errorDescription === "OK") {
 				// it's a redirect (causes issues)
 				// _this.changeURL(event.validatedURL, true);
+			} else if (event.errorCode === -501) {
+				// Add the message to the console layer
+				_this.pre.innerHTML += 'Webview> certificate error:' + event + '\n';
+				_this.element.src = 'data:text/html;charset=utf-8,' +
+					'<h1>This webpage has invalid certificates and cannot be loaded</h1>';
+				_this.changeWebviewTitle();
 			} else {
 				// real error
 				_this.element.src = 'data:text/html;charset=utf-8,<h1>Invalid URL</h1>';
@@ -260,21 +370,107 @@ var Webview = SAGE2_App.extend({
 			// only accept http protocols
 			if (event.url.startsWith('http:') || event.url.startsWith('https:')) {
 				// Do not open a new view, just navigate to the new URL
-				_this.changeURL(event.url, true);
-				// Request a new webview application
-				// wsio.emit('openNewWebpage', {
-				// 	// should be uniqueID, but no interactor object here
-				// 	id: this.id,
-				// 	// send the new URL
-				// 	url: event.url
-				// });
+				// _this.changeURL(event.url, true);
+				// calculate a position right next to the parent view
+				let pos = [_this.sage2_x + _this.sage2_width + 5,
+					_this.sage2_y - _this.config.ui.titleBarHeight];
+				// Check if it's a PDF
+				console.log('new-window', event.url);
+				if (event.url && event.url.endsWith('.pdf') && isMaster) {
+					// Open the PDF viewer
+					wsio.emit('addNewWebElement', {
+						url: event.url,
+						type: "application/pdf",
+						id: this.id,
+						position: pos
+					});
+				} else if (event.url && isMaster &&
+					(event.url.endsWith('.jpg') || event.url.endsWith('.jpeg') ||
+					event.url.endsWith('.gif') || event.url.endsWith('.png'))) {
+					// Open the image viewer
+					wsio.emit('addNewWebElement', {
+						url: event.url,
+						type: "image/jpeg",
+						id: this.id,
+						position: pos
+					});
+				} else {
+					if (isMaster) {
+						// Request a new webview application
+						wsio.emit('openNewWebpage', {
+							// should be uniqueID, but no interactor object here
+							id: this.id,
+							// send the new URL
+							url: event.url,
+							// position to the left
+							position: pos
+						});
+					}
+				}
 			} else {
 				console.log('Webview>	Not a HTTP URL, not opening [', event.url, ']', event);
 			}
+			// clear the modifiers array (get sticky keys otherwise)
+			_this.modifiers = [];
 		});
 
+		// Adds the session cookie to the Webview's cookies
+		if (this.connectingToSageHostedFile && getCookie("session")) {
+			var webview = this.element;
+
+			// Wait until the dom is ready before add the cookie
+			webview.addEventListener("dom-ready", function() {
+				// webview.openDevTools(); // Debugging
+
+				// Parse out the original URL from the session URL
+				var webviewContents = webview.getWebContents();
+				var urlWithSession = webviewContents.getURL();
+
+				// Check if URL has session.html before parsing and reloading page without it
+				if (urlWithSession.indexOf("session.html") > 0) {
+					var urlRoot = urlWithSession.substring(0, urlWithSession.indexOf("session.html") - 1);
+					var url = urlRoot + urlWithSession.substring(urlWithSession.indexOf("page") + 5, urlWithSession.length);
+
+					// Add the session to the Webview's cookies
+					webviewContents.session.cookies.set(
+						{
+							url: urlRoot,
+							name: "session",
+							value: getCookie("session")
+						},
+						function() {
+						}
+					);
+
+					// Reloads the Webview without the session URL
+					_this.changeURL(url, false);
+				}
+			});
+		}
+
 		// Set the URL and starts loading
-		this.element.src = view_url;
+		this.changeURL(view_url, false);
+	},
+
+	/**
+	 * Handles certificate errors from loading webpages.
+	 *
+	 * @method     handleCertificateError
+	 */
+	handleCertificateError: function() {
+		if (this.addedHandlerForCertificteError) {
+			return;
+		}
+		var content = this.element.getWebContents();
+		var _this = this;
+		if (!content) {
+			window.requestAnimationFrame(function() {
+				_this.handleCertificateError();
+			});
+		} else {
+			// Moved to electron.js main app
+			this.addedHandlerForCertificteError = true;
+		}
 	},
 
 	/**
@@ -360,7 +556,7 @@ var Webview = SAGE2_App.extend({
 
 	changeURL: function(newlocation, remoteSync) {
 		// trigger the change
-		this.element.src = newlocation;
+		this.element.src = newlocation; //this.addSessionAsUrlParamIfConnectingToSelf(newlocation);
 		// save the url
 		this.state.url   = newlocation;
 		this.SAGE2Sync(remoteSync);
@@ -374,7 +570,7 @@ var Webview = SAGE2_App.extend({
 				content = this.element.getWebContents();
 				content.enableDeviceEmulation({
 					screenPosition: "mobile",
-					fitToView: true
+					screenSize: {width: 1000, height: 2000}
 				});
 			}
 
@@ -389,6 +585,63 @@ var Webview = SAGE2_App.extend({
 		}
 	},
 
+	isHostedBySelf: function(newlocation) {
+		// Combine the hostnames/IPs listed in the configuration file
+		var allHostNames = [].concat(
+			ui.json_cfg.alternate_hosts,
+			ui.json_cfg.host);
+
+		// Check if newlocation has any of the hostnames
+		for (let i = 0; i < allHostNames.length; i++) {
+			if (allHostNames[i].trim().length > 1) {
+				if (newlocation.includes(allHostNames[i])) {
+					return true;
+				}
+			}
+		}
+		return false;
+	},
+
+	addSessionAsUrlParamIfConnectingToSelf: function(newlocation) {
+		// Added catch to prevent crash when addressing local files
+		var modUrl;
+		try {
+			modUrl = new URL(newlocation);
+		} catch (e) {
+			return newlocation;
+		}
+		// If there is a session
+		if (this.sessionHash === undefined) {
+			this.sessionHash = getCookie("session");
+		}
+		if (this.sessionHash) {
+			// Combine the hostnames/IPs listed in the configuration file
+			var allHostNames = [].concat(
+				ui.json_cfg.alternate_hosts,
+				ui.json_cfg.host);
+
+			// Check if newlocation has any of the hostnames
+			for (let i = 0; i < allHostNames.length; i++) {
+				if (allHostNames[i].trim().length > 1) {
+					if (newlocation.includes(allHostNames[i])) {
+						this.connectingToSageHostedFile = true;
+						break;
+					}
+				}
+			}
+			// If newlocation contains a hostname, append hash as url param
+			if (this.connectingToSageHostedFile) {
+				if (modUrl.search.length > 0) {
+					// if there are already url parameters
+					modUrl.search += "&hash=" + this.sessionHash;
+				} else {
+					modUrl.search += "hash=" + this.sessionHash;
+				}
+			}
+		}
+		return modUrl.href;
+	},
+
 	resize: function(date) {
 		// Called when window is resized
 		this.element.style.width  = this.sage2_width  + "px";
@@ -400,6 +653,56 @@ var Webview = SAGE2_App.extend({
 			this.layer.style.width  = this.element.style.width;
 			this.layer.style.height = this.element.style.height;
 		}
+
+		if (this.contentType === "web") {
+			let content = this.element.getWebContents();
+			let ar = this.sage2_width / this.sage2_height;
+			if (ar >= 1.0) {
+				// landscape window
+				let scale = this.sage2_width / 1280;
+				if (scale < 1.2) {
+					content.enableDeviceEmulation({
+						screenPosition: "desktop",
+						deviceScaleFactor: 0
+					});
+				} else {
+					content.enableDeviceEmulation({
+						screenSize: {
+							width:  this.sage2_width,
+							height: this.sage2_height
+						},
+						viewSize: {
+							width:  this.sage2_width  * scale,
+							height: this.sage2_height * scale},
+						scale: scale,
+						deviceScaleFactor: 0
+					});
+				}
+			} else {
+				// portrait window
+				let scale = this.sage2_height / 1280;
+				if (scale < 1.2) {
+					content.enableDeviceEmulation({
+						screenPosition: "desktop",
+						deviceScaleFactor: 0
+					});
+				} else {
+					content.enableDeviceEmulation({
+						screenPosition: "mobile",
+						screenSize: {
+							width:  this.sage2_width,
+							height: this.sage2_height
+						},
+						viewSize: {
+							width:  this.sage2_width  / scale,
+							height: this.sage2_height / scale},
+						scale: scale,
+						deviceScaleFactor: 0
+					});
+				}
+			}
+		}
+
 		this.refresh(date);
 	},
 
@@ -462,10 +765,21 @@ var Webview = SAGE2_App.extend({
 			});
 		} else if (this.contentType === "vimeo" || this.contentType === "twitch") {
 			// Simulate a spacebar
-			this.element.sendInputEvent({
-				type: "char",
-				keyCode: ' '
-			});
+			this.simulateChar({key: ' '});
+		}
+	},
+
+	goToYoutubeContainingPage: function() {
+		// From https://www.youtube.com/embed/HASHVALUE?autoplay=0
+		// to https://www.youtube.com/watch?v=HASHVALUE
+		try {
+			let current = this.state.url;
+			current = current.substring(current.indexOf("embed") + 6); // Take from after 'embed/'
+			current = current.substring(0, current.indexOf("?")); // should be just the hash
+			current = "https://www.youtube.com/watch?v=" + current;
+			this.changeURL(current, true); // true: update remote sites if activated
+		} catch (e) {
+			// console.log("The URL was not as expected:" + this.state.url);
 		}
 	},
 
@@ -519,6 +833,15 @@ var Webview = SAGE2_App.extend({
 		}
 	},
 
+	simulateChar: function(act) {
+		if (act.key) {
+			this.element.sendInputEvent({
+				type: "char",
+				keyCode: act.key
+			});
+		}
+	},
+
 	muteUnmute: function(act) {
 		if (isMaster) {
 			var content = this.element.getWebContents();
@@ -547,6 +870,36 @@ var Webview = SAGE2_App.extend({
 			entry.accelerator = "P";
 			entry.callback = "playPause";
 			entry.parameters = {};
+			entries.push(entry);
+
+			entry = {};
+			entry.description = "Mute/Unmute";
+			entry.accelerator = "M";
+			entry.callback = "muteUnmute";
+			entry.parameters = {};
+			entries.push(entry);
+
+			if (this.contentType === "youtube") {
+				entry = {};
+				entry.description = "View original YouTube page";
+				entry.callback = "goToYoutubeContainingPage";
+				entry.parameters = {};
+				entries.push(entry);
+			}
+
+		} else if (this.contentType === "periscope") {
+			entry = {};
+			entry.description = "Cinema mode";
+			entry.accelerator = "H";
+			entry.callback = "simulateChar";
+			entry.parameters = {key: 'H'};
+			entries.push(entry);
+
+			entry = {};
+			entry.description = "Sidebar on/off";
+			entry.accelerator = "P";
+			entry.callback = "simulateChar";
+			entry.parameters = {key: 'P'};
 			entries.push(entry);
 
 			entry = {};
@@ -731,10 +1084,7 @@ var Webview = SAGE2_App.extend({
 			this.element.insertText(responseObject.clientInput);
 
 			for (let i = 0; i < responseObject.clientInput.length; i++) {
-				this.element.sendInputEvent({ // Not sure why we need 'char' but it works ! -- Luc
-					type: "char",
-					keyCode: responseObject.clientInput.charAt(i)
-				});
+				this.simulateChar({key: responseObject.clientInput.charAt(i)});
 			}
 		}
 	},
@@ -898,7 +1248,7 @@ var Webview = SAGE2_App.extend({
 				this.element.sendInputEvent({
 					type: "mouseWheel",
 					deltaX: 0, deltaY: -1 * data.wheelDelta,
-					x: 0, y: 0,
+					x: x, y: y,
 					modifiers: this.modifiers,
 					canScroll: true
 				});
@@ -907,6 +1257,14 @@ var Webview = SAGE2_App.extend({
 			} else if (eventType === "keyboard") {
 				if (this.contentType !== "unity") {
 					this.element.focus();
+				}
+
+				if (this.contentType === "periscope") {
+					if (data.character === "m") {
+						// m for mute
+						this.muteUnmute();
+						return;
+					}
 				}
 
 				if (this.contentType === "youtube" ||
@@ -941,16 +1299,11 @@ var Webview = SAGE2_App.extend({
 				if (this.contentType === "unity") {
 					// Bit of a hack to allow Unity InputManager controls to work
 					// Only upper case characters trigger InputManager -- Arthur
-					data.character = data.character.toUpperCase();
+					// data.character = data.character.toUpperCase();
 				}
 
 				// send the character event
-				this.element.sendInputEvent({
-					// type: "keyDown",
-					// Not sure why we need 'char' but it works ! -- Luc
-					type: "char",
-					keyCode: data.character
-				});
+				this.simulateChar({key: data.character});
 				setTimeout(function() {
 					_this.element.sendInputEvent({
 						type: "keyUp",
@@ -1064,6 +1417,13 @@ var Webview = SAGE2_App.extend({
 							keyCode: "Down",
 							modifiers: null
 						});
+					}
+					this.refresh(date);
+				} else if (data.code === 86 && data.state === "down") {
+					// CTRL/CMD v for 'paste'
+					if (data.status.CTRL || data.status.CMD) {
+						// paste the content of the clipboard into the webview
+						this.element.paste();
 					}
 					this.refresh(date);
 				}

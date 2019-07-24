@@ -82,8 +82,7 @@ StickyItems.prototype.removeElement = function(elem) {
 	var foregroundItems = elem.foregroundItems;
 	if (foregroundItems !== null && foregroundItems !== undefined) {
 		for (var f = 0; f < foregroundItems.length; f++) {
-			var foregroundItem = foregroundItems[f];
-			foregroundItem.backgroundItem = null;
+			this.detachStickyItem(foregroundItems[f]);
 		}
 	}
 	this.detachStickyItem(elem);
@@ -226,6 +225,19 @@ StickyItems.prototype.getFirstLevelStickingItems = function(app) {
 	return [];
 };
 
+/**
+* Get ids of items immediately sticking to item
+*
+* @method getFirstLevelStickingItemIDs
+*/
+StickyItems.prototype.getFirstLevelStickingItemIDs = function(app) {
+	if (app.foregroundItems !== null && app.foregroundItems !== undefined) {
+		return app.foregroundItems.map(function(d) {
+			return {id: d.id};
+		});
+	}
+	return [];
+};
 
 /**
 * Method to mark item not pinned but having a background item

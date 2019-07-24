@@ -14,6 +14,10 @@
 
 "use strict";
 
+var os   = require('os');
+var fs   = require('fs');
+var path = require('path');
+
 // module to retrieve hardware, system and OS information
 var sysInfo = require('systeminformation');
 // pretty formating a la sprintf
@@ -21,8 +25,6 @@ var sprint  = require('sprint');
 
 // SAGE2 module: for log function
 var sageutils = require('../src/node-utils');
-
-var os = require('os');
 
 /**
   * @class PerformanceManager
@@ -100,10 +102,18 @@ function PerformanceManager() {
 		data.servername = this.config.name || "";
 		data.serverhost = this.config.host;
 		this.performanceMetrics.staticInformation = data;
+		// Set the title of the console to SAGE2 (used to kill it later)
+		if (os.platform() === "win32") {
+			process.title = "SAGE2";
+		}
 		// fix on some system with no memory layout
 		if (data.memLayout.length === 0) {
 			sysInfo.mem(function(mem) {
 				this.performanceMetrics.staticInformation.memLayout[0] = {size: mem.total};
+				// Set the title of the console to SAGE2 (used to kill it later)
+				if (os.platform() === "win32") {
+					process.title = "SAGE2";
+				}
 			}.bind(this));
 		}
 	}.bind(this));
@@ -112,6 +122,10 @@ function PerformanceManager() {
 	this.durationInMinutes = 5;
 	// default to 2 second - 'normal'
 	this.samplingInterval  = 2;
+
+	// Write to file periodically
+
+	this.saveInterval = 30; // In seconds
 
 	// Loop handle is used to clear the interval and restart when sampling rate is changed
 	// samplingInterval in seconds
@@ -125,7 +139,79 @@ PerformanceManager.prototype.initializeConfiguration = function(cfg) {
 	this.config = cfg;
 };
 
+function appendToFile(path, data, newFile) {
+	if (newFile === false) {
+		const stats = fs.statSync(path);
+		var truncateSize = stats.size - 1;
+		fs.truncateSync(path, truncateSize);
+	}
+	fs.appendFile(path, data, (err) => {
+		if (err) {
+			sageutils.log('Perf', err);
+		}
+	});
+}
 
+PerformanceManager.prototype.writeToFile = function() {
+	var saveEndIdx = this.performanceMetrics.history.cpuLoad.length - 1;
+	var numberOfEntries = parseInt(this.saveInterval / this.samplingInterval); // In 30 seconds
+	var saveStartIdx = saveEndIdx + 1 - numberOfEntries;
+	var saveData = {
+		clients: this.performanceMetrics.history.clients.slice(saveStartIdx, saveEndIdx),
+		server: {
+			cpuLoad: this.performanceMetrics.history.cpuLoad.slice(saveStartIdx, saveEndIdx),
+			serverLoad: this.performanceMetrics.history.serverLoad.slice(saveStartIdx, saveEndIdx),
+			memUsage: this.performanceMetrics.history.memUsage.slice(saveStartIdx, saveEndIdx),
+			serverTraffic: this.performanceMetrics.history.serverTraffic.slice(saveStartIdx, saveEndIdx),
+			network: this.performanceMetrics.history.network.slice(saveStartIdx, saveEndIdx)
+		}
+	};
+	var filePath = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "performance");
+	if (!fs.existsSync(filePath)) {
+		fs.mkdirSync(filePath);
+	}
+	filePath = path.join(filePath, this.saveDataFileName);
+	var writeData = "";
+	if (this.newDataFile === true) {
+		saveData.server.hardware = this.performanceMetrics.staticInformation;
+		writeData = "[" + JSON.stringify(saveData) + "]";
+	} else {
+		writeData = ",\n" + JSON.stringify(saveData) + "]";
+	}
+
+	appendToFile(filePath, writeData, this.newDataFile);
+	this.newDataFile = false;
+};
+
+PerformanceManager.prototype.toggleDataSaveToFile = function() {
+	if (this.saveDataLoopHandle !== null && this.saveDataLoopHandle !== undefined) {
+		clearInterval(this.saveDataLoopHandle);
+		clearInterval(this.newFileNameLoopHandle);
+		this.saveDataLoopHandle = null;
+		sageutils.log('Perf', 'Stopped saving performance data to file');
+	} else {
+		this.changeFileName();
+		sageutils.log('Perf', 'Saving performance data to file');
+		this.saveDataLoopHandle = setInterval(this.writeToFile.bind(this),
+			this.saveInterval * 1000);
+		setTimeout(function() {
+			this.changeFileName();
+			//New file to save data to every hour
+			this.newFileNameLoopHandle = setInterval(this.changeFileName.bind(this), 60 * 60 * 1000);
+		}.bind(this), getTimeTillNextHour());
+	}
+};
+
+PerformanceManager.prototype.changeFileName = function() {
+	var date = new Date();
+	this.saveDataFileName = (date.getMonth() + 1) + "_" + date.getDate() + "_"
+	+ date.getFullYear() + "_" + date.getHours() + ".json";
+	this.newDataFile = true;
+};
+
+function getTimeTillNextHour() {
+	return 3600000 - new Date().getTime() % 3600000;
+}
 
 /**
  * Adds data for a display client.
@@ -188,6 +274,12 @@ PerformanceManager.prototype.updateClient = function(wsio) {
 PerformanceManager.prototype.setSamplingInterval = function(interval) {
 	// Set sampling interval in seconds to 1, 2, or 5
 	switch (interval) {
+		case 'never':
+			// clear the previous callback
+			// Return to stop data monitoring
+			clearInterval(this.loopHandle);
+			sageutils.log('Perf', 'Performance monitoring has been stopped!');
+			return;
 		case 'often':
 			this.samplingInterval = 1;
 			break;
@@ -381,7 +473,7 @@ PerformanceManager.prototype.computeMovingAverages = function(metric, oneMinute,
 	// Compute sum of all entries
 	this.performanceMetrics.history[metric].forEach(el => {
 		for (property in entireDuration) {
-			if (entireDuration.hasOwnProperty(property)) {
+			if (Object.prototype.hasOwnProperty.call(entireDuration, property)) {
 				entireDuration[property] = entireDuration[property] + parseInt(el[property]);
 				if (el.date > oneMinuteAgo) {
 					oneMinute[property] = oneMinute[property] + parseInt(el[property]);
@@ -394,7 +486,7 @@ PerformanceManager.prototype.computeMovingAverages = function(metric, oneMinute,
 	// Compute average by dividing by number of entries in the sum
 	var entireDurationEntries = this.performanceMetrics.history[metric].length;
 	for (property in entireDuration) {
-		if (entireDuration.hasOwnProperty(property)) {
+		if (Object.prototype.hasOwnProperty.call(entireDuration, property)) {
 			entireDuration[property] = entireDuration[property] / entireDurationEntries;
 			oneMinute[property] = oneMinute[property] / minuteEntries;
 		}
@@ -575,16 +667,15 @@ PerformanceManager.prototype.saveDisplayPerformanceData = function(id, idx, data
 		idle: data.cpuLoad.raw_currentload_idle
 	};
 	var clientSystemMem = {
-		total:  data.mem.total,  // total memory in bytes
-		used:   data.mem.used,   // incl. buffers/cache
-		free:   data.mem.free,
-		active: data.mem.active  // used actively (excl. buffers/cache)
+		total:  data.mem.total * 1024,  // total memory in bytes
+		free:   data.mem.free * 1024
 	};
+
+	clientSystemMem.used = clientSystemMem.total - clientSystemMem.free;
 
 	var clientProcessLoad = {
 		cpuPercent: data.processLoad.cpuPercent,
 		memPercent: data.processLoad.memPercent,
-		memVirtual: data.processLoad.memVirtual * 1024,
 		memResidentSet: data.processLoad.memResidentSet * 1024
 	};
 
@@ -978,7 +1069,7 @@ PerformanceManager.prototype.computeMessageSize = function(wsio, data, outBound)
 		}
 
 		var clientAppID = wsio.clientID + "_" + id;
-		if (this.trafficData.hasOwnProperty(clientAppID) === false) {
+		if (Object.prototype.hasOwnProperty.call(this.trafficData, clientAppID) === false) {
 			this.trafficData[clientAppID] = {
 				appId: id,
 				clientID: wsio.clientID,
@@ -1031,7 +1122,7 @@ PerformanceManager.prototype.getTrafficData = function() {
 
 function checkForNegatives(obj) {
 	for (var k in obj) {
-		if (obj.hasOwnProperty(k)) {
+		if (Object.prototype.hasOwnProperty.call(obj, k)) {
 			if (typeof obj[k] === 'number' && isNaN(obj[k]) === false && obj[k] < 0) {
 				return true;
 			}
@@ -1040,6 +1131,16 @@ function checkForNegatives(obj) {
 	return false;
 }
 
+PerformanceManager.prototype.sendHistoryFileNames = function(wsio) {
+	var filePath = path.join(sageutils.getHomeDirectory(), "Documents", "SAGE2_Media", "performance");
+	fs.readdir(filePath, function(err, files) {
+		if (err) {
+			sageutils.log('performance', err);
+		} else {
+			wsio.emit('performanceDataFilenames', {path: filePath, files: files});
+		}
+	});
+};
 
 
 // export the PerformanceManager class

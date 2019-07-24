@@ -222,7 +222,7 @@ FileBuffer.prototype.editCredentialsForBuffer = function(data) {
 };
 
 FileBuffer.prototype.closeFileBuffer = function(appId) {
-	if (this.buffers.hasOwnProperty(appId)) {
+	if (Object.prototype.hasOwnProperty.call(this.buffers, appId)) {
 		var buf = this.buffers[appId];
 		if (buf.changeCount > 0) {
 			this.writeToFile(appId);
@@ -252,10 +252,11 @@ FileBuffer.prototype.associateFile = function(data) {
 };
 
 FileBuffer.prototype.writeToFile = function(appId) {
-	if (this.buffers.hasOwnProperty(appId) && this.files.hasOwnProperty(appId)) {
-		var buffer = this.buffers[appId];
+	if (Object.prototype.hasOwnProperty.call(this.buffers, appId) &&
+		Object.prototype.hasOwnProperty.call(this.files, appId)) {
+		var buffer   = this.buffers[appId];
 		var fileName = this.files[appId];
-		var bufData = buffer.getData();
+		var bufData  = buffer.getData();
 
 		/*var prefix = " _Owner:_ " + bufData.owner + "  \n"
 			+ " _Color:_ " + bufData.color + "  \n"
@@ -273,7 +274,7 @@ FileBuffer.prototype.writeToFile = function(appId) {
 };
 
 FileBuffer.prototype.insertChar = function(data) {
-	if (this.buffers.hasOwnProperty(data.appId)) {
+	if (Object.prototype.hasOwnProperty.call(this.buffers, data.appId)) {
 		var buffer = this.buffers[data.appId];
 		var update = buffer.insertChar(data.code, data.printable, data.user_id);
 		if (buffer.changeCount > 15) {
@@ -284,7 +285,7 @@ FileBuffer.prototype.insertChar = function(data) {
 };
 
 FileBuffer.prototype.insertStr = function(data) {
-	if (this.buffers.hasOwnProperty(data.appId)) {
+	if (Object.prototype.hasOwnProperty.call(this.buffers, data.appId)) {
 		var buffer = this.buffers[data.appId];
 		var text = data.text.split('\r\n').join('\n');
 		text = this.parse(text).text;
@@ -309,7 +310,7 @@ FileBuffer.prototype.parse = function(data) {
 };
 
 FileBuffer.prototype.updateFileBufferCursorPosition = function(data) {
-	if (this.buffers.hasOwnProperty(data.appId)) {
+	if (Object.prototype.hasOwnProperty.call(this.buffers, data.appId)) {
 		var buffer = this.buffers[data.appId];
 		buffer.updateCursorPosition(data);
 	}

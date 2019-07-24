@@ -194,7 +194,7 @@ VoiceActionManager.prototype.secondaryProcessCallToUseInTryCatch = function(wsio
 	this.appIdUnderPointer = null;
 	if (obj !== null) {
 		// Check type of item under click
-		if (this.s2.SAGE2Items.applications.list.hasOwnProperty(obj.data.id)) {
+		if (Object.prototype.hasOwnProperty.call(this.s2.SAGE2Items.applications.list, obj.data.id)) {
 			// If an app was under the rmb click
 			if (this.s2.SAGE2Items.applications.list[obj.data.id].contextMenu) {
 				contextMenu = this.s2.SAGE2Items.applications.list[obj.data.id].contextMenu;

@@ -41,7 +41,7 @@ var semver    = require('semver');            // parse version numbers
 var fsmonitor = require('fsmonitor');         // file system monitoring
 var sanitizer = require('sanitizer');         // Caja's HTML Sanitizer as a Node.js module
 var chalk     = require('chalk');             // colorize console output
-var stripansi = require('strip-ansi');        // remove ANSI color codes (dep. of chalk)
+var stripansi = require('strip-ansi');        // remove ANSI color codes
 var rimraf    = require('rimraf');            // command rm -rf for node
 
 /**
@@ -297,7 +297,7 @@ function log(head, ...params) {
 		console.log.apply(console, [header(head)].concat(params));
 	}
 	if (global.emitLog) {
-		global.emitLog(stripansi(head + "> " + params + "\n"));
+		global.emitLog({head: head, params: params});
 	}
 	if (global.logger) {
 		global.logger.log(head, stripansi(params.toString()));
@@ -661,6 +661,68 @@ function deleteFiles(pattern, cb) {
 	}
 }
 
+/**
+ * Generate a quickNote with connection information
+ *
+ * @method     generateConnectionNote
+ * @param      {string}  folder       where to store
+ * @param      {string}  origin       URL to connect
+ * @param      {string}  pass         session password
+ */
+function generateConnectionNote(folder, origin, pass) {
+	// Generate a quickNote with help to connect
+	var note_out = path.join(folder, "notes");
+	if (!folderExists(note_out)) {
+		fs.mkdirSync(note_out);
+	}
+	// Filename
+	note_out = path.join(note_out, "Connect.note");
+	// Get the date
+	var now = new Date();
+	var titleString = "SAGE2-QN-" + now.getFullYear();
+	if (now.getMonth() < 9) {
+		titleString += "0";
+	}
+	titleString += (now.getMonth() + 1) + "";
+	if (now.getDate() < 10) {
+		titleString += "0";
+	}
+	titleString += now.getDate() + "-";
+	if (now.getHours() < 10) {
+		titleString += "0";
+	}
+	titleString += now.getHours();
+	if (now.getMinutes() < 10) {
+		titleString += "0";
+	}
+	titleString += now.getMinutes();
+	if (now.getSeconds() < 10) {
+		titleString += "0";
+	}
+	titleString += now.getSeconds();
+	if (now.getMilliseconds() < 10) {
+		titleString += "0";
+	}
+	if (now.getMilliseconds() < 100) {
+		titleString += "0";
+	}
+	titleString += now.getMilliseconds();
+	// Generate the note content
+	var fileContent = titleString
+		+ "\n"
+		+ "lightyellow"
+		+ "\n"
+		+ "## Connect to this wall\n\n"
+		+ "  * URL: " + origin + "\n";
+	if (pass) {
+		fileContent += "  * Password: " + pass + "\n";
+	}
+	fileContent	+= "## &nbsp;\n";
+	fileContent	+= "## ![qr](/user/images/QR.png \"QR Code\")";
+	// Write the file
+	fs.writeFileSync(note_out, fileContent);
+}
+
 
 module.exports.nodeVersion       = _NODE_VERSION;
 module.exports.getNodeVersion    = getNodeVersion;
@@ -686,6 +748,8 @@ module.exports.mkdirParent       = mkdirParent;
 module.exports.deleteFiles       = deleteFiles;
 module.exports.sanitizedURL      = sanitizedURL;
 module.exports.mergeObjects      = mergeObjects;
+
+module.exports.generateConnectionNote = generateConnectionNote;
 
 module.exports.encodeReservedURL  = encodeReservedURL;
 module.exports.encodeReservedPath = encodeReservedPath;

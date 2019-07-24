@@ -13,7 +13,9 @@ module.exports = function(grunt) {
 					src: [
 						"server.js",
 						"electron.js",
+						"client/electron.js",
 						"install_dependencies.js",
+						"generate-service-worker.js",
 						"src/*.js",
 						"bin/*.js",
 						"public/uploads/apps/welcome/plugin.js",
@@ -55,6 +57,7 @@ module.exports = function(grunt) {
 						"public/uploads/apps/welcome/welcome.js",
 						"public/uploads/apps/Webview/Webview.js",
 						"public/uploads/apps/WhiteboardPalette/WhiteboardPalette.js",
+						"public/uploads/apps/videoCapture/videoCapture.js",
 						"public/uploads/apps/zoom/zoom.js"
 					]
 				},
@@ -91,23 +94,16 @@ module.exports = function(grunt) {
 					]
 				}
 			}
-		},
-		mochacli: {
-			options: {
-				bail: true
-			},
-			all: ['test/*.js']
 		}
 	});
 
 	// Load the dependencies
 	grunt.loadNpmTasks('grunt-eslint');
 	grunt.loadNpmTasks('grunt-contrib-yuidoc');
-	grunt.loadNpmTasks('grunt-mocha-cli');
 	grunt.loadNpmTasks('grunt-prompt');
 
 	// this would be run by typing "grunt test" on the command line
-	grunt.registerTask('all', ['eslint', 'yuidoc', 'mochacli']);
+	grunt.registerTask('all', ['eslint', 'yuidoc']);
 
 	// the default task can be run just by typing "grunt" on the command line
 	grunt.registerTask('default', ['eslint']);

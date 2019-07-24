@@ -23,7 +23,8 @@ var fs          = require('fs');
 var path        = require('path');
 
 var json5       = require('json5');
-var JsonDB      = require('node-json-db');
+var JsonDB      = require('node-json-db').JsonDB;
+
 var mime        = require('mime');
 
 var sageutils   = require('../src/node-utils');  // for fileExists function
@@ -143,11 +144,11 @@ RegistryManager.prototype.register = function(name, types, directory, mimeType) 
 		this.push(type + '/directory', directory, true);
 
 
-		try {
+		/*try {
 			this.db.getData(type + '/default');
 		} catch (error) {
 			this.push(type + '/default', name, true);
-		}
+		}*/
 	}
 };
 
@@ -163,44 +164,113 @@ RegistryManager.prototype.getMimeType = function(file) {
 	return mime.getType(file);
 };
 
-RegistryManager.prototype.getDefaultApp = function(file) {
+RegistryManager.prototype.getDefaultApp = function(file, warn) {
 	var defaultApp = "";
 	var type = '/' + mime.getType(file);
+	// Check if the entry exists
 	try {
-		defaultApp = this.db.getData(type + '/default');
+		defaultApp = this.db.getData(type + '/applications[0]');
 	} catch (error) {
-		sageutils.log("Registry", "No default app for", file);
+		// Entry does not exist.
+		if (warn === true) {
+			sageutils.log("Registry", "No default app for", file);
+		}
 	}
 	return defaultApp;
 };
 
-RegistryManager.prototype.getDefaultAppFromMime = function(type) {
+RegistryManager.prototype.getDefaultAppFromMime = function(type, warn) {
 	var defaultApp = "";
 	try {
-		defaultApp = this.db.getData('/' + type + '/default');
+		defaultApp = this.db.getData('/' + type + '/applications[0]');
 	} catch (error) {
 		if (type === "text/plain") {
 			return "uploads/apps/quickNote";
 		}
 		// currently lack a better way to associate
-		sageutils.log("Registry", "No default app for", type);
+		if (warn === true) {
+			sageutils.log("Registry", "No default app for", type);
+		}
 	}
 	return defaultApp;
 };
 
-RegistryManager.prototype.getDirectory = function(file) {
+RegistryManager.prototype.getApps = function(file, warn) {
+	var apps = [];
+	var type = '/' + mime.getType(file);
+	// Check if the entry exists
+	try {
+		apps = this.db.getData(type + '/applications');
+		if (apps.length < 1) {
+			sageutils.log("Registry", "No apps for", file);
+		}
+	} catch (error) {
+		// Entry does not exist.
+		if (warn === true) {
+			sageutils.log("Registry", "No app for", file);
+		}
+	}
+	return apps;
+};
+
+RegistryManager.prototype.getAppsFromMime = function(type, warn) {
+	var apps = [];
+	try {
+		apps = this.db.getData('/' + type + '/applications');
+		if (apps.length < 1) {
+			sageutils.log("Registry", "No apps for", type);
+		}
+	} catch (error) {
+		if (type === "text/plain") {
+			return ["uploads/apps/quickNote"];
+		}
+		if (warn === true) {
+			sageutils.log("Registry", "No app for", type);
+		}
+	}
+	return apps;
+};
+
+RegistryManager.prototype.getTypeToAppAssociations = function() {
+	return this.db.getData('/');
+};
+
+RegistryManager.prototype.getDirectory = function(file, warn) {
 	var dir = "";
 	var type = '/' + mime.getType(file);
 	try {
 		dir = this.db.getData(type + '/directory');
 	} catch (error) {
-		sageutils.log("Registry", "No directory for", file);
+		if (warn === true) {
+			sageutils.log("Registry", "No directory for", file);
+		}
 	}
 	return dir;
-
 };
 
-RegistryManager.prototype.setDefaultApplication = function(app, type) {
+RegistryManager.prototype.setDefaultApp = function(file, app, warn) {
+	var apps = [];
+	var type = '/' + mime.getType(file);
+	// Check if the entry exists
+	try {
+		apps = this.db.getData(type + '/applications');
+		var appIdx = apps.findIndex(x => x === app);
+		if (appIdx < -1) {
+			sageutils.log("Registry", "Unknown app", app);
+		} else if (appIdx === 0 && warn === true) {
+			sageutils.log("Registry", app, "set as default app for", type);
+		} else {
+			apps.splice(appIdx, 1);
+			apps.splice(0, 0, app);
+			this.push(type + '/applications', apps, true);
+			if (warn === true) {
+				sageutils.log("Registry", app, "set as default app for", type);
+			}
+		}
+	} catch (error) {
+		// Entry does not exist.
+		sageutils.log("Registry", "Unknown file type", type);
+	}
 };
 
 module.exports = new RegistryManager();

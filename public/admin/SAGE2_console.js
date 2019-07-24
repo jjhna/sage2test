@@ -18,8 +18,6 @@
  * @class SAGE2_Console
  */
 
-/*global SAGE2_init: true */
-
 /**
  * Entry point of the console application
  *
@@ -106,8 +104,14 @@ function setupListeners(wsio) {
 
 	// Server sends something to print into the console
 	wsio.on('console', function(data) {
-		// Added content
-		terminal.textContent += data;
+		// Decode content
+		var msg;
+		if (typeof data === "string") {
+			msg = data;
+		} else {
+			msg = "" + data.head + "> " + data.params + "\n";
+		}
+		terminal.textContent += msg;
 		// automatic scrolling to bottom
 		terminal.scrollTop    = terminal.scrollHeight;
 	});

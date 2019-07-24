@@ -459,8 +459,8 @@ var SAGE2PointerToNativeMouseEvent = {
 			eventData.clickCount = 1;
 		} else if (pointerInfo.type === "pointerScroll") {
 			eventData.type =  "mouseWheel";
-			eventData.x = 0;
-			eventData.y = 0;
+			//eventData.x = 0;
+			//eventData.y = 0;
 			eventData.deltaX = 0;
 			eventData.deltaY = -1 * pointerInfo.data.wheelDelta;
 			eventData.canScroll = true;
@@ -837,31 +837,47 @@ var SAGE2PointerToNativeMouseEvent = {
 		px += appBoundingRect.left;
 		py += appBoundingRect.top;
 
+		var rootzindex = window.getComputedStyle(appStart, null).getPropertyValue("z-index");
 		// then go through each child, and its children...etc
-		this.traverseChildNodesForCandidates(appStart, candidate, px, py);
+		this.traverseChildNodesForCandidates(appStart, candidate, px, py, rootzindex);
 		return candidate.element;
 	},
 
-	traverseChildNodesForCandidates: function(element, candidate, px, py) {
+	traverseChildNodesForCandidates: function(element, candidate, px, py, parentZIndex) {
 		// track data for debug
 		candidate.traversalCount++;
 		var computedZ;
+		var inside = false;
 		// first check this node, because later declared notes are visually on top of previous
 		if (this.checkIfPointerInElementBoundingBox(px, py, element)) {
-			computedZ = this.computeZIndex(element);
+			computedZ = this.computeZIndex(element, parentZIndex);
 			if (computedZ >= candidate.zIndex) {
 				candidate.element = element;
 				candidate.zIndex = computedZ;
+				// We have a candidate.
+				// In case its children are only special nodes such as 'text'
+				// we don't check more children and return
+				inside = true;
+			}
+
+			// then go through children, since they will be on top unless zindex is altered.
+			var children = element.childNodes;
+			for (let i = 0; i < children.length; i++) {
+				if (children[i].id === candidate.stateSkipId) {
+					continue;
+				}
+				// skip text-nodes as they don't have a bounday to test for
+				if (children[i].nodeType == 3) {
+					continue;
+				}
+				// now test all children and depending on the return value we skip the rest of the children
+				inside = this.traverseChildNodesForCandidates(children[i], candidate, px, py, computedZ);
+				if (inside) {
+					break;
+				}
 			}
 		}
-		// then go through children, since they will be on top unless zindex is altered.
-		var children = element.childNodes;
-		for (let i = 0; i < children.length; i++) {
-			if (children[i].id === candidate.stateSkipId) {
-				continue;
-			}
-			this.traverseChildNodesForCandidates(children[i], candidate, px, py);
-		}
+		return inside;
 	},
 
 	checkIfPointerInElementBoundingBox: function(px, py, element) {
@@ -881,11 +897,11 @@ var SAGE2PointerToNativeMouseEvent = {
 		return true;
 	},
 
-	computeZIndex: function(element) {
+	computeZIndex: function(element, parentZIndex) {
 		try {
 			var zIndex = window.getComputedStyle(element, null).getPropertyValue("z-index");
 			if (isNaN(zIndex)) {
-				return this.computeZIndex(element.parentNode);
+				return parentZIndex;
 			} else {
 				return zIndex;
 			}
@@ -1079,12 +1095,16 @@ var SAGE2PointerToNativeMouseEvent = {
 	 */
 	handleClickTarget: function(e) {
 		var appId = false;
-		console.log("Document click x,y:" + e.x + "," + e.y);
-		console.dir(e);
 		var currentElement = e.target;
 		var idWhole, idNumber;
+		var currentClassValue;
+
 		while (!appId) {
-			if (currentElement.className.includes("windowItem")) {
+			// Using getAttribute will work on SVG elements that have className as objects
+			currentClassValue = currentElement.getAttribute("class");
+			// But it returns null when no classNames have been applied
+			currentClassValue = currentClassValue ? currentClassValue : "";
+			if (currentClassValue.includes("windowItem")) {
 				idWhole = currentElement.id;
 				if (idWhole.indexOf("app_") === 0) {
 					idNumber = idWhole.substring(4); // app_ is 4 chars. starts at 0.
@@ -1095,10 +1115,11 @@ var SAGE2PointerToNativeMouseEvent = {
 					}
 				}
 			}
-			if (!currentElement.parentNode) {
+			// Using element instead of node to avoid document node.
+			if (!currentElement.parentElement) {
 				break;
 			}
-			currentElement = currentElement.parentNode;
+			currentElement = currentElement.parentElement;
 		}
 		if (!appId) {
 			return; // dont do anything, might have been a native click.

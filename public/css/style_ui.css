@@ -52,6 +52,9 @@ h2 {
 #mainUI {
     margin: 0;
     overflow: hidden;
+
+    /* disable user selection on iOS */
+    -webkit-user-select: none;
 }
 
 #displayUIDiv {
@@ -819,34 +822,6 @@ The z-index is very important.
 	background:lightgray !important;
 }
 
-#uiNoteMaker {
-    border: 1px solid black;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-    -moz-transform: translate(-50%, -50%);
-    -ms-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
-    text-align: center;
-}
-
-#uiNoteMakerInputField {
-    resize: none;
-    font-size: 20px;
-    font-family: Lucidia Console, Monaco, monospace;
-}
-
-.uinmColorPickColumn {
-    height: 71px;
-    width: 101px;
-}
-
-.uinmColorPickBlock {
-    width: 95px;
-    height: 65px;
-    border: 1px solid black;
-}
-
 #uiDrawZone {
     top: 50%;
     left: 50%;
@@ -1031,20 +1006,28 @@ The z-index is very important.
 
 /* Styling top menu bar */
 
-.my_style .webix_layout_toolbar.webix_toolbar {
+.topbar_style .webix_layout_toolbar.webix_toolbar {
     background: #787878;
     border: none;
 }
 
-.my_style a.webix_list_item {
+.topbar_style .webix_toolbar .webix_el_label .webix_el_box {
+    color: white;
+    font-family: Arimo, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: normal;
+    font-style: normal;
+}
+
+.topbar_style a.webix_list_item {
     background: #787878;
 }
 
-.my_style a.webix_list_item:focus {
+.topbar_style a.webix_list_item:focus {
     background: #787878;
 }
 
-.my_style a.webix_list_item:hover {
+.topbar_style a.webix_list_item:hover {
     background: #666666;
 }
 

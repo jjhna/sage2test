@@ -10,7 +10,7 @@
 
 
 /* global ignoreFields, SAGE2WidgetControl, SAGE2PointerToNativeMouseEvent, SAGE2RemoteSitePointer */
-/* global addStoredFileListEventHandler, removeStoredFileListEventHandler */
+/* global addStoredFileListEventHandler, removeStoredFileListEventHandler, isBrowser */
 
 /**
  * @module client
@@ -208,7 +208,7 @@ var SAGE2_App = Class.extend({
 	SAGE2UpdateOptionsAfterLoad: function(parent) {
 		var key;
 		for (key in parent) {
-			if (parent.hasOwnProperty(key) && key[0] !== "_") {
+			if (Object.prototype.hasOwnProperty.call(parent, key) && key[0] !== "_") {
 				if (parent[key]._sync) {
 					parent[key]._name.setAttribute("state", "idle");
 					parent[key]._name.setAttribute("synced", true);
@@ -497,7 +497,7 @@ var SAGE2_App = Class.extend({
 	SAGE2StateSyncParent: function(node, parent) {
 		var key;
 		for (key in parent) {
-			if (parent.hasOwnProperty(key) && key[0] !== "_") {
+			if (Object.prototype.hasOwnProperty.call(parent, key) && key[0] !== "_") {
 				if (parent[key]._name === node) {
 					parent[key]._sync = true;
 					if (parent !== this.SAGE2StateOptions) {
@@ -518,7 +518,7 @@ var SAGE2_App = Class.extend({
 	SAGE2StateSyncChildren: function(node, parent, flag) {
 		var key;
 		for (key in parent) {
-			if (parent.hasOwnProperty(key) && key[0] !== "_") {
+			if (Object.prototype.hasOwnProperty.call(parent, key) && key[0] !== "_") {
 				if (parent[key]._name === node) {
 					parent[key]._sync = flag;
 					this.SAGE2StateSyncChildrenHelper(parent[key], flag);
@@ -542,7 +542,7 @@ var SAGE2_App = Class.extend({
 
 		var key;
 		for (key in parent) {
-			if (parent.hasOwnProperty(key) && key[0] !== "_") {
+			if (Object.prototype.hasOwnProperty.call(parent, key) && key[0] !== "_") {
 				this.SAGE2StateSyncChildrenHelper(parent[key], flag);
 			}
 		}
@@ -558,6 +558,10 @@ var SAGE2_App = Class.extend({
 				localState: this.state,
 				remoteState: syncedState,
 				updateRemote: updateRemote
+			});
+		} else if (isBrowser) {
+			wsio.emit('updateApplicationState', {
+				id: this.id, state: this.state, date: Date.now()
 			});
 		}
 	},
@@ -786,7 +790,7 @@ var SAGE2_App = Class.extend({
 			_this.preDraw(date);
 			// measure actual frame rate
 			if (_this.sec >= 1.0) {
-				_this.fps       = this.frame_sec / this.sec;
+				_this.fps       = _this.frame_sec / _this.sec;
 				_this.frame_sec = 0;
 				_this.sec       = 0;
 			}
@@ -926,18 +930,20 @@ var SAGE2_App = Class.extend({
 	*
 	* @method log
 	* @param msg {Object} list of arguments to be printed
+	* @param params {Array} extras parameters
 	*/
-	log: function(msg) {
-		if (arguments.length === 0) {
-			return;
+	log: function(msg, ...params) {
+		if (msg) {
+			let args;
+			// Put the aguments into an array
+			if (params) {
+				args = [msg].concat(params);
+			} else {
+				args = [msg];
+			}
+			// Put everything into an object
+			sage2Log({app: this.div.id, message: args});
 		}
-		var args;
-		if (arguments.length > 1) {
-			args = Array.prototype.slice.call(arguments);
-		} else {
-			args = msg;
-		}
-		sage2Log({app: this.div.id, message: args});
 	},
 
 	/**
