@@ -529,6 +529,7 @@ function setupListeners() {
 	wsio.on('loadApplicationOptions', function(data) {
 		var fullSync = true;
 		var windowTitle = document.getElementById(data.id + "_title");
+		var dragBar = document.getElementById(data.id + "_dragBar");
 		var windowIconSync = document.getElementById(data.id + "_iconSync");
 		var windowIconUnSync = document.getElementById(data.id + "_iconUnSync");
 		var app = applications[data.id];
@@ -538,10 +539,12 @@ function setupListeners() {
 			if (fullSync === true) {
 				if (data.options[Object.keys(data.options)[0]]._sync === true) {
 					windowTitle.style.backgroundColor = "#39C4A6";
+					dragBar.style.backgroundColor = "#39C4A6";
 					windowIconSync.style.display = "block";
 					windowIconUnSync.style.display = "none";
 				} else {
 					windowTitle.style.backgroundColor = "#666666";
+					dragBar.style.backgroundColor = "#666666";
 					windowIconSync.style.display = "none";
 					windowIconUnSync.style.display = "block";
 				}
@@ -810,8 +813,10 @@ function setupListeners() {
 			var translate = "translate(" + position_data.elemLeft + "px," + position_data.elemTop + "px)";
 			var selectedElemTitle = document.getElementById(position_data.elemId + "_title");
 			var selectedElem = document.getElementById(position_data.elemId);
+			var selectedElemDragBar = document.getElementById(position_data.elemId + "_dragBar");
 			requestAnimationFrame(function(ts) {
 				selectedElemTitle.style.transform = translate;
+				selectedElemDragBar.style.transform = translate;
 				selectedElem.style.transform = translate;
 			});
 		}
@@ -920,8 +925,12 @@ function setupListeners() {
 
 		var translate = "translate(" + position_data.elemLeft + "px," + position_data.elemTop + "px)";
 		var selectedElemTitle = document.getElementById(position_data.elemId + "_title");
+		var selectedElemDragBar = document.getElementById(position_data.elemId + "_dragBar");
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
-
+		
+		selectedElemDragBar.style.width = Math.round(position_data.elemWidth).toString() + "px";
+		selectedElemDragBar.style.top = (Math.round(position_data.elemHeight + selectedElemDragBar.style.height)).toString() + "px";
+		
 		if (position_data.elemId.split("_")[0] === "portal") {
 			dataSharingPortals[position_data.elemId].setPosition(position_data.elemLeft, position_data.elemTop);
 			return;
@@ -937,6 +946,7 @@ function setupListeners() {
 		}
 
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
+		selectedElemDragBar.style.width = Math.round(position_data.elemWidth).toString() + "px";
 
 		var selectedElemState = document.getElementById(position_data.elemId + "_state");
 		selectedElemState.style.width = Math.round(position_data.elemWidth).toString() + "px";
@@ -948,7 +958,7 @@ function setupListeners() {
 		dragCorner[0].style.height = cornerSize.toString() + "px";
 		dragCorner[0].style.top    = (Math.round(position_data.elemHeight) - cornerSize).toString() + "px";
 		dragCorner[0].style.left   = (Math.round(position_data.elemWidth) - cornerSize).toString()  + "px";
-
+		
 		// if the element is a div or iframe, resize should use the style object
 		if (child[0].tagName.toLowerCase() === "div" ||
 			child[0].tagName.toLowerCase() === "iframe" ||
@@ -1516,6 +1526,23 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 		windowTitle.style.display   = "none";
 	}
 
+	var dragBar = document.createElement("div");
+	dragBar.id  = data.id + "_dragBar";
+	dragBar.className    = "windowTitle";
+	dragBar.style.width  = data.width.toString() + "px";
+	dragBar.style.height = titleBarHeight.toString() + "px";
+	dragBar.style.left   = (-offsetX).toString() + "px";
+	dragBar.style.top    = (-offsetY + data.height + titleBarHeight).toString() + "px";
+	dragBar.style.transform = translate;
+	dragBar.style.zIndex = itemCount.toString();
+	if (ui.noDropShadow === true) {
+		dragBar.style.boxShadow = "none";
+	}
+	if (ui.uiHidden === true) {
+		dragBar.style.display   = "none";
+	}
+	parent.appendChild(dragBar);
+	
 	var iconWidth = Math.round(titleBarHeight) * (300 / 235);
 	var iconSpace = 0.1 * iconWidth;
 	var windowIconSync = document.createElement("img");
@@ -1626,10 +1653,10 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	dragCorner.style.border   = "none";
 	dragCorner.style.zIndex   = "1";
 	windowItem.appendChild(dragCorner);
-
+	
 	parent.appendChild(windowTitle);
 	parent.appendChild(windowItem);
-
+	
 	// App launched in window
 	if (data.application === "media_stream") {
 		wsio.emit('receivedMediaStreamFrame', {id: data.id});
