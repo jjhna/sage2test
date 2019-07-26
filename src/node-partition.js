@@ -121,7 +121,7 @@ Partition.prototype.addChild = function(item) {
 };
 
 Partition.prototype.updateChild = function(id) {
-	if (this.children.hasOwnProperty(id)) {
+	if (Object.prototype.hasOwnProperty.call(this.children, id)) {
 		// when a child is moved, update the relative positions within the parent
 		var item = this.children[id];
 		var titleBarHeight = this.partitionList.configuration.ui.titleBarHeight;
@@ -145,7 +145,7 @@ Partition.prototype.updateChild = function(id) {
   * @param {string} id - The id of child to remove
   */
 Partition.prototype.releaseChild = function(id) {
-	if (this.children.hasOwnProperty(id)) {
+	if (Object.prototype.hasOwnProperty.call(this.children, id)) {
 
 		var item = this.children[id];
 
@@ -517,7 +517,7 @@ Partition.prototype.tilePartition = function() {
   * @param {string} id - The id of child to maximize
   */
 Partition.prototype.maximizeChild = function(id, shift) {
-	if (this.children.hasOwnProperty(id)) {
+	if (Object.prototype.hasOwnProperty.call(this.children, id)) {
 		var item = this.children[id];
 		var config = this.partitionList.configuration;
 
@@ -629,7 +629,7 @@ Partition.prototype.maximizeChild = function(id, shift) {
   * @param {string} id - The id of child to restore
   */
 Partition.prototype.restoreChild = function(id, shift) {
-	if (this.children.hasOwnProperty(id)) {
+	if (Object.prototype.hasOwnProperty.call(this.children, id)) {
 		var item = this.children[id];
 
 		this.currentMaximizedChild = null;
@@ -882,7 +882,7 @@ Partition.prototype.updateNeighborPtnPositions = function() {
 	for (var neigh of Object.keys(this.neighbors)) {
 
 		// make sure this partition is in partitions (list)
-		if (partitions.list.hasOwnProperty(neigh)) {
+		if (Object.prototype.hasOwnProperty.call(partitions.list, neigh)) {
 			let neighPtn = partitions.list[neigh];
 			let isUpdated = false;
 

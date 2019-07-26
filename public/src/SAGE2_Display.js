@@ -8,7 +8,7 @@
 //
 // Copyright (c) 2014-15
 
-/* global ignoreFields, hostAlias, SAGE2WidgetControlInstance */
+/* global ignoreFields, SAGE2WidgetControlInstance */
 /* global makeSvgBackgroundForWidgetConnectors, addStyleElementForTitleColor */
 /* global removeStyleElementForTitleColor */
 /* global clearConnectorColor, moveWidgetToAppConnector */
@@ -18,8 +18,7 @@
 /* global hideWidgetToAppConnectors */
 /* global createWidgetToAppConnector, getTextFromTextInputWidget */
 /* global SAGE2_Partition, require */
-/* global SAGE2RemoteSitePointer */
-/* global process */
+/* global SAGE2RemoteSitePointer, process */
 
 "use strict";
 
@@ -679,7 +678,7 @@ function setupListeners() {
 		partitions[data.id].updateTitle(data.title);
 	});
 	wsio.on('updatePartitionBorders', function(data) {
-		if (data && partitions.hasOwnProperty(data.id)) {
+		if (data && Object.prototype.hasOwnProperty.call(partitions, data.id)) {
 			partitions[data.id].updateSelected(data.highlight);
 		} else {
 			for (var p in partitions) {
@@ -689,12 +688,12 @@ function setupListeners() {
 		}
 	});
 	wsio.on('updatePartitionColor', function(data) {
-		if (data && partitions.hasOwnProperty(data.id)) {
+		if (data && Object.prototype.hasOwnProperty.call(partitions, data.id)) {
 			partitions[data.id].updateColor(data.color);
 		}
 	});
 	wsio.on('updatePartitionSnapping', function(data) {
-		if (data && partitions.hasOwnProperty(data.id)) {
+		if (data && Object.prototype.hasOwnProperty.call(partitions, data.id)) {
 			partitions[data.id].setSnappedBorders(data.snapping);
 			partitions[data.id].setAnchoredBorders(data.anchor);
 			partitions[data.id].updateBorders();
@@ -837,7 +836,9 @@ function setupListeners() {
 		if (position_data.elemId in controlObjects) {
 			var hOffset = (ui.titleBarHeight + position_data.elemHeight) / 2;
 			for (var item in controlItems) {
-				if (controlItems.hasOwnProperty(item) && item.indexOf(position_data.elemId) > -1 && controlItems[item].show) {
+				if (Object.prototype.hasOwnProperty.call(controlItems, item) &&
+					item.indexOf(position_data.elemId) > -1 &&
+					controlItems[item].show) {
 					var control = controlItems[item].divHandle;
 					var cLeft = parseInt(control.style.left);
 					var cTop = parseInt(control.style.top);
@@ -987,7 +988,9 @@ function setupListeners() {
 		if (position_data.elemId in controlObjects) {
 			var hOffset = (ui.titleBarHeight + position_data.elemHeight) / 2;
 			for (var item in controlItems) {
-				if (controlItems.hasOwnProperty(item) && item.indexOf(position_data.elemId) > -1 && controlItems[item].show) {
+				if (Object.prototype.hasOwnProperty.call(controlItems, item) &&
+					item.indexOf(position_data.elemId) > -1 &&
+					controlItems[item].show) {
 					var control = controlItems[item].divHandle;
 					var cLeft = parseInt(control.style.left);
 					var cTop = parseInt(control.style.top);
