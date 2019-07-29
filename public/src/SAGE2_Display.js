@@ -771,7 +771,7 @@ function setupListeners(anWsio) {
 	});
 
 	anWsio.on('createAppWindow', function(data) {
-		createAppWindow(data, ui.main.id, ui.titleBarHeight, ui.titleTextSize, ui.offsetX, ui.offsetY);
+		createAppWindow(data, anWsio, ui.main.id, ui.titleBarHeight, ui.titleTextSize, ui.offsetX, ui.offsetY);
 		anWsio.emit('appWindowCreated', {id: data.id});
 	});
 
