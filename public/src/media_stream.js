@@ -188,7 +188,10 @@ var media_stream = SAGE2_App.extend({
 		vid.style.position = "absolute";
 		vid.style.left = "0px";
 		vid.style.top = "0px";
+		// auto play is an issue if not started from a user interaction
 		vid.autoplay = true;
+		// but no constraint yet on muted video
+		vid.muted = true;
 		vid.style.width = "100%";
 		vid.style.height = "100%";
 
