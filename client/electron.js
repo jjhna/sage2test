@@ -162,7 +162,8 @@ if (commander.plugins) {
 // Reset the desktop scaling
 //if (os.platform() === "win32") {
 app.commandLine.appendSwitch("force-device-scale-factor", "1");
-app.commandLine.appendSwitch("ignore-gpu-blacklist");
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+// app.commandLine.appendSwitch("ignore-gpu-blacklist");
 //}
 
 // Remove the limit on the number of connections per domain
