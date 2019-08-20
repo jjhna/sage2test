@@ -221,7 +221,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 						}
 					});
 				} else {
-					showSAGE2Message("Installation not yet supported for your current installation");
+					showSAGE2Message("Installation not possible: system not yet supported or already installed");
 				}
 			}
 		},
