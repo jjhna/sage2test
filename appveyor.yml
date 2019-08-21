@@ -5,7 +5,7 @@ image: Visual Studio 2017
 branches:
   only:
   - master
-  - v4
+  - beta
 
 shallow_clone: true
 
@@ -94,6 +94,7 @@ install:
   - move server.js SAGE2
   - move electron.js SAGE2
   - move generate-service-worker.js SAGE2
+  - move manifest.webmanifest SAGE2
   - move src SAGE2
   - dir SAGE2
   - dir SAGE2\node_modules
