@@ -427,9 +427,9 @@ function createWindow() {
 			hostname.endsWith("live.com") ||
 			hostname.endsWith("office.com")) {
 			params.partition = 'persist:office';
-		} else if (hostname.endsWith("appear.in")) {
+		} else if (hostname.endsWith("appear.in") || hostname.endsWith("whereby.com")) {
 			// VTC
-			params.partition = 'persist:appear';
+			params.partition = 'persist:whereby';
 		} else if (hostname.endsWith("youtube.com")) {
 			// VTC
 			params.partition = 'persist:youtube';

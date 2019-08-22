@@ -149,12 +149,13 @@ var Webview = SAGE2_App.extend({
 			this.contentType = "google_slides";
 			// ask for a HD resize
 			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
-		} else if (view_url.indexOf('appear.in') >= 0) {
+		} else if (view_url.indexOf('appear.in') >= 0 ||
+			view_url.indexOf('whereby.com') >= 0) {
 			if (!view_url.endsWith('?widescreen')) {
 				// to enable non-cropped mode, in widescreen
 				view_url += '?widescreen';
 			}
-			this.contentType = "appearin";
+			this.contentType = "wherebycom";
 			// ask for a HD resize
 			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.indexOf('scp.tv') >= 0) {
