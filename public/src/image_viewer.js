@@ -46,6 +46,10 @@ var image_viewer = SAGE2_App.extend({
 		this.old_img_url = "";
 
 		this.title = data.title;
+		if (this.isImageAGif()) {
+			this.title = this.title.substring(0, this.title.lastIndexOf("."));
+			this.updateTitle(this.title);
+		}
 
 		this.updateAppFromState();
 		this.addWidgetControlsToImageViewer();
@@ -69,7 +73,11 @@ var image_viewer = SAGE2_App.extend({
 	* @method updateAppFromState
 	*/
 	updateAppFromState: function() {
-		this.element.src  = cleanURL(this.state.src || this.state.img_url);
+		if (this.isImageAGif()) {
+			this.element.src  = cleanURL(this.getUrlOfGif());
+		} else {
+			this.element.src  = cleanURL(this.state.src || this.state.img_url);
+		}
 
 		this.pre.innerHTML = this.syntaxHighlight(this.state.exif);
 
@@ -132,14 +140,14 @@ var image_viewer = SAGE2_App.extend({
 			description: "Download image",
 			callback: "SAGE2_download",
 			parameters: {
-				url: cleanURL(this.state.src || this.state.img_url)
+				url: this.element.src
 			}
 		});
 		entries.push({
 			description: "Copy URL",
 			callback: "SAGE2_copyURL",
 			parameters: {
-				url: cleanURL(this.state.src || this.state.img_url)
+				url: this.element.src
 			}
 		});
 
@@ -232,7 +240,7 @@ var image_viewer = SAGE2_App.extend({
 			data.customLaunchParams  =  {};
 			data.customLaunchParams.func = "initializationThroughDuplicate";
 			data.customLaunchParams.clientName    = responseObject.clientName;
-			data.customLaunchParams.imageSnapshot = cleanURL(this.state.src || this.state.img_url);
+			data.customLaunchParams.imageSnapshot = this.element.src;
 			wsio.emit("launchAppWithValues", data);
 		}
 	},
@@ -373,6 +381,40 @@ var image_viewer = SAGE2_App.extend({
 				}
 			}, "an image geolocation");
 		}
+	},
+
+
+	/**
+	* Checks if the image is a gif
+	*
+	* @method isImageAGif
+	*/
+	isImageAGif: function() {
+		if (this.state.img_url.includes(".gif.png")
+			// Checking for 8 because .gif.png is 8
+			&& (this.state.img_url.length - this.state.img_url.lastIndexOf(".gif") === 8)
+		) {
+			return true;
+		}
+		return false;
+	},
+
+	/**
+	* Should return URL of gif.
+	*
+	* @method getUrlOfGif
+	*/
+	getUrlOfGif: function() {
+		if (!this.isImageAGif()) {
+			throw "Cannot use getUrlOfGif of a non-gif image";
+		}
+		// Starting with the original url (usually a tmp location for gif)
+		let imgName = this.state.img_url;
+		// Take from the last directory
+		imgName = imgName.substring(imgName.lastIndexOf("/"));
+		// Now trim out the extension
+		imgName = imgName.substring(0, imgName.lastIndexOf("."));
+		return "/user/images/" + imgName;
 	}
 
 });

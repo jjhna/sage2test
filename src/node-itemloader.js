@@ -1130,7 +1130,7 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 
 		// Check if it is a web-capable image, otherwise convert it to PNG
 		if (mime_type.startsWith("image/")) {
-			if (mime_type != "image/jpeg" && mime_type != "image/png" && mime_type != "image/webp") {
+			if (mime_type != "image/jpeg" && mime_type != "image/png" && mime_type != "image/webp" && mime_type != "image/gif") {
 				sageutils.log("Loader", "converting image", cleanFilename);
 				// setting up a tmp filename
 				var tmpPath = path.join(this.publicDir, "tmp", path.basename(cleanFilename)) + ".png";
