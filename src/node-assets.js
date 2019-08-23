@@ -808,6 +808,81 @@ var listAssets = function() {
 	};
 };
 
+// construct from the output of listAssets
+var initializeFromList = function(list, mainFolder, mediaFolders) {
+  initializeSlave(mainFolder, mediaFolders);
+  console.log("initializeFromList ", JSON.stringify(list));
+  var apps = list.applications;
+  console.log("apps ",JSON.stringify(apps));
+  for (var i=0; i<list.applications.length; i++) {
+    var a = list.applications[i];
+    console.log("add app ",JSON.stringify(a));
+    addFileSlave(a.filename, a.exif);
+  }
+  var videos = list.videos;
+  console.log("videos ",JSON.stringify(videos));
+  console.log("---");
+  for (var i=0; i<list.videos.length; i++) {
+    var v = list.videos[i];
+    console.log("add video ",JSON.stringify(v));
+    addFileSlave(v.filename, v.exif);
+  }
+}
+
+var addFileSlave = function(filename, exif, callback) {
+        if (exif.MIMEType === 'application/vnd.adobe.photoshop') {
+                exif.MIMEType = 'image/vnd.adobe.photoshop';
+        }
+
+        // Add the asset in the array
+        var anAsset = new Asset();
+        anAsset.setFilename(filename);
+        anAsset.setEXIF(exif);
+        AllAssets.list[anAsset.id] = anAsset;
+}
+
+var initializeSlave = function(mainFolder, mediaFolders, whenDone) {
+        if (AllAssets === null) {
+                var i;
+                var thelist = [];
+                var root = mainFolder.path;
+                var relativePath = mainFolder.url;
+                console.log(sageutils.header("Assets") + 'Main asset folder: ' + root);
+                // Make sure the asset folder exists
+                var assetFolder = path.join(root, 'assets');
+                registry.initialize(assetFolder);
+                // Make sure the asset/apps folder exists
+                var assetAppsFolder = path.join(assetFolder, 'apps');
+                // Make sure unknownapp images exist
+                var unknownapp_256Img = path.resolve('public', 'images', 'unknownapp_256.jpg');
+                var unknownapp_256 = path.join(assetAppsFolder, 'unknownapp_256.jpg');
+                var unknownapp_512Img = path.resolve('public', 'images', 'unknownapp_512.jpg');
+                var unknownapp_512 = path.join(assetAppsFolder, 'unknownapp_512.jpg');
+                // Make sure the asset/remote folder exists
+                var assetRemoteFolder = path.join(assetFolder, 'remote');
+                AllAssets = {};
+                AllAssets.mainFolder = mainFolder;
+                //var assetFile = path.join(assetFolder, 'assets.json');
+                //if (sageutils.fileExists(assetFile)) {
+                //      var data    = fs.readFileSync(assetFile);
+                //      var oldList = JSON.parse(data);
+                //      AllAssets.root = root;
+                //      AllAssets.rel  = relativePath;
+                //      AllAssets.list = oldList.list;
+                //      // Flag all the assets for checking
+                //      for (var it in AllAssets.list) {
+                //              AllAssets.list[it].valid = false;
+                //      }
+                //} else {
+                        AllAssets.list = {};
+                        AllAssets.root = root;
+                        AllAssets.rel  = relativePath;
+                //}
+                // Extra folders
+                AllAssets.mediaFolders = mediaFolders;
+        }
+}
+
 var listPDFs = function() {
 	var result = [];
 	var keys = Object.keys(AllAssets.list);
@@ -1215,3 +1290,5 @@ exports.getURL        = getURL;
 
 exports.initializeConfiguration = initializeConfiguration;
 exports.setupBinaries           = setupBinaries;
+
+exports.initializeFromList = initializeFromList;

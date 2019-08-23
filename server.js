@@ -324,7 +324,8 @@ function initializeSage2Server() {
 
 	// Set default host origin for this server
 	if (config.rproxy_port === undefined) {
-		hostOrigin = "https://" + config.host + (config.secure_port === 443 ? "" : ":" + config.secure_port) + "/";
+		//hostOrigin = "https://" + config.host + (config.secure_port === 443 ? "" : ":" + config.secure_port) + "/";
+		hostOrigin = "http://" + config.host + (config.secure_port === 443 ? "" : ":" + config.secure_port) + "/";
 	}
 
 	// Initialize sage2 item lists
@@ -544,12 +545,23 @@ function initializeSage2Server() {
                 	masterServer.emit('addClient', clientDescription);
 
 			masterServer.on('initialize', function() {
+				console.log("Connected to master server");
 				masterServer.emit('addSlaveServer', clientDescription);
 			});
+
+                        masterServer.on('displayAddSlaveServer', function(wsio,data) {
+                                console.log("added slave server ", JSON.stringify(data));
+                        });
 
 			masterServer.on('eventInItem', wsEventInItem);
 			masterServer.on('setItemPosition', moveResize);
 			masterServer.on('setItemPositionAndSize', moveResize);
+                        masterServer.on('storedFileList', function(wsio,data) {
+                                console.log("received storedFileList");
+                                // this is causing the process to hang(?)
+                                assets.initializeFromList(data, mainFolder, mediaFolders);
+                                console.log("actioned storedFileList");
+                        });
 
 			masterServer.on('deleteApplication', wsDeleteApplication);
 
@@ -576,11 +588,15 @@ function initializeSage2Server() {
 		}
 	});
 
-	// Initialize assets folders
-	assets.initialize(mainFolder, mediaFolders, function() {
-		// when processing assets done, send the file list
-		broadcast('storedFileList', getSavedFilesList());
-	});
+        if (program.slaveports === undefined) {
+	    // Initialize assets folders
+	    assets.initialize(mainFolder, mediaFolders, function() {
+		    // when processing assets done, send the file list
+		    broadcast('storedFileList', getSavedFilesList());
+	    });
+        } else {
+                console.log("slave skipping asset initialization");
+        }
 
 	drawingManager = new Drawing(config);
 	drawingManager.setCallbacks(
@@ -1122,38 +1138,49 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 		wsio.emit('console', json5.stringify(config, null, 4));
 	}
 
-	if (wsio.clientType === "display") {
-		initializeExistingSagePointers(wsio);
-		initializeExistingPartitions(wsio);
-		initializeExistingApps(wsio);
-		initializeRemoteServerInfo(wsio);
-		initializeExistingWallUI(wsio);
-		setTimeout(initializeExistingControls, 6000, wsio); // why can't this be done immediately with the rest?
-		console.log("Send slave servers...", slaveServers);
-		for (var ss in slaveServers) {
-			console.log("- send slave server details: ", slaveServers[ss]);
-			wsio.emit('displayAddSlaveServer', slaveServers[ss]);
+        // DISPLAYS --- only from master
+        if (masterServer ===null || masterServer === undefined) {
+                // only if we are master
+		if (wsio.clientType === "display") {
+			initializeExistingSagePointers(wsio);
+			initializeExistingPartitions(wsio);
+			initializeExistingApps(wsio);
+			initializeRemoteServerInfo(wsio);
+			initializeExistingWallUI(wsio);
+			setTimeout(initializeExistingControls, 6000, wsio); // why can't this be done immediately with the rest?
+			console.log("New client display, send slave servers...", slaveServers);
+			for (var ss in slaveServers) {
+				console.log("- send slave server details: ", slaveServers[ss]);
+				wsio.emit('displayAddSlaveServer', slaveServers[ss]);
+			}
+		} else if (wsio.clientType === "audioManager") {
+			initializeExistingAppsAudio(wsio);
+		} else if (wsio.clientType === "sageUI") {
+			createSagePointer(wsio.id);
+			for (key in remoteSharingSessions) {
+				remoteSharingSessions[key].wsio.emit('createRemoteSagePointer', {
+					id: wsio.id, portal: {host: config.host, port: config.port}
+				});
+			}
+			initializeExistingAppsPositionSizeTypeOnly(wsio);
+			initializeExistingPartitionsUI(wsio);
+		} else if (wsio.clientType === "standAloneApp") {
+			initializeExistingSagePointers(wsio);
+			createSagePointer(wsio.id);
+			for (key in remoteSharingSessions) {
+				remoteSharingSessions[key].wsio.emit('createRemoteSagePointer', {
+					id: wsio.id, portal: {host: config.host, port: config.port}
+				});
+			}
 		}
-	} else if (wsio.clientType === "audioManager") {
-		initializeExistingAppsAudio(wsio);
-	} else if (wsio.clientType === "sageUI") {
-		createSagePointer(wsio.id);
-		for (key in remoteSharingSessions) {
-			remoteSharingSessions[key].wsio.emit('createRemoteSagePointer', {
-				id: wsio.id, portal: {host: config.host, port: config.port}
-			});
-		}
-		initializeExistingAppsPositionSizeTypeOnly(wsio);
-		initializeExistingPartitionsUI(wsio);
-	} else if (wsio.clientType === "standAloneApp") {
-		initializeExistingSagePointers(wsio);
-		createSagePointer(wsio.id);
-		for (key in remoteSharingSessions) {
-			remoteSharingSessions[key].wsio.emit('createRemoteSagePointer', {
-				id: wsio.id, portal: {host: config.host, port: config.port}
-			});
-		}
-	}
+        } else {
+                // if on slave we still want to do local initialization
+                if (wsio.clientType === "display") {
+                        //initializeExistingAppsOnSlave(wsio);
+                } else if (wsio.clientType === "sageUI") {
+                        createSagePointer(wsio.id);
+                }
+        }
 
 	var remote = findRemoteSiteByConnection(wsio);
 	if (remote !== null) {
@@ -2078,6 +2105,35 @@ function wsStartNewMediaStream(wsio, data) {
 	
 }
 
+function setAppPosition(appInstance, pos) {
+                // Get the drop position and convert it to wall coordinates
+                var position = pos || [0, 0];
+                if (position[0] > 1) {
+                        // value in pixels, used as origin
+                        appInstance.left = position[0];
+                } else {
+                        // value in percent
+                        position[0] = Math.round(position[0] * config.totalWidth);
+                        // Use the position as center of drop location
+                        appInstance.left = position[0] - appInstance.width / 2;
+                        if (appInstance.left < 0) {
+                                appInstance.left = 0;
+                        }
+                }
+                if (position[1] > 1) {
+                        // value in pixels, used as origin
+                        appInstance.top = position[1];
+                } else {
+                        // value in percent
+                        position[1] = Math.round(position[1] * config.totalHeight);
+                        // Use the position as center of drop location
+                        appInstance.top  = position[1] - appInstance.height / 2;
+                        if (appInstance.top < 0) {
+                                appInstance.top = 0;
+                        }
+                }
+}
+
 /**
  * Test if two rectangles overlap (axis-aligned)
  *
@@ -2263,13 +2319,65 @@ function wsStartNewMediaBlockStream(wsio, data) {
 			SAGE2Items.renderSync[data.id].clients[clients[i].id] = {wsio: clients[i], readyForNextFrame: true, blocklist: []};
 		}
 	}
+
 	SAGE2Items.renderSync[data.id].sendNextFrame = true;
 
-	appLoader.createMediaBlockStream(data.title, data.color, data.colorspace, data.width, data.height, function(appInstance) {
-		appInstance.id = data.id;
-		handleNewApplication(appInstance, null);
-		calculateValidBlocks(appInstance, mediaBlockSize, SAGE2Items.renderSync[appInstance.id]);
-	});
+//	appLoader.createMediaBlockStream(data.title, data.color, data.colorspace, data.width, data.height, function(appInstance) {
+//		appInstance.id = data.id;
+//		handleNewApplication(appInstance, null);
+//		calculateValidBlocks(appInstance, mediaBlockSize, SAGE2Items.renderSync[appInstance.id]);
+//	});
+
+        appLoader.createMediaBlockStream(data.title, data.color, data.colorspace, data.width, data.height, function(appInstance) {
+                appInstance.id = data.id;
+                console.log("createMediaBlockStream "+JSON.stringify(data));
+                var pos = data.pos || [1.0,0.0];
+                var resize = false;
+                if (data.title in posdata) {
+                        var prepos = posdata[data.title];
+                        console.log("Position data is available for",data.title,prepos);
+                        // position in Y is done below...
+                        pos = [prepos.left,0];
+                        resize = true;
+                }
+                //else if (data.title==="laptop1" || data.title==="AppleTV") {
+                //        console.log("laptop1");
+                //        pos = [0,0];
+                //        resize = true;
+                //}
+                //else if (data.title==="vc1") {
+                //        console.log("vc1");
+                //        pos = [5828,0];
+                //        resize = true;
+                //}
+                //else if (data.title==="laptop2") {
+                //        console.log("laptop2");
+                //        //pos = [9686,0];
+                //        pos = [5770,0];
+                //        resize = true;
+                //}
+                console.log("pos "+pos);
+                setAppPosition(appInstance, pos);
+                handleNewApplication(appInstance, null);
+                if (resize) {
+                    if (data.title in posdata) {
+                            var prepos = posdata[data.title];
+                            console.log("Position data is available for",data.title,prepos);
+                            wsAppResize(null, {id: data.id, width: prepos.width / (1920*7), keepRatio: true});
+                            wsAppMoveBy(null, {id: data.id, dx:0, dy:prepos.top});
+                    }
+                    //else if (data.title==="laptop1") {
+                    //    wsAppResize(null, {id: data.id, width: 3/7, keepRatio: true});
+                //      wsAppMoveBy(null, {id: data.id, dx:0, dy:-38});
+                    //} else if (data.title==="laptop2") {
+                    //    wsAppResize(null, {id: data.id, width: 4/7, keepRatio: true});
+                //      wsAppMoveBy(null, {id: data.id, dx:0, dy:-562});
+                    //} else {
+                    //    wsAppResize(null, {id: data.id, width: 1.96/7, keepRatio: true});
+                    //}
+                }
+                calculateValidBlocks(appInstance, mediaBlockSize, SAGE2Items.renderSync[appInstance.id]);
+        });
 
 	if (masterServer!==undefined && masterServer!=null) {
 		console.log("master - start new media block stream");
@@ -2285,10 +2393,10 @@ function wsUpdateMediaBlockStreamFrame(wsio, buffer) {
 	var id = byteBufferToString(buffer);
 
 	if (!SAGE2Items.renderSync[id].sendNextFrame) {
-		//console.log("drop frame");
+		console.log("drop frame");
 		return; 
 	} else {
-		//console.log("relay frame");
+		console.log("relay frame");
 	}
 	SAGE2Items.renderSync[id].sendNextFrame = false;
 
@@ -2328,6 +2436,7 @@ function wsUpdateMediaBlockStreamFrame(wsio, buffer) {
 	for (key in SAGE2Items.renderSync[id].clients) {
 		for (i = 0; i < pixelbuffer.length; i++) {
 			if (SAGE2Items.renderSync[id].clients[key].blocklist.indexOf(i) >= 0) {
+				console.log("updateMediaBlockStreamFrame",i);
 				SAGE2Items.renderSync[id].clients[key].wsio.emit('updateMediaBlockStreamFrame', pixelbuffer[i]);
 			} else {
 				// this client has no blocks, so it is ready for next frame!
@@ -2349,8 +2458,9 @@ function wsStopMediaBlockStream(wsio, data) {
 function wsReceivedMediaBlockStreamFrame(wsio, data) {
 	SAGE2Items.renderSync[data.id].clients[wsio.id].readyForNextFrame = true;
 	SAGE2Items.renderSync[data.id].frames = SAGE2Items.renderSync[data.id].frames + 1;
+        console.log("- wsReceivedMediaBlockStreamFrame",wsio.id,SAGE2Items.renderSync[data.id].frames);
 
-	if (allTrueDict(SAGE2Items.renderSync[data.id].clients, "readyForNextFrame")) {
+	if (allTrueDictTrace(SAGE2Items.renderSync[data.id].clients, "readyForNextFrame")) {
 		SAGE2Items.renderSync[data.id].sendNextFrame = true;
 		var i;
 		var key;
@@ -3809,7 +3919,23 @@ function wsLoadFileFromServer(wsio, data) {
 				}
 			}
 
-			appInstance.id = getUniqueAppId();
+			//appInstance.id = getUniqueAppId();
+                        if (data.globalAppId !==null && data.globalAppId !==undefined) {
+                                appInstance.id = data.globalAppId;
+                        } else {
+                                appInstance.id = getUniqueAppId();
+                        }
+
+                        // if on slave server - delegate handleNewApplication to master
+                        if (masterServer!==undefined && masterServer!=null) {
+                                // Set identity of the slave server so that displays can find it
+                                //appInstance.slaveServerId = data.slaveServerId;
+                                //data.slaveServerId = config.host+":"+config.port;
+                                data.globalAppId = appInstance.id;
+                                masterServer.emit('loadFileFromServer', data);
+                        } else {
+                                //appInstance.slaveServerId = data.slaveServerId;
+                        }
 
 			// Add the application in the list of renderSync if needed
 			if (appInstance.animation) {
@@ -3972,6 +4098,7 @@ function calculateValidBlocks(app, blockSize, renderhandle) {
 	if (app.application !== "movie_player" && app.application !== "media_block_stream") {
 		return;
 	}
+        console.log("calculateValidBlocks");
 
 	var i;
 	var j;
@@ -4019,6 +4146,7 @@ function calculateValidBlocks(app, blockSize, renderhandle) {
 				}
 			}
 		}
+		console.log("updateValidStreamBlocks",key,renderhandle.clients[key].blocklist);
 		renderhandle.clients[key].wsio.emit('updateValidStreamBlocks', {
 			id: app.id, blockList: renderhandle.clients[key].blocklist
 		});
@@ -5354,7 +5482,7 @@ function loadConfiguration() {
 		userConfig.master_http_port = http_port;
 		userConfig.master_https_port = https_port;
 		var ports = program.slaveports.split(',');
-		console.log("Slave: use master ports from config ", ports);
+		console.log("Slave: my ports from config ", ports);
 		https_port = ports[0];
 		http_port = ports[1];
 	}
@@ -6557,6 +6685,20 @@ function initializeArray(size, val) {
 function allNonBlank(arr) {
 	for (var i = 0; i < arr.length; i++) {
 		if (arr[i] === "") {
+			return false;
+		}
+	}
+	return true;
+}
+
+function allTrueDictTrace(dict, property) {
+	var key;
+	for (key in dict) {
+		if (property === undefined && dict[key] !== true) {
+			console.log("awaiting",key);
+			return false;
+		}
+		if (property !== undefined && dict[key][property] !== true) {
 			return false;
 		}
 	}
@@ -9688,6 +9830,8 @@ function toggleApplicationFullscreen(uniqueID, app, dblClick) {
 	}
 }
 
+var posdata = {};
+
 function deleteApplication(appId, portalId, wsio) {
 	if (!SAGE2Items.applications.list.hasOwnProperty(appId)) {
 		return;
@@ -9812,8 +9956,12 @@ function handleNewApplication(appInstance, videohandle) {
 		appInstance.data = {};
 	}
 	appInstance.data.pointersOverApp = [];
-	broadcast('createAppWindow', appInstance);
-	broadcast('createAppWindowPositionSizeOnly', getAppPositionSize(appInstance));
+
+        // only on master server...
+        if (masterServer===undefined || masterServer===null) {
+		broadcast('createAppWindow', appInstance);
+		broadcast('createAppWindowPositionSizeOnly', getAppPositionSize(appInstance));
+	}
 
 	// reserve 20 backmost layers for partitions
 	var zIndex = SAGE2Items.applications.numItems + SAGE2Items.portals.numItems + 20;

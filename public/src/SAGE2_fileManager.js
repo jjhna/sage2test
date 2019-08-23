@@ -579,7 +579,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		display_menu: {value: "Display Client 0",
 			tooltip: "Opens a new page with the first display client",
 			callback: function (evt) {
-				var displayUrl = "https://" + window.location.hostname + _this.https_port +  "/display.html?clientID=0";
+				var displayUrl = "http://" + window.location.hostname + _this.http_port +  "/display.html?clientID=0";
 				window.open(displayUrl, '_blank');
 			}
 		},

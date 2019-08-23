@@ -34,6 +34,8 @@ window.URL = (window.URL || window.webkitURL || window.msURL || window.oURL);
 
 var clientID;
 var wsio;
+var masterWsio; // === wsio
+
 // slave servers to subscribe to
 var slaveServers = {};
 var slaveConnections = {};
@@ -268,6 +270,7 @@ function SAGE2_init() {
 	console.log("clientID: " + clientID);
 
 	wsio = new WebsocketIO();
+        masterWsio = wsio;
 	console.log("Connected to server: ", window.location.origin);
 
 	// Detect the current browser
@@ -296,7 +299,8 @@ function SAGE2_init() {
 				console: false
 			},
 			browser: __SAGE2__.browser,
-			session: session
+			session: session,
+			isMobile: __SAGE2__.browser.isMobile
 		};
 		wsio.emit('addClient', clientDescription);
 	});
@@ -332,10 +336,11 @@ function slaveInit(id) {
 	var slaveWsio = new WebsocketIO(url);
 	console.log("Connecting via websocket to new slave server ", url, "...");
 
+	var session = getCookie("session");
 	slaveWsio.open(function() {
 		console.log("... connection opened");
 		slaveConnections[id]=slaveWsio;
-		setupSlaveListeners(slaveWsio);
+		setupListeners(slaveWsio);
 		var clientDescription = {
 			clientType: "display",
 			clientID: clientID,
@@ -346,66 +351,16 @@ function slaveInit(id) {
 				console: false
 			},
 			browser: __SAGE2__.browser,
-			session: session
+			//session: session,
+			isMobile: __SAGE2__.browser.isMobile
 		};
 		slaveWsio.emit('addClient', clientDescription);
 		// log(JSON.stringify(__SAGE2__.browser));
 	});
 }
 
-function setupSlaveListeners(anWsio) {
-	anWsio.on('updateMediaStreamFrame', function(dataOrBuffer) {
-		console.log("SCALE2: updateMediaStreamFrame");
-                // NB: Cloned code
-                var data;
-                if (dataOrBuffer.id !== undefined) {
-                  console.log("display.UpdateMediaStreamFrame: parameter is record");
-                  data = dataOrBuffer;
-                } else {
-                  console.log("display.UpdateMediaStreamFrame: parameter is Buffer");
-                  data = {}
-                  // buffer: id, state-type, state-encoding, state-src
-                  data.id = byteBufferToString(dataOrBuffer);
-                  var buf2 = dataOrBuffer.slice(data.id.length + 1, dataOrBuffer.length);
-                  data.state = {}
-                  data.state.type = byteBufferToString(buf2);
-                  var buf3 = buf2.subarray(data.state.type.length + 1);
-                  data.state.encoding = "base64";
-                  var buf4 = buf3.subarray(data.state.encoding.length + 1, buf3.length);
-                  data.state.src = btoa(String.fromCharCode.apply(null, buf4));
-                }
-		anWsio.emit('receivedMediaStreamFrame', {id: data.id});
-		var app = applications[data.id];
-		if (app !== undefined && app !== null) {
-			app.SAGE2Load(data.state, new Date(data.date));
-		}
-		// update clones in data-sharing portals
-		var key;
-		for (key in dataSharingPortals) {
-			app = applications[data.id + "_" + key];
-			if (app !== undefined && app !== null) {
-				app.SAGE2Load(data.state, new Date(data.date));
-			}
-		}
-	});
-
-	anWsio.on('updateMediaBlockStreamFrame', function(data) {
-		var appId     = byteBufferToString(data);
-		var blockIdx  = byteBufferToInt(data.subarray(appId.length + 1, appId.length + 3));
-		var date      = byteBufferToInt(data.subarray(appId.length + 3, appId.length + 11));
-		var yuvBuffer = data.subarray(appId.length + 11, data.length);
-		if (applications[appId] !== undefined && applications[appId] !== null) {
-			applications[appId].textureData(blockIdx, yuvBuffer);
-			if (applications[appId].receivedBlocks.every(isTrue) === true) {
-				applications[appId].refresh(new Date(date));
-				applications[appId].setValidBlocksFalse();
-				anWsio.emit('receivedMediaBlockStreamFrame', {id: appId});
-			}
-		}
-	});
-}
-
 function setupListeners(anWsio) {
+        if (anWsio===masterWsio) {
 	anWsio.on('initialize', function(data) {
 		var startTime  = new Date(data.start);
 		wsio.UID = data.UID;
@@ -416,10 +371,13 @@ function setupListeners(anWsio) {
 		// Request list of assets
 		wsio.emit('requestStoredFiles');
 	});
+        }
 
+        if (anWsio===masterWsio) {
 	anWsio.on('setAsMasterDisplay', function() {
 		isMaster = true;
 	});
+        }
 
 	// new media streaming slave registered
 	anWsio.on('displayAddSlaveServer', function(data) {
@@ -459,6 +417,7 @@ function setupListeners(anWsio) {
 
 
 
+	if (anWsio===masterWsio) {
 	anWsio.on('setupDisplayConfiguration', function(json_cfg) {
 		var i;
 		var http_port;
@@ -486,6 +445,7 @@ function setupListeners(anWsio) {
 		}
 		makeSvgBackgroundForWidgetConnectors(ui.main.style.width, ui.main.style.height);
 	});
+	}
 
 	anWsio.on('hideui', function(param) {
 		if (param) {
@@ -506,10 +466,13 @@ function setupListeners(anWsio) {
 		}
 	});
 
+        if (anWsio===masterWsio) {
 	anWsio.on('setupSAGE2Version', function(version) {
 		ui.updateVersionText(version);
 	});
+	}
 
+        if (anWsio===masterWsio) {
 	anWsio.on('setSystemTime', function(data) {
 		var m = moment(data.date);
 		var local = new Date();
@@ -517,6 +480,7 @@ function setupListeners(anWsio) {
 		m.add(offset, 'minutes');
 		ui.setTime(m);
 	});
+	}
 
 	anWsio.on('addRemoteSite', function(data) {
 		ui.addRemoteSite(data);
@@ -670,7 +634,16 @@ function setupListeners(anWsio) {
                   var buf3 = buf2.subarray(data.state.type.length + 1);
                   data.state.encoding = "base64";
                   var buf4 = buf3.subarray(data.state.encoding.length + 1, buf3.length);
-                  data.state.src = btoa(String.fromCharCode.apply(null, buf4));
+                  //data.state.src = btoa(String.fromCharCode.apply(null, buf4));
+                  // There is a maximum stack size. We cannot call String.fromCharCode with as many arguments as we want
+                  //data.state.src = btoa(String.fromCharCode.apply(null, buf4));
+                  var uarr = buf4;
+                  var strings = [], chunksize = 0xffff;
+                  var len = uarr.length;
+                  for (var i = 0; i * chunksize < len; i++){
+                    strings.push(String.fromCharCode.apply(null, uarr.subarray(i * chunksize, (i + 1) * chunksize)));
+                  }
+                  data.state.src = btoa(strings.join(''));
                 }
 		anWsio.emit('receivedMediaStreamFrame', {id: data.id});
 		var app = applications[data.id];
@@ -687,18 +660,30 @@ function setupListeners(anWsio) {
 		}
 	});
 
-
 	anWsio.on('updateMediaBlockStreamFrame', function(data) {
 		var appId     = byteBufferToString(data);
 		var blockIdx  = byteBufferToInt(data.subarray(appId.length + 1, appId.length + 3));
 		var date      = byteBufferToInt(data.subarray(appId.length + 3, appId.length + 11));
 		var yuvBuffer = data.subarray(appId.length + 11, data.length);
+		console.log("updateMediaBlockStreamFrame "+appId+" "+blockIdx);
+		var showFrame = function() {
+				applications[appId].refresh(new Date(date));
+				applications[appId].setValidBlocksFalse();
+				anWsio.emit('receivedMediaBlockStreamFrame', {id: appId, receivedBlocks: applications[appId].receivedBlocks});
+				applications[appId].timer = setTimeout(timeoutFrame, 2000);
+		}
+		var timeoutFrame = function() {
+				console.log("Timeout");
+				showFrame();
+		}
 		if (applications[appId] !== undefined && applications[appId] !== null) {
 			applications[appId].textureData(blockIdx, yuvBuffer);
 			if (applications[appId].receivedBlocks.every(isTrue) === true) {
-				applications[appId].refresh(new Date(date));
-				applications[appId].setValidBlocksFalse();
-				anWsio.emit('receivedMediaBlockStreamFrame', {id: appId});
+				clearTimeout(applications[appId].timer);
+				console.log("Full frame received");
+				showFrame();
+			} else {
+				console.log("awaiting blocks "+applications[appId].receivedBlocks);
 			}
 		}
 	});
@@ -734,29 +719,30 @@ function setupListeners(anWsio) {
 		}
 	});
 
-	anWsio.on('videoPlaying', function(data) {
-		var app = applications[data.id];
-		if (app !== undefined && app !== null) {
-			app.state.paused = false;
-			app.htmlSetSeekTime();
-			app.htmlSetLoopStatus();
-			app.htmlSetPlayPauseStatus();
-			app.getFullContextMenuAndUpdate();
-		}
-	});
+//	anWsio.on('videoPlaying', function(data) {
+//		var app = applications[data.id];
+//		if (app !== undefined && app !== null) {
+//			app.state.paused = false;
+//			app.htmlSetSeekTime();
+//			app.htmlSetLoopStatus();
+//			app.htmlSetPlayPauseStatus();
+//			app.getFullContextMenuAndUpdate();
+//		}
+//	});
 
-	anWsio.on('videoPaused', function(data) {
-		var app = applications[data.id];
-		if (app !== undefined && app !== null) {
-			app.state.paused = true;
-			app.htmlSetSeekTime();
-			app.htmlSetLoopStatus();
-			app.htmlSetPlayPauseStatus();
-			app.getFullContextMenuAndUpdate();
-		}
-	});
+//	anWsio.on('videoPaused', function(data) {
+//		var app = applications[data.id];
+//		if (app !== undefined && app !== null) {
+//			app.state.paused = true;
+//			app.htmlSetSeekTime();
+//			app.htmlSetLoopStatus();
+//			app.htmlSetPlayPauseStatus();
+//			app.getFullContextMenuAndUpdate();
+//		}
+//	});
 
 	anWsio.on('updateValidStreamBlocks', function(data) {
+		console.log("updateValidStreamBlocks "+data.id+" "+data.blockList);
 		if (applications[data.id] !== undefined && applications[data.id] !== null) {
 			applications[data.id].validBlocks = data.blockList;
 			applications[data.id].setValidBlocksFalse();
@@ -1175,6 +1161,7 @@ function setupListeners(anWsio) {
 		}
 	});
 
+        if (anWsio===masterWsio) {
 	anWsio.on('eventInItem', function(event_data) {
 		var app = applications[event_data.id];
 
@@ -1183,6 +1170,7 @@ function setupListeners(anWsio) {
 			app.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, date);
 		}
 	});
+	}
 
 	anWsio.on('requestNewControl', function(data) {
 		var dt = new Date(data.date);
@@ -1744,13 +1732,24 @@ function createAppWindow(data, anWsio, parentId, titleBarHeight, titleTextSize, 
 	parent.appendChild(windowTitle);
 	parent.appendChild(windowItem);
 
+        // FIXME: copied code from below
+        var ssid = data.slaveServerId;
+        var slavews = null
+        if (ssid!==undefined && ssid!==null) {
+                console.log("slaveServerId", ssid);
+                var slavews = slaveConnections[ssid];
+        }
+
 	// App launched in window
 	if (data.application === "media_stream") {
 		anWsio.emit('receivedMediaStreamFrame', {id: data.id});
 	}
 	if (data.application === "media_block_stream") {
 		anWsio.emit('receivedMediaBlockStreamFrame', {id: data.id, newClient: true});
-	}
+                if (slavews !== null && sws !== undefined) {
+                        slavews.emit('receivedMediaBlockStreamFrame', {id: data.id, newClient: true});
+                }
+        }
 
 	// convert url if hostname is alias for current origin
 	var url = cleanURL(data.url);
@@ -1768,6 +1767,16 @@ function createAppWindow(data, anWsio, parentId, titleBarHeight, titleTextSize, 
 			title: data.title,
 			application: data.application
 		};
+
+                var slaveServerId = data.slaveServerId;
+                if (slaveServerId!==undefined && slaveServerId!==null) {
+                        console.log("slaveServerId",slaveServerId);
+                        var sws = slaveConnections[slaveServerId];
+                        if (sws !== null && sws !== undefined) {
+                                init.slaveServer = sws;
+                        }
+                }
+
 		// extra data that may be passed from launchAppWithValues
 		if (data.customLaunchParams) {
 			init.customLaunchParams = data.customLaunchParams;
