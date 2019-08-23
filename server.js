@@ -2098,6 +2098,7 @@ function doOverlap(x_1, y_1, width_1, height_1, x_2, y_2, width_2, height_2) {
 
 function wsUpdateMediaStreamFrame(wsio, dataOrBuffer) {
 	var key;
+        var data = dataOrBuffer;
 	// Remote sites have a pass back issue that needs to be caught
 	if (SAGE2Items.renderSync[data.id] === undefined || SAGE2Items.renderSync[data.id] === null) {
 		return;
