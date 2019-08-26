@@ -1,4 +1,4 @@
-FROM    ubuntu:16.04
+FROM    ubuntu:latest
 MAINTAINER	EVL avatar <evl.avatar@gmail.com>
 RUN     apt-get update && apt-get install -y \
 		software-properties-common build-essential \
@@ -6,7 +6,7 @@ RUN     apt-get update && apt-get install -y \
 		curl \
 		bzip2
 RUN     add-apt-repository -y ppa:jonathonf/ffmpeg-3
-RUN     curl -sL https://deb.nodesource.com/setup_10.x | bash -
+RUN     curl -sL https://deb.nodesource.com/setup_12.x | bash -
 RUN     apt-get update && apt-get install -y \
 		ffmpeg \
 		libavcodec-dev libavutil-dev libswresample-dev \
@@ -32,6 +32,7 @@ ENV CONTAINER_TIMEZONE America/Chicago
 COPY    . /sage2
 
 RUN     /sage2/bin/docker_set_timezone.sh
+RUN	/bin/rm -f /etc/ImageMagick-6/policy.xml
 
 EXPOSE  9090
 EXPOSE  9292
