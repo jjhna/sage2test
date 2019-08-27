@@ -5,7 +5,6 @@ RUN     apt-get update && apt-get install -y \
 		git \
 		curl \
 		bzip2
-# RUN     add-apt-repository -y ppa:jonathonf/ffmpeg-3
 RUN     curl -sL https://deb.nodesource.com/setup_12.x | bash -
 RUN     apt-get update && apt-get install -y \
 		ffmpeg \
@@ -15,10 +14,8 @@ RUN     apt-get update && apt-get install -y \
 		libnss3-tools \
 		libimage-exiftool-perl \
 		imagemagick \
-		nodejs \
-		ntp \
-		tzdata \
-	&& rm -rf /var/lib/apt/lists/*
+		nodejs
+RUN     env DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata && rm -rf /var/lib/apt/lists/*
 
 COPY    package.json /tmp/package.json
 RUN     cd /tmp; npm install --production
@@ -38,3 +35,4 @@ EXPOSE  9090
 EXPOSE  9292
 WORKDIR /sage2
 CMD ["nodejs", "/sage2/server.js", "-f", "/sage2/config/docker-cfg.json", "-i"]
+
