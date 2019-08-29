@@ -1494,7 +1494,7 @@ function handleClick(element) {
 							data: [
 								{id: 1, value: "Google Docs - documents"},
 								{id: 2, value: "Office 365 - office online"},
-								{id: 3, value: "Appear.in - videoconference"},
+								{id: 3, value: "Whereby.com - videoconference"},
 								{id: 4, value: "Youtube - videos"},
 								{id: 5, value: "Slack - team collaboration"},
 								{id: 6, value: "NbViewer - jupyter notebooks"},
@@ -1505,7 +1505,7 @@ function handleClick(element) {
 									var urls = [
 										"https://docs.google.com/",
 										"https://login.microsoftonline.com/",
-										"https://appear.in/",
+										"https://whereby.com/",
 										"https://www.youtube.com/",
 										"https://slack.com/signin",
 										"https://nbviewer.jupyter.org/",

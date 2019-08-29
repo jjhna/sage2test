@@ -1513,17 +1513,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 	 */
 	function buildAboutHTML() {
 		var versionText = "<p>";
-		// Add new information
+		// Add host information
 		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Host</span>: " + displayUI.config.host + "</p>";
-		// Show the type of web browser
-		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Browser</span>: " +
-			__SAGE2__.browser.browserType + " " + __SAGE2__.browser.version + "</p>";
-		versionText += "</p>";
-		// Configuration
-		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Resolution</span>: " +
-			displayUI.config.totalWidth + " x " +  displayUI.config.totalHeight + " pixels";
-		versionText += " (" + displayUI.config.layout.columns + " by " + displayUI.config.layout.rows + " tiles";
-		versionText += "  - " + displayUI.config.resolution.width + " x " + displayUI.config.resolution.height + ")" + "</p>";
+
 		// Add version
 		versionText += "<p class='textDialog'><span style='font-weight:bold;'>SAGE2 Version: </span>";
 		if (sage2Version.branch && sage2Version.commit && sage2Version.date) {
@@ -1532,6 +1524,22 @@ function FileManager(wsio, mydiv, uniqueID) {
 		} else {
 			versionText += "<b>v" + sage2Version.base + "</b>";
 		}
+		versionText += "</p>";
+
+		// Configuration
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Resolution</span>: " +
+			displayUI.config.totalWidth + " x " +  displayUI.config.totalHeight + " pixels";
+		versionText += " (" + displayUI.config.layout.columns + " by " + displayUI.config.layout.rows + " tiles";
+		versionText += "  - " + displayUI.config.resolution.width + " x " + displayUI.config.resolution.height + ")" + "</p>";
+
+		// blank
+		versionText += '<hr style="margin-top: 5px; margin-bottom: 5px">';
+
+		// Show the type of web browser
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Browser</span>: " +
+			__SAGE2__.browser.browserType + " " + __SAGE2__.browser.version + "</p>";
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Electron</span>: " +
+			"---" + "</p>";
 
 		return versionText;
 	}
