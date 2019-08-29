@@ -160,11 +160,11 @@ if (commander.plugins) {
 }
 
 // Reset the desktop scaling
-//if (os.platform() === "win32") {
 app.commandLine.appendSwitch("force-device-scale-factor", "1");
+
+// As of 2019, video elements with sound will no longer autoplay unless user interacted with page.
+// switch found from: https://github.com/electron/electron/issues/13525/
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
-// app.commandLine.appendSwitch("ignore-gpu-blacklist");
-//}
 
 // Remove the limit on the number of connections per domain
 //  the usual value is around 6
@@ -197,10 +197,6 @@ if (commander.debug) {
 	// Add the parameter to the list of options on the command line
 	app.commandLine.appendSwitch("remote-debugging-port", port.toString());
 }
-
-// As of 2019, video elements with sound will no longer autoplay unless user interacted with page.
-// switch found from: https://github.com/electron/electron/issues/13525/
-app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 /**
  * Keep a global reference of the window object, if you don't, the window will
