@@ -203,6 +203,11 @@ var Webview = SAGE2_App.extend({
 				// calculate a position right next to the parent view
 				let pos = [_this.sage2_x + _this.sage2_width + 5,
 					_this.sage2_y - _this.config.ui.titleBarHeight];
+				// Check if the horizontal position is too close to the side
+				if ((_this.config.ui.totalWidth - pos[0]) < 100) {
+					// shift to the left
+					pos[0] = _this.config.ui.totalWidth - _this.sage2_width;
+				}
 				// Open the PDF viewer
 				wsio.emit('addNewWebElement', {
 					url: evt.url,
@@ -259,6 +264,11 @@ var Webview = SAGE2_App.extend({
 			// calculate a position right next to the parent view
 			let pos = [_this.sage2_x + _this.sage2_width + 5,
 				_this.sage2_y - _this.config.ui.titleBarHeight];
+			// Check if the horizontal position is too close to the side
+			if ((_this.config.ui.totalWidth - pos[0]) < 100) {
+				// shift to the left
+				pos[0] = _this.config.ui.totalWidth - _this.sage2_width;
+			}
 			// if it's an image, open the link in a new webview
 			if (params.mediaType === "image" && params.hasImageContents && isMaster) {
 				// Open the image viewer
@@ -375,6 +385,11 @@ var Webview = SAGE2_App.extend({
 				// calculate a position right next to the parent view
 				let pos = [_this.sage2_x + _this.sage2_width + 5,
 					_this.sage2_y - _this.config.ui.titleBarHeight];
+				// Check if the horizontal position is too close to the side
+				if ((_this.config.ui.totalWidth - pos[0]) < 100) {
+					// shift to the left
+					pos[0] = _this.config.ui.totalWidth - _this.sage2_width;
+				}
 				// Check if it's a PDF
 				console.log('new-window', event.url);
 				if (event.url && event.url.endsWith('.pdf') && isMaster) {
@@ -660,7 +675,7 @@ var Webview = SAGE2_App.extend({
 			let ar = this.sage2_width / this.sage2_height;
 			if (ar >= 1.0) {
 				// landscape window
-				let scale = this.sage2_width / 1280;
+				let scale = this.sage2_width / 1440;
 				if (scale < 1.2) {
 					content.enableDeviceEmulation({
 						screenPosition: "desktop",
@@ -681,7 +696,7 @@ var Webview = SAGE2_App.extend({
 				}
 			} else {
 				// portrait window
-				let scale = this.sage2_height / 1280;
+				let scale = this.sage2_height / 1440;
 				if (scale < 1.2) {
 					content.enableDeviceEmulation({
 						screenPosition: "desktop",
