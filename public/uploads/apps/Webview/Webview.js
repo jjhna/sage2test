@@ -204,9 +204,9 @@ var Webview = SAGE2_App.extend({
 				let pos = [_this.sage2_x + _this.sage2_width + 5,
 					_this.sage2_y - _this.config.ui.titleBarHeight];
 				// Check if the horizontal position is too close to the side
-				if ((_this.config.ui.totalWidth - pos[0]) < 100) {
+				if ((_this.config.totalWidth - pos[0]) < 100) {
 					// shift to the left
-					pos[0] = _this.config.ui.totalWidth - _this.sage2_width;
+					pos[0] = _this.config.totalWidth - _this.sage2_width;
 				}
 				// Open the PDF viewer
 				wsio.emit('addNewWebElement', {
@@ -265,9 +265,9 @@ var Webview = SAGE2_App.extend({
 			let pos = [_this.sage2_x + _this.sage2_width + 5,
 				_this.sage2_y - _this.config.ui.titleBarHeight];
 			// Check if the horizontal position is too close to the side
-			if ((_this.config.ui.totalWidth - pos[0]) < 100) {
+			if ((_this.config.totalWidth - pos[0]) < 100) {
 				// shift to the left
-				pos[0] = _this.config.ui.totalWidth - _this.sage2_width;
+				pos[0] = _this.config.totalWidth - _this.sage2_width;
 			}
 			// if it's an image, open the link in a new webview
 			if (params.mediaType === "image" && params.hasImageContents && isMaster) {
@@ -386,9 +386,9 @@ var Webview = SAGE2_App.extend({
 				let pos = [_this.sage2_x + _this.sage2_width + 5,
 					_this.sage2_y - _this.config.ui.titleBarHeight];
 				// Check if the horizontal position is too close to the side
-				if ((_this.config.ui.totalWidth - pos[0]) < 100) {
+				if ((_this.config.totalWidth - pos[0]) < 100) {
 					// shift to the left
-					pos[0] = _this.config.ui.totalWidth - _this.sage2_width;
+					pos[0] = _this.config.totalWidth - _this.sage2_width;
 				}
 				// Check if it's a PDF
 				console.log('new-window', event.url);
