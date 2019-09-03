@@ -1352,20 +1352,20 @@ function setupListeners() {
 		if (data.sharing === true) {
 			windowTitle.style.backgroundColor = "#39C4A6";
 			windowIconSync.style.display = "block";
-			
+
 			let borderWidth = "3px";
 			let borderColor = "#d9371a";
-			
+
 			windowTitle.style.border = "";
 			appTile.style.border = "";
-			
+
 			windowTitle.style.borderRightColor = borderColor;
 			windowTitle.style.borderLeftColor = borderColor;
 			windowTitle.style.borderTopColor = borderColor;
 			windowTitle.style.borderRightWidth = borderWidth;
 			windowTitle.style.borderLeftWidth = borderWidth;
 			windowTitle.style.borderTopWidth = borderWidth;
-			
+
 			appTile.style.borderRightColor = borderColor;
 			appTile.style.borderLeftColor = borderColor;
 			appTile.style.borderBottomColor = borderColor;
@@ -1383,27 +1383,27 @@ function setupListeners() {
 	wsio.on('toggleSyncOptions', function(data) {
 		var fullSync = true;
 		var key;
-		var appTile = document.getElementById(data.id)
+		var appTile = document.getElementById(data.id);
 		var windowTitle = document.getElementById(data.id + "_title");
 		var windowIconSync = document.getElementById(data.id + "_iconSync");
 		var windowIconUnSync = document.getElementById(data.id + "_iconUnSync");
 		var windowState = document.getElementById(data.id + "_state");
-		
+
 		let syncColor = "#d9371a";
 		let unsyncColor = "#5063de";
-		
+
 		if (fullSync === true) {
 			if (windowIconSync.style.display === "block") {
 				windowTitle.style.backgroundColor = "#666666";
 				windowIconSync.style.display = "none";
 				windowIconUnSync.style.display = "block";
-				
+
 				windowTitle.style.borderRightColor = unsyncColor;
-				windowTitle.style.borderLeftColor = unsyncColor;
-				windowTitle.style.borderTopColor = unsyncColor;
-				
-				appTile.style.borderRightColor = unsyncColor;
-				appTile.style.borderLeftColor = unsyncColor;
+				windowTitle.style.borderLeftColor  = unsyncColor;
+				windowTitle.style.borderTopColor   = unsyncColor;
+
+				appTile.style.borderRightColor  = unsyncColor;
+				appTile.style.borderLeftColor   = unsyncColor;
 				appTile.style.borderBottomColor = unsyncColor;
 
 				for (key in applications[data.id].SAGE2StateOptions) {
@@ -1414,13 +1414,13 @@ function setupListeners() {
 				windowTitle.style.backgroundColor = "#39C4A6";
 				windowIconSync.style.display = "block";
 				windowIconUnSync.style.display = "none";
-				
+
 				windowTitle.style.borderRightColor = syncColor;
-				windowTitle.style.borderLeftColor = syncColor;
-				windowTitle.style.borderTopColor = syncColor;
-				
-				appTile.style.borderRightColor = syncColor;
-				appTile.style.borderLeftColor = syncColor;
+				windowTitle.style.borderLeftColor  = syncColor;
+				windowTitle.style.borderTopColor   = syncColor;
+
+				appTile.style.borderRightColor  = syncColor;
+				appTile.style.borderLeftColor   = syncColor;
 				appTile.style.borderBottomColor = syncColor;
 
 				for (key in applications[data.id].SAGE2StateOptions) {
@@ -1438,25 +1438,25 @@ function setupListeners() {
 				applications[data.id].SAGE2StateSyncOptions.visible = true;
 				windowTitle.style.backgroundColor = "#666666";
 				windowState.style.display = "block";
-				
+
 				windowTitle.style.borderRightColor = unsyncColor;
-				windowTitle.style.borderLeftColor = unsyncColor;
-				windowTitle.style.borderTopColor = unsyncColor;
-				
-				appTile.style.borderRightColor = unsyncColor;
-				appTile.style.borderLeftColor = unsyncColor;
+				windowTitle.style.borderLeftColor  = unsyncColor;
+				windowTitle.style.borderTopColor   = unsyncColor;
+
+				appTile.style.borderRightColor  = unsyncColor;
+				appTile.style.borderLeftColor   = unsyncColor;
 				appTile.style.borderBottomColor = unsyncColor;
 			} else {
 				applications[data.id].SAGE2StateSyncOptions.visible = false;
 				windowTitle.style.backgroundColor = "#39C4A6";
 				windowState.style.display = "none";
-				
+
 				windowTitle.style.borderRightColor = syncColor;
-				windowTitle.style.borderLeftColor = syncColor;
-				windowTitle.style.borderTopColor = syncColor;
-				
-				appTile.style.borderRightColor = syncColor;
-				appTile.style.borderLeftColor = syncColor;
+				windowTitle.style.borderLeftColor  = syncColor;
+				windowTitle.style.borderTopColor   = syncColor;
+
+				appTile.style.borderRightColor  = syncColor;
+				appTile.style.borderLeftColor   = syncColor;
 				appTile.style.borderBottomColor = syncColor;
 			}
 		}
