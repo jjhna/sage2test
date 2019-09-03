@@ -1461,6 +1461,17 @@ function handleClick(element) {
 		} else {
 			// Open the new file manager
 			var fm = document.getElementById('fileManager');
+
+			// Remove the display overview if needed
+			if (self.overview) {
+				document.getElementById('overview').remove();
+				let elt = fm.firstElementChild;
+				elt.style.display = "block";
+				self.overview = false;
+				SAGE2_resize();
+			}
+
+			// Show/hide the file mananger
 			if (fm.style.display === "none") {
 				fm.style.display = "block";
 				SAGE2_resize(0.6);
