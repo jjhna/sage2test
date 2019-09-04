@@ -410,6 +410,9 @@ var image_viewer = SAGE2_App.extend({
 		}
 		// Starting with the original url (usually a tmp location for gif)
 		let imgName = this.state.img_url;
+		while (imgName.includes("%5C")) {
+			imgName = imgName.replace("%5C", "/"); // swap out windows \ with /
+		}
 		// Take from the last directory
 		imgName = imgName.substring(imgName.lastIndexOf("/"));
 		// Now trim out the extension
