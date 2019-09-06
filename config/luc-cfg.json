@@ -1,6 +1,7 @@
 {
 	"host": "luc.evl.uic.edu",
 	"port": 9090,
+        "name": "Luc's laptop",
 	"index_port": 9292,
 	"background": {
 		"image": {

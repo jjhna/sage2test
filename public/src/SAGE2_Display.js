@@ -8,7 +8,7 @@
 //
 // Copyright (c) 2014-15
 
-/* global ignoreFields, hostAlias, SAGE2WidgetControlInstance */
+/* global ignoreFields, SAGE2WidgetControlInstance */
 /* global makeSvgBackgroundForWidgetConnectors, addStyleElementForTitleColor */
 /* global removeStyleElementForTitleColor */
 /* global clearConnectorColor, moveWidgetToAppConnector */
@@ -685,7 +685,7 @@ function setupListeners() {
 		partitions[data.id].updateTitle(data.title);
 	});
 	wsio.on('updatePartitionBorders', function(data) {
-		if (data && partitions.hasOwnProperty(data.id)) {
+		if (data && Object.prototype.hasOwnProperty.call(partitions, data.id)) {
 			partitions[data.id].updateSelected(data.highlight);
 		} else {
 			for (var p in partitions) {
@@ -695,12 +695,12 @@ function setupListeners() {
 		}
 	});
 	wsio.on('updatePartitionColor', function(data) {
-		if (data && partitions.hasOwnProperty(data.id)) {
+		if (data && Object.prototype.hasOwnProperty.call(partitions, data.id)) {
 			partitions[data.id].updateColor(data.color);
 		}
 	});
 	wsio.on('updatePartitionSnapping', function(data) {
-		if (data && partitions.hasOwnProperty(data.id)) {
+		if (data && Object.prototype.hasOwnProperty.call(partitions, data.id)) {
 			partitions[data.id].setSnappedBorders(data.snapping);
 			partitions[data.id].setAnchoredBorders(data.anchor);
 			partitions[data.id].updateBorders();
@@ -843,7 +843,9 @@ function setupListeners() {
 		if (position_data.elemId in controlObjects) {
 			var hOffset = (ui.titleBarHeight + position_data.elemHeight) / 2;
 			for (var item in controlItems) {
-				if (controlItems.hasOwnProperty(item) && item.indexOf(position_data.elemId) > -1 && controlItems[item].show) {
+				if (Object.prototype.hasOwnProperty.call(controlItems, item) &&
+					item.indexOf(position_data.elemId) > -1 &&
+					controlItems[item].show) {
 					var control = controlItems[item].divHandle;
 					var cLeft = parseInt(control.style.left);
 					var cTop = parseInt(control.style.top);
@@ -993,7 +995,9 @@ function setupListeners() {
 		if (position_data.elemId in controlObjects) {
 			var hOffset = (ui.titleBarHeight + position_data.elemHeight) / 2;
 			for (var item in controlItems) {
-				if (controlItems.hasOwnProperty(item) && item.indexOf(position_data.elemId) > -1 && controlItems[item].show) {
+				if (Object.prototype.hasOwnProperty.call(controlItems, item) &&
+					item.indexOf(position_data.elemId) > -1 &&
+					controlItems[item].show) {
 					var control = controlItems[item].divHandle;
 					var cLeft = parseInt(control.style.left);
 					var cTop = parseInt(control.style.top);
@@ -1350,29 +1354,64 @@ function setupListeners() {
 
 	wsio.on('setAppSharingFlag', function(data) {
 		var windowTitle = document.getElementById(data.id + "_title");
+		var appTile = document.getElementById(data.id);
 		var windowIconSync = document.getElementById(data.id + "_iconSync");
-
 		if (data.sharing === true) {
 			windowTitle.style.backgroundColor = "#39C4A6";
 			windowIconSync.style.display = "block";
+
+			let borderWidth = "3px";
+			let borderColor = "#d9371a";
+
+			windowTitle.style.border = "";
+			appTile.style.border = "";
+
+			windowTitle.style.borderRightColor = borderColor;
+			windowTitle.style.borderLeftColor = borderColor;
+			windowTitle.style.borderTopColor = borderColor;
+			windowTitle.style.borderRightWidth = borderWidth;
+			windowTitle.style.borderLeftWidth = borderWidth;
+			windowTitle.style.borderTopWidth = borderWidth;
+
+			appTile.style.borderRightColor = borderColor;
+			appTile.style.borderLeftColor = borderColor;
+			appTile.style.borderBottomColor = borderColor;
+			appTile.style.borderRightWidth = borderWidth;
+			appTile.style.borderLeftWidth = borderWidth;
+			appTile.style.borderBottomWidth = borderWidth;
 		} else {
 			windowTitle.style.backgroundColor = "#666666";
 			windowIconSync.display = "none";
+			windowTitle.style.border = "initial";
+			appTile.style.border = "initial";
 		}
 	});
 
 	wsio.on('toggleSyncOptions', function(data) {
 		var fullSync = true;
 		var key;
+		var appTile = document.getElementById(data.id);
 		var windowTitle = document.getElementById(data.id + "_title");
 		var windowIconSync = document.getElementById(data.id + "_iconSync");
 		var windowIconUnSync = document.getElementById(data.id + "_iconUnSync");
 		var windowState = document.getElementById(data.id + "_state");
+
+		let syncColor = "#d9371a";
+		let unsyncColor = "#5063de";
+
 		if (fullSync === true) {
 			if (windowIconSync.style.display === "block") {
 				windowTitle.style.backgroundColor = "#666666";
 				windowIconSync.style.display = "none";
 				windowIconUnSync.style.display = "block";
+
+				windowTitle.style.borderRightColor = unsyncColor;
+				windowTitle.style.borderLeftColor  = unsyncColor;
+				windowTitle.style.borderTopColor   = unsyncColor;
+
+				appTile.style.borderRightColor  = unsyncColor;
+				appTile.style.borderLeftColor   = unsyncColor;
+				appTile.style.borderBottomColor = unsyncColor;
 
 				for (key in applications[data.id].SAGE2StateOptions) {
 					applications[data.id].SAGE2StateSyncChildren(applications[data.id].SAGE2StateOptions[key]._name,
@@ -1382,6 +1421,14 @@ function setupListeners() {
 				windowTitle.style.backgroundColor = "#39C4A6";
 				windowIconSync.style.display = "block";
 				windowIconUnSync.style.display = "none";
+
+				windowTitle.style.borderRightColor = syncColor;
+				windowTitle.style.borderLeftColor  = syncColor;
+				windowTitle.style.borderTopColor   = syncColor;
+
+				appTile.style.borderRightColor  = syncColor;
+				appTile.style.borderLeftColor   = syncColor;
+				appTile.style.borderBottomColor = syncColor;
 
 				for (key in applications[data.id].SAGE2StateOptions) {
 					applications[data.id].SAGE2StateSyncChildren(applications[data.id].SAGE2StateOptions[key]._name,
@@ -1398,10 +1445,26 @@ function setupListeners() {
 				applications[data.id].SAGE2StateSyncOptions.visible = true;
 				windowTitle.style.backgroundColor = "#666666";
 				windowState.style.display = "block";
+
+				windowTitle.style.borderRightColor = unsyncColor;
+				windowTitle.style.borderLeftColor  = unsyncColor;
+				windowTitle.style.borderTopColor   = unsyncColor;
+
+				appTile.style.borderRightColor  = unsyncColor;
+				appTile.style.borderLeftColor   = unsyncColor;
+				appTile.style.borderBottomColor = unsyncColor;
 			} else {
 				applications[data.id].SAGE2StateSyncOptions.visible = false;
 				windowTitle.style.backgroundColor = "#39C4A6";
 				windowState.style.display = "none";
+
+				windowTitle.style.borderRightColor = syncColor;
+				windowTitle.style.borderLeftColor  = syncColor;
+				windowTitle.style.borderTopColor   = syncColor;
+
+				appTile.style.borderRightColor  = syncColor;
+				appTile.style.borderLeftColor   = syncColor;
+				appTile.style.borderBottomColor = syncColor;
 			}
 		}
 	});

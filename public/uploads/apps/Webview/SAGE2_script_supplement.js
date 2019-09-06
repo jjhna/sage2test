@@ -151,7 +151,8 @@ var scriptAddInterval = setInterval(function() {
 		// stop trying
 		clearInterval(scriptAddInterval);
 		// load some runtime files and process hack
-		if (location.hostname.indexOf("appear.in") !== -1) {
+		if (location.hostname.indexOf("appear.in") !== -1 ||
+			location.hostname.indexOf("whereby.com") !== -1) {
 			// apparently JQuery is already loaded in appear.in
 			// just call the hack
 			processAppearIn();

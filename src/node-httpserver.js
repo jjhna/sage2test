@@ -267,13 +267,40 @@ HttpServer.prototype.onreq = function(req, res) {
 				(global.config.secure_port === 443 ? "" : ":" + global.config.secure_port) +
 				"/index.html";
 			this.redirect(res, secureURL, 301);
-			// this.redirect(res, "index.html");
 			return;
 		}
 
 		// Clear the user's cache and redirect to index.html
 		if (getName === "/logout") {
 			this.clearSiteData(res);
+			return;
+		}
+
+		// Update the web manifest for PWA support
+		if (getName === "/manifest.webmanifest") {
+			let manifestFilename = path.join(__dirname, "..", "manifest.webmanifest");
+			// Load the existing manifest file
+			let manifest = fs.readFileSync(manifestFilename, 'utf8');
+			// Parse it
+			let parsed = JSON.parse(manifest);
+			// Update the name with the local information
+			parsed.name  = "SAGE2 - " + (global.config.name || global.config.host);
+			let payload = JSON.stringify(parsed, null, 4);
+
+			// Set the mime type and header
+			// Build a default header object
+			let fileMime = mime.getType("manifest.webmanifest");
+			let charFile = "UTF-8";
+			let header   = this.buildHeader();
+			header["Content-Type"] =  fileMime + "; charset=" + charFile;
+			// header["Content-Length"] = payload.length;
+
+			// Write the HTTP response header
+			res.writeHead(200, header);
+			// Send it back
+			res.write(payload);
+			res.end();
+
 			return;
 		}
 
@@ -362,11 +389,12 @@ HttpServer.prototype.onreq = function(req, res) {
 			}
 
 			// Build a default header object
-			var header = this.buildHeader();
+			let header = this.buildHeader();
 
 			if (path.extname(pathname) === ".html") {
 				if (pathname === path.resolve("public/index.html") ||
-					pathname === path.resolve("public/session.html")
+					pathname === path.resolve("public/session.html") ||
+					pathname === path.resolve("public/display.html")
 				) {
 					// Allow embedding the UI page
 					delete header['X-Frame-Options'];

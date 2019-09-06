@@ -1461,6 +1461,17 @@ function handleClick(element) {
 		} else {
 			// Open the new file manager
 			var fm = document.getElementById('fileManager');
+
+			// Remove the display overview if needed
+			if (self.overview) {
+				document.getElementById('overview').remove();
+				let elt = fm.firstElementChild;
+				elt.style.display = "block";
+				self.overview = false;
+				SAGE2_resize();
+			}
+
+			// Show/hide the file mananger
 			if (fm.style.display === "none") {
 				fm.style.display = "block";
 				SAGE2_resize(0.6);
@@ -1494,7 +1505,7 @@ function handleClick(element) {
 							data: [
 								{id: 1, value: "Google Docs - documents"},
 								{id: 2, value: "Office 365 - office online"},
-								{id: 3, value: "Appear.in - videoconference"},
+								{id: 3, value: "Whereby.com - videoconference"},
 								{id: 4, value: "Youtube - videos"},
 								{id: 5, value: "Slack - team collaboration"},
 								{id: 6, value: "NbViewer - jupyter notebooks"},
@@ -1505,7 +1516,7 @@ function handleClick(element) {
 									var urls = [
 										"https://docs.google.com/",
 										"https://login.microsoftonline.com/",
-										"https://appear.in/",
+										"https://whereby.com/",
 										"https://www.youtube.com/",
 										"https://slack.com/signin",
 										"https://nbviewer.jupyter.org/",

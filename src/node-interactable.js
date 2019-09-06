@@ -60,7 +60,7 @@ InteractableManager.prototype.addLayer = function(id, zIndex) {
 * @param id {String} unique identifier for the layer
 */
 InteractableManager.prototype.removeLayer = function(id) {
-	if (this.layers.hasOwnProperty(id)) {
+	if (Object.prototype.hasOwnProperty.call(this.layers, id)) {
 		delete this.layers[id];
 		delete this.interactableObjects[id];
 
@@ -161,7 +161,7 @@ InteractableManager.prototype.addComplexGeometry = function(id, layerId, shapeDa
 */
 InteractableManager.prototype.removeGeometry = function(id, layerId) {
 	var pkg = this.interactableObjects[layerId][id];
-	if (pkg.hasOwnProperty("layerId")) {
+	if (Object.prototype.hasOwnProperty.call(pkg, "layerId")) {
 		this.layers[layerId].objects.remove(pkg);
 	} else {
 		for (var key in pkg) {
@@ -217,7 +217,7 @@ InteractableManager.prototype.editGeometry = function(id, layerId, type, geometr
 InteractableManager.prototype.editComplexGeometry = function(id, layerId, shapeData) {
 	var complexPkg = this.interactableObjects[layerId][id];
 	for (var key in complexPkg) {
-		if (complexPkg.hasOwnProperty(key)) {
+		if (Object.prototype.hasOwnProperty.call(complexPkg, key)) {
 			var pkg = complexPkg[key];
 			this.layers[layerId].objects.remove(pkg);
 			pkg.type = shapeData[key].type;
@@ -249,7 +249,7 @@ InteractableManager.prototype.editComplexGeometry = function(id, layerId, shapeD
 InteractableManager.prototype.hasObjectWithId = function(id) {
 	var key;
 	for (key in this.interactableObjects) {
-		if (this.interactableObjects[key].hasOwnProperty(id)) {
+		if (Object.prototype.hasOwnProperty.call(this.interactableObjects[key], id)) {
 			return true;
 		}
 	}
@@ -266,7 +266,7 @@ InteractableManager.prototype.hasObjectWithId = function(id) {
 InteractableManager.prototype.getLayerId = function(id) {
 	var key;
 	for (key in this.interactableObjects) {
-		if (this.interactableObjects[key].hasOwnProperty(id)) {
+		if (Object.prototype.hasOwnProperty.call(this.interactableObjects[key], id)) {
 			return key;
 		}
 	}
@@ -288,14 +288,15 @@ InteractableManager.prototype.editVisibility = function(id, layerId, visible, pa
 	if (!pkg) {
 		return;
 	}
-	if (pkg.hasOwnProperty("visible")) {
+	if (Object.prototype.hasOwnProperty.call(pkg, "visible")) {
 		pkg.visible = visible;
 	} else {
-		if (partId !== undefined && partId !== null && pkg.hasOwnProperty(partId)) {
+		if (partId !== undefined && partId !== null &&
+			Object.prototype.hasOwnProperty.call(pkg, partId)) {
 			pkg[partId].visible = visible;
 		} else {
 			for (var key in pkg) {
-				if (pkg.hasOwnProperty(key)) {
+				if (Object.prototype.hasOwnProperty.call(pkg, key)) {
 					pkg[key].visible = visible;
 				}
 			}
@@ -333,7 +334,7 @@ InteractableManager.prototype.moveObjectToFront = function(id, layerId, otherLay
 	var allLayerIds = [layerId].concat(otherLayerIds || []);
 
 	for (i = 0; i < allLayerIds.length; i++) {
-		if (this.interactableObjects.hasOwnProperty(allLayerIds[i])) {
+		if (Object.prototype.hasOwnProperty.call(this.interactableObjects, allLayerIds[i])) {
 			for (key in this.interactableObjects[allLayerIds[i]]) {
 				var itemZIndex = getZIndexOfObj(this.interactableObjects[allLayerIds[i]][key]);
 				if (itemZIndex > currZIndex) {
@@ -365,7 +366,7 @@ InteractableManager.prototype.moveObjectToBack = function(id, layerId, otherLaye
 	var allLayerIds = [layerId].concat(otherLayerIds || []);
 
 	for (i = 0; i < allLayerIds.length; i++) {
-		if (this.interactableObjects.hasOwnProperty(allLayerIds[i])) {
+		if (Object.prototype.hasOwnProperty.call(this.interactableObjects, allLayerIds[i])) {
 			for (key in this.interactableObjects[allLayerIds[i]]) {
 				var itemZIndex = getZIndexOfObj(this.interactableObjects[allLayerIds[i]][key]);
 				if (itemZIndex < currZIndex) {
@@ -396,7 +397,7 @@ InteractableManager.prototype.getObjectZIndexList = function(layerId, otherLayer
 	var allLayerIds = [layerId].concat(otherLayerIds || []);
 
 	for (i = 0; i < allLayerIds.length; i++) {
-		if (this.interactableObjects.hasOwnProperty(allLayerIds[i])) {
+		if (Object.prototype.hasOwnProperty.call(this.interactableObjects, allLayerIds[i])) {
 			for (key in this.interactableObjects[allLayerIds[i]]) {
 				zIndexList[this.interactableObjects[allLayerIds[i]][key].id] =
 					getZIndexOfObj(this.interactableObjects[allLayerIds[i]][key]);
@@ -589,7 +590,7 @@ function findGeometryBelowZIndex(geometryList, zIndex, ignoreList) {
 */
 
 function getZIndexOfObj(obj) {
-	if (obj.hasOwnProperty("zIndex")) {
+	if (Object.prototype.hasOwnProperty.call(obj, "zIndex")) {
 		return obj.zIndex;
 	}
 	var lst = Object.getOwnPropertyNames(obj);
@@ -606,11 +607,11 @@ function getZIndexOfObj(obj) {
 * @param zIndex {Integer} determines ordering of the geometries within a given layers
 */
 function setZIndexOfObj(obj, zIndex) {
-	if (obj.hasOwnProperty("zIndex")) {
+	if (Object.prototype.hasOwnProperty.call(obj, "zIndex")) {
 		obj.zIndex = zIndex;
 	} else {
 		for (var key in obj) {
-			if (obj.hasOwnProperty(key)) {
+			if (Object.prototype.hasOwnProperty.call(obj, key)) {
 				obj[key].zIndex = zIndex;
 			}
 		}

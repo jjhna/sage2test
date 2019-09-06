@@ -17,12 +17,12 @@
  * @submodule pdf_viewer
  */
 
-PDFJS.workerSrc       = 'lib/pdf.worker.js';
-PDFJS.disableWorker   = false;
-PDFJS.disableWebGL    = true;
-PDFJS.verbosity       = PDFJS.VERBOSITY_LEVELS.warnings;
-PDFJS.maxCanvasPixels = 67108864; // 8k2
-PDFJS.disableStream   = true;
+pdfjsLib.GlobalWorkerOptions.workerSrc       = 'lib/pdf.worker.js';
+pdfjsLib.GlobalWorkerOptions.disableWorker   = false;
+pdfjsLib.GlobalWorkerOptions.enableWebGL     = false;
+pdfjsLib.GlobalWorkerOptions.verbosity       = pdfjsLib.VerbosityLevel.INFOS; // WARNINGS;
+pdfjsLib.GlobalWorkerOptions.maxCanvasPixels = 67108864; // 8k2
+pdfjsLib.GlobalWorkerOptions.disableStream   = true;
 
 // List of icons
 var svgImages = [
@@ -135,7 +135,7 @@ var pdf_viewer = SAGE2_App.extend({
 
 	loadPDF: function(docURL) {
 		var _this = this;
-		PDFJS.getDocument(docURL).then(function(solver) {
+		pdfjsLib.getDocument(docURL).promise.then(function(solver) {
 
 			// saving the solver
 			_this.solver = solver;
@@ -211,7 +211,7 @@ var pdf_viewer = SAGE2_App.extend({
 			var canvas = document.createElement("canvas");
 			var ctx = canvas.getContext("2d");
 			var viewport;
-			viewport = page.getViewport(quality);
+			viewport = page.getViewport({scale: quality});
 
 			if (!that.gotInformation && !thumbnail) {
 				if (that.baseWidthPage == null) {
@@ -254,7 +254,7 @@ var pdf_viewer = SAGE2_App.extend({
 				viewport:      viewport
 			};
 
-			page.render(renderContext).then(function(pdf) {
+			page.render(renderContext).promise.then(function(pdf) {
 				// Render as a JPEG, 80%
 				// var data = canvas.toDataURL("image/jpeg", 0.80).split(',');
 				// Render as a PNG

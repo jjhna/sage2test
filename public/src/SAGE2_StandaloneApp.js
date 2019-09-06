@@ -8,10 +8,8 @@
 //
 // Copyright (c) 2018
 
-/* global ignoreFields, hostAlias */
 /* global SAGE2RemoteSitePointer */
-/* global process, StandAloneApp*/
-/* global require */
+/* global ignoreFields, process, StandAloneApp, require */
 
 "use strict";
 

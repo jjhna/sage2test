@@ -54,7 +54,7 @@ SAGE2ItemList.prototype.addItem = function(item) {
 * @param id {String} id of item to be removed from list
 */
 SAGE2ItemList.prototype.removeItem = function(id) {
-	if (this.list.hasOwnProperty(id)) {
+	if (Object.prototype.hasOwnProperty.call(this.list, id)) {
 		this.numItems--;
 		delete this.list[id];
 		this.interactable.removeLayer(id);
