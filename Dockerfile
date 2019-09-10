@@ -14,7 +14,7 @@ RUN     apt-get update && apt-get install -y \
 		ghostscript \
 		libnss3-tools \
 		libimage-exiftool-perl \
-		imagemagick \
+		webp imagemagick \
 		nodejs \
 		ntp \
 		tzdata \
