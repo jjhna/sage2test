@@ -1461,14 +1461,29 @@ function handleClick(element) {
 		} else {
 			// Open the new file manager
 			var fm = document.getElementById('fileManager');
-			if (fm.style.display === "none") {
+
+			// Remove the display overview if needed
+			if (self.overview) {
+				document.getElementById('overview').remove();
+				let elt = fm.firstElementChild;
+				elt.style.display = "block";
+				self.overview = false;
+				// Put back the file manager
 				fm.style.display = "block";
 				SAGE2_resize(0.6);
 				fileManager.refresh();
 			} else {
-				fm.style.display = "none";
-				SAGE2_resize(1.0);
+				// Show/hide the file manager
+				if (fm.style.display === "none") {
+					fm.style.display = "block";
+					SAGE2_resize(0.6);
+					fileManager.refresh();
+				} else {
+					fm.style.display = "none";
+					SAGE2_resize(1.0);
+				}
 			}
+
 		}
 	} else if (element.id === "arrangement" || element.id === "arrangementContainer" || element.id === "arrangementLabel") {
 		showDialog('arrangementDialog');
