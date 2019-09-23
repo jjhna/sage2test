@@ -513,6 +513,8 @@ function SAGE2_interaction(wsio) {
 	this.requestToStartScreenShare = function() {
 		if (!this.broadcasting) {
 			wsio.emit('requestToStartMediaStream');
+		} else {
+			this.startScreenShare();
 		}
 	};
 
