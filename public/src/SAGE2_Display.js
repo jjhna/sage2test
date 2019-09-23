@@ -1520,7 +1520,7 @@ function setupListeners() {
 		var app = applications[data.id];
 		app.pinned = data.pinned;
 		if (isMaster) {
-			app.getFullContextMenuAndUpdate();	
+			app.getFullContextMenuAndUpdate();
 		}
 	});
 
