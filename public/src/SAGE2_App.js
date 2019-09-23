@@ -1006,9 +1006,9 @@ var SAGE2_App = Class.extend({
 				description: "separator"
 			});
 			if (this.sticky === true) {
-				var descr = "Pin";
+				var descr = "Unpinned";
 				if (this.pinned === true) {
-					descr = "Unpin";
+					descr = "Pinned";
 				}
 				appContextMenu.entries.push({
 					description: descr,

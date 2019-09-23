@@ -1518,9 +1518,11 @@ function setupListeners() {
 			windowIconPinout.style.display = "block";
 		}
 		var app = applications[data.id];
-		app.pinned = data.pinned;
-		if (isMaster) {
-			app.getFullContextMenuAndUpdate();
+		if (app !== null && app !== undefined) {
+			app.pinned = data.pinned;
+			if (isMaster) {
+				app.getFullContextMenuAndUpdate();
+			}
 		}
 	});
 
@@ -1535,6 +1537,13 @@ function setupListeners() {
 		titleText.style.marginLeft = Math.round(titleBarHeight / 4.0) + "px";
 		windowIconPinned.style.display = "none";
 		windowIconPinout.style.display = "none";
+		var app = applications[data.id];
+		if (app !== null && app !== undefined) {
+			app.pinned = data.pinned;
+			if (isMaster) {
+				app.getFullContextMenuAndUpdate();
+			}
+		}
 	});
 
 	wsio.on('getPerformanceData', function(data) {
