@@ -1517,6 +1517,11 @@ function setupListeners() {
 			windowIconPinned.style.display = "none";
 			windowIconPinout.style.display = "block";
 		}
+		var app = applications[data.id];
+		app.pinned = data.pinned;
+		if (isMaster) {
+			app.getFullContextMenuAndUpdate();	
+		}
 	});
 
 	wsio.on('hideStickyPin', function(data) {
@@ -1711,6 +1716,8 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 			state: data.data,
 			date: date,
 			title: data.title,
+			sticky: data.sticky,
+			pinned: data.pinned,
 			application: data.application
 		};
 		// extra data that may be passed from launchAppWithValues
