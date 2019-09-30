@@ -391,6 +391,14 @@ function setupListeners() {
 		makeSvgBackgroundForWidgetConnectors(ui.main.style.width, ui.main.style.height);
 	});
 
+	// runtimeConfigChange
+	wsio.on('updateDisplayConfiguration', function(json_cfg) {
+		// Starting with background as basic test
+		// Can make an assumption that the UI was already initialized?
+
+		ui.updateBasedOnNewConfiguration(json_cfg);
+	});
+
 	wsio.on('hideui', function(param) {
 		if (param) {
 			clearTimeout(uiTimer);

@@ -83,6 +83,7 @@ var userlist            = require('./src/node-userlist');         // list of use
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
 var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
 var VoiceActionManager	= require('./src/node-voiceToAction');    // manager for shared data
+var ConfigEditing       = require('./src/node-configurationEditing'); // Handler for configuration editing
 
 //
 // Globals
@@ -1287,6 +1288,12 @@ function setupListeners(wsio) {
 	// Message from a ScreenShare needing to connect with original ScreenShare client
 	wsio.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
 	wsio.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
+
+	// Configuration updates
+	// This one accepts setting an image as the background from with in the UI
+	wsio.on('updateBackgroundImageFromUi',          wsUpdateBackgroundImageFromUi);
+	wsio.on('checkConfigurationFileForChanges',     wsCheckConfigurationFileForChanges);
+
 }
 
 /**
@@ -11531,3 +11538,66 @@ function wsWebRtcRemoteScreenShareSendingUiMessage(wsio, data) {
 	}
 }
 
+
+
+/**
+ * Receives offer from UI, then passes to remote servers.
+ *
+ * @method wsWebRtcRemoteScreenShareSendingUiMessage
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain words.
+ */
+function wsWebRtcRemoteScreenShareSendingUiMessage(wsio, data) {
+	// Keep sending to this function until finding the application
+	var sender = {wsio: null, serverId: null, clientId: null, streamId: null};
+	var mediaStreamData = data.app.split("|"); // data.app --> remote_server | client | stream_id
+	if (mediaStreamData.length > 3) {
+		console.log("ERROR with wsWebRtcRemoteScreenShareSendingUiMessage parsing source failed: " + data.app);
+	} else if (!data.cameFromSourceServer) {
+		sender.serverId = data.remoteDisplayServer;
+		sender.clientId = mediaStreamData[1];
+		sender.streamId = mediaStreamData[2];
+		for (let i = 0; i < clients.length; i++) {
+			if (clients[i].id === sender.serverId) {
+				sender.wsio = clients[i];
+				break;
+			}
+		}
+		if (sender.wsio !== null) {
+			data.cameFromSourceServer = sender.serverId;
+			data.clientId = wsio.id;
+			sender.wsio.emit('webRtcRemoteScreenShareSendingUiMessage', data);
+		} else {
+			console.log("Error, unable to find remote site " + sender.serverId);
+		}
+	} else {
+		// Has a value for cameFromSourceServer
+		// Normally directly from UI goes to wsio.emit("wsCallFunctionOnApp", data);
+		// This should get offer back to the display, need to provide id of original wsio for normal wsCallFunctionOnApp work
+		data.parameters.cameFromSourceServer = data.cameFromSourceServer;
+		wsCallFunctionOnApp({id: data.clientId}, data);
+	}
+}
+
+
+/**
+ * Pass off to a file handler
+ *
+ * @method wsUpdateBackgroundImageFromUi
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a url
+ */
+function wsUpdateBackgroundImageFromUi(wsio, data) {
+	ConfigEditing.configUpdateBackgroundImage(data.newImageUrl, config, clients);
+}
+
+/**
+ * Pass off to a file handler
+ *
+ * @method wsCheckConfigurationFileForChanges
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a url
+ */
+function wsCheckConfigurationFileForChanges(wsio, data) {
+	ConfigEditing.recheckConfiguration(config, clients);
+}
