@@ -569,8 +569,8 @@ function SAGE2_interaction(wsio) {
 				title: "Screen sharing",
 				ok: "Confirm",
 				cancel: "Cancel",
-				text: "Already sharing content.<br> Press <strong style='font-weight:bold;'>Confirm</strong> " +
-					"to close the existing window and share another one.<br>" +
+				text: "You are already sharing a window.<br> Press <strong style='font-weight:bold;'>Confirm</strong> " +
+					"to close the existing window and share a new one.<br>" +
 					"Press <strong style='font-weight:bold;'>Cancel</strong> to continue sharing the existing window.",
 				width: "60%",
 				position: "center",
