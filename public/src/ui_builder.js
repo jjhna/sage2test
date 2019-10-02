@@ -227,9 +227,9 @@ function UIBuilder(json_cfg, clientID) {
 					_this.bg.style.backgroundPosition = "top left";
 					_this.bg.style.backgroundRepeat   = "no-repeat";
 					_this.bg.style.backgroundSize     = bgImg.naturalWidth + "px " + bgImg.naturalHeight + "px";
-					// 
-					_this.main.style.top    = "0px";
-					_this.main.style.left   = "0px";
+					//
+					_this.main.style.top    = top + "px";
+					_this.main.style.left   = left + "px";
 					_this.main.style.width  = _this.json_cfg.resolution.width *
 						(_this.json_cfg.displays[_this.clientID].width || 1)  + "px";
 					_this.main.style.height = _this.json_cfg.resolution.height *
@@ -262,13 +262,13 @@ function UIBuilder(json_cfg, clientID) {
 					// _this.bg.style.backgroundPosition = "top left";
 					// _this.bg.style.backgroundRepeat   = "no-repeat";
 					// _this.bg.style.backgroundSize     = bgImg.naturalWidth + "px " + bgImg.naturalHeight + "px";
-					// // 
+					// //
 					// _this.main.style.top    = "0px";
 					// _this.main.style.left   = "0px";
 					// _this.main.style.width  = _this.json_cfg.resolution.width *
 					// 	(_this.json_cfg.displays[_this.clientID].width || 1)  + "px";
 					// _this.main.style.height = _this.json_cfg.resolution.height *
-					// 	(_this.json_cfg.displays[_this.clientID].height || 1) + "px";	
+					// 	(_this.json_cfg.displays[_this.clientID].height || 1) + "px";
 				} else {
 					var bgImgFinal;
 					var ext = _this.json_cfg.background.image.url.lastIndexOf(".");
@@ -1393,6 +1393,7 @@ function UIBuilder(json_cfg, clientID) {
 
 		var remote = document.createElement('div');
 		remote.id  = data.name;
+		remote.isRemoteSiteNode = true;
 		remote.style.position  = "absolute";
 		remote.style.textAlign = "center";
 		remote.style.width  = data.geometry.w.toString() + "px";
@@ -1422,6 +1423,23 @@ function UIBuilder(json_cfg, clientID) {
 		remote.appendChild(name);
 
 		this.upperBar.appendChild(remote);
+	};
+
+	/**
+	* Clears all bars for the remote sites from the upper bar
+	*
+	* @method removeRemoteSitesFromUpperBar
+	* @param data {Object} comes from the ws packet
+	*/
+	this.removeRemoteSitesFromUpperBar = function(data) {
+		// Currently data isn't used, more practical to remove all bars.
+		let ubChildren = ui.upperBar.children;
+		for (let i = 0; i < ubChildren.length; i++) {
+			if (ubChildren[i].isRemoteSiteNode) {
+				ubChildren[i].remove();
+				i--;
+			}
+		}
 	};
 
 	/**
@@ -1634,8 +1652,11 @@ function UIBuilder(json_cfg, clientID) {
 			if (this.old_cfg.background.image.url === this.json_cfg.background.image.url) {
 				return;
 			}
-		} catch (e) {}
-		var _this = this;
+		} catch (e) {
+			if (!this.json_cfg.background.image || !this.json_cfg.image.url) {
+				return;
+			}
+		}
 
 		// background color
 		if (typeof this.json_cfg.background.color !== "undefined" && this.json_cfg.background.color !== null) {

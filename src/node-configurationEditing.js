@@ -32,14 +32,14 @@ function configUpdateBackgroundImage(url, config, clients) {
 	// var json_str   = fs.readFileSync(configLocation, "utf8");
 	// // Parse it using JSON5 syntax (more lax than strict JSON)
 	// var userConfig = json5.parse(json_str);
-	
+
 	// Ensure an entry for background.image exists
 	if (!config.background.image) {
 		config.background.image = {};
 	}
 	config.background.image.url = url;
 
-	console.log(config);
+	console.log("erase me, configUpdateBackgroundImage config check ", config);
 
 	// Write file to keep changes.
 	// TODO enable this after sure it works
@@ -56,12 +56,29 @@ function configUpdateBackgroundImage(url, config, clients) {
 
 /**
  * For rechecking the config file after updated
- * 
- * @param config {Object} Current configuration
+ *
+ * @param pathToConfigFile {String} Path to the config file
+ * @param config {Object} Current configuration that was read (file might have changes)
  * @param clients {Array} all clients array
  */
-function recheckConfiguration(currentConfig, clients) {
+function recheckConfiguration(pathToConfigFile, currentConfig, clients,
+	initializeRemoteSites) {
 	console.log("TODO implmenent recheckConfiguration");
+
+
+	console.log("TODO: remove debugging: remotesites recheck");
+
+	// Read the specified configuration file
+	var json_str   = fs.readFileSync(pathToConfigFile, 'utf8');
+	// Parse it using JSON5 syntax (more lax than strict JSON)
+	var userConfig = json5.parse(json_str);
+
+
+	// Manual update of the remote sites
+	currentConfig.remote_sites = userConfig.remote_sites;
+
+	// Must now recheck
+	initializeRemoteSites();
 }
 
 

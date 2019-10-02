@@ -431,6 +431,7 @@ function setupListeners() {
 	});
 
 	wsio.on('addRemoteSite', function(data) {
+		console.log("wsio.on('addRemoteSite'");
 		ui.addRemoteSite(data);
 	});
 
@@ -1556,6 +1557,23 @@ function setupListeners() {
 			app = applications[perfAppList[i]];
 			app.SAGE2Event('performanceData', null, null, data, data.date);
 		}
+	});
+
+	wsio.on('performanceData', function(data) {
+		var perfAppList = data.appList;
+		var app;
+		if (perfAppList === undefined || perfAppList === null) {
+			return;
+		}
+		for (var i = 0; i < perfAppList.length; i++) {
+			app = applications[perfAppList[i]];
+			app.SAGE2Event('performanceData', null, null, data, data.date);
+		}
+	});
+
+	wsio.on('clearRemoteSiteBlocks', function(data) {
+		ui.removeRemoteSitesFromUpperBar(data);
+		wsio.emit('displayRequestingRemoteSites');
 	});
 }
 

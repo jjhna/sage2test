@@ -1318,7 +1318,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 	var ctx_menu = webix.ui({
 		view: "contextmenu",
 		id: "cmenu",
-		data: ["Open", "Open With...", "Set as Background" , "Copy URL", "Open in Tab", "Download", { $template: "Separator" }, "Delete"],
+		data: ["Open", "Open With...", "Set as Background", "Copy URL",
+			"Open in Tab", "Download", { $template: "Separator" }, "Delete"],
 		on: {
 			onMenuItemClick: function(id) {
 				var i;
@@ -1416,29 +1417,29 @@ function FileManager(wsio, mydiv, uniqueID) {
 		$$('cmenu').enableItem('Open With...');
 		$$('cmenu').enableItem('Download');
 		$$('cmenu').enableItem('Delete');
-		
+
 		// Select
 		// var dItems  = this.getSelectedId(true); // old one that may not always be true
 		let appType = _this.allFiles[webixElement.row].exif.MIMEType;
 		// if (dItems.length === 1) {
 		// 	let item = dItems[0].id;
 		// 	let appType = _this.allFiles[item].exif.MIMEType;
-			if (appType === "sage2/session") {
-				$$('cmenu').hideItem('Copy URL');
-				$$('cmenu').hideItem('Open in Tab');
-				$$('cmenu').hideItem('Download');
-			} else if (appType === "application/custom") {
-				$$('cmenu').hideItem('Copy URL');
-				$$('cmenu').hideItem('Open in Tab');
-				$$('cmenu').hideItem('Download');
-				$$('cmenu').hideItem('Delete');
-			} else if (appType === "sage2/url") {
-				$$('cmenu').hideItem('Download');
-			} else if (appType.includes("image/")) {
-				console.log(appType);
-				$$('cmenu').enableItem('Set as Background');
-				$$('cmenu').showItem('Set as Background');
-			}
+		if (appType === "sage2/session") {
+			$$('cmenu').hideItem('Copy URL');
+			$$('cmenu').hideItem('Open in Tab');
+			$$('cmenu').hideItem('Download');
+		} else if (appType === "application/custom") {
+			$$('cmenu').hideItem('Copy URL');
+			$$('cmenu').hideItem('Open in Tab');
+			$$('cmenu').hideItem('Download');
+			$$('cmenu').hideItem('Delete');
+		} else if (appType === "sage2/url") {
+			$$('cmenu').hideItem('Download');
+		} else if (appType.includes("image/")) {
+			console.log(appType);
+			$$('cmenu').enableItem('Set as Background');
+			$$('cmenu').showItem('Set as Background');
+		}
 		// }
 		// console.log("BTW node", id, "that event occured on:", node);
 		// console.log("Compared to selected", dItems[0].id);
@@ -1857,7 +1858,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		}
 	}
 
-	
+
 
 	function updateSearch(searchParam) {
 		if (searchParam === "Image:/") {
