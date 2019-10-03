@@ -5797,10 +5797,12 @@ function initializeRemoteSites() {
 					connected: "off",
 					geometry: rGeom,
 					index: index,
-					intervalId: null
+					reconnectIntervalId: null,
+					password: element.password,
+					session: element.session
 				};
 				// If no change to the entry was made, use the old one
-				if (remoteSitesEntryHasNotChanged(updatedSiteListing[index], wsURL)) {
+				if (remoteSitesEntryHasNotChanged(element, wsURL)) {
 					console.log("erase me, reusing socket for:", updatedSiteListing[index].name);
 					let oldEntry = remoteSites[remoteSitesIndexGivenName(updatedSiteListing[index].name)];
 					updatedSiteListing[index].wsio = oldEntry.wsio;
@@ -5813,7 +5815,7 @@ function initializeRemoteSites() {
 					// updatedSiteListing[index].wsio = createRemoteConnection(wsURL, element, index);
 				}
 				// // attempt to connect every 15 seconds, if connection failed
-				// updatedSiteListing[index].intervalId = setInterval(function() {
+				// updatedSiteListing[index].reconnectIntervalId = setInterval(function() {
 				// 	if (updatedSiteListing[index].connected !== "on") {
 				// 		var rem = createRemoteConnection(wsURL, element, index);
 				// 		updatedSiteListing[index].wsio = rem;
@@ -5830,7 +5832,7 @@ function initializeRemoteSites() {
 		// Now close down all ws that weren't reused and stop the intervals for them.
 		remoteSites.forEach(function(element, index, array) {
 			// All the old intervals will point at an obsolete object, clear them
-			clearInterval(element.intervalId);
+			clearInterval(element.reconnectIntervalId);
 			// Those used had the names changed to null
 			if (element.name !== null) {
 				// NOTE: close() is not exposed like in the client-side object
@@ -5853,7 +5855,7 @@ function initializeRemoteSites() {
 					remoteSites[index].wsio = createRemoteConnection(wsURL, element, index);
 				}
 				// attempt to connect every 15 seconds, if connection failed
-				remoteSites[index].intervalId = setInterval(function() {
+				remoteSites[index].reconnectIntervalId = setInterval(function() {
 					if (remoteSites[index].connected !== "on") {
 						var rem = createRemoteConnection(wsURL, element, index);
 						remoteSites[index].wsio = rem;
@@ -5881,15 +5883,25 @@ function remoteSitesIndexGivenName(name) {
 	return -1;
 }
 
-function remoteSitesEntryHasNotChanged(site, wsURL) {
-	let oldEntry = remoteSitesIndexGivenName(site.name);
+function remoteSitesEntryHasNotChanged(configEntry, wsURL) {
+	let isTheSame = true;
+	let oldEntry = remoteSitesIndexGivenName(configEntry.name);
 	if (oldEntry != -1) {
 		oldEntry = remoteSites[oldEntry];
-		if (oldEntry.wsio.ws.url === wsURL) {
-			return true;
+		if (oldEntry.wsio.ws.url != wsURL) {
+			isTheSame = false;
 		}
+		let currentPassword = (configEntry.password === undefined) ? null : configEntry.password; // If undefined, set to null otherwise reuse
+		let currentHash = (configEntry.session === undefined) ? null : configEntry.session;
+		if (currentPassword != oldEntry.password) {
+			isTheSame = false;
+		} else if (currentHash != oldEntry.session) {
+			isTheSame = false;
+		}
+	} else {
+		isTheSame = false;
 	}
-	return false;
+	return isTheSame;
 }
 
 function manageRemoteConnection(remote, site, index) {
@@ -6810,13 +6822,15 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 		// Build the UI URL
 		var viewURL = 'https://' + remoteSite.wsio.remoteAddress.address + ':'
 			+ remoteSite.wsio.remoteAddress.port;
-		// pass the password or hash to the URL
+		// pass the password or session to the URL
 		if (config.remote_sites[remoteSite.index].password) {
 			viewURL += '/session.html?page=index.html?viewonly=true&session=' +
 				config.remote_sites[remoteSite.index].password;
-		} else if (config.remote_sites[remoteSite.index].hash) {
+		} else if (config.remote_sites[remoteSite.index].session) {
+			// Swapped to session from hash. Based on rest of code and wiki, session should be the correct value.
+			// https://bitbucket.org/sage2/sage2/wiki/Configuration
 			viewURL += '/session.html?page=index.html?viewonly=true&hash=' +
-				config.remote_sites[remoteSite.index].hash;
+				config.remote_sites[remoteSite.index].session;
 		} else {
 			// no password
 			viewURL += '/index.html?viewonly=true';
