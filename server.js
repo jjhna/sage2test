@@ -9852,7 +9852,7 @@ function handleNewApplication(appInstance, videohandle) {
 		w: cornerSize, h: cornerSize
 	}, 2);
 	if (appInstance.sticky === true) {
-		appInstance.pinned = true;
+		appInstance.pinned = false;
 		SAGE2Items.applications.addButtonToItem(appInstance.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: config.ui.titleBarHeight}, 1);
 		SAGE2Items.applications.editButtonVisibilityOnItem(appInstance.id, "pinButton", false);
@@ -9910,7 +9910,7 @@ function handleNewApplicationInDataSharingPortal(appInstance, videohandle, porta
 		w: cornerSize, h: cornerSize
 	}, 2);
 	if (appInstance.sticky === true) {
-		appInstance.pinned = true;
+		appInstance.pinned = false;
 		SAGE2Items.applications.addButtonToItem(appInstance.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: titleBarHeight}, 1);
 		SAGE2Items.applications.editButtonVisibilityOnItem(appInstance.id, "pinButton", false);
@@ -10321,7 +10321,8 @@ function hideStickyPin(app) {
 	// if it is in a Partition -- I assume it could happen in other cases as well)
 	broadcast('hideStickyPin', {
 		id: app.id,
-		sticky: app.sticky
+		sticky: app.sticky,
+		pinned: app.pinned
 	});
 }
 
@@ -10502,6 +10503,9 @@ function wsCallFunctionOnApp(wsio, data) {
 			let app = {application: SAGE2Items.applications.list[data.app]};
 			let remote = remoteSites[data.parameters.remoteSiteIndex];
 			shareApplicationWithRemoteSite(uniqueID, app, remote);
+			return;
+		} else if (data.func === "SAGE2PinStickyItem") {
+			toggleStickyPin(data.app);
 			return;
 		}
 
