@@ -13,7 +13,7 @@ RUN     apt-get update && apt-get install -y \
 		ghostscript \
 		libnss3-tools \
 		libimage-exiftool-perl \
-		imagemagick \
+		webp imagemagick \
 		nodejs
 RUN     env DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata && rm -rf /var/lib/apt/lists/*
 

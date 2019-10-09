@@ -1524,6 +1524,13 @@ function setupListeners() {
 			windowIconPinned.style.display = "none";
 			windowIconPinout.style.display = "block";
 		}
+		var app = applications[data.id];
+		if (app !== null && app !== undefined) {
+			app.pinned = data.pinned;
+			if (isMaster) {
+				app.getFullContextMenuAndUpdate();
+			}
+		}
 	});
 
 	wsio.on('hideStickyPin', function(data) {
@@ -1537,6 +1544,13 @@ function setupListeners() {
 		titleText.style.marginLeft = Math.round(titleBarHeight / 4.0) + "px";
 		windowIconPinned.style.display = "none";
 		windowIconPinout.style.display = "none";
+		var app = applications[data.id];
+		if (app !== null && app !== undefined) {
+			app.pinned = data.pinned;
+			if (isMaster) {
+				app.getFullContextMenuAndUpdate();
+			}
+		}
 	});
 
 	wsio.on('getPerformanceData', function(data) {
@@ -1736,6 +1750,8 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 			state: data.data,
 			date: date,
 			title: data.title,
+			sticky: data.sticky,
+			pinned: data.pinned,
 			application: data.application
 		};
 		// extra data that may be passed from launchAppWithValues
