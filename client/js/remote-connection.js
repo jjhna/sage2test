@@ -24,7 +24,7 @@ const { join } = require("path");
 
 /************************* DOM element declaration ***************************/
 const favoriteHeart = document.getElementById("favorite_heart");
-const favoriteCarousel = document.getElementById("favorites_carousel");
+// const favoriteCarousel = document.getElementById("favorites_carousel");
 const favoriteList = document.getElementById("favorites_list");
 const idDropdown = document.getElementById('ids_dropdown');
 const idDropName = document.getElementById('id_drop');
@@ -34,7 +34,7 @@ const check2 = document.getElementById('check_2');
 const urlInput = document.getElementById('url');
 const okayBtn = document.getElementById('okay_btn');
 const cancelBtn = document.getElementById('cancel_btn');
-const switchFavoritesUI = document.getElementById('switch_favorites_ui');
+// const switchFavoritesUI = document.getElementById('switch_favorites_ui');
 const loadSiteInfoBtn = document.getElementById('current_status_btn');
 const pwdInput = document.getElementById('password');
 
@@ -53,7 +53,7 @@ const PREDEFINED_LOCAL_PORT = "9090";
 //JS object containing list of favorites sites
 var favorites = {
 	list: [],
-	UIswitchPosition: FAVORITES_CAROUSEL_UI
+	UIswitchPosition: FAVORITES_CAROUSEL_UI //TODO delete
 	// example of favorites object structure
 	// list: [{
 	//     host: 'orion-win.evl.uic.edu',
@@ -76,13 +76,14 @@ fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallba
 		writeFavoritesOnFile(favorites);
 	} else {
 		favorites = JSON.parse(data); //convert json to object
+		console.log(favorites);
 		if (favorites.list.length > 0) {
-			clearCarousel();
+			// clearCarousel();
 			populateFavorites(favorites.list);
-			updateInitCarousel();
-			if (favorites.UIswitchPosition === FAVORITES_LIST_UI) {
-				switchToListUI();
-				switchFavoritesUI.firstElementChild.firstElementChild.checked = true;
+			// updateInitCarousel();
+			if (favorites.UIswitchPosition === FAVORITES_LIST_UI) { //TODO delete
+				// switchToListUI();
+				// switchFavoritesUI.firstElementChild.firstElementChild.checked = true;
 			}
 		}
 	}
@@ -208,7 +209,7 @@ function populateFavorites(favorites_list) {
 	if (!favorites_list) {
 		return;
 	}
-	favorites_list.forEach(addItemToCarousel);
+	// favorites_list.forEach(addItemToCarousel);
 	favorites_list.forEach(addItemToList);
 	// attachBehaviorDropdownSites();
 }
@@ -270,8 +271,8 @@ function disablePassword() {
  */
 function addItemToList(item, index) {
 	let it = document.createElement("LI");
-	addClass(it, "collection-item blue-grey darken-2 z-depth-3");
-	let htmlCode = `<div><span>${item.name}</span> <span>${item.host}</span><a href="#!" class="secondary-content">
+	addClass(it, "collection-item grey lighten-2 z-depth-3");
+	let htmlCode = `<div><b><span>${item.name} -</span></b> <span>${item.host}</span><a href="#!" class="secondary-content">
                         <i class="material-icons style="color:${offlineColor};">favorite</i>
                             </a>
                     </div>`;
@@ -281,8 +282,9 @@ function addItemToList(item, index) {
 	it.style.cursor = "pointer";
 	it.firstElementChild.lastElementChild.addEventListener('click', removeFavoriteSiteList);
 	// favoriteList.appendChild(it);
+	it.style.color = "grey";
 	favoriteList.insertBefore(it, favoriteList.firstChild);
-	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, 1000);
+	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
 
 /**
@@ -292,24 +294,24 @@ function addItemToList(item, index) {
  * @param  {int} index the index in the array of objects
  * @return {void}
  */
-function addItemToCarousel(item, index) {
-	let it = document.createElement("DIV");
-	addClass(it, "card small blue-grey darken-2 carousel-item z-depth-3");
-	let htmlCode = `<div class="card-content white-text">
-                                <span class="card-title">${item.name}</span><p>${item.host}</p>
-                                </div>
-                                <div class="card-action">
-                                    <a href="#"><i
-                                            class="small material-icons prefix" style="color:${offlineColor}">favorite</i></a>
-                                </div>`;
-	it.innerHTML = htmlCode;
+// function addItemToCarousel(item, index) {
+// 	let it = document.createElement("DIV");
+// 	addClass(it, "card small blue-grey darken-2 carousel-item z-depth-3");
+// 	let htmlCode = `<div class="card-content white-text">
+//                                 <span class="card-title">${item.name}</span><p>${item.host}</p>
+//                                 </div>
+//                                 <div class="card-action">
+//                                     <a href="#"><i
+//                                             class="small material-icons prefix" style="color:${offlineColor}">favorite</i></a>
+//                                 </div>`;
+// 	it.innerHTML = htmlCode;
 
-	it.firstElementChild.firstElementChild.addEventListener('click', selectFavoriteSite);
-	it.firstElementChild.firstElementChild.style.cursor = "pointer";
-	it.firstElementChild.nextElementSibling.firstElementChild.addEventListener('click', removeFavoriteSite);
-	favoriteCarousel.appendChild(it);
-	setOnlineStatus(buildConfigURL(item.host), it.lastChild.firstElementChild.firstElementChild, 1000);
-}
+// 	it.firstElementChild.firstElementChild.addEventListener('click', selectFavoriteSite);
+// 	it.firstElementChild.firstElementChild.style.cursor = "pointer";
+// 	it.firstElementChild.nextElementSibling.firstElementChild.addEventListener('click', removeFavoriteSite);
+// 	favoriteCarousel.appendChild(it);
+// 	setOnlineStatus(buildConfigURL(item.host), it.lastChild.firstElementChild.firstElementChild, 1000);
+// }
 
 /**
  * Onclick function for clicking on a favorite site in the favorites carousel or list, select the site,
@@ -349,14 +351,14 @@ function selectFavoriteSite(event) {
  * @method removeFromFavorites
  * @param {<a> element}
  */
-function removeFavoriteSite(event) {
-	var url = event.target.parentElement.parentElement.parentElement.firstElementChild.lastElementChild.innerText;
-	let URL_in_form = urlInput.value;
-	removeFromFavorites(url);
-	if (URL_in_form === url) {
-		setEmptyHeart();
-	}
-}
+// function removeFavoriteSite(event) {
+// 	var url = event.target.parentElement.parentElement.parentElement.firstElementChild.lastElementChild.innerText;
+// 	let URL_in_form = urlInput.value;
+// 	removeFromFavorites(url);
+// 	if (URL_in_form === url) {
+// 		setEmptyHeart();
+// 	}
+// }
 
 /**
  * Onclick function for clicking on the heart on a card in the list
@@ -388,9 +390,9 @@ function addToFavorites(favorite_item) {
 		favorites.list.push(favorite_item);
 		writeFavoritesOnFile(favorites);
 		clearList();
-		clearCarousel();
+		// clearCarousel();
 		populateFavorites(favorites.list);
-		updateInitCarousel();
+		// updateInitCarousel();
 	}
 }
 
@@ -418,9 +420,9 @@ function alreadyInFavorites(host) {
  * @method clearCarousel
  * @return {void}
  */
-function clearCarousel() {
-	favoriteCarousel.innerHTML = "";
-}
+// function clearCarousel() {
+// 	favoriteCarousel.innerHTML = "";
+// }
 
 /**
  * Clears the favorites list, removing all inner elems
@@ -446,9 +448,9 @@ function removeFromFavorites(favorite_url) {
 			favorites.list.splice(i, 1);
 			writeFavoritesOnFile(favorites);
 			clearList();
-			clearCarousel();
+			// clearCarousel();
 			populateFavorites(favorites.list);
-			updateInitCarousel();
+			// updateInitCarousel();
 		}
 	}
 }
@@ -773,6 +775,17 @@ function fetchWithTimeout(url, delay, onTimeout) {
 	});
 }
 
+// function disableSiteItem(elem) {
+// 	removeClass(elem, "blue-grey darken-2");
+// 	addClass(elem, "grey lighten-2");
+// }
+
+function enableSiteItem(elem) {
+	removeClass(elem, "grey lighten-2");
+	addClass(elem, "blue-grey darken-2");
+	elem.style.color = "white";
+}
+
 /**
  * Sets the color of card to display online/offline status
  *
@@ -781,7 +794,7 @@ function fetchWithTimeout(url, delay, onTimeout) {
  * @param  {any} delay time in ms to wait for fetch request before declaring to be offline
  * @return void
  */
-function setOnlineStatus(url, elem, delay) {
+function setOnlineStatus(url, elem, itemElem, delay) {
 	// Setting offline as default
 	elem.style.color = offlineColor;
 	const timer = new Promise((resolve) => {
@@ -796,10 +809,12 @@ function setOnlineStatus(url, elem, delay) {
 	]).then((response) => {
 		if (response.timeout) {
 			elem.style.color = offlineColor;
+			// disableSiteItem(itemElem);
 			// elem.lastChild.lastElementChild.firstElementChild.style.color = offlineColor;
 			return;
 		} else {
 			elem.style.color = onlineColor;
+			enableSiteItem(itemElem);
 			// elem.lastChild.lastElementChild.firstElementChild.style.color = onlineColor;
 		}
 	});
@@ -887,45 +902,45 @@ function loadSiteInfo(host) {
  * @method updateInitCarousel
  * @return {void}
  */
-function updateInitCarousel() {
-	var elems = document.querySelectorAll('.carousel');
-	let options = {
-		duration: 100,
-		dist: -100,
-		indicators: true
-	};
-	if (typeof elems !== 'undefined') {
-		M.Carousel.init(elems, options);
-	}
-}
+// function updateInitCarousel() {
+// 	var elems = document.querySelectorAll('.carousel');
+// 	let options = {
+// 		duration: 100,
+// 		dist: -100,
+// 		indicators: true
+// 	};
+// 	if (typeof elems !== 'undefined') {
+// 		M.Carousel.init(elems, options);
+// 	}
+// }
 
 /**
  * Swtiches the favorites UI to a vertical scrollable list
  *
  * @return {void}
  */
-function switchToListUI() {
-	favoriteCarousel.hidden = true;
-	favoriteList.parentElement.hidden = false;
-	favorites.UIswitchPosition = FAVORITES_LIST_UI;
-	writeFavoritesOnFile(favorites);
-}
+// function switchToListUI() {
+// 	favoriteCarousel.hidden = true;
+// 	favoriteList.parentElement.hidden = false;
+// 	favorites.UIswitchPosition = FAVORITES_LIST_UI;
+// 	writeFavoritesOnFile(favorites);
+// }
 
 /**
  * Swtiches the favorites UI to the carousel
  *
  * @return {void}
  */
-function switchToCarouselUI() {
-	favoriteList.parentElement.hidden = true;
-	favoriteCarousel.hidden = false;
-	favorites.UIswitchPosition = FAVORITES_CAROUSEL_UI;
-	writeFavoritesOnFile(favorites);
-	updateInitCarousel();
-}
+// function switchToCarouselUI() {
+// 	favoriteList.parentElement.hidden = true;
+// 	// favoriteCarousel.hidden = false;
+// 	favorites.UIswitchPosition = FAVORITES_CAROUSEL_UI;
+// 	writeFavoritesOnFile(favorites);
+// 	// updateInitCarousel();
+// }
 
 /**************************** Functions finished *****************************/
-favoriteList.parentElement.hidden = true;
+// favoriteList.parentElement.hidden = true;
 
 // Catches the message sent from the main electron window that is providing the current location
 ipcRenderer.on('current-location', (e, host) => {
@@ -946,7 +961,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	M.Dropdown.init(elems, options);
 
 	//carousel init
-	updateInitCarousel();
+	// updateInitCarousel();
 
 	attachBehaviorDropdownSites();
 });
@@ -974,14 +989,14 @@ check2.addEventListener('click', (e) => {
 });
 
 // Adds behavior to the favorites UI switch
-switchFavoritesUI.addEventListener('click', (e) => {
-	var checked = e.target.checked;
-	if (checked) {
-		switchToListUI();
-	} else {
-		switchToCarouselUI();
-	}
-});
+// switchFavoritesUI.addEventListener('click', (e) => {
+// 	var checked = e.target.checked;
+// 	if (checked) {
+// 		switchToListUI();
+// 	} else {
+// 		switchToCarouselUI();
+// 	}
+// });
 
 okayBtn.addEventListener('click', okayOnClick);
 cancelBtn.addEventListener('click', cancelOnClick);
