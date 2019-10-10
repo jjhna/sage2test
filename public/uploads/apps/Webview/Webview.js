@@ -75,7 +75,6 @@ var Webview = SAGE2_App.extend({
 
 		// Get the URL from parameter or session
 		var view_url = data.params || this.state.file || this.state.url;
-		var video_id, ampersandPosition;
 
 		// Is the page hosted by SAGE server
 		this.connectingToSageHostedFile = this.isHostedBySelf(view_url);
@@ -85,8 +84,8 @@ var Webview = SAGE2_App.extend({
 			if (view_url.indexOf('embed') === -1 ||
 				view_url.indexOf("watch?v=") >= 0) {
 				// Search for the Youtube ID
-				video_id = view_url.split('v=')[1];
-				ampersandPosition = video_id.indexOf('&');
+				let video_id = view_url.split('v=')[1];
+				let ampersandPosition = video_id.indexOf('&');
 				if (ampersandPosition != -1) {
 					video_id = video_id.substring(0, ampersandPosition);
 				}
@@ -104,7 +103,7 @@ var Webview = SAGE2_App.extend({
 			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.startsWith('https://youtu.be')) {
 			// youtube short URL (used in sharing)
-			video_id = view_url.split('/').pop();
+			let video_id = view_url.split('/').pop();
 			view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
 			this.contentType = "youtube";
 			// ask for a HD resize
