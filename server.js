@@ -6664,34 +6664,53 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 	if (obj.data.connected === "on" && sagePointers[uniqueID].visible) {
 		// Validate the remote address
 		var remoteSite = findRemoteSiteByConnection(obj.data.wsio);
+		if (data.button === "right") {
+			// Create the webview to the remote UI
+			wsLoadApplication({id: uniqueID}, {
+				application: "/uploads/apps/remoteSiteControls",
+				user: uniqueID,
+				// pass the url in the data object
+				data: {
+					id:  uniqueID,
+					url: viewURL,
+					remoteSiteInformation: {
+						name: config.remote_sites[remoteSite.index].name,
+						host: config.remote_sites[remoteSite.index].host,
+						port: config.remote_sites[remoteSite.index].port
+					}
+				},
+				position: [pointerX, config.ui.titleBarHeight + 10],
+				dimensions: [400, 800]
+			});
+		} else { // Otherwies open the view
+			// Build the UI URL
+			var viewURL = 'https://' + remoteSite.wsio.remoteAddress.address + ':'
+				+ remoteSite.wsio.remoteAddress.port;
+			// pass the password or hash to the URL
+			if (config.remote_sites[remoteSite.index].password) {
+				viewURL += '/session.html?page=index.html?viewonly=true&session=' +
+					config.remote_sites[remoteSite.index].password;
+			} else if (config.remote_sites[remoteSite.index].hash) {
+				viewURL += '/session.html?page=index.html?viewonly=true&hash=' +
+					config.remote_sites[remoteSite.index].hash;
+			} else {
+				// no password
+				viewURL += '/index.html?viewonly=true';
+			}
 
-		// Build the UI URL
-		var viewURL = 'https://' + remoteSite.wsio.remoteAddress.address + ':'
-			+ remoteSite.wsio.remoteAddress.port;
-		// pass the password or hash to the URL
-		if (config.remote_sites[remoteSite.index].password) {
-			viewURL += '/session.html?page=index.html?viewonly=true&session=' +
-				config.remote_sites[remoteSite.index].password;
-		} else if (config.remote_sites[remoteSite.index].hash) {
-			viewURL += '/session.html?page=index.html?viewonly=true&hash=' +
-				config.remote_sites[remoteSite.index].hash;
-		} else {
-			// no password
-			viewURL += '/index.html?viewonly=true';
+			// Create the webview to the remote UI
+			wsLoadApplication({id: uniqueID}, {
+				application: "/uploads/apps/Webview",
+				user: uniqueID,
+				// pass the url in the data object
+				data: {
+					id:  uniqueID,
+					url: viewURL
+				},
+				position: [pointerX, config.ui.titleBarHeight + 10],
+				dimensions: [400, 120]
+			});
 		}
-
-		// Create the webview to the remote UI
-		wsLoadApplication({id: uniqueID}, {
-			application: "/uploads/apps/Webview",
-			user: uniqueID,
-			// pass the url in the data object
-			data: {
-				id:  uniqueID,
-				url: viewURL
-			},
-			position: [pointerX, config.ui.titleBarHeight + 10],
-			dimensions: [400, 120]
-		});
 	}
 
 	// don't allow data-pushing
