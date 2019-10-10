@@ -3169,10 +3169,10 @@ function loadSession(filename) {
 					ptn.innerMaximization = element.innerMaximization;
 					ptn.innerTiling = element.innerTiling;
 					console.log(ptn.innerTiling)
-					if( element.innerTiling ){
-							ptn.toggleInnerTiling();
-							updatePartitionInnerLayout(ptn, true);
-						}
+					// if( ptn.innerTiling ){
+					// 		ptn.toggleInnerTiling();
+					// 		updatePartitionInnerLayout(ptn, true);
+					// 	}
 					broadcast('partitionWindowTitleUpdate', ptn.getTitle());
 				});
 			}
@@ -3513,9 +3513,9 @@ function wsGoogleVoiceSpeechInput(wsio, data){
 	//console.log(data);
 	console.log(JSON.stringify(data));
 
-	if( data.text == "hello articulate" ){
+	if( (data.text.toLowerCase() == "hello articulate" || data.text.toLowerCase() == "start") && SAGE2Items.applications.getFirstItemWithTitle("articulate_ui_chat") == null){
 		console.log("load articulate session");
-		loadSession("Articulate demo.json");
+		loadSession("Articulate demo 2.json");
 		return;
 	}
 
@@ -3949,7 +3949,7 @@ function wsPointingGesturePosition(wsio, data){
 	if (sagePointers[data.id] === undefined) {
 		// console.log("making the kinect pointer");
 		createSagePointer(data.id);
-		showPointer(data.id, {label: data.id, color: data.color, sourceType: "kinect"});
+		showPointer(data.id, {label: "ptr", color: data.color, sourceType: "kinect"});
 
 	}
 //	broadcast('pointerPosition', data);
@@ -4044,7 +4044,7 @@ function wsPointingGesturePositionOld(wsio, data){
 	if (sagePointers[data.id] === undefined) {
 		// console.log("making the kinect pointer");
 		createSagePointer(data.id);
-		showPointer(data.id, {label: data.id, color: data.color, sourceType: "kinect"});
+		showPointer(data.id, {label:"ptr", color: data.color, sourceType: "kinect"});
 
 	}
 //	broadcast('pointerPosition', data);

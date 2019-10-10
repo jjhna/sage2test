@@ -665,7 +665,7 @@ drawSkeletonLines: function(){
 			this.ctx.textAlign="center";
 
 			//status bar
-			this.drawStatusBar();
+			//this.drawStatusBar();
 			this.drawSkeletonLines();
 			this.ctx.fillStyle = skeleton.color;
 			this.ctx.fillText("Head", skeleton.head.x,  this.element.height - skeleton.head.y);
@@ -773,6 +773,8 @@ drawSkeletonLines: function(){
 	//---------------------------------------//
 	draw: function(date) {
 		//	console.log("draw in machine learning");
+					//this.ctx.clearRect(0, 0, this.element.width, this.element.height);
+
 		if(this.skeletons){
 		//	console.log("draw skeleton");
 			//josh and joe - remove kinect pointers from inactive skeletons
@@ -787,6 +789,11 @@ drawSkeletonLines: function(){
 			}
 		}
 		this.calibratedTrialModeDraw(date);
+		// 					this.ctx.clearRect(0, 0, this.element.width, this.element.height);
+
+		// this.drawRawBodyParts();
+									//this.ctx.clearRect(0, 0, this.element.width, this.element.height);
+
 	},
 
 	//--------------------------------------------//
@@ -973,14 +980,17 @@ drawSkeletonLines: function(){
 
 	 for(skeleton in this.skeletons){
 	 	if( skeleton.id != this.mostRecentSkeleton.id ){
+	 		//wsio.emit("checkKinectPointers", {id: "rkinect_" + this.mostRecentSkeleton.id });
 	 		wsio.emit("checkKinectPointers", {id: "rkinect_" + this.mostRecentSkeleton.id });
+
 	 	}
 	 }
 
 
 	 newPosition = {x: mappedX, y: mappedY};
-	 wsio.emit("pointingGesturePosition", {x: mappedX, y:mappedY, id: "rkinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true')});
+	 // wsio.emit("pointingGesturePosition", {x: mappedX, y:mappedY, id: "rkinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true')});
 
+	 wsio.emit("pointingGesturePosition", {x: mappedX, y:mappedY, id: "rkinect_" + this.mostRecentSkeleton.id, color: this.mostRecentSkeleton.color, recognitionStatus: (this.recognitionStatus == 'true')});
 
 	 
 

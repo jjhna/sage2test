@@ -34,7 +34,7 @@ var vega_lite_app = SAGE2_App.extend( {
 		// move and resize callbacks
 		//this.resizeEvents = "onfinish"; // continuous
 
-		this.updateTitle(this.state.viewCount);
+		this.updateTitle(" ");//this.state.viewCount);
 
 		console.log( this.state.viewCount );
 		
