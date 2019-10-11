@@ -1294,7 +1294,9 @@ function setupListeners(wsio) {
 	wsio.on('updateBackgroundImageFromUi',          wsUpdateBackgroundImageFromUi);
 	wsio.on('checkConfigurationFileForChanges',     wsCheckConfigurationFileForChanges);
 	wsio.on('displayRequestingRemoteSites',         wsDisplayRequestingRemoteSites);
-
+	// Support for the assistedConfig.html
+	wsio.on('requestCurrentConfigurationFile',      wsRequestCurrentConfigurationFile);
+	wsio.on('assistedConfigSend',                   wsAssistedConfigSend);
 }
 
 /**
@@ -11726,4 +11728,30 @@ function wsCheckConfigurationFileForChanges(wsio, data) {
 function wsDisplayRequestingRemoteSites(wsio, data) {
 	initializeRemoteServerInfo(wsio);
 }
+
+/**
+ * Rebinding for remote site request.
+ * Support for runtime configuration edit page.
+ * This is a request for the current configuration file.
+ *
+ * @method wsRequestCurrentConfigurationFile
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a url
+ */
+function wsRequestCurrentConfigurationFile(wsio, data) {
+	ConfigEditing.handlerForRequestCurrentConfigurationFile(config, wsio);
+}
+
+/**
+ * Rebinding for remote site request.
+ * Will handle the new configuration submitted by the assitedConfig.html page.
+ *
+ * @method wsAssistedConfigSend
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a url
+ */
+function wsAssistedConfigSend(wsio, data) {
+	ConfigEditing.handlerForAssistedConfigSend(wsio, data, config);
+}
+
 
