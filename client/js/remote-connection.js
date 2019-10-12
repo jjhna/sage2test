@@ -43,6 +43,7 @@ const buttonColorClass = "blue-grey darken-2";
 const pulseClass = "pulse";
 const onlineColor = "#60d277";
 const offlineColor = "#d5715d";
+const blackColor = "#222222";
 
 const favorites_file_name = 'sage2_favorite_sites.json';
 const FAVORITES_LIST_UI = 2;
@@ -273,13 +274,13 @@ function addItemToList(item, index) {
 	let it = document.createElement("LI");
 	addClass(it, "collection-item grey lighten-2 z-depth-3");
 	let htmlCode = `<div><b><span>${item.name} -</span></b> <span>${item.host}</span><a href="#!" class="secondary-content">
-                        <i class="material-icons style="color:${offlineColor};">favorite</i>
+                        <i class="material-icons style="color:${blackColor};">favorite</i>
                             </a>
                     </div>`;
 	it.innerHTML = htmlCode;
 
 	it.addEventListener('click', selectFavoriteSite);
-	it.style.cursor = "pointer";
+	// it.style.cursor = "pointer";
 	it.firstElementChild.lastElementChild.addEventListener('click', removeFavoriteSiteList);
 	// favoriteList.appendChild(it);
 	it.style.color = "grey";
@@ -324,8 +325,9 @@ function addItemToList(item, index) {
  */
 function selectFavoriteSite(event) {
 	var elem = event.target;
+	console.log(elem.tagName);
 	if (elem.tagName === "SPAN") {
-		elem = elem.parentElement;
+		elem = elem.parentElement.parentElement;
 	}
 	if (elem.tagName === "DIV") {
 		elem = elem.parentElement;
@@ -718,8 +720,12 @@ function cancelOnClick() {
  * @return {void}
  */
 function okayOnClick() {
-	let URL = formatProperly(urlInput.value);
 	// sending URL to electron.js, params: key value pair (id,URL)
+	connectToPage(urlInput.value);
+}
+
+function connectToPage(URL) {
+	URL = formatProperly(URL);
 	ipcRenderer.send('connect-url', URL);
 }
 
@@ -781,9 +787,24 @@ function fetchWithTimeout(url, delay, onTimeout) {
 // }
 
 function enableSiteItem(elem) {
+	elem.style.cursor = "pointer";
 	removeClass(elem, "grey lighten-2");
 	addClass(elem, "blue-grey darken-2");
 	elem.style.color = "white";
+
+	elem.addEventListener('dblclick', (e) => {
+		var elem = e.target;
+		if (elem.tagName === "SPAN") {
+			elem = elem.parentElement.parentElement;
+		}
+		if (elem.tagName === "DIV") {
+			elem = elem.parentElement;
+		}
+		if (elem.tagName === "LI") {
+			let host = elem.firstElementChild.firstElementChild.nextElementSibling.innerText;
+			connectToPage(host);
+		}
+	});
 }
 
 /**
@@ -796,7 +817,7 @@ function enableSiteItem(elem) {
  */
 function setOnlineStatus(url, elem, itemElem, delay) {
 	// Setting offline as default
-	elem.style.color = offlineColor;
+	elem.style.color = blackColor;  //color heart red
 	const timer = new Promise((resolve) => {
 		setTimeout(resolve, delay, {
 			timeout: true
@@ -808,14 +829,11 @@ function setOnlineStatus(url, elem, itemElem, delay) {
 		timer
 	]).then((response) => {
 		if (response.timeout) {
-			elem.style.color = offlineColor;
-			// disableSiteItem(itemElem);
-			// elem.lastChild.lastElementChild.firstElementChild.style.color = offlineColor;
+			// elem.style.color = offlineColor; //color heart red
 			return;
 		} else {
-			elem.style.color = onlineColor;
+			// elem.style.color = onlineColor; //color heart green
 			enableSiteItem(itemElem);
-			// elem.lastChild.lastElementChild.firstElementChild.style.color = onlineColor;
 		}
 	});
 }

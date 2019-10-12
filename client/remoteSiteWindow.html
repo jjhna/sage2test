@@ -21,56 +21,19 @@
     <div class='container'>
         <form action="">
             <div class="section">
-                <h3>Connect to remote site</h3>
+                <h4>Connect to remote site</h4>
                 <div class="row">
                     <div class="col s8">
-                            <p>Connected sites and favorites</p>
-                            <div style="
-                            height:299px;
+                        <p>Connected sites and favorites</p>
+                        <div style="
+                            height:272px;
                             overflow-y: scroll;
                             color: white;
-                            max-height:300px;">
-                                <ul id="favorites_list" class="collection with-header">
-    
-                                </ul>
-                            </div>
-                                <label>Enter URL of Remote Site</label>
-                            <div class="col s10">
-                                <div class="input-field">
-                                    <!-- favorite and favorite_border -->
-                                    <!-- <a class="btn-floating pulse"><i class="material-icons">favorite_border</i></a> -->
+                            max-height:272px;">
 
-                                    <i id="favorite_heart" class="material-icons prefix"
-                                        style="cursor: pointer">favorite_border</i>
-                                    <input type="text" id="url" data-name="" autofocus>
-                                </div>
+                            <div class="z-depth-3">
+                                <ul id="favorites_list" class="collection with-header"></ul>
                             </div>
-                            <div class="col s2">
-                                    <a id="current_status_btn" class="btn-floating btn-small waves-effect waves-light blue-grey darken-2 z-depth-3">
-                                        <i class="material-icons">refresh</i></a>
-
-                            </div>
-                        <div class="row">
-                            <div class="col s5">
-                                <!-- Dropdown Trigger -->
-                                <a class='dropdown-trigger btn blue-grey darken-2 z-depth-3' href='#'
-                                    data-target='sites_dropdown'>Connected
-                                    sites</a>
-                                <!-- Dropdown Structure -->
-                                <ul id='sites_dropdown' class='dropdown-content'>
-                                    <!-- <li><a class='clickable'>canopus.evl.uic.edu</a></li> -->
-                                </ul>
-                            </div>
-                            <!-- <div class="col s7">
-                                    <div id="switch_favorites_ui" class="switch">
-                                        <label>
-                                            Carousel
-                                            <input type="checkbox">
-                                            <span class="lever"></span>
-                                            List
-                                        </label>
-                                    </div>
-                                </div> -->
                         </div>
                         <!-- <div id='favorites_carousel' class="carousel" style="zoom:80%;">
                         </div> -->
@@ -133,7 +96,7 @@
                             </div>
                         </div> -->
 
-                        
+
                         <div class="divider"></div>
                         <div class="section">
                             <div class="row">
@@ -151,7 +114,66 @@
                         </div>
 
                     </div>
-                    <div class="divider"></div>
+
+                </div>
+                <div class="divider"></div>
+                <div class="section">
+                    <div class="row">
+
+                        <!-- <label>Enter URL of Remote Site</label> -->
+                        <div class="col s10">
+                            <p>Add site</p>
+                            <label>Enter URL of Remote Site</label>
+                            <div class="input-field">
+                                <!-- favorite and favorite_border -->
+                                <!-- <a class="btn-floating pulse"><i class="material-icons">favorite_border</i></a> -->
+
+                                <i id="favorite_heart" class="material-icons prefix"
+                                    style="cursor: pointer">favorite_border</i>
+                                <input type="text" id="url" data-name="" autofocus>
+                            </div>
+                        </div>
+                        <!-- <label>Check</label> -->
+                        <div class="col s2">
+                            <div class="row">
+                            </div>
+                            <div class="row">
+                            </div>
+                            <div class="row">
+                                <label>Check status</label>
+                            </div>
+                            <div class="row">
+                                <a id="current_status_btn"
+                                    class="btn-floating btn-small waves-effect waves-light blue-grey darken-2 z-depth-3">
+                                    <i class="material-icons">refresh</i></a>
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col s5">
+                                <!-- Dropdown Trigger -->
+                                <a class='dropdown-trigger btn blue-grey darken-2 z-depth-3' href='#'
+                                    data-target='sites_dropdown'>Connected
+                                    sites</a>
+                                <!-- Dropdown Structure -->
+                                <ul id='sites_dropdown' class='dropdown-content'>
+                                    <!-- <li><a class='clickable'>canopus.evl.uic.edu</a></li> -->
+                                </ul>
+                            </div>
+                            <!-- <div class="col s7">
+                                <div id="switch_favorites_ui" class="switch">
+                                    <label>
+                                        Carousel
+                                        <input type="checkbox">
+                                        <span class="lever"></span>
+                                        List
+                                    </label>
+                                </div>
+                            </div> -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
