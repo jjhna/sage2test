@@ -24,17 +24,14 @@ const { join } = require("path");
 
 /************************* DOM element declaration ***************************/
 const favoriteHeart = document.getElementById("favorite_heart");
-// const favoriteCarousel = document.getElementById("favorites_carousel");
 const favoriteList = document.getElementById("favorites_list");
 const idDropdown = document.getElementById('ids_dropdown');
 const idDropName = document.getElementById('id_drop');
-// const siteDropdown = document.getElementById('sites_dropdown');
 const check1 = document.getElementById('check_1');
 const check2 = document.getElementById('check_2');
 const urlInput = document.getElementById('url');
 const okayBtn = document.getElementById('okay_btn');
 const cancelBtn = document.getElementById('cancel_btn');
-// const switchFavoritesUI = document.getElementById('switch_favorites_ui');
 const loadSiteInfoBtn = document.getElementById('current_status_btn');
 const pwdInput = document.getElementById('password');
 
@@ -46,7 +43,6 @@ const offlineColor = "#d5715d";
 const blackColor = "#222222";
 
 const favorites_file_name = 'sage2_favorite_sites.json';
-const FAVORITES_LIST_UI = 2;
 const FAVORITES_CAROUSEL_UI = 1;
 
 const PREDEFINED_LOCAL_PORT = "9090";
@@ -54,7 +50,7 @@ const PREDEFINED_LOCAL_PORT = "9090";
 //JS object containing list of favorites sites
 var favorites = {
 	list: [],
-	UIswitchPosition: FAVORITES_CAROUSEL_UI //TODO delete
+	UIswitchPosition: FAVORITES_CAROUSEL_UI
 	// example of favorites object structure
 	// list: [{
 	//     host: 'orion-win.evl.uic.edu',
@@ -79,13 +75,7 @@ fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallba
 		favorites = JSON.parse(data); //convert json to object
 		console.log(favorites);
 		if (favorites.list.length > 0) {
-			// clearCarousel();
 			populateFavorites(favorites.list);
-			// updateInitCarousel();
-			if (favorites.UIswitchPosition === FAVORITES_LIST_UI) { //TODO delete
-				// switchToListUI();
-				// switchFavoritesUI.firstElementChild.firstElementChild.checked = true;
-			}
 		}
 	}
 });
@@ -210,9 +200,7 @@ function populateFavorites(favorites_list) {
 	if (!favorites_list) {
 		return;
 	}
-	// favorites_list.forEach(addItemToCarousel);
 	favorites_list.forEach(addItemToList);
-	// attachBehaviorDropdownSites();
 }
 
 /**
@@ -271,7 +259,6 @@ function disablePassword() {
  * @return {void}
  */
 function addItemToList(item, index) {
-	// console.log(item);
 	let it = document.createElement("LI");
 	addClass(it, "collection-item grey lighten-2 z-depth-3");
 	let htmlCode = `<div><b><span>${item.name}</span> -</b> <span>${item.host}</span><a href="#!" class="secondary-content">
@@ -281,9 +268,7 @@ function addItemToList(item, index) {
 	it.innerHTML = htmlCode;
 
 	it.addEventListener('click', selectFavoriteSite);
-	// it.style.cursor = "pointer";
 	it.firstElementChild.lastElementChild.addEventListener('click', removeFavoriteSiteList);
-	// favoriteList.appendChild(it);
 	it.style.color = "grey";
 	favoriteList.insertBefore(it, favoriteList.firstChild);
 	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor; //color heart
@@ -311,40 +296,12 @@ function addConnectedSiteToList(item, index) {
 	it.innerHTML = htmlCode;
 
 	it.addEventListener('click', selectFavoriteSite);
-	// it.style.cursor = "pointer";
 	it.firstElementChild.lastElementChild.addEventListener('click', addFavoriteSiteList);
-	// favoriteList.appendChild(it);
 	it.style.color = "grey";
 	favoriteList.insertBefore(it, favoriteList.lastChild.nextSibling);
 	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor;
 	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
-
-/**
- * Adds an item to the carousel of favorites
- *
- * @param  {site object} item a site object
- * @param  {int} index the index in the array of objects
- * @return {void}
- */
-// function addItemToCarousel(item, index) {
-// 	let it = document.createElement("DIV");
-// 	addClass(it, "card small blue-grey darken-2 carousel-item z-depth-3");
-// 	let htmlCode = `<div class="card-content white-text">
-//                                 <span class="card-title">${item.name}</span><p>${item.host}</p>
-//                                 </div>
-//                                 <div class="card-action">
-//                                     <a href="#"><i
-//                                             class="small material-icons prefix" style="color:${offlineColor}">favorite</i></a>
-//                                 </div>`;
-// 	it.innerHTML = htmlCode;
-
-// 	it.firstElementChild.firstElementChild.addEventListener('click', selectFavoriteSite);
-// 	it.firstElementChild.firstElementChild.style.cursor = "pointer";
-// 	it.firstElementChild.nextElementSibling.firstElementChild.addEventListener('click', removeFavoriteSite);
-// 	favoriteCarousel.appendChild(it);
-// 	setOnlineStatus(buildConfigURL(item.host), it.lastChild.firstElementChild.firstElementChild, 1000);
-// }
 
 /**
  * Onclick function for clicking on a favorite site in the favorites carousel or list, select the site,
@@ -357,7 +314,6 @@ function addConnectedSiteToList(item, index) {
  */
 function selectFavoriteSite(event) {
 	var elem = event.target;
-	console.log(elem.tagName);
 	if (elem.tagName === "SPAN") {
 		elem = elem.parentElement.parentElement;
 	}
@@ -380,24 +336,6 @@ function selectFavoriteSite(event) {
 		loadSiteInfo(host);
 	}
 }
-
-/**
- * Onclick function for clicking on the heart on a card in the carousel
- * Remove from favorites JSON, write JSON file, update carousel removing the site,
- * color heart in white if the url in #url is the
- * same as the one just unselected
- *
- * @method removeFromFavorites
- * @param {<a> element}
- */
-// function removeFavoriteSite(event) {
-// 	var url = event.target.parentElement.parentElement.parentElement.firstElementChild.lastElementChild.innerText;
-// 	let URL_in_form = urlInput.value;
-// 	removeFromFavorites(url);
-// 	if (URL_in_form === url) {
-// 		setEmptyHeart();
-// 	}
-// }
 
 /**
  * Onclick function for clicking on the heart on a card in the list
@@ -426,7 +364,6 @@ function removeFavoriteSiteList(event) {
  */
 function addFavoriteSiteList(event) {
 	var itemInside = event.target.parentElement.parentElement;
-	// console.log(itemInside.firstElementChild.firstElementChild.innerText);
 	var URL = itemInside.firstElementChild.nextElementSibling.innerText;
 	let sitename = itemInside.firstElementChild.firstElementChild.innerText; //TODO real sitename
 
@@ -453,10 +390,6 @@ function addToFavorites(favorite_item) {
 		favorites.list.push(favorite_item);
 		writeFavoritesOnFile(favorites);
 		addItemToList(favorite_item);
-		// clearList();
-		// clearCarousel();
-		// populateFavorites(favorites.list);
-		// updateInitCarousel();
 	}
 }
 
@@ -479,28 +412,7 @@ function alreadyInFavorites(host) {
 }
 
 /**
- * Clears the carousel, removing all cards
- *
- * @method clearCarousel
- * @return {void}
- */
-// function clearCarousel() {
-// 	favoriteCarousel.innerHTML = "";
-// }
-
-/**
- * Clears the favorites list, removing all inner elems
- *
- * @method clearList
- * @return {void}
- */
-function clearList() {
-	favoriteList.innerHTML = "";
-}
-
-/**
  * Removes the favorite site from the list in the favorites object, writes back to the JSON, handles UI refreshing
- * TODO popup with UNDO
  *
  * @method removeFromFavorites
  * @param  {String} favorite_url the url of the site
@@ -511,13 +423,6 @@ function removeFromFavorites(favorite_url) {
 		if (favorite_url === favorites.list[i].host) {
 			favorites.list.splice(i, 1);
 			writeFavoritesOnFile(favorites);
-
-
-
-			// clearList();
-			// clearCarousel();
-			// populateFavorites(favorites.list);
-			// updateInitCarousel();
 		}
 		if (favoriteList.children[i].firstChild.firstChild.nextElementSibling.textContent == favorite_url) {
 			favoriteList.removeChild(favoriteList.children[i]);
@@ -533,16 +438,6 @@ function removeFromFavorites(favorite_url) {
  */
 function writeFavoritesOnFile(favorites_obj) {
 	fs.writeFile(getAppDataPath(favorites_file_name), JSON.stringify(favorites_obj), 'utf8', () => { });
-}
-
-/**
- * TODO remove
- * logging function
- * @param  {any} item
- * @return {void}
- */
-function l(item) {
-	console.log(item);
 }
 
 /**
@@ -589,7 +484,7 @@ function sitesOnClick(e) {
  * @method attachBehaviorDropdownSites
  * @return {void}
  */
-function attachBehaviorDropdownSites() { //TODO change what happens when one is clicked
+function attachBehaviorDropdownSites() {
 	const dropd = document.querySelectorAll('.clickable');
 
 	dropd.forEach(function (item) {
@@ -635,7 +530,6 @@ function populateUI(config_json) {
 	removePreviousDropdownItem("ids_dropdown"); //clean IDs of previous selection
 	addConnectedSitesToList(config_json.remote_sites);
 	populateDropdownIds(config_json.displays);
-
 
 	urlInput.setAttribute("data-name", config_json.name);
 
@@ -690,22 +584,8 @@ function populateDropdownIds(display_ids) {
 	attachBehaviorDropdownIds();
 }
 
-// /**
-//  * Populates the Sites dropdown and initializes the items with an onlclick behavior
-//  *
-//  * @method populateDropdownSites
-//  * @param remote_sites the remote_sites object from the JSON config
-//  */
-// function populateDropdownSites(remote_sites) {
-// 	if (!remote_sites) {
-// 		return;
-// 	}
-// 	remote_sites.forEach(createDropItemSites);
-// 	attachBehaviorDropdownSites();
-// }
-
 /**
- * TODO
+ * Adds the connected sites to the current one to the list
  *
  * @method addConnectedSitesToList
  * @param remote_sites the remote_sites object from the JSON config
@@ -714,24 +594,9 @@ function addConnectedSitesToList(remote_sites) {
 	if (!remote_sites) {
 		return;
 	}
-	// console.log(remote_sites);
 	remote_sites.forEach(addConnectedSiteToList);
 	attachBehaviorDropdownSites();
 }
-
-// /**
-//  * Creates a dropdown item for the sites dropdown and appends it
-//  *
-//  * @param  {Object} item site object
-//  * @param  {int} index the index of the site
-//  * @return {void}
-//  */
-// function createDropItemSites(item, index) {
-// 	let it = document.createElement("LI");
-// 	let htmlCode = `<a class='clickable' data-host= "${item.host}" >${item.name}</a>`;
-// 	it.innerHTML = htmlCode;
-// 	siteDropdown.appendChild(it);
-// }
 
 /**
  * Creates a dropdown item for the IDs dropdown and appends it
@@ -819,11 +684,10 @@ function connectToPage(URL) {
  */
 function onCurrentSiteDown() {
 	resetPasswordStatus();
-	// removePreviousDropdownItem("sites_dropdown");
 	removePreviousDropdownItem("ids_dropdown");
 	setLoadInfoButtonOffline();
 	disableConnection();
-	l('Site server down, timeout reached, refresh to try again');
+	// console.log('Site server down, timeout reached, refresh to try again');
 }
 
 
@@ -862,11 +726,6 @@ function fetchWithTimeout(url, delay, onTimeout) {
 		}
 	});
 }
-
-// function disableSiteItem(elem) {
-// 	removeClass(elem, "blue-grey darken-2");
-// 	addClass(elem, "grey lighten-2");
-// }
 
 function enableSiteItem(elem) {
 	elem.style.cursor = "pointer";
@@ -910,10 +769,8 @@ function setOnlineStatus(url, elem, itemElem, delay) {
 		timer
 	]).then((response) => {
 		if (response.timeout) {
-			// elem.style.color = offlineColor; //color heart red
 			return;
 		} else {
-			// elem.style.color = onlineColor; //color heart green
 			enableSiteItem(itemElem);
 		}
 	});
@@ -925,7 +782,6 @@ function setOnlineStatus(url, elem, itemElem, delay) {
  */
 function resetSiteInfo() {
 	addClass(loadSiteInfoBtn, buttonColorClass);
-	// loadSiteInfoBtnText.textContent = "Load Site Info";
 }
 
 /**
@@ -969,7 +825,6 @@ function disableConnection() {
  */
 function setLoadInfoButtonOffline() {
 	removeClass(loadSiteInfoBtn, buttonColorClass);
-	// loadSiteInfoBtnText.textContent = "Site Offline";
 	loadSiteInfoBtn.style.background = offlineColor;
 }
 
@@ -1001,51 +856,7 @@ function loadSiteInfo(host) {
 		});
 }
 
-/**
- * Initializes the JS for the carousel
- *
- * @method updateInitCarousel
- * @return {void}
- */
-// function updateInitCarousel() {
-// 	var elems = document.querySelectorAll('.carousel');
-// 	let options = {
-// 		duration: 100,
-// 		dist: -100,
-// 		indicators: true
-// 	};
-// 	if (typeof elems !== 'undefined') {
-// 		M.Carousel.init(elems, options);
-// 	}
-// }
-
-/**
- * Swtiches the favorites UI to a vertical scrollable list
- *
- * @return {void}
- */
-// function switchToListUI() {
-// 	favoriteCarousel.hidden = true;
-// 	favoriteList.parentElement.hidden = false;
-// 	favorites.UIswitchPosition = FAVORITES_LIST_UI;
-// 	writeFavoritesOnFile(favorites);
-// }
-
-/**
- * Swtiches the favorites UI to the carousel
- *
- * @return {void}
- */
-// function switchToCarouselUI() {
-// 	favoriteList.parentElement.hidden = true;
-// 	// favoriteCarousel.hidden = false;
-// 	favorites.UIswitchPosition = FAVORITES_CAROUSEL_UI;
-// 	writeFavoritesOnFile(favorites);
-// 	// updateInitCarousel();
-// }
-
 /**************************** Functions finished *****************************/
-// favoriteList.parentElement.hidden = true;
 
 // Catches the message sent from the main electron window that is providing the current location
 ipcRenderer.on('current-location', (e, host) => {
@@ -1057,17 +868,6 @@ ipcRenderer.on('current-location', (e, host) => {
 
 // Initialize dropdown and carousel with sites
 document.addEventListener('DOMContentLoaded', function () {
-	var elems = document.querySelectorAll('.dropdown-trigger');
-	let options = {
-		edge: 'left',
-		hover: true
-		// noWrap: true
-	};
-	M.Dropdown.init(elems, options);
-
-	//carousel init
-	// updateInitCarousel();
-
 	attachBehaviorDropdownSites();
 });
 
@@ -1093,16 +893,6 @@ check2.addEventListener('click', (e) => {
 	}
 });
 
-// Adds behavior to the favorites UI switch
-// switchFavoritesUI.addEventListener('click', (e) => {
-// 	var checked = e.target.checked;
-// 	if (checked) {
-// 		switchToListUI();
-// 	} else {
-// 		switchToCarouselUI();
-// 	}
-// });
-
 okayBtn.addEventListener('click', okayOnClick);
 cancelBtn.addEventListener('click', cancelOnClick);
 loadSiteInfoBtn.addEventListener('click', loadCurrentSiteInfo);
@@ -1115,7 +905,7 @@ urlInput.addEventListener("input", (e) => {
 	resetPasswordStatus();
 	if (alreadyInFavorites(host)) {
 		setFullHeart();
-		loadSiteInfo(host); //TODO
+		loadSiteInfo(host);
 	} else {
 		setEmptyHeart();
 		resetSiteInfo();
