@@ -28,7 +28,7 @@ const favoriteHeart = document.getElementById("favorite_heart");
 const favoriteList = document.getElementById("favorites_list");
 const idDropdown = document.getElementById('ids_dropdown');
 const idDropName = document.getElementById('id_drop');
-const siteDropdown = document.getElementById('sites_dropdown');
+// const siteDropdown = document.getElementById('sites_dropdown');
 const check1 = document.getElementById('check_1');
 const check2 = document.getElementById('check_2');
 const urlInput = document.getElementById('url');
@@ -271,9 +271,10 @@ function disablePassword() {
  * @return {void}
  */
 function addItemToList(item, index) {
+	// console.log(item);
 	let it = document.createElement("LI");
 	addClass(it, "collection-item grey lighten-2 z-depth-3");
-	let htmlCode = `<div><b><span>${item.name} -</span></b> <span>${item.host}</span><a href="#!" class="secondary-content">
+	let htmlCode = `<div><b><span>${item.name}</span> -</b> <span>${item.host}</span><a href="#!" class="secondary-content">
                         <i class="material-icons style="color:${blackColor};">favorite</i>
                             </a>
                     </div>`;
@@ -285,6 +286,37 @@ function addItemToList(item, index) {
 	// favoriteList.appendChild(it);
 	it.style.color = "grey";
 	favoriteList.insertBefore(it, favoriteList.firstChild);
+	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor; //color heart
+	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
+}
+
+/**
+ * Adds an item to the UI list of favorites
+ *
+ * @param  {site object} item a site object
+ * @param  {int} index the index in the array of objects
+ * @return {void}
+ */
+function addConnectedSiteToList(item, index) {
+	//add only if not present in favorites already
+	if (alreadyInFavorites(item.host)) {
+		return;
+	}
+	let it = document.createElement("LI");
+	addClass(it, "collection-item grey lighten-2 z-depth-3");
+	let htmlCode = `<div><b><span>${item.name}</span> -</b> <span>${item.host}</span><a href="#!" class="secondary-content">
+                        <i class="material-icons style="color:${blackColor};">favorite_border</i>
+                            </a>
+                    </div>`;
+	it.innerHTML = htmlCode;
+
+	it.addEventListener('click', selectFavoriteSite);
+	// it.style.cursor = "pointer";
+	it.firstElementChild.lastElementChild.addEventListener('click', addFavoriteSiteList);
+	// favoriteList.appendChild(it);
+	it.style.color = "grey";
+	favoriteList.insertBefore(it, favoriteList.lastChild.nextSibling);
+	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor;
 	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
 
@@ -337,8 +369,13 @@ function selectFavoriteSite(event) {
 		let name = elem.firstElementChild.firstElementChild.innerText;
 		urlInput.value = host;
 		urlInput.setAttribute("data-name", name); // store site name in data-name attr of url
-		// color heart in black
-		setFullHeart();
+		// color heart
+		if (alreadyInFavorites(host)) {
+			setFullHeart();
+		} else {
+			setEmptyHeart();
+		}
+
 		// fetch config file and update list
 		loadSiteInfo(host);
 	}
@@ -380,6 +417,30 @@ function removeFavoriteSiteList(event) {
 	}
 }
 
+/**
+ * Onclick function for clicking on the empty heart on a list item (connected site)
+ * Add to favorites JSON, write JSON file, update list removing the site,
+ *
+ * @method removeFromFavorites
+ * @param {<a> element}
+ */
+function addFavoriteSiteList(event) {
+	var itemInside = event.target.parentElement.parentElement;
+	// console.log(itemInside.firstElementChild.firstElementChild.innerText);
+	var URL = itemInside.firstElementChild.nextElementSibling.innerText;
+	let sitename = itemInside.firstElementChild.firstElementChild.innerText; //TODO real sitename
+
+	addToFavorites({
+		name: sitename || 'Unknown name',
+		host: URL
+	});
+
+	//remove from connected sites list since it is pinned in favorites
+	var parent = itemInside.parentElement.parentNode;
+	var item = itemInside.parentElement;
+	parent.removeChild(item);
+}
+
 
 /**
  * Adds a new favorite site to the favorite json if it is not already in the list and writes back to file
@@ -391,9 +452,10 @@ function addToFavorites(favorite_item) {
 	if (!alreadyInFavorites(favorite_item.host)) {
 		favorites.list.push(favorite_item);
 		writeFavoritesOnFile(favorites);
-		clearList();
+		addItemToList(favorite_item);
+		// clearList();
 		// clearCarousel();
-		populateFavorites(favorites.list);
+		// populateFavorites(favorites.list);
 		// updateInitCarousel();
 	}
 }
@@ -449,10 +511,16 @@ function removeFromFavorites(favorite_url) {
 		if (favorite_url === favorites.list[i].host) {
 			favorites.list.splice(i, 1);
 			writeFavoritesOnFile(favorites);
-			clearList();
+
+
+
+			// clearList();
 			// clearCarousel();
-			populateFavorites(favorites.list);
+			// populateFavorites(favorites.list);
 			// updateInitCarousel();
+		}
+		if (favoriteList.children[i].firstChild.firstChild.nextElementSibling.textContent == favorite_url) {
+			favoriteList.removeChild(favoriteList.children[i]);
 		}
 	}
 }
@@ -506,7 +574,7 @@ function sitesOnClick(e) {
 	urlInput.value = e.target.getAttribute('data-host');
 	urlInput.setAttribute("data-name", e.target.innerText);
 	//check if in favorites, if it is color heart in black, if not color it in white
-	if (alreadyInFavorites(e.target.getAttribute('data-host'))) {
+	if (alreadyInFavorites(e.target.getAttribute('data-host'))) { //TODONOW
 		setFullHeart();
 	} else {
 		setEmptyHeart();
@@ -521,7 +589,7 @@ function sitesOnClick(e) {
  * @method attachBehaviorDropdownSites
  * @return {void}
  */
-function attachBehaviorDropdownSites() {
+function attachBehaviorDropdownSites() { //TODO change what happens when one is clicked
 	const dropd = document.querySelectorAll('.clickable');
 
 	dropd.forEach(function (item) {
@@ -564,11 +632,10 @@ function removePreviousDropdownItem(ul_id) {
  * @return {void}
  */
 function populateUI(config_json) {
-	removePreviousDropdownItem("sites_dropdown");
-	removePreviousDropdownItem("ids_dropdown");
-
-	populateDropdownSites(config_json.remote_sites);
+	removePreviousDropdownItem("ids_dropdown"); //clean IDs of previous selection
+	addConnectedSitesToList(config_json.remote_sites);
 	populateDropdownIds(config_json.displays);
+
 
 	urlInput.setAttribute("data-name", config_json.name);
 
@@ -623,33 +690,48 @@ function populateDropdownIds(display_ids) {
 	attachBehaviorDropdownIds();
 }
 
+// /**
+//  * Populates the Sites dropdown and initializes the items with an onlclick behavior
+//  *
+//  * @method populateDropdownSites
+//  * @param remote_sites the remote_sites object from the JSON config
+//  */
+// function populateDropdownSites(remote_sites) {
+// 	if (!remote_sites) {
+// 		return;
+// 	}
+// 	remote_sites.forEach(createDropItemSites);
+// 	attachBehaviorDropdownSites();
+// }
+
 /**
- * Populates the Sites dropdown and initializes the items with an onlclick behavior
+ * TODO
  *
- * @method populateDropdownSites
+ * @method addConnectedSitesToList
  * @param remote_sites the remote_sites object from the JSON config
  */
-function populateDropdownSites(remote_sites) {
+function addConnectedSitesToList(remote_sites) {
 	if (!remote_sites) {
 		return;
 	}
-	remote_sites.forEach(createDropItemSites);
+	// console.log(remote_sites);
+	remote_sites.forEach(addConnectedSiteToList);
 	attachBehaviorDropdownSites();
 }
 
-/**
- * Creates a dropdown item for the sites dropdown and appends it
- *
- * @param  {Object} item site object
- * @param  {int} index the index of the site
- * @return {void}
- */
-function createDropItemSites(item, index) {
-	let it = document.createElement("LI");
-	let htmlCode = `<a class='clickable' data-host= "${item.host}" >${item.name}</a>`;
-	it.innerHTML = htmlCode;
-	siteDropdown.appendChild(it);
-}
+// /**
+//  * Creates a dropdown item for the sites dropdown and appends it
+//  *
+//  * @param  {Object} item site object
+//  * @param  {int} index the index of the site
+//  * @return {void}
+//  */
+// function createDropItemSites(item, index) {
+// 	let it = document.createElement("LI");
+// 	let htmlCode = `<a class='clickable' data-host= "${item.host}" >${item.name}</a>`;
+// 	it.innerHTML = htmlCode;
+// 	siteDropdown.appendChild(it);
+// }
 
 /**
  * Creates a dropdown item for the IDs dropdown and appends it
@@ -737,7 +819,7 @@ function connectToPage(URL) {
  */
 function onCurrentSiteDown() {
 	resetPasswordStatus();
-	removePreviousDropdownItem("sites_dropdown");
+	// removePreviousDropdownItem("sites_dropdown");
 	removePreviousDropdownItem("ids_dropdown");
 	setLoadInfoButtonOffline();
 	disableConnection();
@@ -817,7 +899,6 @@ function enableSiteItem(elem) {
  */
 function setOnlineStatus(url, elem, itemElem, delay) {
 	// Setting offline as default
-	elem.style.color = blackColor;  //color heart red
 	const timer = new Promise((resolve) => {
 		setTimeout(resolve, delay, {
 			timeout: true
@@ -906,6 +987,12 @@ function loadCurrentSiteInfo() {
  * @return {void}
  */
 function loadSiteInfo(host) {
+	// color heart
+	if (alreadyInFavorites(host)) {
+		setFullHeart();
+	} else {
+		setEmptyHeart();
+	}
 	fetchWithTimeout(buildConfigURL(host), 1000, () => {
 		onCurrentSiteDown();
 	})
@@ -1028,7 +1115,7 @@ urlInput.addEventListener("input", (e) => {
 	resetPasswordStatus();
 	if (alreadyInFavorites(host)) {
 		setFullHeart();
-		loadSiteInfo(host);
+		loadSiteInfo(host); //TODO
 	} else {
 		setEmptyHeart();
 		resetSiteInfo();

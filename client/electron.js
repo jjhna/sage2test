@@ -719,7 +719,7 @@ function createRemoteSiteInputWindow() {
 	// creating a new window
 	remoteSiteInputWindow = new BrowserWindow({
 		width: 1000,
-		height: 600,
+		height: 700,
 		frame: false,
 		title: 'Connect to Remote Site',
 		webPreferences: {
