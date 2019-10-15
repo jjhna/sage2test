@@ -26,6 +26,8 @@ Current differences between this file and sage2/sabi.js/assistedConfig.html file
 	Fairly extensive changes to the way websockets connect
 		In effect, all socket.io usage has been swapped to websocket
 
+	Removal of the check for both a password and hash
+
 -->
 
 
@@ -124,7 +126,7 @@ Current differences between this file and sage2/sabi.js/assistedConfig.html file
 	</style>
 
 
-	<script src = "src/websocket.io.js"></script>
+	<script src = "../src/websocket.io.js"></script>
 	
 </head>
 
@@ -711,9 +713,9 @@ Current differences between this file and sage2/sabi.js/assistedConfig.html file
 				&& ((tempSite.name == undefined) || (tempSite.host == undefined) || (tempSite.port == undefined))) {
 				alert("Error with remote site " + tempSite.name + " " + tempSite.host + " " + tempSite.port);
 				return;
-			} else if (hasValues && (tempSite.password !== undefined) && (tempSite.session !== undefined)) {
-				alert("Error with remote site " + tempSite.name + " " + tempSite.host + ". Both a password and hash were given. Only one of the two should be used.");
-				return;
+			// } else if (hasValues && (tempSite.password !== undefined) && (tempSite.session !== undefined)) {
+			// 	alert("Error with remote site " + tempSite.name + " " + tempSite.host + ". Both a password and hash were given. Only one of the two should be used.");
+			// 	return;
 			} else if (hasValues) {
 				tempSite.secure = true;
 				tempList.push(tempSite); // only push if a site is filled and correct
@@ -744,6 +746,9 @@ Current differences between this file and sage2/sabi.js/assistedConfig.html file
 		// socket.emit("assistedConfigSend", serverGivenCfgCopy);
 		console.log("going to send", serverGivenCfgCopy);
 		wsio.emit('assistedConfigSend', serverGivenCfgCopy);
+		setTimeout(() => {
+			window.location = "/"; // Let the server redirect to landing page.
+		}, 0); // next frame
 	}
 
 	/*

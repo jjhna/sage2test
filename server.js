@@ -1297,6 +1297,7 @@ function setupListeners(wsio) {
 	// Support for the assistedConfig.html
 	wsio.on('requestCurrentConfigurationFile',      wsRequestCurrentConfigurationFile);
 	wsio.on('assistedConfigSend',                   wsAssistedConfigSend);
+	wsio.on('stopTheServer',                        wsStopTheServer);
 }
 
 /**
@@ -11753,5 +11754,18 @@ function wsRequestCurrentConfigurationFile(wsio, data) {
 function wsAssistedConfigSend(wsio, data) {
 	ConfigEditing.handlerForAssistedConfigSend(wsio, data, config);
 }
+
+/**
+ * Rebinding for server stop, mainly for easier debugging.
+ *
+ * @method wsStopTheServer
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - not used.
+ */
+function wsStopTheServer(wsio, data) {
+	ConfigEditing.serverStopper();
+}
+
+
 
 

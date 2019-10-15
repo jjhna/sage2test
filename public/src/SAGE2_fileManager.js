@@ -622,7 +622,14 @@ function FileManager(wsio, mydiv, uniqueID) {
 				window.open("admin/performanceHistory.html", '_blank');
 			}
 		},
-		separator2: { value: "separator" }
+		separator2: { value: "separator" },
+		configurationEditor_menu: {value: "Configuration Editor",
+			tooltip: "Opens a new page to edit the wall configuration settings",
+			callback: function (evt) {
+				window.open("admin/assistedConfig.html", '_blank');
+			}
+		},
+		separator3: { value: "separator" }
 	};
 
 	// Advanced setting, right-aligned in the top menubar
