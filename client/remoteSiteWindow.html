@@ -24,7 +24,8 @@
                 <h4>Connect to remote site</h4>
                 <div class="row">
                     <div class="col s8">
-                        <p>Connected sites and favorites</p>
+                        <!-- <p>Connected sites and favorites</p> -->
+                        <br>
                         <div style="
                             height:272px;
                             overflow-y: scroll;
@@ -47,9 +48,9 @@
                             </ul>
                         </div> -->
                     </div>
-                    <div class="col s4"><label>Options</label>
-
-                        <br><br>
+                    <div class="col s4">
+                        <!-- <label>Options</label> -->
+                        <br>
                         <p>
                             <label>
                                 <input class='checkb' id='check_2' type="checkbox" checked='true' />
@@ -80,7 +81,7 @@
                         <div class="row">
                             <div class="input-field col s12">
                                 <input disabled id="password" type="password" class="validate">
-                                <label id="pwd-control" for="password">Password</label>
+                                <label for="password">Password</label>
                             </div>
                         </div>
                         <!-- <div class="row">
@@ -97,21 +98,18 @@
                         </div> -->
 
 
-                        <div class="divider"></div>
-                        <div class="section">
+                        <!-- <div class="divider"></div> -->
                             <div class="row">
                                 <div class="col s6"><a id="cancel_btn"
                                         class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>Cancel</a>
                                 </div>
                                 <div class="col s6">
-                                    <!-- disabled 
-                                TODO added pulse class for 2 second on enable-->
+                                    <!-- disabled TODO added pulse class for 2 second on enable-->
                                     <a id="okay_btn"
                                         class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3 disabled'>
                                         <!-- <i class="material-icons left">screen_share</i> -->
                                         Connect</a></div>
                             </div>
-                        </div>
 
                     </div>
 
@@ -119,34 +117,38 @@
                 <div class="divider"></div>
                 <div class="section">
                     <div class="row">
-
+                            <h6>Add site</h6>
+                            <br>
                         <!-- <label>Enter URL of Remote Site</label> -->
-                        <div class="col s10">
-                            <p>Add site</p>
-                            <label>Enter URL of Remote Site</label>
+                        <div class="col s8">
+                            
                             <div class="input-field">
-                                <!-- favorite and favorite_border -->
-                                <!-- <a class="btn-floating pulse"><i class="material-icons">favorite_border</i></a> -->
-
-                                <i id="favorite_heart" class="material-icons prefix"
-                                    style="cursor: pointer">favorite_border</i>
-                                <input type="text" id="url" data-name="" autofocus>
+                                <input type="text" id="url">  
+                                <label for="url">Enter URL of Remote Site</label>
                             </div>
                         </div>
                         <!-- <label>Check</label> -->
-                        <div class="col s2">
-                            <div class="row">
-                            </div>
-                            <div class="row">
-                            </div>
-                            <div class="row">
+                        <div class="col s4">
+                            <br>
+                            <!-- <div class="row">
                                 <label>Check status</label>
-                            </div>
+                            </div> -->
                             <div class="row">
+                                    <div class="col s6"><a id="current_status_btn"
+                                            class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>Check status</a>
+                                    </div>
+                                    <div class="col s6">
+                                        <!-- disabled TODO added pulse class for 2 second on enable-->
+                                        <a id="add_btn"
+                                            class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3 '>
+                                            <!-- <i class="material-icons left">screen_share</i> -->
+                                            Add site</a></div>
+                                </div>
+                            <!-- <div class="row">
                                 <a id="current_status_btn"
                                     class="btn-floating btn-small waves-effect waves-light blue-grey darken-2 z-depth-3">
                                     <i class="material-icons">refresh</i></a>
-                            </div>
+                            </div> -->
 
                         </div>
 

@@ -23,7 +23,7 @@ const { platform, homedir } = require("os");
 const { join } = require("path");
 
 /************************* DOM element declaration ***************************/
-const favoriteHeart = document.getElementById("favorite_heart");
+// const favoriteHeart = document.getElementById("favorite_heart");
 const favoriteList = document.getElementById("favorites_list");
 const idDropdown = document.getElementById('ids_dropdown');
 const idDropName = document.getElementById('id_drop');
@@ -65,6 +65,9 @@ var favorites = {
 // Variables for the current site
 let passwordRequired = false;
 let isHashSaved = false;
+let currentlySelectedItemElem;
+// let currentlySelectedHost;
+// let currentlySelectedName;
 
 // Reading the favorites json file
 fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
@@ -155,41 +158,41 @@ function getAppDataPath(file_name) {
 /**
  * add on click listener to heart (add/remove from favorites)
  */
-favoriteHeart.addEventListener('click', (e) => {
-	let checked = e.target.innerHTML == 'favorite_border' ? false : true;
-	let URL = urlInput.value;
-	let sitename = urlInput.getAttribute('data-name');
-	if (URL) {
-		if (!checked) { //item added to favorites
-			setFullHeart();
-			addToFavorites({
-				name: sitename || 'Unknown name',
-				host: URL
-			});
-		} else { //item removed from favorites
-			setEmptyHeart();
-			removeFromFavorites(URL);
-		}
-	}
-});
+// favoriteHeart.addEventListener('click', (e) => {
+// 	let checked = e.target.innerHTML == 'favorite_border' ? false : true;
+// 	let URL = urlInput.value;
+// 	let sitename = urlInput.getAttribute('data-name');
+// 	if (URL) {
+// 		if (!checked) { //item added to favorites
+// 			setFullHeart();
+// 			addToFavorites({
+// 				name: sitename || 'Unknown name',
+// 				host: URL
+// 			});
+// 		} else { //item removed from favorites
+// 			setEmptyHeart();
+// 			removeFromFavorites(URL);
+// 		}
+// 	}
+// });
 
-/**
-* Sets the heart icon to full
-*
-* @method setFullHeart
-*/
-function setFullHeart() {
-	favoriteHeart.innerHTML = 'favorite';
-}
+// /**
+// * Sets the heart icon to full
+// *
+// * @method setFullHeart
+// */
+// function setFullHeart() {
+// 	favoriteHeart.innerHTML = 'favorite';
+// }
 
-/**
- * Sets the heart icon to empty
- *
- * @method setEmptyHeart
- */
-function setEmptyHeart() {
-	favoriteHeart.innerHTML = 'favorite_border';
-}
+// /**
+//  * Sets the heart icon to empty
+//  *
+//  * @method setEmptyHeart
+//  */
+// function setEmptyHeart() {
+// 	favoriteHeart.innerHTML = 'favorite_border';
+// }
 
 /**
  * Populates the carousel and list with the given array of sites objects
@@ -267,7 +270,7 @@ function addItemToList(item, index) {
                     </div>`;
 	it.innerHTML = htmlCode;
 
-	it.addEventListener('click', selectFavoriteSite);
+	// it.addEventListener('click', selectFavoriteSite);
 	it.firstElementChild.lastElementChild.addEventListener('click', removeFavoriteSiteList);
 	it.style.color = "grey";
 	favoriteList.insertBefore(it, favoriteList.firstChild);
@@ -295,7 +298,7 @@ function addConnectedSiteToList(item, index) {
                     </div>`;
 	it.innerHTML = htmlCode;
 
-	it.addEventListener('click', selectFavoriteSite);
+	// it.addEventListener('click', selectFavoriteSite);
 	it.firstElementChild.lastElementChild.addEventListener('click', addFavoriteSiteList);
 	it.style.color = "grey";
 	favoriteList.insertBefore(it, favoriteList.lastChild.nextSibling);
@@ -322,18 +325,25 @@ function selectFavoriteSite(event) {
 	}
 	if (elem.tagName === "LI") {
 		let host = elem.firstElementChild.firstElementChild.nextElementSibling.innerText;
-		let name = elem.firstElementChild.firstElementChild.innerText;
-		urlInput.value = host;
-		urlInput.setAttribute("data-name", name); // store site name in data-name attr of url
+		// let name = elem.firstElementChild.firstElementChild.innerText;
+		// urlInput.value = host; //TODO delete these two lines but store current in a variable
+		// urlInput.setAttribute("data-name", name); // store site name in data-name attr of url
 		// color heart
-		if (alreadyInFavorites(host)) {
-			setFullHeart();
-		} else {
-			setEmptyHeart();
+		// if (alreadyInFavorites(host)) {
+		// 	setFullHeart();
+		// } else {
+		// 	setEmptyHeart();
+		// }
+		if (currentlySelectedItemElem) {
+			setOnlineColorItem(currentlySelectedItemElem);
 		}
+		currentlySelectedItemElem = elem;
+		// currentlySelectedHost = host;
+		// currentlySelectedName = name;
+		setSelectedColorItem(elem);
 
-		// fetch config file and update list
-		loadSiteInfo(host);
+		// fetch config file and update UI
+		loadSiteInfo(host, false);
 	}
 }
 
@@ -347,35 +357,53 @@ function selectFavoriteSite(event) {
  * @param {<a> element}
  */
 function removeFavoriteSiteList(event) {
-	var url = event.target.parentElement.parentElement.firstElementChild.nextElementSibling.innerText;
-	let URL_in_form = urlInput.value;
-	removeFromFavorites(url);
-	if (URL_in_form === url) {
-		setEmptyHeart();
+	console.log("remove");
+	if (event.target.innerHTML == 'favorite_border') {
+		// console.log("calling add favorite");
+		addFavoriteSiteList(event);
+		return;
 	}
+	var url = event.target.parentElement.parentElement.firstElementChild.nextElementSibling.innerText;
+	console.log(event.target.innerHTML);
+	event.target.innerHTML = 'favorite_border';
+	// event.target.removeEventListener('click', removeFavoriteSiteList);
+	// event.target.addEventListener('click', addFavoriteSiteList);
+	// let URL_in_form = urlInput.value;
+	removeFromFavorites(url);
+	// if (URL_in_form === url) {
+	// 	setEmptyHeart();
+	// }
 }
 
 /**
  * Onclick function for clicking on the empty heart on a list item (connected site)
  * Add to favorites JSON, write JSON file, update list removing the site,
  *
- * @method removeFromFavorites
+ * @method addFromFavorites
  * @param {<a> element}
  */
 function addFavoriteSiteList(event) {
+	console.log("add");
+	if (event.target.innerHTML == 'favorite') {
+		removeFavoriteSiteList(event);
+		return;
+	}
 	var itemInside = event.target.parentElement.parentElement;
 	var URL = itemInside.firstElementChild.nextElementSibling.innerText;
-	let sitename = itemInside.firstElementChild.firstElementChild.innerText; //TODO real sitename
+	let sitename = itemInside.firstElementChild.firstElementChild.innerText;
 
 	addToFavorites({
-		name: sitename || 'Unknown name',
+		name: sitename || 'Unknown name', //TODO whenever site is online fetch name
 		host: URL
 	});
-
+	// TODO set full heart
+	event.target.innerHTML = 'favorite';
+	// event.target.removeEventListener('click', addFavoriteSiteList);
+	// event.target.addEventListener('click', removeFavoriteSiteList);
 	//remove from connected sites list since it is pinned in favorites
-	var parent = itemInside.parentElement.parentNode;
-	var item = itemInside.parentElement;
-	parent.removeChild(item);
+	// var parent = itemInside.parentElement.parentNode;
+	// var item = itemInside.parentElement;
+	// parent.removeChild(item);
 }
 
 
@@ -389,7 +417,7 @@ function addToFavorites(favorite_item) {
 	if (!alreadyInFavorites(favorite_item.host)) {
 		favorites.list.push(favorite_item);
 		writeFavoritesOnFile(favorites);
-		addItemToList(favorite_item);
+		// addItemToList(favorite_item);
 	}
 }
 
@@ -424,9 +452,9 @@ function removeFromFavorites(favorite_url) {
 			favorites.list.splice(i, 1);
 			writeFavoritesOnFile(favorites);
 		}
-		if (favoriteList.children[i].firstChild.firstChild.nextElementSibling.textContent == favorite_url) {
-			favoriteList.removeChild(favoriteList.children[i]);
-		}
+		// if (favoriteList.children[i].firstChild.firstChild.nextElementSibling.textContent == favorite_url) {
+		// 	favoriteList.removeChild(favoriteList.children[i]);
+		// }
 	}
 }
 
@@ -455,42 +483,42 @@ function buildConfigURL(domain) {
 }
 
 
-/**
- * Onclick function for a site in the sites dropdown: puts the host in the
- * URL input, stores in the data-name attribute of the URL input the name of
- * the site, updates the heart according to if the site is in the favorites
- * list, fetches the new config file and repopulates the dropdowns
- *
- * @param  {Object} e the click event
- * @return {void}
- */
-function sitesOnClick(e) {
-	// set text of url field
-	urlInput.value = e.target.getAttribute('data-host');
-	urlInput.setAttribute("data-name", e.target.innerText);
-	//check if in favorites, if it is color heart in black, if not color it in white
-	if (alreadyInFavorites(e.target.getAttribute('data-host'))) { //TODONOW
-		setFullHeart();
-	} else {
-		setEmptyHeart();
-	}
-	// fetch config file and update list
-	loadSiteInfo(e.target.getAttribute('data-host'));
-}
+// /**
+//  * Onclick function for a site in the sites dropdown: puts the host in the
+//  * URL input, stores in the data-name attribute of the URL input the name of
+//  * the site, updates the heart according to if the site is in the favorites
+//  * list, fetches the new config file and repopulates the dropdowns
+//  *
+//  * @param  {Object} e the click event
+//  * @return {void}
+//  */
+// function sitesOnClick(e) {
+// 	// set text of url field
+// 	urlInput.value = e.target.getAttribute('data-host');
+// 	urlInput.setAttribute("data-name", e.target.innerText);
+// 	//check if in favorites, if it is color heart in black, if not color it in white
+// 	// if (alreadyInFavorites(e.target.getAttribute('data-host'))) { //TODONOW
+// 	// 	setFullHeart();
+// 	// } else {
+// 	// 	setEmptyHeart();
+// 	// }
+// 	// fetch config file and update list
+// 	loadSiteInfo(e.target.getAttribute('data-host'));
+// }
 
-/**
- * Adds an event listener to all sites in dropdown
- *
- * @method attachBehaviorDropdownSites
- * @return {void}
- */
-function attachBehaviorDropdownSites() {
-	const dropd = document.querySelectorAll('.clickable');
+// /**
+//  * Adds an event listener to all sites in dropdown
+//  *
+//  * @method attachBehaviorDropdownSites
+//  * @return {void}
+//  */
+// function attachBehaviorDropdownSites() {
+// 	const dropd = document.querySelectorAll('.clickable');
 
-	dropd.forEach(function (item) {
-		item.addEventListener('click', sitesOnClick);
-	});
-}
+// 	// dropd.forEach(function (item) {
+// 	// 	item.addEventListener('click', sitesOnClick);
+// 	// });
+// }
 
 /**
  * Adds an event listener to all IDs in dropdown
@@ -526,9 +554,11 @@ function removePreviousDropdownItem(ul_id) {
  * @param  {JSON} config_json the json config file from a site
  * @return {void}
  */
-function populateUI(config_json) {
+function populateUI(config_json, attachConnectedSites) {
 	removePreviousDropdownItem("ids_dropdown"); //clean IDs of previous selection
-	addConnectedSitesToList(config_json.remote_sites);
+	if (attachConnectedSites) {
+		addConnectedSitesToList(config_json.remote_sites);
+	}
 	populateDropdownIds(config_json.displays);
 
 	urlInput.setAttribute("data-name", config_json.name);
@@ -595,7 +625,7 @@ function addConnectedSitesToList(remote_sites) {
 		return;
 	}
 	remote_sites.forEach(addConnectedSiteToList);
-	attachBehaviorDropdownSites();
+	// attachBehaviorDropdownSites();
 }
 
 /**
@@ -701,7 +731,7 @@ function onCurrentSiteDown() {
  * @param {int} delay the timeout time in ms
  * @param {function} onTimeout the function to be executed in case of timeout
  */
-function fetchWithTimeout(url, delay, onTimeout) {
+function fetchWithTimeout(url, delay, attachConnectedSites, onTimeout) {
 	const timer = new Promise((resolve) => {
 		setTimeout(resolve, delay, {
 			timeout: true
@@ -720,17 +750,28 @@ function fetchWithTimeout(url, delay, onTimeout) {
 		}
 	}).then((json) => {
 		if (json) {
-			populateUI(json);
+			populateUI(json, attachConnectedSites);
 			enableConnection();
 			setLoadInfoButtonOnline();
 		}
 	});
 }
 
-function enableSiteItem(elem) {
-	elem.style.cursor = "pointer";
-	removeClass(elem, "grey lighten-2");
+function setOnlineColorItem(elem) {
+	removeClass(elem, "grey lighten-2"); //TODO remove also green class
+	removeClass(elem, "teal");
 	addClass(elem, "blue-grey darken-2");
+}
+
+function setSelectedColorItem(elem) {
+	removeClass(elem, "blue-grey darken-2");
+	addClass(elem, "teal lighten-2");
+}
+
+function enableSiteItem(elem) {
+	elem.addEventListener('click', selectFavoriteSite);
+	elem.style.cursor = "pointer";
+	setOnlineColorItem(elem);
 	elem.style.color = "white";
 
 	elem.addEventListener('dblclick', (e) => {
@@ -795,7 +836,7 @@ function setLoadInfoButtonOnline() {
 
 function pulseOnce(elem) {
 	addClass(elem, pulseClass);
-	setInterval(() => {
+	setTimeout(() => {
 		removeClass(elem, pulseClass);
 	}, 1000);
 }
@@ -841,14 +882,14 @@ function loadCurrentSiteInfo() {
  * @param  {String} host the host of the site to load
  * @return {void}
  */
-function loadSiteInfo(host) {
+function loadSiteInfo(host, attachConnectedSites) {
 	// color heart
-	if (alreadyInFavorites(host)) {
-		setFullHeart();
-	} else {
-		setEmptyHeart();
-	}
-	fetchWithTimeout(buildConfigURL(host), 1000, () => {
+	// if (alreadyInFavorites(host)) {
+	// 	setFullHeart();
+	// } else {
+	// 	setEmptyHeart();
+	// }
+	fetchWithTimeout(buildConfigURL(host), 1000, attachConnectedSites, () => {
 		onCurrentSiteDown();
 	})
 		.catch(err => {
@@ -860,15 +901,23 @@ function loadSiteInfo(host) {
 
 // Catches the message sent from the main electron window that is providing the current location
 ipcRenderer.on('current-location', (e, host) => {
-	urlInput.value = host;
-	loadSiteInfo(host);
+	// urlInput.value = host;
+	loadSiteInfo(host, true);
+
 });
 
 /******************* Adding event listeners to html elems ********************/
 
-// Initialize dropdown and carousel with sites
+// Initialize dropdown ids
 document.addEventListener('DOMContentLoaded', function () {
-	attachBehaviorDropdownSites();
+	var elems = document.querySelectorAll('.dropdown-trigger');
+	let options = {
+		edge: 'left',
+		hover: true
+		// noWrap: true
+	};
+	M.Dropdown.init(elems, options);
+	// attachBehaviorDropdownSites();
 });
 
 // Adds behavior to ClientID checkbox1 input
@@ -904,10 +953,10 @@ urlInput.addEventListener("input", (e) => {
 	let host = urlInput.value;
 	resetPasswordStatus();
 	if (alreadyInFavorites(host)) {
-		setFullHeart();
-		loadSiteInfo(host);
+		// setFullHeart();
+		loadSiteInfo(host, false);
 	} else {
-		setEmptyHeart();
+		// setEmptyHeart();
 		resetSiteInfo();
 		disableConnection();
 	}
