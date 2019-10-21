@@ -31,8 +31,10 @@ const check1 = document.getElementById('check_1');
 const check2 = document.getElementById('check_2');
 const urlInput = document.getElementById('url');
 const okayBtn = document.getElementById('okay_btn');
+const addBtn = document.getElementById('add_btn');
 const cancelBtn = document.getElementById('cancel_btn');
 const loadSiteInfoBtn = document.getElementById('current_status_btn');
+const statusText = document.getElementById('status_text');
 const pwdInput = document.getElementById('password');
 
 /********************** html classes and attribute values ********************/
@@ -66,8 +68,8 @@ var favorites = {
 let passwordRequired = false;
 let isHashSaved = false;
 let currentlySelectedItemElem;
-// let currentlySelectedHost;
-// let currentlySelectedName;
+let lastCheckedSiteName;
+let lastClickedCheck = false;
 
 // Reading the favorites json file
 fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
@@ -153,6 +155,16 @@ function getAppDataPath(file_name) {
 	} else {
 		return join(appDataPath, file_name);
 	}
+}
+
+function addSite() {
+	let URL = urlInput.value;
+	let sitename = lastClickedCheck ? lastCheckedSiteName : 'Unknown name';
+
+	addConnectedSiteToList({
+		name: sitename,
+		host: URL
+	});
 }
 
 /**
@@ -316,6 +328,9 @@ function addConnectedSiteToList(item, index) {
  * @return {void}
  */
 function selectFavoriteSite(event) {
+
+	lastClickedCheck = false;
+
 	var elem = event.target;
 	if (elem.tagName === "SPAN") {
 		elem = elem.parentElement.parentElement;
@@ -561,7 +576,7 @@ function populateUI(config_json, attachConnectedSites) {
 	}
 	populateDropdownIds(config_json.displays);
 
-	urlInput.setAttribute("data-name", config_json.name);
+	lastCheckedSiteName = config_json.name;
 
 	if (config_json.passwordProtected) {
 		enablePassword();
@@ -713,6 +728,7 @@ function connectToPage(URL) {
  * @return {void}
  */
 function onCurrentSiteDown() {
+	lastClickedCheck = false;
 	resetPasswordStatus();
 	removePreviousDropdownItem("ids_dropdown");
 	setLoadInfoButtonOffline();
@@ -751,8 +767,10 @@ function fetchWithTimeout(url, delay, attachConnectedSites, onTimeout) {
 	}).then((json) => {
 		if (json) {
 			populateUI(json, attachConnectedSites);
-			enableConnection();
-			setLoadInfoButtonOnline();
+			if (!attachConnectedSites) {
+				enableConnection();
+				setLoadInfoButtonOnline();
+			}
 		}
 	});
 }
@@ -823,6 +841,7 @@ function setOnlineStatus(url, elem, itemElem, delay) {
  */
 function resetSiteInfo() {
 	addClass(loadSiteInfoBtn, buttonColorClass);
+	statusText.innerHTML = "Enter valid site";
 }
 
 /**
@@ -832,6 +851,7 @@ function resetSiteInfo() {
 function setLoadInfoButtonOnline() {
 	removeClass(loadSiteInfoBtn, buttonColorClass);
 	loadSiteInfoBtn.style.background = onlineColor;
+	statusText.innerHTML = "Online";
 }
 
 function pulseOnce(elem) {
@@ -867,6 +887,7 @@ function disableConnection() {
 function setLoadInfoButtonOffline() {
 	removeClass(loadSiteInfoBtn, buttonColorClass);
 	loadSiteInfoBtn.style.background = offlineColor;
+	statusText.innerHTML = "Offline";
 }
 
 /**
@@ -874,6 +895,7 @@ function setLoadInfoButtonOffline() {
  * @return {void}
  */
 function loadCurrentSiteInfo() {
+	lastClickedCheck = true;
 	loadSiteInfo(urlInput.value);
 }
 
@@ -893,6 +915,7 @@ function loadSiteInfo(host, attachConnectedSites) {
 		onCurrentSiteDown();
 	})
 		.catch(err => {
+			lastClickedCheck = false;
 			throw err;
 		});
 }
@@ -943,6 +966,7 @@ check2.addEventListener('click', (e) => {
 });
 
 okayBtn.addEventListener('click', okayOnClick);
+addBtn.addEventListener('click', addSite);
 cancelBtn.addEventListener('click', cancelOnClick);
 loadSiteInfoBtn.addEventListener('click', loadCurrentSiteInfo);
 
