@@ -11069,7 +11069,15 @@ function wsUpdateJupyterSharing(wsio, data) {
 
 	// create an app if one does not already exist for this connection+cell
 	if (!existingApp) {
-		appLoader.createJupyterApp(data.src, data.mime, "base64", data.title, "#F27729", data.width, data.height,
+		appLoader.createJupyterApp(
+			data.src,
+			data.mime,
+			"base64",
+			data.title,
+			"#F27729",
+			data.width,
+			data.height,
+			data.code,
 			function (appInstance) {
 				appInstance.id = data.id;
 

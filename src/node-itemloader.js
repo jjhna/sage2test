@@ -987,7 +987,7 @@ AppLoader.prototype.loadFileFromWebURL = function(file, callback) {
 		callback);
 };
 
-AppLoader.prototype.createJupyterApp = function(source, type, encoding, name, color, width, height, callback) {
+AppLoader.prototype.createJupyterApp = function(source, type, encoding, name, color, width, height, code, callback) {
 	var aspectRatio = width / height;
 
 	var metadata         = {};
@@ -1008,8 +1008,9 @@ AppLoader.prototype.createJupyterApp = function(source, type, encoding, name, co
 		url: "src",
 		data: {
 			src: source,
-			type: type,
-			encoding: encoding
+			type,
+			encoding,
+			code
 		},
 		load: {
 			imgDict: {},
