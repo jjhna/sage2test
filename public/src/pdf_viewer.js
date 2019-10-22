@@ -635,7 +635,6 @@ var pdf_viewer = SAGE2_App.extend({
 
 		if (!this.showUI) {
 			this.commandBarG.height = 0;
-			return;
 		}
 
 		// the background
