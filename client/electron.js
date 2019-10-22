@@ -270,11 +270,11 @@ function openWindow() {
 		mainWindow.on('show', function() {
 			mainWindow.setFullScreen(true);
 			// Once all done, prevent changing the fullscreen state
-			mainWindow.setFullScreenable(false);
+			mainWindow.fullScreenable = false;
 		});
 	} else {
 		// Once all done, prevent changing the fullscreen state
-		mainWindow.setFullScreenable(false);
+		mainWindow.fullScreenable = false;
 	}
 }
 
@@ -343,7 +343,7 @@ function createWindow() {
 		const session = electron.session.defaultSession;
 		session.clearStorageData({
 			storages: ["appcache", "cookies", "local storage", "serviceworkers"]
-		}, function() {
+		}).then(()=> {
 			console.log('Electron>	Caches cleared');
 			openWindow();
 		});
@@ -361,7 +361,7 @@ function createWindow() {
 
 	// Mute the audio (just in case)
 	var playAudio = commander.audio || (commander.display === 0);
-	mainWindow.webContents.setAudioMuted(!playAudio);
+	mainWindow.webContents.audioMuted = !playAudio;
 
 	// Open the DevTools.
 	if (commander.console) {
@@ -640,7 +640,7 @@ function buildMenu() {
 					}()),
 					click: function(item, focusedWindow) {
 						if (focusedWindow) {
-							focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+							focusedWindow.fullScreenable = !focusedWindow.isFullScreen();
 						}
 					}
 				},
@@ -692,7 +692,7 @@ function buildMenu() {
 	];
 
 	if (process.platform === 'darwin') {
-		const name = app.getName();
+		const name = app.name;
 		template.unshift({
 			label: name,
 			submenu: [
