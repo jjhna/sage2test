@@ -78,11 +78,12 @@ var StickyItems         = require('./src/node-stickyitems');
 var registry            = require('./src/node-registry');         // Registry Manager
 var FileBufferManager	= require('./src/node-filebuffer');
 var PartitionList       = require('./src/node-partitionlist');    // list of SAGE2 Partitions
-var SharedDataManager	= require('./src/node-sharedserverdata'); // manager for shared data
+var SharedDataManager	= require('./src/node-sharedserverdata');   // manager for shared data
 var userlist            = require('./src/node-userlist');         // list of users
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
 var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
-var VoiceActionManager	= require('./src/node-voiceToAction');    // manager for shared data
+var VoiceActionManager	= require('./src/node-voiceToAction');      // manager for shared data
+var RemoteSiteSharing   = require('./src/node-remoteSiteSharing');  //
 
 //
 // Globals
@@ -1287,6 +1288,13 @@ function setupListeners(wsio) {
 	// Message from a ScreenShare needing to connect with original ScreenShare client
 	wsio.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
 	wsio.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
+
+
+	//Remote Site sharing
+	wsio.on('remoteSiteKnockSend',                  wsRemoteSiteKnockSend);
+	wsio.on('remoteSiteKnockOnSiteHandler',         wsRemoteSiteKnockOnSiteHandler);
+	wsio.on('remoteSiteUnavailable',                wsRemoteSiteUnavailable);
+
 }
 
 /**
@@ -11552,5 +11560,38 @@ function wsWebRtcRemoteScreenShareSendingUiMessage(wsio, data) {
 		data.parameters.cameFromSourceServer = data.cameFromSourceServer;
 		wsCallFunctionOnApp({id: data.clientId}, data);
 	}
+}
+
+/**
+ * This function received from a display client the action to knock
+ *
+ * @method wsRemoteSiteKnockSend
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain words.
+ */
+function wsRemoteSiteKnockSend(wsio, data) {
+	RemoteSiteSharing.knockSend(data, remoteSites);
+}
+
+/**
+ * This function received from a display client the action to knock
+ *
+ * @method wsRemoteSiteKnockOnSite
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain words.
+ */
+function wsRemoteSiteKnockOnSiteHandler(wsio, data) {
+	RemoteSiteSharing.knockAtSite(data, remoteSites);
+}
+
+/**
+ * This function received from a display client the action to become unavailable.
+ *
+ * @method wsRemoteSiteUnavailable
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain words.
+ */
+function wsRemoteSiteUnavailable(wsio, data) {
+	RemoteSiteSharing.makeUnavailable(data, remoteSites);
 }
 

@@ -10,6 +10,19 @@ console.log("main.js loaded");
 
 var remoteSiteInformation = null;
 
+
+document.addEventListener("mousedown", function() {
+	knockAudio.currentTime = 0;
+	knockAudio.play();
+});
+
+knockAudio.onended = function() {
+	setTimeout(() => {
+		knockAudio.play(); // infinite...
+	}, 5000);
+};
+
+
 /*
 How to use SAGE2_AppState.js
 
@@ -67,19 +80,15 @@ function handleSiteNotification(info) {
 	// Setup click effects
 	document.getElementById("bAction_knockAtThisSite").addEventListener("click", () => {
 		console.log("click on bAction_knockAtThisSite");
-		SAGE2_AppState.callFunctionInContainer("sendKnock", remoteSiteInformation);
 	});
 	document.getElementById("bAction_shareEverythingNewToThisSite").addEventListener("click", () => {
 		console.log("click on bAction_shareEverything");
-		SAGE2_AppState.callFunctionInContainer("shareEverythingNew", remoteSiteInformation);
 	});
 	document.getElementById("bAction_makeStateAwayForEveryone").addEventListener("click", () => {
 		console.log("click on bAction_makeStateAwayFo");
-		SAGE2_AppState.callFunctionInContainer("awayStatus");
 	});
 	document.getElementById("bAction_makeStateAvailableForOnlyThisSite").addEventListener("click", () => {
 		console.log("click on bAction_makeStateAvailableForOnlyThisSite");
-		SAGE2_AppState.callFunctionInContainer("awayStatus", remoteSiteInformation);
 	});
 }
 

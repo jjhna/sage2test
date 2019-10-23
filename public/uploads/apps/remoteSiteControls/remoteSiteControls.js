@@ -104,8 +104,31 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 		this.callFunctionInWebpage("handlerForUiSize", ui.titleTextSize);
 		this.callFunctionInWebpage("handleSiteNotification", this.state.remoteSiteInformation);
 	},
-	
 
+	sendKnock: function(params) {
+		if (isMaster) {
+			console.log("Received from webpage knock action", params);
+			wsio.emit("remoteSiteKnockSend", params);
+		}
+	},
+
+	shareEverythingNew: function(params) {
+		if (isMaster) {
+			console.log("Received from webpage shareEverythingNew", params);
+		}
+	},
+
+	awayStatus: function(params) {
+		if (isMaster) {
+			console.log("Received from webpage awayStatus", params);
+			if (params) {
+				console.log("Should only be available to the following site", params);
+			} else {
+				console.log("Should not be available to anyone");
+			}
+			wsio.emit("remoteSiteUnavailable", params);
+		}
+	},
 
 
 });
