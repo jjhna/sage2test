@@ -133,6 +133,7 @@ commander
 	.option('--hash <s>',                'Server password hash (string)', null)
 	.option('--height <n>',              'Window height (int)', myParseInt, 720)
 	.option('--password <s>',            'Server password (string)', null)
+	.option('--disable-hardware',        'Disable hardware acceleration', false)
 	.option('--show-fps',                'Display the Chrome FPS counter', false)
 	.option('--width <n>',               'Window width (int)', myParseInt, 1280)
 	.parse(args);
@@ -145,6 +146,10 @@ commander
 // 	electron.app.setAppPath(process.cwd());
 // 	// }
 
+// Disable hardware rendering (useful for some large display systems)
+if (commander.disableHardware) {
+	app.disableHardwareAcceleration();
+}
 
 // Load the flash plugin if asked
 if (commander.plugins) {
