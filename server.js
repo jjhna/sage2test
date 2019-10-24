@@ -11570,6 +11570,7 @@ function wsWebRtcRemoteScreenShareSendingUiMessage(wsio, data) {
  * @param {Object} data - should contain words.
  */
 function wsRemoteSiteKnockSend(wsio, data) {
+	data.nameOfSiteKnocking = config.host;
 	RemoteSiteSharing.knockSend(data, remoteSites);
 }
 
@@ -11581,7 +11582,12 @@ function wsRemoteSiteKnockSend(wsio, data) {
  * @param {Object} data - should contain words.
  */
 function wsRemoteSiteKnockOnSiteHandler(wsio, data) {
-	RemoteSiteSharing.knockAtSite(data, remoteSites);
+	var remoteSite = findRemoteSiteByConnection(wsio);
+	// TODO remove the next line which is used for debugging
+	if (!remoteSite) {
+		remoteSite = {name: "debug"};
+	}
+	RemoteSiteSharing.knockAtThisSite(wsio, data, remoteSite, wsLoadApplication);
 }
 
 /**

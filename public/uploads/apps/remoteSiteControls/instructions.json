@@ -13,6 +13,7 @@
 		"favicon": "",
 		"zoom": 1.2,
 		"mode": "desktop",
+		"pageToShow": "index.html",
 		"remoteSiteInformation": {
 			"name": "Fetching...",
 			"host": "Fetching...",

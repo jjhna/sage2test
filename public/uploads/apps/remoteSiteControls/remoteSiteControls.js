@@ -38,7 +38,7 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 		this.resizeEvents = "continuous"; // Recommended not to change. Options: never, continuous, onfinish
 
 		// Path / URL of the page you want to show
-		this.changeURL(this.resrcPath + "/webpage/index.html", false);
+		this.changeURL(this.resrcPath + "/webpage/" + this.state.pageToShow, false);
 		this.thereCanOnlyBeOne();
 	},
 	load: function(date) {
@@ -130,5 +130,15 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 		}
 	},
 
+	containerStartKnockAudioWithClick: function(params) {
+		// Simulate a mouse click
+		this.element.sendInputEvent({
+			type: "mouseDown",
+			x: 10, y: 10,
+			button: "left",
+			modifiers: null,
+			clickCount: 1
+		});
+	},
 
 });

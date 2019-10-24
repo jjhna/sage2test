@@ -3,7 +3,7 @@
 // SAGE2 application: skeletonWebviewApp
 // by: Dylan Kobayashi <dylank@hawaii.edu>
 //
-// Copyright (c) 2018
+// Copyright (c) 2019
 //
 
 console.log("main.js loaded");
@@ -21,6 +21,14 @@ knockAudio.onended = function() {
 		knockAudio.play(); // infinite...
 	}, 5000);
 };
+
+
+let knocker = getParameterByName("knocker");
+siteThatIsKnocking.textContent = knocker + " is knocking";
+
+
+
+
 
 
 /*
@@ -69,27 +77,14 @@ function handlerForUiSize(size) {
 	for (let i = 0; i < divs.length; i++) {
 		divs[i].style.fontSize = size * 2 + "px";
 	}
+
+	SAGE2_AppState.callFunctionInContainer("containerStartKnockAudioWithClick", "noparamstosend");
 }
 
 function handleSiteNotification(info) {
 	remoteSiteInformation = info;
 	// To manually change the application title
-	SAGE2_AppState.titleUpdate("Controls for " + remoteSiteInformation.name);
-	document.getElementById("nameOfSite").textContent = "Site: " + remoteSiteInformation.name;
-
-	// Setup click effects
-	document.getElementById("bAction_knockAtThisSite").addEventListener("click", () => {
-		console.log("click on bAction_knockAtThisSite");
-	});
-	document.getElementById("bAction_shareEverythingNewToThisSite").addEventListener("click", () => {
-		console.log("click on bAction_shareEverything");
-	});
-	document.getElementById("bAction_makeStateAwayForEveryone").addEventListener("click", () => {
-		console.log("click on bAction_makeStateAwayFo");
-	});
-	document.getElementById("bAction_makeStateAvailableForOnlyThisSite").addEventListener("click", () => {
-		console.log("click on bAction_makeStateAvailableForOnlyThisSite");
-	});
+	SAGE2_AppState.titleUpdate(knocker + " is knocking");
 }
 
 
@@ -100,5 +95,23 @@ function handleSiteNotification(info) {
 
 function getUiFontSize() {
 	SAGE2_AppState.callFunctionInContainer("webpageRequestingUiSize", "noparamstosend");
+}
+
+
+
+
+
+/**
+ * Extract the parameter value from the current URL (?clientID=0&param=4)
+ *
+ * @method getParameterByName
+ * @param name {String} parameter to search for
+ * @return {String} null or the value found
+ */
+function getParameterByName(name) {
+	name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]"); // eslint-disable-line
+	var regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
+	var results = regex.exec(location.search);
+	return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
