@@ -188,7 +188,10 @@ var media_stream = SAGE2_App.extend({
 		vid.style.position = "absolute";
 		vid.style.left = "0px";
 		vid.style.top = "0px";
+		// auto play is an issue if not started from a user interaction
 		vid.autoplay = true;
+		// but no constraint yet on muted video
+		vid.muted = true;
 		vid.style.width = "100%";
 		vid.style.height = "100%";
 
@@ -268,7 +271,7 @@ var media_stream = SAGE2_App.extend({
 			this.webrtcParts.s2wpc.readMessage(responseObject.message, () => {
 				// This function triggers when a connection is detected
 				this.webrtcParts.status.style.visibility = "hidden";
-				this.showModeInTitle("WebRTC mode");
+				this.showModeInTitle("Fast mode");
 			});
 		}
 	},
@@ -279,7 +282,6 @@ var media_stream = SAGE2_App.extend({
 		if (this.webrtcParts.fallbackStatusHideCounter > 2) {
 			this.webrtcParts.status.style.visibility = "hidden";
 			this.showModeInTitle();
-			// this.showModeInTitle("Default mode");
 		}
 	},
 

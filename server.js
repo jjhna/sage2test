@@ -27,7 +27,10 @@
 // Don't make functions within a loop
 /* jshint -W083 */
 
-/*global mediaFolders */
+// need to rewrite the prototype calls
+/* eslint no-prototype-builtins: 0 */
+
+/* global mediaFolders */
 
 // require variables to be declared
 'use strict';
@@ -352,19 +355,6 @@ function initializeSage2Server() {
 	});
 	qr_png.pipe(fs.createWriteStream(qr_out));
 
-	// Update the web manifest for PWA support
-	var manifestFilename = path.join(__dirname, "public", "manifest.webmanifest");
-	if (sageutils.fileExists(path.resolve(manifestFilename))) {
-		// Load the existing manifest file
-		let manifest = fs.readFileSync(manifestFilename, 'utf8');
-		// Parse it
-		let parsed   = JSON.parse(manifest);
-		// Update the name with the local information
-		parsed.name  = "SAGE2 - " + (config.name || config.host);
-		// Save it back
-		fs.writeFileSync(manifestFilename, JSON.stringify(parsed, null, 4));
-	}
-
 	// Setup tmp directory for SAGE2 server
 	process.env.TMPDIR = path.join(__dirname, "tmp");
 	sageutils.log("SAGE2", "Temp folder:", chalk.yellow.bold(process.env.TMPDIR));
@@ -401,23 +391,27 @@ function initializeSage2Server() {
 		config.passwordProtected = true;
 		// New password, regenerate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
+	} else if (sageutils.fileExists(passwordFile) && (typeof program.password  === "string")) {
+		// If a password file exists, and the password flag was used but was empty, load from the file
+		// This is to allow sabi to launch using passwords, while still removing passwd on non password flag launches.
+		var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
+		var passwordFileJson       = JSON.parse(passwordFileJsonString);
+		if (passwordFileJson.pwd !== null) {
+			global.__SESSION_ID = passwordFileJson.pwd;
+			sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
+			// the session is protected
+			config.passwordProtected = true;
+		} else {
+			sageutils.log("Secure", "Invalid hash file", passwordFile);
+		}
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
 	} else if (sageutils.fileExists(passwordFile)) {
 		// remove pasword file, if option not specified
 		fs.unlinkSync(passwordFile);
+
 		// Now, generate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
-
-		// // If a password file exists, load it
-		// var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
-		// var passwordFileJson       = JSON.parse(passwordFileJsonString);
-		// if (passwordFileJson.pwd !== null) {
-		// 	global.__SESSION_ID = passwordFileJson.pwd;
-		// 	sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
-		// 	// the session is protected
-		// 	config.passwordProtected = true;
-		// } else {
-		// 	sageutils.log("Secure", "Invalid hash file", passwordFile);
-		// }
 	} else {
 		// Now, generate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
@@ -902,7 +896,7 @@ function wsAddClient(wsio, data) {
 			// Send a message back to server
 			wsio.emit('remoteConnection', {status: "refused", reason: 'wrong session hash'});
 			// If server protected and wrong hash, close the socket and byebye
-			wsio.ws.close();
+			wsio.ws.close(1001, "wrongSessionHash");
 			// For debugging connections and slow down. This one logs failed connection attemps.
 			sharedServerData.updateInformationAboutConnectionsFailedRemoteSite(wsio);
 			return;
@@ -6071,19 +6065,21 @@ function processInputCommand(line) {
 					pos = [parseFloat(command[2]), parseFloat(command[3])];
 				}
 				var mt = assets.getMimeType(getSAGE2Path(file));
+				var defaultApp = registry.getDefaultApp(file);
 				if (mt === "application/custom") {
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
 						position: pos
 					});
+				} else if (defaultApp === "movie_player") {
+					wsLoadFileFromServer({id: "127.0.0.1:42"}, {
+						application: defaultApp,
+						filename: file,
+						user: "127.0.0.1:42",
+						position: pos
+					});
 				} else {
-					// wsLoadFileFromServer({id: "127.0.0.1:42"}, {
-					// 	application: "something",
-					// 	filename: file,
-					// 	user: "127.0.0.1:42",
-					// 	position: pos
-					// });
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
@@ -9700,7 +9696,7 @@ function handleNewApplication(appInstance, videohandle) {
 		w: cornerSize, h: cornerSize
 	}, 2);
 	if (appInstance.sticky === true) {
-		appInstance.pinned = true;
+		appInstance.pinned = false;
 		SAGE2Items.applications.addButtonToItem(appInstance.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: config.ui.titleBarHeight}, 1);
 		SAGE2Items.applications.editButtonVisibilityOnItem(appInstance.id, "pinButton", false);
@@ -9758,7 +9754,7 @@ function handleNewApplicationInDataSharingPortal(appInstance, videohandle, porta
 		w: cornerSize, h: cornerSize
 	}, 2);
 	if (appInstance.sticky === true) {
-		appInstance.pinned = true;
+		appInstance.pinned = false;
 		SAGE2Items.applications.addButtonToItem(appInstance.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: titleBarHeight}, 1);
 		SAGE2Items.applications.editButtonVisibilityOnItem(appInstance.id, "pinButton", false);
@@ -10169,7 +10165,8 @@ function hideStickyPin(app) {
 	// if it is in a Partition -- I assume it could happen in other cases as well)
 	broadcast('hideStickyPin', {
 		id: app.id,
-		sticky: app.sticky
+		sticky: app.sticky,
+		pinned: app.pinned
 	});
 }
 
@@ -10350,6 +10347,9 @@ function wsCallFunctionOnApp(wsio, data) {
 			let app = {application: SAGE2Items.applications.list[data.app]};
 			let remote = remoteSites[data.parameters.remoteSiteIndex];
 			shareApplicationWithRemoteSite(uniqueID, app, remote);
+			return;
+		} else if (data.func === "SAGE2PinStickyItem") {
+			toggleStickyPin(data.app);
 			return;
 		}
 

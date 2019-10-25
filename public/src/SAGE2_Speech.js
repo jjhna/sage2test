@@ -133,8 +133,8 @@ SAGE2_speech.init = function() {
 						});
 						// Do something with it now
 						wsio.emit('voiceToAction', {words: this.final_transcript, confidence: event.results[i][0].confidence});
-						document.getElementById("voiceTranscriptActual").textContent =
-							"(" + parseInt(event.results[i][0].confidence * 100) + "%) " + this.final_transcript;
+						// document.getElementById("voiceTranscriptActual").textContent =
+						// 	"(" + parseInt(event.results[i][0].confidence * 100) + "%) " + this.final_transcript;
 					}
 				} else {
 					this.interim_transcript += event.results[i][0].transcript;
@@ -166,16 +166,17 @@ SAGE2_speech.init = function() {
 						this.interim_transcript.toLowerCase().includes(SAGE2_speech.nameMarker)) {
 						SAGE2_speech.firstNameMention = true;
 						console.log("SpeechRecognition> speech marker detected");
-					} if (SAGE2_speech.firstNameMention) {
+					}
+					if (SAGE2_speech.firstNameMention) {
 						// If first name is mentioned set the transcript
 						let transcript = this.interim_transcript.toLowerCase();
 						// Possible that the transcript changes with an update
 						if (!transcript.includes(SAGE2_speech.nameMarker)) {
 							SAGE2_speech.firstNameMention = false;
 						} else {
-							transcript = transcript.substring(transcript.indexOf(SAGE2_speech.nameMarker));
-							transcript = transcript.substring(transcript.indexOf(" ") + 1);
-							document.getElementById("voiceTranscriptActual").textContent = transcript;
+							// transcript = transcript.substring(transcript.indexOf(SAGE2_speech.nameMarker));
+							// transcript = transcript.substring(transcript.indexOf(" ") + 1);
+							// document.getElementById("voiceTranscriptActual").textContent = transcript;
 						}
 					}
 					wsio.emit("serverDataSetValue", {
@@ -277,8 +278,8 @@ SAGE2_speech.doesTranscriptActivateLocally = function(transcript) {
  * @method activateSpeechDebug
  */
 SAGE2_speech.activateSpeechDebug = function() {
-	document.getElementById("voiceTranscriptOuterContainer").style.visibility = "visible";
-	document.getElementById("voiceTranscriptActual").textContent = "Voice debug activated";
+	// document.getElementById("voiceTranscriptOuterContainer").style.visibility = "visible";
+	// document.getElementById("voiceTranscriptActual").textContent = "Voice debug activated";
 };
 
 /**

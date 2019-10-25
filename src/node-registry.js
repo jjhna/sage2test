@@ -23,7 +23,8 @@ var fs          = require('fs');
 var path        = require('path');
 
 var json5       = require('json5');
-var JsonDB      = require('node-json-db');
+var JsonDB      = require('node-json-db').JsonDB;
+
 var mime        = require('mime');
 
 var sageutils   = require('../src/node-utils');  // for fileExists function
@@ -270,6 +271,21 @@ RegistryManager.prototype.setDefaultApp = function(file, app, warn) {
 		// Entry does not exist.
 		sageutils.log("Registry", "Unknown file type", type);
 	}
+};
+
+/**
+ * Returns true if the image can be displayed in a browser
+ *
+ * @method isImageWebNative
+ * @param  {String} filetype - a given mime type
+ * @return {Boolean}  true if it is a web format
+ */
+RegistryManager.prototype.isImageWebNative = function(filetype) {
+	let browserCompatible = filetype === "image/jpeg" ||
+		filetype === "image/png"  ||
+		filetype === "image/webp" ||
+		filetype === "image/gif";
+	return browserCompatible;
 };
 
 module.exports = new RegistryManager();

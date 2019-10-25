@@ -334,7 +334,7 @@ class SAGE2WebrtcPeerConnection {
 		try {
 			// Interactor only exists in the UI client
 			if (interactor && interactor.mediaUseRTC) {
-				interactor.broadcasting = false;
+				interactor.broadcasting = true;
 			}
 		} catch (e) {
 			// Skipping to here if this is the display

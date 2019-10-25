@@ -18,8 +18,8 @@
  * @class SAGE2_Performance
  */
 
-/*global SAGE2_init: true, d3: true, drawDisplaySMMinimal: true, showDisplayClientsHistory: true,
-  setupLineChart: true, charts: true, makeSvg: true, SAGE2_d3_TimelineSlider: true */
+/* global d3, drawDisplaySMMinimal, setupLineChart, charts, makeSvg */
+/* global SAGE2_d3_TimelineSlider */
 
 
 /**
@@ -374,7 +374,7 @@ function showDisplayHardwareInformation() {
 					displayConfig.resolution.height + ' pixels' + '\n';
 			}
 			// Assign colors to display clients
-			if (clientColorMap.hasOwnProperty(disp.id) === false) {
+			if (Object.prototype.hasOwnProperty.call(clientColorMap, disp.id) === false) {
 				clientColorMap[disp.id] = getNewColor(clientColorMap);
 			}
 		}
@@ -694,7 +694,7 @@ function getNewColor(colorMap) {
 
 function checkForNegatives(obj) {
 	for (var k in obj) {
-		if (obj.hasOwnProperty(k)) {
+		if (Object.prototype.hasOwnProperty.call(obj, k)) {
 			if (typeof obj[k] === 'number' && isNaN(obj[k]) === false && obj[k] < 0) {
 				return true;
 			}
@@ -726,9 +726,9 @@ function updateLineChart(chartId, data, key, filterlist) {
 			.object(data);
 		//console.log(nestedData);
 		for (var k in nestedData) {
-			if (nestedData.hasOwnProperty(k) === true && filterlist.indexOf(k) < 0) {
+			if (Object.prototype.hasOwnProperty.call(nestedData, k) === true && filterlist.indexOf(k) < 0) {
 				delete nestedData[k];
-			} else if (clientColorMap.hasOwnProperty(k) === false) {
+			} else if (Object.prototype.hasOwnProperty.call(clientColorMap, k) === false) {
 				clientColorMap[k] = getNewColor(clientColorMap);
 			}
 		}
