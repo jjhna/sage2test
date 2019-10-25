@@ -300,6 +300,39 @@ function FileManager(wsio, mydiv, uniqueID) {
 					]
 				});
 		}},
+		p3x3_menu: {value: "3 Columns, 3 Rows", callback: function (evt) {
+			// create partition division of screen
+			wsio.emit('partitionScreen',
+				{
+					type: "col", size: 12,
+					children: [
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4}
+							]
+						},
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4}
+							]
+						},
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4}
+							]
+						}
+					]
+				});
+		}},
 		p2s_1b_2s_menu: {value: "Center Pane, 4 Mini", callback: function (evt) {
 			// create partition division of screen
 			wsio.emit('partitionScreen',

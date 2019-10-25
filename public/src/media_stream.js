@@ -271,7 +271,7 @@ var media_stream = SAGE2_App.extend({
 			this.webrtcParts.s2wpc.readMessage(responseObject.message, () => {
 				// This function triggers when a connection is detected
 				this.webrtcParts.status.style.visibility = "hidden";
-				this.showModeInTitle("WebRTC mode");
+				this.showModeInTitle("Fast mode");
 			});
 		}
 	},
@@ -282,7 +282,6 @@ var media_stream = SAGE2_App.extend({
 		if (this.webrtcParts.fallbackStatusHideCounter > 2) {
 			this.webrtcParts.status.style.visibility = "hidden";
 			this.showModeInTitle();
-			// this.showModeInTitle("Default mode");
 		}
 	},
 

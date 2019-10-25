@@ -347,7 +347,7 @@ AppLoader.prototype.loadImageFromFile = function(file, mime_type, aUrl, external
 		var localPath = path.join(this.publicDir, "tmp", path.basename(name)) + ".png";
 		var localUrl  = getSAGE2URL(localPath);
 
-		imageMagick(file + "[0]").noProfile().bitdepth(8).flatten().setFormat("PNG").write(localPath, function(err, buffer) {
+		imageMagick(file + "[0]").noProfile().bitdepth(8).setFormat("PNG").write(localPath, function(err, buffer) {
 			if (err) {
 				sageutils.log("Loader", "Error processing image file", file, localPath);
 				return;
@@ -1137,7 +1137,7 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 				// setting up a tmp filename
 				var tmpPath = path.join(this.publicDir, "tmp", path.basename(cleanFilename)) + ".png";
 				// converting anything to PNG
-				imageMagick(file.path).noProfile().bitdepth(8).flatten().setFormat("PNG").write(tmpPath, function(err, buffer) {
+				imageMagick(file.path + '[0]').noProfile().bitdepth(8).setFormat("PNG").write(tmpPath, function(err, buffer) {
 					if (err) {
 						sageutils.log("Loader", "error processing image file", tmpPath);
 						return;
