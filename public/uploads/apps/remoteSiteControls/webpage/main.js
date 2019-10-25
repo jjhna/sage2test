@@ -73,6 +73,10 @@ function handleSiteNotification(info) {
 		console.log("click on bAction_shareEverything");
 		SAGE2_AppState.callFunctionInContainer("shareEverythingNew", remoteSiteInformation);
 	});
+	document.getElementById("bAction_stopShareEverythingNewToThisSite").addEventListener("click", () => {
+		console.log("click on bAction_stopShareEverythingNewToThisSite");
+		SAGE2_AppState.callFunctionInContainer("stopShareEverythingNew", remoteSiteInformation);
+	});
 	document.getElementById("bAction_makeStateAwayForEveryone").addEventListener("click", () => {
 		console.log("click on bAction_makeStateAwayFo");
 		SAGE2_AppState.callFunctionInContainer("awayStatus");
@@ -81,6 +85,18 @@ function handleSiteNotification(info) {
 		console.log("click on bAction_makeStateAvailableForOnlyThisSite");
 		SAGE2_AppState.callFunctionInContainer("awayStatus", remoteSiteInformation);
 	});
+}
+
+function handleSharingState(state) {
+	if (state) {
+		document.getElementById("sharingState").style.visibility = "visible";
+		document.getElementById("bAction_shareEverythingNewToThisSite").style.display = "none";
+		document.getElementById("bAction_stopShareEverythingNewToThisSite").style.display = "block";
+	} else {
+		document.getElementById("sharingState").style.visibility = "hidden";
+		document.getElementById("bAction_shareEverythingNewToThisSite").style.display = "block";
+		document.getElementById("bAction_stopShareEverythingNewToThisSite").style.display = "none";
+	}
 }
 
 

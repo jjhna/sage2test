@@ -19,10 +19,7 @@ function knockSend(data, remoteSites) {
 	for (let i = 0; i < remoteSites.length; i++) {
 		if (remoteSites[i].name === data.name) {
 			console.log("Matching remote site found", remoteSites[i].name);
-			remoteSites[i].wsio.emit("remoteConnection", {
-				status: "refused",
-				reason: "Unavailable by user choice"
-			});
+			remoteSites[i].wsio.emit("remoteSiteKnockOnSiteHandler", { });
 			return;
 		}
 	}

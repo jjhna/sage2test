@@ -7,6 +7,7 @@
 
 "use strict";
 
+
 // Please see https://bitbucket.org/sage2/sage2/wiki/SAGE2%20Webview%20Container for instructions
 
 
@@ -40,6 +41,20 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 		// Path / URL of the page you want to show
 		this.changeURL(this.resrcPath + "/webpage/" + this.state.pageToShow, false);
 		this.thereCanOnlyBeOne();
+		if (remoteSiteControls.sitesToShareWith === undefined) {
+			remoteSiteControls.sitesToShareWith = [];
+		}
+		if (remoteSiteControls.hasAddedNewAppMonitoring === undefined) {
+			remoteSiteControls.hasAddedNewAppMonitoring = false;
+		}
+		if (remoteSiteControls.applicationsThatWillBeShared === undefined) {
+			remoteSiteControls.applicationsThatWillBeShared = [
+				"image_viewer",
+				"movie_player",
+				"pdf_viewer",
+				"Webview"
+			];
+		}
 	},
 	load: function(date) {
 		// OPTIONAL
@@ -82,9 +97,10 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 		let app = null;
 		for (let i = 0; i < ids.length; i++) {
 			app = allas[ids[i]];
-			if (app.application == "remoteSiteControls") {
+			if (app.application === "remoteSiteControls") {
 				if (app.id != this.id) {
 					wsio.emit("deleteApplication", {appId: app.id});
+					console.log("erase me, tried to delete?");
 				} 
 			}
 		}
@@ -103,6 +119,10 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 	webpageRequestingUiSize: function(params) {
 		this.callFunctionInWebpage("handlerForUiSize", ui.titleTextSize);
 		this.callFunctionInWebpage("handleSiteNotification", this.state.remoteSiteInformation);
+		if (remoteSiteControls.sitesToShareWith
+			&& remoteSiteControls.sitesToShareWith.includes(this.state.remoteSiteInformation.name)) {
+				this.callFunctionInWebpage("handleSharingState", true);
+			}
 	},
 
 	sendKnock: function(params) {
@@ -113,8 +133,60 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 	},
 
 	shareEverythingNew: function(params) {
-		if (isMaster) {
-			console.log("Received from webpage shareEverythingNew", params);
+		console.log("Received from webpage shareEverythingNew", params);
+		this.addSiteSharing(params);
+		this.callFunctionInWebpage("handleSharingState", true);
+	},
+	stopShareEverythingNew: function(params) {
+		this.removeSiteSharing(params);
+		this.callFunctionInWebpage("handleSharingState", false);
+	},
+
+	addSiteSharing: function(site) {
+		if (!remoteSiteControls.hasAddedNewAppMonitoring) {
+			remoteSiteControls.hasAddedNewAppMonitoring = true;
+			this.addAppMonitoring();
+			console.log("hasAddedNewAppMonitoring");
+		}
+		let stsw = remoteSiteControls.sitesToShareWith;
+		if (!stsw.includes(site.name)) {
+			stsw.push(site.name);
+		}
+	},
+
+	addAppMonitoring() {
+		// cannot use wsio.on('createAppWindow', function(data) {
+		// Reason: it overwrites the function
+		// TODO: alernative
+		remoteSiteControls.original_createAppWindow = wsio.messages["createAppWindow"];
+		wsio.messages["createAppWindow"] = function(data) {
+			remoteSiteControls.original_createAppWindow(data);
+			if (remoteSiteControls.applicationsThatWillBeShared.includes(data.application)){
+				window.requestAnimationFrame(function() {
+					let stsw = remoteSiteControls.sitesToShareWith;
+					for (let i = 0; i < stsw.length; i++) {
+							console.log("TODO share the app with related sites", data.id);
+							if (isMaster) {
+								// wsCallFunctionOnApp();
+								console.log("Should be trying to send " + data.id);
+								wsio.emit("callFunctionOnApp", {
+									app: data.id,
+									func: "SAGE2_shareWithSite",
+									parameters: {
+										remoteSiteName: stsw[i]
+									} 
+								});
+							}
+					}
+				});
+			}
+		};
+	},
+
+	removeSiteSharing: function(site) {
+		let stsw = remoteSiteControls.sitesToShareWith;
+		if (stsw.indexOf(site.name) !== -1) {
+			stsw.splice(stsw.indexOf(), 1);
 		}
 	},
 
