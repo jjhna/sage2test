@@ -75,7 +75,6 @@ var Webview = SAGE2_App.extend({
 
 		// Get the URL from parameter or session
 		var view_url = data.params || this.state.file || this.state.url;
-		var video_id, ampersandPosition;
 
 		// Is the page hosted by SAGE server
 		this.connectingToSageHostedFile = this.isHostedBySelf(view_url);
@@ -85,8 +84,8 @@ var Webview = SAGE2_App.extend({
 			if (view_url.indexOf('embed') === -1 ||
 				view_url.indexOf("watch?v=") >= 0) {
 				// Search for the Youtube ID
-				video_id = view_url.split('v=')[1];
-				ampersandPosition = video_id.indexOf('&');
+				let video_id = view_url.split('v=')[1];
+				let ampersandPosition = video_id.indexOf('&');
 				if (ampersandPosition != -1) {
 					video_id = video_id.substring(0, ampersandPosition);
 				}
@@ -104,7 +103,7 @@ var Webview = SAGE2_App.extend({
 			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		} else if (view_url.startsWith('https://youtu.be')) {
 			// youtube short URL (used in sharing)
-			video_id = view_url.split('/').pop();
+			let video_id = view_url.split('/').pop();
 			view_url = 'https://www.youtube.com/embed/' + video_id + '?autoplay=0';
 			this.contentType = "youtube";
 			// ask for a HD resize
@@ -177,7 +176,7 @@ var Webview = SAGE2_App.extend({
 		}
 
 		// Store the zoom level, when in desktop emulation
-		this.zoomFactor = 1;
+		// this.zoomFactor = 1;
 		// Auto-refresh time
 		this.autoRefresh = null;
 
@@ -219,7 +218,7 @@ var Webview = SAGE2_App.extend({
 				// save the url
 				_this.state.url = evt.url;
 				// set the zoom value
-				_this.element.setZoomFactor(_this.state.zoom);
+				_this.element.zoomFactor = _this.state.zoom;
 				// sync the state object
 				_this.SAGE2Sync(true);
 			}
@@ -243,7 +242,7 @@ var Webview = SAGE2_App.extend({
 			// save the url
 			_this.state.url = evt.url;
 			// set the zoom value
-			_this.element.setZoomFactor(_this.state.zoom);
+			_this.element.zoomFactor = _this.state.zoom;
 			// sync the state object
 			_this.SAGE2Sync(true);
 		});
@@ -253,7 +252,7 @@ var Webview = SAGE2_App.extend({
 			// save the url
 			_this.state.url = evt.url;
 			// set the zoom value
-			_this.element.setZoomFactor(_this.state.zoom);
+			_this.element.zoomFactor = _this.state.zoom;
 			// sync the state object
 			_this.SAGE2Sync(true);
 		});
@@ -1143,7 +1142,7 @@ var Webview = SAGE2_App.extend({
 				// Just reload once
 				this.isLoading = true;
 				this.element.reload();
-				this.element.setZoomFactor(this.state.zoom);
+				this.element.zoomFactor = this.state.zoom;
 			}
 		}
 	},
@@ -1206,13 +1205,13 @@ var Webview = SAGE2_App.extend({
 			// zoomin
 			if (dir === "zoomin") {
 				this.state.zoom *= 1.50;
-				this.element.setZoomFactor(this.state.zoom);
+				this.element.zoomFactor = this.state.zoom;
 			}
 
 			// zoomout
 			if (dir === "zoomout") {
 				this.state.zoom /= 1.50;
-				this.element.setZoomFactor(this.state.zoom);
+				this.element.zoomFactor = this.state.zoom;
 			}
 
 			this.refresh();
