@@ -64,6 +64,7 @@ var favorites = {
 	//     name: 'CAVE3'
 	// }]
 };
+
 // Variables for the current site
 let passwordRequired = false;
 let isHashSaved = false;
@@ -73,12 +74,14 @@ let lastClickedCheck = false;
 
 // Reading the favorites json file
 fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
-	if (err) { // most likely no json file (first use), write empty favorites on file
+	if (err) {
+		// most likely no json file (first use), write empty favorites on file
 		console.log(err);
 		writeFavoritesOnFile(favorites);
 	} else {
-		favorites = JSON.parse(data); //convert json to object
-		console.log(favorites);
+		// convert json to object
+		favorites = JSON.parse(data);
+		console.log('favorites', favorites);
 		if (favorites.list.length > 0) {
 			populateFavorites(favorites.list);
 		}
@@ -302,7 +305,7 @@ function addConnectedSiteToList(item, index) {
 	if (alreadyInFavorites(item.host)) {
 		return;
 	}
-	let it = document.createElement("LI");
+	let it = document.createElement("li");
 	addClass(it, "collection-item grey lighten-2 z-depth-3");
 	let htmlCode = `<div><b><span>${item.name}</span> -</b> <span>${item.host}</span><a href="#!" class="secondary-content">
                         <i class="material-icons style="color:${blackColor};">favorite_border</i>
@@ -313,7 +316,8 @@ function addConnectedSiteToList(item, index) {
 	// it.addEventListener('click', selectFavoriteSite);
 	it.firstElementChild.lastElementChild.addEventListener('click', addFavoriteSiteList);
 	it.style.color = "grey";
-	favoriteList.insertBefore(it, favoriteList.lastChild.nextSibling);
+	// favoriteList.insertBefore(it, favoriteList.lastChild.nextSibling);
+	favoriteList.insertBefore(it, favoriteList.lastChild);
 	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor;
 	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
@@ -480,7 +484,12 @@ function removeFromFavorites(favorite_url) {
  * @param {Object} favorites_obj the object containing the list of favorites
  */
 function writeFavoritesOnFile(favorites_obj) {
-	fs.writeFile(getAppDataPath(favorites_file_name), JSON.stringify(favorites_obj), 'utf8', () => { });
+	fs.writeFile(
+		getAppDataPath(favorites_file_name),
+		JSON.stringify(favorites_obj, null, 4),
+		'utf8',
+		() => { }
+	);
 }
 
 /**
@@ -841,7 +850,7 @@ function setOnlineStatus(url, elem, itemElem, delay) {
  */
 function resetSiteInfo() {
 	addClass(loadSiteInfoBtn, buttonColorClass);
-	statusText.innerHTML = "Enter valid site";
+	statusText.innerHTML = "Enter the hostname and port number of the secure server (example.com:4343)";
 }
 
 /**
