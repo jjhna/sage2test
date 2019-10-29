@@ -187,13 +187,14 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 //  the usual value is around 6
 const url = require('url');
 var parsedURL = url.parse(commander.server);
-// default domais are local
+// default domains are local
 var domains   = "localhost,127.0.0.1";
 // Store current site domain
 var currentDomain = parsedURL.hostname;
+
 // Filename of favorite sites file
 const favorites_file_name = 'sage2_favorite_sites.json';
-//JS object containing list of favorites sites
+// Object containing list of favorites sites
 var favorites = {
 	list: []
 };
@@ -557,10 +558,12 @@ function createWindow() {
 		if (queryParams.session) {
 			var hash = generatePasswordHash(queryParams.session);
 			fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
-				if (err) { // most likely no json file (first use), write empty favorites on file
-					console.log(err);
+				if (err) {
+					// most likely no json file (first use), write empty favorites on file
+					console.log("No favorite file found> ", err);
 				} else {
-					favorites = JSON.parse(data); //convert json to object
+					// convert json to object
+					favorites = JSON.parse(data);
 					for (let i = 0; i < favorites.list.length; i++) {
 						if (favorites.list[i].host === currentDomain) {
 							favorites.list[i].hash = hash;
@@ -634,7 +637,12 @@ function createWindow() {
  * @param {Object} favorites_obj the object containing the list of favorites
  */
 function writeFavoritesOnFile(favorites_obj) {
-	fs.writeFile(getAppDataPath(favorites_file_name), JSON.stringify(favorites_obj), 'utf8', () => { });
+	fs.writeFile(
+		getAppDataPath(favorites_file_name),
+		JSON.stringify(favorites_obj, null, 4),
+		'utf8',
+		() => { }
+	);
 }
 
 /**
@@ -722,9 +730,9 @@ function myParseInt(str, defaultValue) {
 function createRemoteSiteInputWindow() {
 	// creating a new window
 	remoteSiteInputWindow = new BrowserWindow({
-		width: 900,
+		width:  900,
 		height: 620,
-		frame: false,
+		frame:  true,
 		title: 'Connect to Remote Site',
 		webPreferences: {
 			nodeIntegration: true,
@@ -733,6 +741,7 @@ function createRemoteSiteInputWindow() {
 	});
 	// Load html into window
 	remoteSiteInputWindow.loadURL(url.format({
+		// Load the UI for the panel
 		pathname: path.join(__dirname, 'remoteSiteWindow.html'),
 		protocol: 'file',
 		slashes: true
