@@ -927,10 +927,11 @@ function setupListeners() {
 		var selectedElemTitle = document.getElementById(position_data.elemId + "_title");
 		var selectedElemDragBar = document.getElementById(position_data.elemId + "_dragBar");
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
-		
+
 		selectedElemDragBar.style.width = Math.round(position_data.elemWidth).toString() + "px";
-		selectedElemDragBar.style.top = (Math.round(position_data.elemHeight + selectedElemDragBar.style.height)).toString() + "px";
-		
+		selectedElemDragBar.style.top = (
+			Math.round(position_data.elemHeight + selectedElemDragBar.style.height)).toString() + "px";
+
 		if (position_data.elemId.split("_")[0] === "portal") {
 			dataSharingPortals[position_data.elemId].setPosition(position_data.elemLeft, position_data.elemTop);
 			return;
@@ -958,7 +959,7 @@ function setupListeners() {
 		dragCorner[0].style.height = cornerSize.toString() + "px";
 		dragCorner[0].style.top    = (Math.round(position_data.elemHeight) - cornerSize).toString() + "px";
 		dragCorner[0].style.left   = (Math.round(position_data.elemWidth) - cornerSize).toString()  + "px";
-		
+
 		// if the element is a div or iframe, resize should use the style object
 		if (child[0].tagName.toLowerCase() === "div" ||
 			child[0].tagName.toLowerCase() === "iframe" ||
@@ -1608,14 +1609,14 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	dragBar.style.top    = (-offsetY + data.height + titleBarHeight).toString() + "px";
 	dragBar.style.transform = translate;
 	dragBar.style.zIndex = itemCount.toString();
-	if (ui.noDropShadow === true) {
-		dragBar.style.boxShadow = "none";
-	}
-	if (ui.uiHidden === true) {
-		dragBar.style.display   = "none";
-	}
+	// if (ui.noDropShadow === true) {
+	dragBar.style.boxShadow = "none";
+	// }
+	// if (ui.uiHidden === true) {
+	dragBar.style.display   = "none";
+	// }
 	parent.appendChild(dragBar);
-	
+
 	var iconWidth = Math.round(titleBarHeight) * (300 / 235);
 	var iconSpace = 0.1 * iconWidth;
 	var windowIconSync = document.createElement("img");
@@ -1726,10 +1727,10 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	dragCorner.style.border   = "none";
 	dragCorner.style.zIndex   = "1";
 	windowItem.appendChild(dragCorner);
-	
+
 	parent.appendChild(windowTitle);
 	parent.appendChild(windowItem);
-	
+
 	// App launched in window
 	if (data.application === "media_stream") {
 		wsio.emit('receivedMediaStreamFrame', {id: data.id});
