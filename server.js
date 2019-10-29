@@ -355,19 +355,6 @@ function initializeSage2Server() {
 	});
 	qr_png.pipe(fs.createWriteStream(qr_out));
 
-	// Update the web manifest for PWA support
-	var manifestFilename = path.join(__dirname, "public", "manifest.webmanifest");
-	if (sageutils.fileExists(path.resolve(manifestFilename))) {
-		// Load the existing manifest file
-		let manifest = fs.readFileSync(manifestFilename, 'utf8');
-		// Parse it
-		let parsed   = JSON.parse(manifest);
-		// Update the name with the local information
-		parsed.name  = "SAGE2 - " + (config.name || config.host);
-		// Save it back
-		fs.writeFileSync(manifestFilename, JSON.stringify(parsed, null, 4));
-	}
-
 	// Setup tmp directory for SAGE2 server
 	process.env.TMPDIR = path.join(__dirname, "tmp");
 	sageutils.log("SAGE2", "Temp folder:", chalk.yellow.bold(process.env.TMPDIR));
@@ -9749,7 +9736,7 @@ function handleNewApplication(appInstance, videohandle) {
 		w: appInstance.width, h: config.ui.titleBarHeight
 	}, 2);
 	if (appInstance.sticky === true) {
-		appInstance.pinned = true;
+		appInstance.pinned = false;
 		SAGE2Items.applications.addButtonToItem(appInstance.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: config.ui.titleBarHeight}, 1);
 		SAGE2Items.applications.editButtonVisibilityOnItem(appInstance.id, "pinButton", false);
@@ -9812,7 +9799,7 @@ function handleNewApplicationInDataSharingPortal(appInstance, videohandle, porta
 		w: appInstance.width, h: config.ui.titleBarHeight
 	}, 2);
 	if (appInstance.sticky === true) {
-		appInstance.pinned = true;
+		appInstance.pinned = false;
 		SAGE2Items.applications.addButtonToItem(appInstance.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: titleBarHeight}, 1);
 		SAGE2Items.applications.editButtonVisibilityOnItem(appInstance.id, "pinButton", false);
@@ -10226,7 +10213,8 @@ function hideStickyPin(app) {
 	// if it is in a Partition -- I assume it could happen in other cases as well)
 	broadcast('hideStickyPin', {
 		id: app.id,
-		sticky: app.sticky
+		sticky: app.sticky,
+		pinned: app.pinned
 	});
 }
 
@@ -10407,6 +10395,9 @@ function wsCallFunctionOnApp(wsio, data) {
 			let app = {application: SAGE2Items.applications.list[data.app]};
 			let remote = remoteSites[data.parameters.remoteSiteIndex];
 			shareApplicationWithRemoteSite(uniqueID, app, remote);
+			return;
+		} else if (data.func === "SAGE2PinStickyItem") {
+			toggleStickyPin(data.app);
 			return;
 		}
 

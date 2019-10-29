@@ -258,7 +258,10 @@ function setupFocusHandlers() {
 	document.addEventListener(visEvent, function(event) {
 		if (document[hidden]) {
 			if (interactor && interactor.broadcasting) {
-				note = notifyMe("Keep browser tab with SAGE2 UI visible during screen sharing");
+				// Only use the notification when not using webrtc
+				if (!interactor.mediaUseRTC) {
+					note = notifyMe("Keep browser tab with SAGE2 UI visible during screen sharing");
+				}
 			}
 		} else {
 			if (note) {
@@ -1461,14 +1464,29 @@ function handleClick(element) {
 		} else {
 			// Open the new file manager
 			var fm = document.getElementById('fileManager');
-			if (fm.style.display === "none") {
+
+			// Remove the display overview if needed
+			if (self.overview) {
+				document.getElementById('overview').remove();
+				let elt = fm.firstElementChild;
+				elt.style.display = "block";
+				self.overview = false;
+				// Put back the file manager
 				fm.style.display = "block";
 				SAGE2_resize(0.6);
 				fileManager.refresh();
 			} else {
-				fm.style.display = "none";
-				SAGE2_resize(1.0);
+				// Show/hide the file manager
+				if (fm.style.display === "none") {
+					fm.style.display = "block";
+					SAGE2_resize(0.6);
+					fileManager.refresh();
+				} else {
+					fm.style.display = "none";
+					SAGE2_resize(1.0);
+				}
 			}
+
 		}
 	} else if (element.id === "arrangement" || element.id === "arrangementContainer" || element.id === "arrangementLabel") {
 		showDialog('arrangementDialog');
@@ -1494,7 +1512,7 @@ function handleClick(element) {
 							data: [
 								{id: 1, value: "Google Docs - documents"},
 								{id: 2, value: "Office 365 - office online"},
-								{id: 3, value: "Appear.in - videoconference"},
+								{id: 3, value: "Whereby.com - videoconference"},
 								{id: 4, value: "Youtube - videos"},
 								{id: 5, value: "Slack - team collaboration"},
 								{id: 6, value: "NbViewer - jupyter notebooks"},
@@ -1505,7 +1523,7 @@ function handleClick(element) {
 									var urls = [
 										"https://docs.google.com/",
 										"https://login.microsoftonline.com/",
-										"https://appear.in/",
+										"https://whereby.com/",
 										"https://www.youtube.com/",
 										"https://slack.com/signin",
 										"https://nbviewer.jupyter.org/",

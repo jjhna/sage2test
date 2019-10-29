@@ -80,7 +80,7 @@ var pdf_viewer = SAGE2_App.extend({
 		this.pageCurrentlyGenerated = {};
 		this.loaded = false;
 		this.TVALUE = 0.25;
-		this.showUI = true;
+		this.showUI = false; // show or hide the bottom toolbar
 		this.title  = data.title;
 
 		// disable gap between pages (bug in scaling)
@@ -152,9 +152,9 @@ var pdf_viewer = SAGE2_App.extend({
 			_this.obtainPageFromPDF(solver, 1, _this, 1);
 
 			// generating the thumbnails - i do not need to generate thumbnails.
-			for (var i = 1; i <= _this.pageDocument; i++) {
-				_this.obtainPageFromPDF(solver, i, _this, _this.TVALUE);
-			}
+			// for (var i = 1; i <= _this.pageDocument; i++) {
+			// 	_this.obtainPageFromPDF(solver, i, _this, _this.TVALUE);
+			// }
 
 			// Update the title
 			_this.changeTitle();
@@ -190,7 +190,7 @@ var pdf_viewer = SAGE2_App.extend({
 	/**
 	 * Update the tile with current page number
 	 *
-	 * @method     `eTitle
+	 * @method     changeTitle
 	 */
 	changeTitle: function() {
 		// Get the page in center of the screen
@@ -635,7 +635,6 @@ var pdf_viewer = SAGE2_App.extend({
 
 		if (!this.showUI) {
 			this.commandBarG.height = 0;
-			return;
 		}
 
 		// the background
@@ -719,6 +718,7 @@ var pdf_viewer = SAGE2_App.extend({
 		this.interactable.push(this.minusButton);
 
 		// the show thumbnails button
+		/*
 		this.thumbnailsButton = this.commandBarG.append("rect")
 			.attr("x", parseInt(this.minusButton.attr("x")) + this.widthCommandButton + this.marginButton)
 			.attr("y", 0 + this.marginButton)
@@ -735,6 +735,7 @@ var pdf_viewer = SAGE2_App.extend({
 		this.thumbnailsButton.action = this.showThumbnails;
 		this.thumbnailsButton.container = this.commandBarG;
 		this.interactable.push(this.thumbnailsButton);
+		*/
 	},
 
 	load: function(date) {

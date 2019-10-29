@@ -157,6 +157,8 @@ var SAGE2_App = Class.extend({
 		this.fileWrite      = false;
 		this.fileReceived   = false;
 		this.hasFileBuffer = false;
+		this.sticky = data.sticky;
+		this.pinned = data.pinned;
 		this.SAGE2CopyState(data.state);
 		this.SAGE2InitializeAppOptionsFromState();
 
@@ -999,6 +1001,20 @@ var SAGE2_App = Class.extend({
 				appContextMenu.entries = this.getContextEntries();
 			} else {
 				appContextMenu.entries = [];
+			}
+			appContextMenu.entries.push({
+				description: "separator"
+			});
+			if (this.sticky === true) {
+				var descr = "Unpinned";
+				if (this.pinned === true) {
+					descr = "Pinned";
+				}
+				appContextMenu.entries.push({
+					description: descr,
+					callback: "SAGE2PinStickyItem",
+					parameters: {}
+				});
 			}
 			appContextMenu.entries.push({
 				description: "separator"

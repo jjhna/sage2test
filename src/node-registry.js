@@ -273,4 +273,19 @@ RegistryManager.prototype.setDefaultApp = function(file, app, warn) {
 	}
 };
 
+/**
+ * Returns true if the image can be displayed in a browser
+ *
+ * @method isImageWebNative
+ * @param  {String} filetype - a given mime type
+ * @return {Boolean}  true if it is a web format
+ */
+RegistryManager.prototype.isImageWebNative = function(filetype) {
+	let browserCompatible = filetype === "image/jpeg" ||
+		filetype === "image/png"  ||
+		filetype === "image/webp" ||
+		filetype === "image/gif";
+	return browserCompatible;
+};
+
 module.exports = new RegistryManager();

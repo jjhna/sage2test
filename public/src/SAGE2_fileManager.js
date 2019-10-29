@@ -221,7 +221,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 						}
 					});
 				} else {
-					showSAGE2Message("Installation not yet supported for your current installation");
+					showSAGE2Message("Installation not possible: system not yet supported or already installed");
 				}
 			}
 		},
@@ -295,6 +295,39 @@ function FileManager(wsio, mydiv, uniqueID) {
 							children: [
 								{type: "col", ptn: true, size: 6},
 								{type: "col", ptn: true, size: 6}
+							]
+						}
+					]
+				});
+		}},
+		p3x3_menu: {value: "3 Columns, 3 Rows", callback: function (evt) {
+			// create partition division of screen
+			wsio.emit('partitionScreen',
+				{
+					type: "col", size: 12,
+					children: [
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4}
+							]
+						},
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4}
+							]
+						},
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4}
 							]
 						}
 					]
@@ -1513,17 +1546,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 	 */
 	function buildAboutHTML() {
 		var versionText = "<p>";
-		// Add new information
+		// Add host information
 		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Host</span>: " + displayUI.config.host + "</p>";
-		// Show the type of web browser
-		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Browser</span>: " +
-			__SAGE2__.browser.browserType + " " + __SAGE2__.browser.version + "</p>";
-		versionText += "</p>";
-		// Configuration
-		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Resolution</span>: " +
-			displayUI.config.totalWidth + " x " +  displayUI.config.totalHeight + " pixels";
-		versionText += " (" + displayUI.config.layout.columns + " by " + displayUI.config.layout.rows + " tiles";
-		versionText += "  - " + displayUI.config.resolution.width + " x " + displayUI.config.resolution.height + ")" + "</p>";
+
 		// Add version
 		versionText += "<p class='textDialog'><span style='font-weight:bold;'>SAGE2 Version: </span>";
 		if (sage2Version.branch && sage2Version.commit && sage2Version.date) {
@@ -1532,6 +1557,22 @@ function FileManager(wsio, mydiv, uniqueID) {
 		} else {
 			versionText += "<b>v" + sage2Version.base + "</b>";
 		}
+		versionText += "</p>";
+
+		// Configuration
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Resolution</span>: " +
+			displayUI.config.totalWidth + " x " +  displayUI.config.totalHeight + " pixels";
+		versionText += " (" + displayUI.config.layout.columns + " by " + displayUI.config.layout.rows + " tiles";
+		versionText += "  - " + displayUI.config.resolution.width + " x " + displayUI.config.resolution.height + ")" + "</p>";
+
+		// blank
+		versionText += '<hr style="margin-top: 5px; margin-bottom: 5px">';
+
+		// Show the type of web browser
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Browser</span>: " +
+			__SAGE2__.browser.browserType + " " + __SAGE2__.browser.version + "</p>";
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Electron</span>: " +
+			"---" + "</p>";
 
 		return versionText;
 	}

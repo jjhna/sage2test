@@ -5,7 +5,7 @@ image: Visual Studio 2017
 branches:
   only:
   - master
-  - v4
+  - beta
 
 shallow_clone: true
 
@@ -28,8 +28,8 @@ init:
   - dir C:\Dev\ffmpeg-win64-dev\lib
 
 install:
-  - ps: Get-NodeJsLatestBuild 11.9
-  - ps: Install-Product node 11.9.0 x64
+  - ps: Get-NodeJsLatestBuild 12.6
+  - ps: Install-Product node 12.6.0 x64
   - dir C:\avvm\node
   - node -v
   - cd %APPVEYOR_BUILD_FOLDER%
@@ -65,8 +65,8 @@ install:
   - del /Q *.7z
   - del /Q *.zip
   - cd bin
-  - curl -LsSO https://nodejs.org/dist/latest-v11.x/win-x64/node.exe
-  - curl -LsSO https://nodejs.org/dist/latest-v11.x/win-x64/node.lib
+  - curl -LsSO https://nodejs.org/dist/latest-v12.x/win-x64/node.exe
+  - curl -LsSO https://nodejs.org/dist/latest-v12.x/win-x64/node.lib
   - cd ..
   - cd sabi.js
   - npm install --production --msvs_version=2017
@@ -94,6 +94,7 @@ install:
   - move server.js SAGE2
   - move electron.js SAGE2
   - move generate-service-worker.js SAGE2
+  - move manifest.webmanifest SAGE2
   - move src SAGE2
   - dir SAGE2
   - dir SAGE2\node_modules
