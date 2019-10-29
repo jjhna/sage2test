@@ -39,6 +39,8 @@ var quickNote = SAGE2_App.extend({
 		this.markdownDiv.style.fontSize = ui.titleTextSize + "px";
 		this.markdownDiv.style.boxSizing = "border-box";
 		this.markdownDiv.style.listStylePosition = "inside";
+		// Support for overflow
+		this.markdownDiv.style.overflow = "auto";
 		this.element.appendChild(this.markdownDiv);
 		// Keep a copy of the title
 		this.noteTitle = "";
@@ -69,6 +71,43 @@ var quickNote = SAGE2_App.extend({
 		}
 		this.adjustFontSize();
 		this.showOrHideArrow();
+		window.requestAnimationFrame(() => {
+			this.adjustForInitialSize();
+		});
+	},
+
+	adjustForInitialSize: function() {
+		// The point of this is that the original size of a note doesn't always show
+		// the entirely of it, making it difficult to read
+		let components = this.markdownDiv.children;
+		let totalHeight = 0;
+		let largestWidth = 0;
+		for (let i = 0; i < components.length; i++) {
+			totalHeight += parseInt(window.getComputedStyle(components[i]).height) + 1;
+			if (parseInt(window.getComputedStyle(components[i]).width) > largestWidth) {
+				largestWidth = parseInt(window.getComputedStyle(components[i]).width) + 1;
+			}
+		}
+		// If the needed height is larger than the sage2 height, adjust to include.
+		// Maybe ratio is bad, some lines can't be joined together.
+		if (totalHeight > this.sage2_height) {
+			// Keep note resize within wall height.
+			let totalWallHeight = ui.json_cfg.totalHeight;
+			if (totalHeight > totalWallHeight) {
+				totalHeight = totalWallHeight - ui.titleBarHeight * 2;
+				if (largestWidth <= this.sage2_width + ui.titleBarHeight) {
+					largestWidth = this.sage2_width * 2;
+				}
+			}
+			wsio.emit("updateApplicationPositionAndSize", { appPositionAndSize: {
+				elemId: this.id,
+				elemLeft: this.sage2_x,
+				elemTop: this.sage2_y,
+				elemWidth: largestWidth,
+				elemHeight: totalHeight
+			}});
+
+		}
 	},
 
 	makeHighlightExtension: function () {
@@ -115,10 +154,13 @@ var quickNote = SAGE2_App.extend({
 		var fileData  = {};
 		fileData.fileDefined = true;
 		fileData.clientName  = fileContentsFromServer.substring(0, fileContentsFromServer.indexOf("\n"));
-		fileContentsFromServer  = fileContentsFromServer.substring(fileContentsFromServer.indexOf("\n") + 1); // Remove first line
-		fileData.colorChoice  = fileContentsFromServer.substring(0, fileContentsFromServer.indexOf("\n"));
-		fileContentsFromServer  = fileContentsFromServer.substring(fileContentsFromServer.indexOf("\n") + 1); // Remove second line
-		fileData.clientInput = fileContentsFromServer; // The rest is to be displayed
+		// Remove first line
+		fileContentsFromServer  = fileContentsFromServer.substring(fileContentsFromServer.indexOf("\n") + 1);
+		fileData.colorChoice    = fileContentsFromServer.substring(0, fileContentsFromServer.indexOf("\n"));
+		// Remove second line
+		fileContentsFromServer  = fileContentsFromServer.substring(fileContentsFromServer.indexOf("\n") + 1);
+		// The rest is to be displayed
+		fileData.clientInput    = fileContentsFromServer;
 		this.setMessage(fileData);
 	},
 
@@ -129,18 +171,28 @@ var quickNote = SAGE2_App.extend({
 	setMessage: function(msgParams) {
 		// If defined by a file, use those values
 		if (msgParams.fileDefined === true) {
-			this.element.style.background = this.state.colorChoice  = this.backgroundChoice = msgParams.colorChoice;
+			this.element.style.background = msgParams.colorChoice;
+			this.state.colorChoice  = msgParams.colorChoice;
+			this.backgroundChoice   = msgParams.colorChoice;
 			this.state.creationTime = msgParams.clientName;
 			this.formatAndSetTitle(this.state.creationTime);
 			this.saveNote(msgParams.creationTime);
-		} else { // else defined by load or user input
+		} else {
+			// else defined by load or user input
 			// Otherwise set the values using probably user input.
-			if (msgParams.clientName === undefined || msgParams.clientName === null || msgParams.clientName == "") {
-				msgParams.clientName = ""; // Could be anon
+			if (msgParams.clientName === undefined ||
+				msgParams.clientName === null ||
+				msgParams.clientName == "") {
+				// Could be anon
+				msgParams.clientName = "";
 			}
 			// If the color choice was defined, use the given color.
-			if (msgParams.colorChoice !== undefined && msgParams.colorChoice !== null && msgParams.colorChoice !== "") {
-				this.element.style.background = this.backgroundChoice = this.state.colorChoice = msgParams.colorChoice;
+			if (msgParams.colorChoice !== undefined &&
+				msgParams.colorChoice !== null &&
+				msgParams.colorChoice !== "") {
+				this.element.style.background = msgParams.colorChoice;
+				this.backgroundChoice  = msgParams.colorChoice;
+				this.state.colorChoice = msgParams.colorChoice;
 			}
 			// client input state set as part of the clean
 			this.state.clientName  = msgParams.clientName;
@@ -157,7 +209,8 @@ var quickNote = SAGE2_App.extend({
 				if (this.state.creationTime.getMonth() < 9) {
 					titleString += "0";
 				}
-				titleString += (this.state.creationTime.getMonth() + 1) + ""; // month +1 because starts at 0
+				// month +1 because starts at 0
+				titleString += (this.state.creationTime.getMonth() + 1) + "";
 				if (this.state.creationTime.getDate() < 10) {
 					titleString += "0";
 				}
@@ -193,7 +246,14 @@ var quickNote = SAGE2_App.extend({
 
 		// set the text, currently innerHTML matters to render <br> and allow for html tags
 		this.state.clientInput = msgParams.clientInput;
-		this.markdownDiv.innerHTML = this.showdown_converter.makeHtml(msgParams.clientInput);
+		this.lastClientInput = this.state.clientInput;
+		if (msgParams.useMarkdown === false) {
+			// replace is only first match without regex
+			let newLinesAsBr = msgParams.clientInput.replace(/\n/gi, "<BR>");
+			this.markdownDiv.innerHTML = newLinesAsBr;
+		} else {
+			this.markdownDiv.innerHTML = this.showdown_converter.makeHtml(msgParams.clientInput);
+		}
 
 		// save if didn't come from file
 		if (msgParams.fileDefined !== true) {
@@ -210,7 +270,8 @@ var quickNote = SAGE2_App.extend({
 
 	formatAndSetTitle: function(wholeName) {
 		// Breaking apart whole name and using moment.js to make easier to read.
-		var parts  = wholeName.split("-"); // 0 name - 1 qn - 2 YYYYMMDD - 3 HHMMSSmmm
+		// 0 name - 1 qn - 2 YYYYMMDD - 3 HHMMSSmmm
+		var parts  = wholeName.split("-");
 		var author = parts[0];
 		var month  = parseInt(parts[2].substring(4, 6)); // YYYY[MM]
 		var day    = parseInt(parts[2].substring(6, 8)); // YYYYMM[DD]
@@ -227,14 +288,17 @@ var quickNote = SAGE2_App.extend({
 		// If the author is supposed to be Anonymouse, then omit author inclusion and marker.
 		if (author === "Anonymous") {
 			this.noteTitle = momentTime.format("MMM Do, hh:mm A");
-		} else { // Otherwise have the name followed by @
+		} else {
+			// Otherwise have the name followed by @
 			this.noteTitle = author + " @ " + momentTime.format("MMM Do, hh:mm A");
 		}
 		this.updateTitle(this.noteTitle);
 	},
 
 	load: function(date) {
-		if (this.state.clientInput !== undefined && this.state.clientInput !== null) {
+		if ((this.state.clientInput !== undefined)
+			&& (this.state.clientInput !== null)
+			&& (this.state.clientInput != this.lastClientInput)) {
 			this.setMessage({
 				clientName:   this.state.clientName,
 				clientInput:  this.state.clientInput,
@@ -244,7 +308,6 @@ var quickNote = SAGE2_App.extend({
 			this.adjustFontSize();
 			this.showOrHideArrow();
 		}
-		this.resize(date);
 	},
 
 	saveNote: function(date) {
@@ -257,8 +320,10 @@ var quickNote = SAGE2_App.extend({
 		this.resize();
 		// Tell server to save the file.
 		var fileData = {};
-		fileData.fileType = "note"; // Extension
-		fileData.fileName = this.state.creationTime + ".note"; // Fullname with extension
+		// Extension
+		fileData.fileType = "note";
+		// Fullname with extension
+		fileData.fileName = this.state.creationTime + ".note";
 		// What to save in the file
 		fileData.fileContent = this.state.creationTime
 			+ "\n"
@@ -279,7 +344,8 @@ var quickNote = SAGE2_App.extend({
 	},
 
 	event: function(eventType, position, user_id, data, date) {
-		if (eventType === "specialKey") {
+		// Font increase if alt is used with arrows
+		if (data.status && data.status.ALT) {
 			if (data.code === 40 && data.state === "down") {
 				// arrow down
 				this.adjustFontSize({ modifier: "decrease" });
@@ -287,12 +353,59 @@ var quickNote = SAGE2_App.extend({
 				// arrow up
 				this.adjustFontSize({ modifier: "increase" });
 			}
+		} else {
+			// else scrolling
+			if (data.code === 40 && data.state === "down") {
+				// arrow down
+				this.markdownDiv.scrollBy(0, ui.titleBarHeight * this.state.scale);
+			} else if (data.code === 38 && data.state === "down") {
+				// arrow up
+				this.markdownDiv.scrollBy(0, -1 * ui.titleBarHeight * this.state.scale);
+			} else if (data.code === 37 && data.state === "down") {
+				// arrow left
+				this.markdownDiv.scrollBy(-1 * ui.titleBarHeight * this.state.scale, 0);
+			} else if (data.code === 39 && data.state === "down") {
+				// arrow right
+				this.markdownDiv.scrollBy(ui.titleBarHeight * this.state.scale, 0);
+			}
+		}
+		if (eventType === "pointerScroll") {
+			this.markdownDiv.scrollBy(0, data.wheelDelta);
+		} else if (eventType === "pointerPress") {
+			this.determineIfLinkIsClicked(Math.round(position.y), user_id);
+		}
+	},
+
+	determineIfLinkIsClicked: function(y, user_id) {
+		// Based on click location, need to determine if there was a link.
+		let components = this.markdownDiv.getElementsByTagName("a");
+		let totalOffsetTop, parentNode;
+		for (let i = 0; i < components.length; i++) {
+			totalOffsetTop = components[i].offsetTop;
+			parentNode = components[i].parentNode;
+			// Find the showdown container
+			while (!parentNode.classList.contains("showdown")) {
+				parentNode = parentNode.parentNode;
+			}
+			// Subtract scroll from container
+			totalOffsetTop -= parentNode.scrollTop;
+
+			if ((y > totalOffsetTop) && (y < totalOffsetTop + components[i].offsetHeight)) {
+				wsio.emit("openNewWebpage", {
+					id: this.id,
+					url: components[i].href,
+					position: [this.sage2_x + this.sage2_width + 5,
+						this.sage2_y - this.config.ui.titleBarHeight],
+					// Using webview instructions.json ratio and basing on this note's width
+					dimensions: [this.sage2_width, this.sage2_width * 1440 / 1280]
+				});
+				break;
+			}
 		}
 	},
 
 	duplicate: function(responseObject) {
 		if (isMaster) {
-			// function(appName, x, y, params, funcToPassParams) {
 			this.launchAppWithValues("quickNote", {
 				clientName: responseObject.clientName,
 				clientInput: this.state.clientInput,
@@ -403,7 +516,7 @@ var quickNote = SAGE2_App.extend({
 
 		entries.push({
 			description: "Increase font size",
-			accelerator: "\u2191",     // up-arrow
+			accelerator: "Alt \u2191",     // up-arrow
 			callback: "adjustFontSize",
 			parameters: {
 				modifier: "increase"
@@ -411,7 +524,7 @@ var quickNote = SAGE2_App.extend({
 		});
 		entries.push({
 			description: "Decrease font size",
-			accelerator: "\u2193",     // down-arrow
+			accelerator: "Alt \u2193",     // down-arrow
 			callback: "adjustFontSize",
 			parameters: {
 				modifier: "decrease"
@@ -479,7 +592,8 @@ var quickNote = SAGE2_App.extend({
 
 		let arrow = document.createElement("img");
 		arrow.style.position = "absolute";
-		arrow.style.top = 0; // keep aligned to top of window
+		// keep aligned to top of window
+		arrow.style.top = 0;
 		// need to calculate size
 		arrow.style.height = (ui.titleBarHeight * 1) + "px";
 		// move it outside of the title bar

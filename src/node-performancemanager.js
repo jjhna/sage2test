@@ -473,7 +473,7 @@ PerformanceManager.prototype.computeMovingAverages = function(metric, oneMinute,
 	// Compute sum of all entries
 	this.performanceMetrics.history[metric].forEach(el => {
 		for (property in entireDuration) {
-			if (entireDuration.hasOwnProperty(property)) {
+			if (Object.prototype.hasOwnProperty.call(entireDuration, property)) {
 				entireDuration[property] = entireDuration[property] + parseInt(el[property]);
 				if (el.date > oneMinuteAgo) {
 					oneMinute[property] = oneMinute[property] + parseInt(el[property]);
@@ -486,7 +486,7 @@ PerformanceManager.prototype.computeMovingAverages = function(metric, oneMinute,
 	// Compute average by dividing by number of entries in the sum
 	var entireDurationEntries = this.performanceMetrics.history[metric].length;
 	for (property in entireDuration) {
-		if (entireDuration.hasOwnProperty(property)) {
+		if (Object.prototype.hasOwnProperty.call(entireDuration, property)) {
 			entireDuration[property] = entireDuration[property] / entireDurationEntries;
 			oneMinute[property] = oneMinute[property] / minuteEntries;
 		}
@@ -602,25 +602,26 @@ PerformanceManager.prototype.collectMetrics = function() {
 
 	// Network traffic
 	if (this.performanceMetrics.staticInformation) {
-		var netInterfaces = this.performanceMetrics.staticInformation.net;
 		var totalTransferred = {
 			tx_sec: 0,
 			rx_sec: 0,
 			ms: 0
 		};
-		var count = 0;
-		for (var i = 0; i < netInterfaces.length; i++) {
-			sysInfo.networkStats(netInterfaces[i].iface, function (data) {
-				totalTransferred.tx_sec += data.tx_sec;
-				totalTransferred.rx_sec += data.rx_sec;
-				totalTransferred.ms += data.ms;
-				count++;
-				if (count === netInterfaces.length) {
-					totalTransferred.ms /= count;
-					this.collectSystemTraffic(totalTransferred);
+		sysInfo.networkStats("*", function (data) {
+			var count = 0;
+			for (var i = 0; i < data.length; i++) {
+				if (data[i].operstate === 'up') {
+					totalTransferred.tx_sec += data[i].tx_sec;
+					totalTransferred.rx_sec += data[i].rx_sec;
+					totalTransferred.ms += data[i].ms;
+					count++;
 				}
-			}.bind(this));
-		}
+			}
+			if (count > 0) {
+				totalTransferred.ms /= count;
+				this.collectSystemTraffic(totalTransferred);
+			}
+		}.bind(this));
 	}
 
 	this.collectServerTraffic();
@@ -1069,7 +1070,7 @@ PerformanceManager.prototype.computeMessageSize = function(wsio, data, outBound)
 		}
 
 		var clientAppID = wsio.clientID + "_" + id;
-		if (this.trafficData.hasOwnProperty(clientAppID) === false) {
+		if (Object.prototype.hasOwnProperty.call(this.trafficData, clientAppID) === false) {
 			this.trafficData[clientAppID] = {
 				appId: id,
 				clientID: wsio.clientID,
@@ -1122,7 +1123,7 @@ PerformanceManager.prototype.getTrafficData = function() {
 
 function checkForNegatives(obj) {
 	for (var k in obj) {
-		if (obj.hasOwnProperty(k)) {
+		if (Object.prototype.hasOwnProperty.call(obj, k)) {
 			if (typeof obj[k] === 'number' && isNaN(obj[k]) === false && obj[k] < 0) {
 				return true;
 			}

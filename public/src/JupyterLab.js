@@ -7,8 +7,6 @@
 
 "use strict";
 
-/* global  */
-
 var JupyterLab = SAGE2_App.extend({
 	init: function(data) {
 		// Create div into the DOM

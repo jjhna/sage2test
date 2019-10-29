@@ -19,10 +19,12 @@
 
 /* global SAGE2_init, SAGE2_resize, escape, unescape, sage2Version, showDialog */
 /* global removeAllChildren, SAGE2_copyToClipboard, displayUI, dateToYYYYMMDDHHMMSS */
-/* global showSAGE2Message, pasteHandler */
+/* global showSAGE2Message, pasteHandler, fileManager */
 /* global SAGE2_speech, deferredInstallationPrompt */
 
 "use strict";
+
+var overview = false;
 
 /**
  * Convert a file size (number) to pretty string
@@ -219,7 +221,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 						}
 					});
 				} else {
-					showSAGE2Message("Installation not yet supported for your current installation");
+					showSAGE2Message("Installation not possible: system not yet supported or already installed");
 				}
 			}
 		},
@@ -293,6 +295,39 @@ function FileManager(wsio, mydiv, uniqueID) {
 							children: [
 								{type: "col", ptn: true, size: 6},
 								{type: "col", ptn: true, size: 6}
+							]
+						}
+					]
+				});
+		}},
+		p3x3_menu: {value: "3 Columns, 3 Rows", callback: function (evt) {
+			// create partition division of screen
+			wsio.emit('partitionScreen',
+				{
+					type: "col", size: 12,
+					children: [
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4}
+							]
+						},
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4}
+							]
+						},
+						{
+							type: "row", size: 4,
+							children: [
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4},
+								{type: "col", ptn: true, size: 4}
 							]
 						}
 					]
@@ -394,6 +429,43 @@ function FileManager(wsio, mydiv, uniqueID) {
 			tooltip: "Captures a screenshot of the wall and opens it up",
 			callback: function (evt) {
 				wsio.emit("startWallScreenshot");
+			}
+		},
+		separator4: {value: "separator"},
+		hidebuttons_menu: {value: "Show/Hide Wall",
+			tooltip: "Shows/Hides the overview client at the bottom of the page",
+			callback: function (evt) {
+				// Open/close the file manager
+				var fm = document.getElementById('fileManager');
+				// Add the wall overview
+				if (self.overview) {
+					document.getElementById('overview').remove();
+					let elt = fm.firstElementChild;
+					elt.style.display = "block";
+					self.overview = false;
+					SAGE2_resize();
+					// Hide file manager
+					fm.style.display = "none";
+					SAGE2_resize(1.0);
+				} else {
+					if (fm.style.display === "none") {
+						fm.style.display = "block";
+						SAGE2_resize(0.6);
+						fileManager.refresh();
+					}
+					let elt = fm.firstElementChild;
+					elt.style.display = "none";
+					let overview = document.createElement("iframe");
+					overview.id = "overview";
+					overview.src = "https://" + window.location.hostname + _this.https_port +  "/display.html?clientID=-1";
+					overview.style.width = "98%";
+					overview.style.height = (window.innerHeight - document.getElementById('sage2UICanvas').height) + "px";
+					overview.style.margin = "0 auto";
+					overview.style.frameborder = 0;
+					document.getElementById("fileManager").appendChild(overview);
+					self.overview = true;
+					SAGE2_resize();
+				}
 			}
 		}
 	};
@@ -640,7 +712,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		container: document.getElementById('mainMenuBar'),
 		id: "toplayout",
 		// CSS styling for colors
-		css: "my_style",
+		css: "topbar_style",
 		// Remove the css borders for full width
 		borderless: true,
 		rows: [{
@@ -695,6 +767,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 						{
 							id: "tree1",
 							view: "tree",
+							type: "lineTree",
 							select: "select",
 							navigation: true,
 							drag: true,
@@ -1473,17 +1546,9 @@ function FileManager(wsio, mydiv, uniqueID) {
 	 */
 	function buildAboutHTML() {
 		var versionText = "<p>";
-		// Add new information
+		// Add host information
 		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Host</span>: " + displayUI.config.host + "</p>";
-		// Show the type of web browser
-		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Browser</span>: " +
-			__SAGE2__.browser.browserType + " " + __SAGE2__.browser.version + "</p>";
-		versionText += "</p>";
-		// Configuration
-		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Resolution</span>: " +
-			displayUI.config.totalWidth + " x " +  displayUI.config.totalHeight + " pixels";
-		versionText += " (" + displayUI.config.layout.columns + " by " + displayUI.config.layout.rows + " tiles";
-		versionText += "  - " + displayUI.config.resolution.width + " x " + displayUI.config.resolution.height + ")" + "</p>";
+
 		// Add version
 		versionText += "<p class='textDialog'><span style='font-weight:bold;'>SAGE2 Version: </span>";
 		if (sage2Version.branch && sage2Version.commit && sage2Version.date) {
@@ -1492,6 +1557,22 @@ function FileManager(wsio, mydiv, uniqueID) {
 		} else {
 			versionText += "<b>v" + sage2Version.base + "</b>";
 		}
+		versionText += "</p>";
+
+		// Configuration
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Resolution</span>: " +
+			displayUI.config.totalWidth + " x " +  displayUI.config.totalHeight + " pixels";
+		versionText += " (" + displayUI.config.layout.columns + " by " + displayUI.config.layout.rows + " tiles";
+		versionText += "  - " + displayUI.config.resolution.width + " x " + displayUI.config.resolution.height + ")" + "</p>";
+
+		// blank
+		versionText += '<hr style="margin-top: 5px; margin-bottom: 5px">';
+
+		// Show the type of web browser
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Browser</span>: " +
+			__SAGE2__.browser.browserType + " " + __SAGE2__.browser.version + "</p>";
+		versionText += "<p class='textDialog'><span style='font-weight:bold;'>Electron</span>: " +
+			"---" + "</p>";
 
 		return versionText;
 	}

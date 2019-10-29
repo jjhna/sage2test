@@ -188,7 +188,10 @@ var media_stream = SAGE2_App.extend({
 		vid.style.position = "absolute";
 		vid.style.left = "0px";
 		vid.style.top = "0px";
+		// auto play is an issue if not started from a user interaction
 		vid.autoplay = true;
+		// but no constraint yet on muted video
+		vid.muted = true;
 		vid.style.width = "100%";
 		vid.style.height = "100%";
 
@@ -203,7 +206,12 @@ var media_stream = SAGE2_App.extend({
 		statusDiv.style.width = "100%";
 		statusDiv.style.height = "100%";
 		statusDiv.style.background = "white";
-		statusDiv.innerHTML = "<h1>Initializing WebRTC connection...</h1>";
+		statusDiv.innerHTML = "<h1>Trying to screenshare with WebRTC</h1>";
+		statusDiv.innerHTML += "<h3>If this message is still visible after ~30 seconds"
+			+ "WebRTC is probably blocked on the network</h3>"
+			+ "<h3>If WebRTC doesn't work, disable WebRTC and restart the screenshare</h3>"
+			+ "<h3>To do this, from UI access View > Settings > uncheck Use WebRTC</h3><br><br>";
+		statusDiv.innerHTML += "<h1>Initializing WebRTC connection...</h1>";
 		this.element.parentNode.insertBefore(statusDiv, this.element);
 	},
 
@@ -263,7 +271,7 @@ var media_stream = SAGE2_App.extend({
 			this.webrtcParts.s2wpc.readMessage(responseObject.message, () => {
 				// This function triggers when a connection is detected
 				this.webrtcParts.status.style.visibility = "hidden";
-				this.showModeInTitle("WebRTC mode");
+				this.showModeInTitle("Fast mode");
 			});
 		}
 	},
@@ -274,7 +282,6 @@ var media_stream = SAGE2_App.extend({
 		if (this.webrtcParts.fallbackStatusHideCounter > 2) {
 			this.webrtcParts.status.style.visibility = "hidden";
 			this.showModeInTitle();
-			// this.showModeInTitle("Default mode");
 		}
 	},
 

@@ -974,7 +974,7 @@ function UIBuilder(json_cfg, clientID) {
 	* @param pointer_data {Object} pointer information
 	*/
 	this.createSagePointer = function(pointer_data) {
-		if (this.pointerItems.hasOwnProperty(pointer_data.id)) {
+		if (Object.prototype.hasOwnProperty.call(this.pointerItems, pointer_data.id)) {
 			return;
 		}
 
