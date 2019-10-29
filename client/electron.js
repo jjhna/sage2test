@@ -27,9 +27,12 @@ const fs = require('fs');
 
 // To make it work in both files (electron.js in /sage2 and electron.js in /sage2/client)
 var md5 = null;
+console.log('DIR', __dirname.substr(__dirname.length - 6))
 if (__dirname.substr(__dirname.length - 6) === 'client') {
+	console.log('going for ../src/md5')
 	md5 = require('../src/md5');
 } else {
+	console.log('going for ./src/md5')
 	md5 = require('./src/md5');
 }
 
