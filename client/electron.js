@@ -24,15 +24,13 @@ const { join } = path;
 const electron = require('electron');
 const querystring = require('querystring');
 const fs = require('fs');
+const url = require('url');
 
 // To make it work in both files (electron.js in /sage2 and electron.js in /sage2/client)
 var md5 = null;
-console.log('DIR', __dirname.substr(__dirname.length - 6))
 if (__dirname.substr(__dirname.length - 6) === 'client') {
-	console.log('going for ../src/md5')
 	md5 = require('../src/md5');
 } else {
-	console.log('going for ./src/md5')
 	md5 = require('./src/md5');
 }
 
@@ -135,7 +133,7 @@ commander
 	.option('-m, --monitor <n>',         'Select a monitor (int)', myParseInt, null)
 	.option('-n, --no_decoration',       'Remove window decoration (boolean)', false)
 	.option('-p, --plugins',             'Enables plugins and flash (boolean)', false)
-	.option('-s, --server <s>',          'Server URL (string)', 'http://localhost:9292')
+	.option('-s, --server <s>',          'Server URL (string)', null)
 	.option('-u, --ui',                  'Open the user interface (instead of display)', false)
 	.option('-x, --xorigin <n>',         'Window position x (int)', myParseInt, 0)
 	.option('-y, --yorigin <n>',         'Window position y (int)', myParseInt, 0)
@@ -186,27 +184,20 @@ app.commandLine.appendSwitch("force-device-scale-factor", "1");
 // switch found from: https://github.com/electron/electron/issues/13525/
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
-// Remove the limit on the number of connections per domain
-//  the usual value is around 6
-const url = require('url');
-var parsedURL = url.parse(commander.server);
-// default domains are local
-var domains   = "localhost,127.0.0.1";
-// Store current site domain
-var currentDomain = parsedURL.hostname;
-
-// Filename of favorite sites file
-const favorites_file_name = 'sage2_favorite_sites.json';
-// Object containing list of favorites sites
-var favorites = {
-	list: []
-};
-
-if (parsedURL.hostname) {
-	// add the hostname
-	domains +=  "," + parsedURL.hostname;
+if (commander.server) {
+	// Remove the limit on the number of connections per domain
+	//  the usual value is around 6
+	var parsedURL = url.parse(commander.server);
+	// default domains are local
+	var domains   = "localhost,127.0.0.1";
+	// Store current site domain
+	var currentDomain = parsedURL.hostname;
+	if (parsedURL.hostname) {
+		// add the hostname
+		domains +=  "," + parsedURL.hostname;
+	}
+	app.commandLine.appendSwitch("ignore-connections-limit", domains);
 }
-app.commandLine.appendSwitch("ignore-connections-limit", domains);
 
 // For display clients, ignore certificate errors
 app.commandLine.appendSwitch("ignore-certificate-errors");
@@ -227,6 +218,13 @@ if (commander.debug) {
 	// Add the parameter to the list of options on the command line
 	app.commandLine.appendSwitch("remote-debugging-port", port.toString());
 }
+
+// Filename of favorite sites file
+const favorites_file_name = 'sage2_favorite_sites.json';
+// Object containing list of favorites sites
+var favorites = {
+	list: []
+};
 
 /**
  * Keep a global reference of the window object, if you don't, the window will
@@ -261,51 +259,57 @@ function openWindow() {
 		height: commander.height
 	});
 
-	// Start to build a URL to load
-	var location = commander.server;
+	// if server is specified, used the URL
+	if (commander.server) {
+		// Start to build a URL to load
+		var location = commander.server;
 
-	// Test if we want an audio client
-	if (commander.audio) {
-		location = location + "/audioManager.html";
-		if (commander.hash) {
-			// add the password hash to the URL
-			location += '?hash=' + commander.hash;
-		} else if (commander.password) {
-			// add the password hash to the URL
-			location += '?session=' + commander.password;
+		// Test if we want an audio client
+		if (commander.audio) {
+			location = location + "/audioManager.html";
+			if (commander.hash) {
+				// add the password hash to the URL
+				location += '?hash=' + commander.hash;
+			} else if (commander.password) {
+				// add the password hash to the URL
+				location += '?session=' + commander.password;
+			}
+		} else if (commander.ui) {
+			// or an UI client
+			location = location + "/index.html";
+			if (commander.hash) {
+				// add the password hash to the URL
+				location += '?hash=' + commander.hash;
+			} else if (commander.password) {
+				// add the password hash to the URL
+				location += '?session=' + commander.password;
+			}
+		} else {
+			// and by default a display client
+			location = location + "/display.html?clientID=" + commander.display;
+			if (commander.hash) {
+				// add the password hash to the URL
+				location += '&hash=' + commander.hash;
+			} else if (commander.password) {
+				// add the password hash to the URL
+				location += '?session=' + commander.password;
+			}
 		}
-	} else if (commander.ui) {
-		// or an UI client
-		location = location + "/index.html";
-		if (commander.hash) {
-			// add the password hash to the URL
-			location += '?hash=' + commander.hash;
-		} else if (commander.password) {
-			// add the password hash to the URL
-			location += '?session=' + commander.password;
-		}
-	} else {
-		// and by default a display client
-		location = location + "/display.html?clientID=" + commander.display;
-		if (commander.hash) {
-			// add the password hash to the URL
-			location += '&hash=' + commander.hash;
-		} else if (commander.password) {
-			// add the password hash to the URL
-			location += '?session=' + commander.password;
-		}
-	}
-	mainWindow.loadURL(location);
+		mainWindow.loadURL(location);
 
-	if (commander.monitor !== null) {
-		mainWindow.on('show', function() {
-			mainWindow.setFullScreen(true);
+		if (commander.monitor !== null) {
+			mainWindow.on('show', function() {
+				mainWindow.setFullScreen(true);
+				// Once all done, prevent changing the fullscreen state
+				mainWindow.fullScreenable = false;
+			});
+		} else {
 			// Once all done, prevent changing the fullscreen state
 			mainWindow.fullScreenable = false;
-		});
+		}
 	} else {
-		// Once all done, prevent changing the fullscreen state
-		mainWindow.fullScreenable = false;
+		// otherwise open the popup
+		createRemoteSiteInputWindow();
 	}
 }
 
