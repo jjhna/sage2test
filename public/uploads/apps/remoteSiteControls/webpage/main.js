@@ -78,7 +78,7 @@ function handleSiteNotification(info) {
 		SAGE2_AppState.callFunctionInContainer("stopShareEverythingNew", remoteSiteInformation);
 	});
 	document.getElementById("bAction_makeStateAwayForEveryone").addEventListener("click", () => {
-		console.log("click on bAction_makeStateAwayFo");
+		console.log("click on bAction_makeStateAwayForEveryone");
 		SAGE2_AppState.callFunctionInContainer("awayStatus");
 	});
 	document.getElementById("bAction_makeStateAvailableForOnlyThisSite").addEventListener("click", () => {
@@ -88,6 +88,7 @@ function handleSiteNotification(info) {
 }
 
 function handleSharingState(state) {
+	console.log("erase me, setting share state", state);
 	if (state) {
 		document.getElementById("sharingState").style.visibility = "visible";
 		document.getElementById("bAction_shareEverythingNewToThisSite").style.display = "none";

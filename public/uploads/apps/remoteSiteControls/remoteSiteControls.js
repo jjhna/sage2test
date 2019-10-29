@@ -152,6 +152,11 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 		if (!stsw.includes(site.name)) {
 			stsw.push(site.name);
 		}
+
+		console.log("erase me, addSiteSharing calling");
+		// Try add the icon to the bar.
+		ui.setRemoteIconVisibility(site.name, "iconShare", true);
+		console.log("erase me, why not done?");
 	},
 
 	addAppMonitoring() {
@@ -188,6 +193,7 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 		if (stsw.indexOf(site.name) !== -1) {
 			stsw.splice(stsw.indexOf(), 1);
 		}
+		ui.setRemoteIconVisibility(site.name, "iconShare", false);
 	},
 
 	awayStatus: function(params) {
@@ -197,6 +203,13 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 				console.log("Should only be available to the following site", params);
 			} else {
 				console.log("Should not be available to anyone");
+			}
+			for (let i = 0; i < ui.addedRemoteSites.length; i++) {
+				if (params && (params.name === ui.addedRemoteSites[i])) {
+					ui.setRemoteIconVisibility(ui.addedRemoteSites[i], "iconUnavailable", false);
+				} else {
+					ui.setRemoteIconVisibility(ui.addedRemoteSites[i], "iconUnavailable", true);
+				}
 			}
 			wsio.emit("remoteSiteUnavailable", params);
 		}

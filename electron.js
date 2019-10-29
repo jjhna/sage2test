@@ -348,10 +348,14 @@ function createWindow() {
 		const session = electron.session.defaultSession;
 		session.clearStorageData({
 			storages: ["appcache", "cookies", "local storage", "serviceworkers"]
-		}).then(()=> {
+		}, function () {
 			console.log('Electron>	Caches cleared');
 			openWindow();
 		});
+		// }).then(()=> {
+		// 	console.log('Electron>	Caches cleared');
+		// 	openWindow();
+		// });
 	} else {
 		openWindow();
 	}
