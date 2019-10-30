@@ -392,7 +392,7 @@ OmicronManager.prototype.connect = function(msgPort) {
 	omicronManager.oinputserverSocket.on('data', function(e) {
 		// sageutils.log('Omicron', 'oinputserver receiving data:', e);
 		// TCP stream
-		// omicronManager.processIncomingEvent(e);
+		omicronManager.processIncomingEvent(e);
 	});
 };
 
