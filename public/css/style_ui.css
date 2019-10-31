@@ -1298,3 +1298,48 @@ The z-index is very important.
 .contextMenuEntry:hover>.contextSubMenu {
     display: block;
 }
+
+/* SAGE2 cookie consent banner */
+#SAGE2CookieConsent {
+    z-index: 1999;
+    min-height: 20px;
+    font-family: Arimo, Helvetica, sans-serif;
+    padding: 10px 20px;
+    background: rgba(0,0,0,0.9);
+    overflow: hidden;
+    position: fixed;
+    color: #FFF;
+    bottom: 0px;
+    right: 10px;
+    display: none;
+    left: 0;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+}
+#SAGE2CookieConsent div {
+    padding: 5px 0 0;
+}
+#SAGE2CookieConsent a {
+    color: #32CD32;
+    display: inline-block;
+    padding: 0 10px;
+}
+#SAGE2CookieConsent a:hover {
+	color: #32CD32;
+}
+#SAGE2CookieConsent a#cookieButton {
+    display: inline-block;
+    color: #000000;
+    font-size: 1.1em;
+	background: #32CD32;
+    text-decoration: none;
+    cursor: pointer;
+    padding: 2px 20px;
+    float: right;
+    border-radius: 10px;
+}
+#SAGE2CookieConsent a#cookieButton:hover {
+    background: #32CD32;
+	color: #000;
+}

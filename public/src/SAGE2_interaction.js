@@ -1407,7 +1407,8 @@ function SAGE2_interaction(wsio) {
 							},
 							{
 								view: "checkbox",
-								label: "Use WebRTC",
+								label: "Fast mode",
+								tooltip: "Use WebRTC to share desktop (default)",
 								id:   "use_webrtc",
 								value: this.mediaUseRTC
 							}
