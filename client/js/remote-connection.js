@@ -68,6 +68,7 @@ var favorites = {
 let passwordRequired = false;
 let isHashSaved = false;
 let currentlySelectedItemElem;
+let currentlySelectedHost;
 let lastCheckedSiteName;
 let lastClickedCheck = false;
 
@@ -313,7 +314,11 @@ function addConnectedSiteToList(item, index) {
 	// it.addEventListener('click', selectFavoriteSite);
 	it.firstElementChild.lastElementChild.addEventListener('click', addFavoriteSiteList);
 	it.style.color = "grey";
-	favoriteList.insertBefore(it, favoriteList.lastChild.nextSibling);
+	if (favoriteList.lastChild == null) {
+		favoriteList.appendChild(it);
+	} else {
+		favoriteList.insertBefore(it, favoriteList.lastChild.nextSibling);
+	}
 	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor;
 	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
@@ -353,7 +358,7 @@ function selectFavoriteSite(event) {
 			setOnlineColorItem(currentlySelectedItemElem);
 		}
 		currentlySelectedItemElem = elem;
-		// currentlySelectedHost = host;
+		currentlySelectedHost = host;
 		// currentlySelectedName = name;
 		setSelectedColorItem(elem);
 
@@ -491,6 +496,12 @@ function writeFavoritesOnFile(favorites_obj) {
  * @return the URL for the config file
  */
 function buildConfigURL(domain) {
+	if (domain.startsWith('https://')) {
+		domain = domain.substring(8);
+	}
+	if (domain.startsWith('http://')) {
+		domain = domain.substring(7);
+	}
 	if (domain === "localhost" || domain === "127.0.0.1") {
 		domain = domain + ":" + PREDEFINED_LOCAL_PORT;
 	}
@@ -665,6 +676,12 @@ function createDropItemIds(item, index) {
  * @return {String} the formatted url
  */
 function formatProperly(url) {
+	if (url.startsWith('https://')) {
+		url = url.substring(8);
+	}
+	if (url.startsWith('http://')) {
+		url = url.substring(7);
+	}
 	const url_start = 'https://';
 	if (url === "localhost" || url == '127.0.0.1') {
 		url = url + ":" + PREDEFINED_LOCAL_PORT;
@@ -713,7 +730,11 @@ function cancelOnClick() {
  */
 function okayOnClick() {
 	// sending URL to electron.js, params: key value pair (id,URL)
-	connectToPage(urlInput.value);
+	if (urlInput.value == '') {
+		connectToPage(currentlySelectedHost);
+	} else {
+		connectToPage(urlInput.value);
+	}
 }
 
 function connectToPage(URL) {
