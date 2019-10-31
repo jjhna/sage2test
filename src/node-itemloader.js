@@ -1040,6 +1040,72 @@ AppLoader.prototype.createJupyterApp = function(source, type, encoding, name, co
 	callback(appInstance);
 };
 
+AppLoader.prototype.createJupyterCell = function (
+	cell,
+	metadata,
+	{
+		left = this.titleBarHeight,
+		top = 1.5 * this.titleBarHeight,
+		width = 300,
+		height = 300
+	},
+	callback
+) {
+
+	var app_metadata = {
+		title: "Jupyter",
+		version: "1.0.0",
+		description: "JupyterLab-SAGE2 Application",
+		author: "SAGE2",
+		license: "SAGE2-Software-License",
+		keywords: ["jupyter", "jupyterlab"]
+	};
+
+	let application = cell.cell_type === "code"
+		? "JupyterCodeCell"
+		: "JupyterMarkdownCell";
+
+	var appInstance = {
+		id: null,
+		title: application,
+		color: "#aaa",
+		application,
+		icon: "/images/jupyter.png",
+		type: "mime_type",
+		url: "src",
+		data: {
+			cell,
+			metadata
+		},
+		load: {
+			imgDict: {},
+			mainImgs: {},
+			page: 1
+		},
+		resrc: null,
+		left,
+		top,
+		width,
+		height,
+		native_width: width,
+		native_height: height,
+		previous_left: null,
+		previous_top: null,
+		previous_width: null,
+		previous_height: null,
+		maximized: false,
+		// aspect: aspectRatio,
+		aspect: 1,
+		resizeMode: "free",
+		animation: false,
+		sticky: false,
+		metadata: app_metadata,
+		date: new Date()
+	};
+	this.scaleAppToFitDisplay(appInstance);
+	callback(appInstance);
+};
+
 
 function getSAGE2Path(getName) {
 	// pathname: result of the search

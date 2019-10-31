@@ -3639,6 +3639,18 @@ function wsLoadFileFromServer(wsio, data) {
 		broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
 		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
 			application: {id: null, type: "session"}}, time: Date.now()});
+	} else if (data.application === "jupyter_notebook") {
+		// special handling of jupyter notebook
+		loadJupyterNotebook(data.filename);
+
+		broadcast('userEvent', { type: 'load file', data: data, id: wsio.id });
+		addEventToUserLog(wsio.id, {
+			type: "openFile", data: {
+				name: data.filename,
+				application: { id: null, type: "ipynb" }
+			}, time: Date.now()
+		});
+
 	} else {
 		var fileLoadCallBack = function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
@@ -11105,6 +11117,57 @@ function sendApplicationDataUpdate(data) {
 	broadcast('eventInItem', event);
 }
 
+function loadJupyterNotebook(filename) {
+	var fullpath;
+
+	if (sageutils.fileExists(path.resolve(filename))) {
+		fullpath = filename;
+	}
+
+	// if it doesn't end in .json, add it
+	if (!fullpath.endsWith(".ipynb")) {
+		fullpath += '.ipynb';
+	}
+
+	fs.readFile(fullpath, function (err, data) {
+		if (err) {
+			console.error(err);
+		}
+
+		let notebook = JSON.parse(data);
+
+		let numCells = notebook.cells.length;
+
+		let screenAspect = config.totalWidth / config.totalHeight;
+
+		// numCells = numTall * numTall * screenAspect
+		let numTall = Math.ceil(Math.sqrt(numCells / (screenAspect)));
+
+		let gridSize = config.totalHeight / numTall;
+
+		for (let ind in notebook.cells) {
+			let cell = notebook.cells[ind];
+
+			appLoader.createJupyterCell(
+				cell,
+				notebook.metadata,
+				{
+					left: (Math.floor(ind / numTall) * gridSize) + 5,
+					top: (ind % numTall) * gridSize + 5,
+					width: gridSize - 10,
+					height: gridSize - 10
+				},
+				function (appInstance) {
+					appInstance.id = `${path.basename(filename)}~${ind}`;
+
+					handleNewApplication(appInstance, null);
+				}
+			);
+		}
+
+		// console.log(notebook.metadata);
+	});
+}
 
 /**
  * Method handling a file save request from a SAGE2_App
