@@ -1061,10 +1061,26 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	var touchWidth  = 0;
 	var touchHeight = 0;
 
+	var extraDataFloats = {};
+
+
 	if (e.extraDataItems >= 2) {
-		touchWidth  = msg.readFloatLE(offset); offset += 4;
-		touchHeight = msg.readFloatLE(offset); offset += 4;
+		extraDataFloats[0] = msg.readFloatLE(offset); offset += 4;
+		extraDataFloats[1] = msg.readFloatLE(offset); offset += 4;
 	}
+	if (e.extraDataItems >= 4) {
+		extraDataFloats[2] = msg.readFloatLE(offset); offset += 4;
+		extraDataFloats[3] = msg.readFloatLE(offset); offset += 4;
+	}
+	if (e.extraDataItems >= 5) {
+		extraDataFloats[4] = msg.readFloatLE(offset); offset += 4;
+	}
+	if (e.extraDataItems >= 6) {
+		extraDataFloats[5] = msg.readFloatLE(offset); offset += 4;
+	}
+
+	touchWidth = extraDataFloats[0];
+	touchHeight = extraDataFloats[1];
 
 	// the touch size is normalized
 	touchWidth *=  omicronManager.totalWidth;
@@ -1125,14 +1141,14 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 	// [1] height
 	// [2] initX
 	// [3] initY
-	// [4] Secondary event flag (or zoomDelta)
-	// [5] touch count in group
+	// [4] Secondary event flag
+	// [5] touch count in group (or zoomDelta)
 	// [c] id of touch n
 	// [c+1] xPos of touch n
 	// [c+2] yPos of touch n
 	if (e.extraDataItems >= 4) {
-		initX = msg.readFloatLE(offset); offset += 4;
-		initY = msg.readFloatLE(offset); offset += 4;
+		initX = extraDataFloats[2];
+		initY = extraDataFloats[3];
 
 		initX *= omicronManager.totalWidth;
 		initY *= omicronManager.totalHeight;
@@ -1141,11 +1157,11 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		initY += omicronManager.touchOffset[1];
 
 		if (e.extraDataItems >= 5) {
-			secondaryEventFlag = msg.readFloatLE(offset); offset += 4;
+			secondaryEventFlag = extraDataFloats[4];
 		}
 
 		if (e.extraDataItems >= 6 && e.flags !== FLAG_ZOOM) {
-			touchGroupSize = msg.readFloatLE(offset); offset += 4;
+			touchGroupSize = extraDataFloats[5];
 
 			for (var i = 0; i < touchGroupSize; i++) {
 				var subTouchID = msg.readFloatLE(offset); offset += 4;
@@ -1160,7 +1176,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				touchGroupChildrenIDs.set(subTouchID, { pointerX: subTouchPosX, pointerY: subTouchPosY });
 			}
 		} else if (e.extraDataItems >= 6) {
-			touchGroupSize = msg.readFloatLE(offset); offset += 4;
+			touchGroupSize = extraDataFloats[5];
 		}
 	} else {
 		initX = posX;
@@ -1241,7 +1257,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		omicronManager.touchList.delete(address);
 	} else if (e.type === 15) { // zoom
-		var zoomDelta = touchGroupSize;
+		var zoomDelta =  extraDataFloats[5];
 
 		if (omicronManager.enableTwoFingerZoom) {
 			// Omicron zoom event extra data:
@@ -1251,7 +1267,6 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 			// 3 = initY (parsed above)
 			// 4 = event second type ( parsed above: 1 = Down, 2 = Move, 3 = Up )
 			// 5 = zoom delta
-
 			if (secondaryEventFlag === 1) {
 				if (omicronManager.gestureDebug) {
 					console.log("Touch zoom start - ID: " + sourceID + " " + centerX + ", " + centerY);
@@ -1260,7 +1275,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 				omicronManager.pointerState[sourceID].zoomTriggered = true;
 			} else if (secondaryEventFlag === 2) {
 				if (omicronManager.gestureDebug) {
-					console.log("Touch zoom move - ID: " + sourceID + " " + wheelDelta);
+					console.log("Touch zoom move - ID: " + sourceID + " " + zoomDelta);
 				}
 				// Zoom gesture
 				var wheelDelta = -zoomDelta * omicronManager.touchZoomScale;
