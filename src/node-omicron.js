@@ -1203,7 +1203,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		}
 
 		// Set the initial pointer position
-		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
+		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY, sourceType: "touch" });
 
 		// Send 'click' event
 		if (e.flags === FLAG_SINGLE_TOUCH) {
@@ -1233,7 +1233,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 
 		// Only window drag if not zooming
 		if (omicronManager.pointerState[sourceID].zoomTriggered === false) {
-			omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY });
+			omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY, sourceType: "touch" });
 		}
 	} else if (e.type === 6) { // EventType: UP
 		// Send 'big touch' event
@@ -1253,7 +1253,7 @@ OmicronManager.prototype.processPointerEvent = function(e, sourceID, posX, posY,
 		omicronManager.hidePointer(address);
 
 		// Release event
-		omicronManager.pointerRelease(address, posX, posY, { button: "left" });
+		omicronManager.pointerRelease(address, posX, posY, { sourceType: "touch", button: "left" });
 
 		omicronManager.touchList.delete(address);
 	} else if (e.type === 15) { // zoom
