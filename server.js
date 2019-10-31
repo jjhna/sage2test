@@ -1291,8 +1291,7 @@ function setupListeners(wsio) {
 
 
 	//Remote Site sharing
-	wsio.on('remoteSiteKnockSend',                  wsRemoteSiteKnockSend);
-	wsio.on('remoteSiteKnockOnSiteHandler',         wsRemoteSiteKnockOnSiteHandler);
+	wsio.on('remoteSiteKnockSend',                  wsRemoteSiteKnockSend); // Note: handler is in remote section
 	wsio.on('remoteSiteUnavailable',                wsRemoteSiteUnavailable);
 
 }
@@ -5739,7 +5738,8 @@ function initalizeRemoteSites() {
 					wsio: null,
 					connected: "off",
 					geometry: rGeom,
-					index: index
+					index: index,
+					unavailable: false // used for automated sharing
 				};
 				// Create a websocket connection to the site
 				remoteSites[index].wsio = createRemoteConnection(wsURL, element, index);
@@ -5749,7 +5749,8 @@ function initalizeRemoteSites() {
 
 				// attempt to connect every 15 seconds, if connection failed
 				setInterval(function() {
-					if (remoteSites[index].connected !== "on") {
+					if ((remoteSites[index].connected !== "on")
+					&& (!remoteSites[index].unavailable)) {
 						var rem = createRemoteConnection(wsURL, element, index);
 						remoteSites[index].wsio = rem;
 					}
@@ -5843,11 +5844,18 @@ function manageRemoteConnection(remote, site, index) {
 	remote.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
 	remote.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
 
+	// For remote site controls
+	remote.on('remoteSiteKnockOnSiteHandler',         wsRemoteSiteKnockOnSiteHandler);
+
 	remote.emit('addClient', clientDescription);
 	clients.push(remote);
 
 	remote.on('remoteConnection', function(remotesocket, data) {
-		if (data.status === "refused") {
+		if (data.status === "unavailable") {
+			sageutils.log("Remote", "Connection became unavailable", chalk.cyan(site.name), ": " + data.reason);
+			remoteSites[index].connected = "locked";
+			remoteSites[index].unavailable = true;
+		} else if (data.status === "refused") {
 			sageutils.log("Remote", "Connection refused to", chalk.cyan(site.name), ": " + data.reason);
 			remoteSites[index].connected = "locked";
 		} else {

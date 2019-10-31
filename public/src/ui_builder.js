@@ -1357,14 +1357,14 @@ function UIBuilder(json_cfg, clientID) {
 		// Add icons that are hidden for sharing status
 		let iconShare = document.createElement("img");
 		iconShare.id = remote.id + "_iconShare";
-		iconShare.src = "/images/blag-01.png";
+		iconShare.src = "/images/rs04.png";
 		iconShare.style.height = remote.style.height;
 		iconShare.style.width = remote.style.height; // make a square
 		iconShare.style.visibility = "hidden";
 		remote.appendChild(iconShare);
 		let iconShare1 = document.createElement("img");
 		iconShare1.id = remote.id + "_iconShare1";
-		iconShare1.src = "/images/blag-01.png";
+		iconShare1.src = "/images/rs04.png";
 		iconShare1.style.height = remote.style.height;
 		iconShare1.style.width = remote.style.height; // make a square
 		iconShare1.style.visibility = "hidden";

@@ -51,8 +51,8 @@ function makeUnavailable(data, remoteSites) {
 			} else {
 				console.log("Becoming unavailable to:" + remoteSites[i].name);
 				remoteSites[i].wsio.emit("remoteConnection", {
-					status: "refused",
-					reason: "Unavailable by user choice"
+					status: "unavailable",
+					reason: "Site became unavailable by choice"
 				});
 			}
 		}
@@ -63,6 +63,6 @@ function makeUnavailable(data, remoteSites) {
 
 
 
-module.exports.knockSend      = knockSend;
-module.exports.knockAtThisSite      = knockAtThisSite;
-module.exports.makeUnavailable    = makeUnavailable;
+module.exports.knockSend       = knockSend;
+module.exports.knockAtThisSite = knockAtThisSite;
+module.exports.makeUnavailable = makeUnavailable;

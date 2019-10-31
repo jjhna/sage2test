@@ -167,23 +167,43 @@ var remoteSiteControls = sage2_webview_appCoreV01_extendWebview({
 		wsio.messages["createAppWindow"] = function(data) {
 			remoteSiteControls.original_createAppWindow(data);
 			if (remoteSiteControls.applicationsThatWillBeShared.includes(data.application)){
-				window.requestAnimationFrame(function() {
-					let stsw = remoteSiteControls.sitesToShareWith;
-					for (let i = 0; i < stsw.length; i++) {
-							console.log("TODO share the app with related sites", data.id);
-							if (isMaster) {
-								// wsCallFunctionOnApp();
-								console.log("Should be trying to send " + data.id);
-								wsio.emit("callFunctionOnApp", {
-									app: data.id,
-									func: "SAGE2_shareWithSite",
-									parameters: {
-										remoteSiteName: stsw[i]
-									} 
-								});
-							}
-					}
-				});
+				if (data.application === "pdf_viewer") {
+					setTimeout(function() {
+						let stsw = remoteSiteControls.sitesToShareWith;
+						for (let i = 0; i < stsw.length; i++) {
+								console.log("TODO share the app with related sites", data.id);
+								if (isMaster) {
+									// wsCallFunctionOnApp();
+									console.log("Should be trying to send " + data.id);
+									wsio.emit("callFunctionOnApp", {
+										app: data.id,
+										func: "SAGE2_shareWithSite",
+										parameters: {
+											remoteSiteName: stsw[i]
+										} 
+									});
+								}
+						}
+					}, 2000);
+				} else {
+					window.requestAnimationFrame(function() {
+						let stsw = remoteSiteControls.sitesToShareWith;
+						for (let i = 0; i < stsw.length; i++) {
+								console.log("TODO share the app with related sites", data.id);
+								if (isMaster) {
+									// wsCallFunctionOnApp();
+									console.log("Should be trying to send " + data.id);
+									wsio.emit("callFunctionOnApp", {
+										app: data.id,
+										func: "SAGE2_shareWithSite",
+										parameters: {
+											remoteSiteName: stsw[i]
+										} 
+									});
+								}
+						}
+					});
+				}
 			}
 		};
 	},
