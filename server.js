@@ -11117,14 +11117,14 @@ function sendApplicationDataUpdate(data) {
 	broadcast('eventInItem', event);
 }
 
-function loadJupyterNotebook(filename) {
+function loadJupyterNotebook(filename, codeOnly = false) {
 	var fullpath;
 
 	if (sageutils.fileExists(path.resolve(filename))) {
 		fullpath = filename;
 	}
 
-	// if it doesn't end in .json, add it
+	// if it doesn't end in .ipynb, add it (probably shouldn't happen)
 	if (!fullpath.endsWith(".ipynb")) {
 		fullpath += '.ipynb';
 	}
@@ -11136,26 +11136,34 @@ function loadJupyterNotebook(filename) {
 
 		let notebook = JSON.parse(data);
 
-		let numCells = notebook.cells.length;
+		let cells = Object.entries(notebook.cells)
+			.filter(([i, c]) => !codeOnly || c.cell_type === "code");
 
-		let screenAspect = config.totalWidth / config.totalHeight;
+		let numCells = cells.length;
 
 		// numCells = numTall * numTall * screenAspect
-		let numTall = Math.ceil(Math.sqrt(numCells / (screenAspect)));
+		let numTall = Math.ceil(Math.sqrt(numCells / 1.25));
+		// let numTall = Math.ceil(Math.sqrt(numCells / (screenAspect)));
 
-		let gridSize = config.totalHeight / numTall;
+		let gridSize = (config.totalHeight - 20) / numTall;
 
-		for (let ind in notebook.cells) {
-			let cell = notebook.cells[ind];
+		let numCols = Math.ceil(numCells / numTall);
+
+		let height = gridSize - 1.5 * config.ui.titleBarHeight;
+		let width = config.totalWidth / numCols - 40;
+
+		for (let i in cells) {
+			let [ind, cell] = cells[i];
 
 			appLoader.createJupyterCell(
 				cell,
 				notebook.metadata,
+				ind,
 				{
-					left: (Math.floor(ind / numTall) * gridSize) + 5,
-					top: (ind % numTall) * gridSize + 5,
-					width: gridSize - 10,
-					height: gridSize - 10
+					left: (Math.floor(i / numTall) * (width + 40)) + 20,
+					top: (i % numTall) * (height + config.ui.titleBarHeight + 10) + config.ui.titleBarHeight + 10,
+					width,
+					height
 				},
 				function (appInstance) {
 					appInstance.id = `${path.basename(filename)}~${ind}`;

@@ -1043,6 +1043,7 @@ AppLoader.prototype.createJupyterApp = function(source, type, encoding, name, co
 AppLoader.prototype.createJupyterCell = function (
 	cell,
 	metadata,
+	index,
 	{
 		left = this.titleBarHeight,
 		top = 1.5 * this.titleBarHeight,
@@ -1075,7 +1076,8 @@ AppLoader.prototype.createJupyterCell = function (
 		url: "src",
 		data: {
 			cell,
-			metadata
+			metadata,
+			index
 		},
 		load: {
 			imgDict: {},
@@ -1095,7 +1097,7 @@ AppLoader.prototype.createJupyterCell = function (
 		previous_height: null,
 		maximized: false,
 		// aspect: aspectRatio,
-		aspect: 1,
+		aspect: width / height,
 		resizeMode: "free",
 		animation: false,
 		sticky: false,

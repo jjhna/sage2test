@@ -22,8 +22,14 @@ var JupyterCodeCell = SAGE2_App.extend({
 
 		this.updateTitle("Jupyter Code Cell");
 
-		let cellOutputs = data.state.cell.outputs;
-		let language = data.state.metadata.language_info.name;
+		let {
+			index,
+			cell,
+			metadata
+		} = data.state;
+
+		let cellOutputs = cell.outputs;
+		let language = metadata.language_info.name;
 
 		if (cellOutputs[0]) {
 			let cellData = cellOutputs[0].data;
@@ -42,23 +48,13 @@ var JupyterCodeCell = SAGE2_App.extend({
 			this.codeVisible = true;
 		}
 
-		// add image holder
-		// this.img = document.createElement("img");
-		// this.img.style.width = data.width + "px";
-		// this.img.style.height = data.height + "px";
-		// this.img.style.backgroundColor = "white";
-
-		// // add image holder
+		// add code view holder
 		this.codeView = document.createElement("div");
 		this.codeView.style.position = "absolute";
 		this.codeView.style.left = 0;
 		this.codeView.style.top = 0;
 		this.codeView.style.right = 0;
 		this.codeView.style.bottom = 0;
-
-		// this.codeView.style.alignItems = "center";
-		// this.codeView.style.display = "flex";
-		// this.codeView.style.justifyContent = "center";
 
 		this.codeView.style.whiteSpace = "pre-line";
 		this.codeView.style.backgroundColor = "#fffa";
@@ -67,17 +63,33 @@ var JupyterCodeCell = SAGE2_App.extend({
 		this.codeView.style.fontWeight = "bold";
 		this.codeView.style.opacity = this.codeVisible ? 1 : 0;
 		this.codeView.style.transition = "opacity 250ms";
-
-		console.log(language);
+		this.codeView.style.overflowY = "auto";
 
 		this.codeView.innerHTML = Prism.highlight(
-			data.state.cell.source.join(""),
+			cell.source.join(""),
 			Prism.languages[language],
 			language
 		);
 
+		this.cellLabel = document.createElement("div");
+		this.cellLabel.style.position = "absolute";
+		this.cellLabel.style.left = 0;
+		this.cellLabel.style.bottom = 0;
+
+		this.cellLabel.style.background = "#b2df8a";
+		this.cellLabel.style.padding = "2px 4px 4px 8px";
+		this.cellLabel.style.borderRadius = "0 8px 0 0";
+		this.cellLabel.style.boxShadow = "2px -1px 6px 1px #6668";
+		this.cellLabel.style.color = "#333";
+		this.cellLabel.style.fontFamily = "'Arimo'";
+
+		this.cellLabel.innerHTML = cell.cell_type +
+			`<i class="fas fa-code"></i> <span style="font-family: 'Courier New';font-weight:bold;">[${+index +
+		1}]</span>`;
+
 		// this.element.appendChild(this.img);
 		this.element.appendChild(this.codeView);
+		this.element.appendChild(this.cellLabel);
 
 		// this.codeVisible = false;
 
@@ -101,16 +113,16 @@ var JupyterCodeCell = SAGE2_App.extend({
 	},
 
 	load: function (date) {
-		console.log('JupyterLab> Load with state value', this.state.value);
+		// console.log('JupyterLab> Load with state value', this.state.value);
 		this.refresh(date);
 	},
 
 	draw: function (date) {
-		console.log('JupyterLab> Draw with state value', this.state.value);
+		// console.log('JupyterLab> Draw with state value', this.state.value);
 	},
 
 	toggleShowCode: function () {
-		this.codeVisible = !this.codeVisible;
+		this.codeVisible = (!this.state.cell.outputs.length) || !this.codeVisible;
 
 		if (this.codeVisible && this.state.cell.source.length) {
 			this.codeView.style.opacity = 1;
@@ -122,19 +134,20 @@ var JupyterCodeCell = SAGE2_App.extend({
 	getContextEntries: function () {
 		var entries = [];
 
+		// Show overlay with EXIF data
+		entries.push({
+			description: "Show Code",
+			callback: "toggleShowCode",
+			accelerator: "C",
+			parameters: {}
+		});
+
 		entries.push({
 			description: "Copy Source",
 			callback: "SAGE2_copyURL",
 			parameters: {
 				url: this.state.cell.source.join("")
 			}
-		});
-
-		// Show overlay with EXIF data
-		entries.push({
-			description: "Show Code",
-			callback: "toggleShowCode",
-			parameters: {}
 		});
 
 		return entries;
@@ -191,6 +204,10 @@ var JupyterCodeCell = SAGE2_App.extend({
 			// click release
 		} else if (eventType === "pointerScroll") {
 			// Scroll events for zoom
+
+			// console.log("scroll", data);
+			this.codeView.scrollTop += data.wheelDelta;
+
 		} else if (eventType === "widgetEvent") {
 			// widget events
 		} else if (eventType === "keyboard") {
@@ -198,18 +215,10 @@ var JupyterCodeCell = SAGE2_App.extend({
 				this.refresh(date);
 			}
 		} else if (eventType === "specialKey") {
-			if (data.code === 37 && data.state === "down") {
-				// left
-				this.refresh(date);
-			} else if (data.code === 38 && data.state === "down") {
-				// up
-				this.refresh(date);
-			} else if (data.code === 39 && data.state === "down") {
-				// right
-				this.refresh(date);
-			} else if (data.code === 40 && data.state === "down") {
-				// down
-				this.refresh(date);
+			if (data.code === 67 && data.state === "down") {
+				// c
+
+				this.toggleShowCode();
 			}
 		} else if (eventType === "dataUpdate") {
 			console.log("JupyterLab Data Update", data);

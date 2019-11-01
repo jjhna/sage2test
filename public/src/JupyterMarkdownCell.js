@@ -4,9 +4,16 @@
 //
 // Copyright (c) 2015
 //
-/* global marked */
+/* global md */
 
 "use strict";
+
+// const md = markdownit({
+// 	html: true,
+// 	xhtmlOut: true,
+// 	breaks: true,
+// 	typographer: true
+// }).use(markdownitMath);
 
 var JupyterMarkdownCell = SAGE2_App.extend({
 	init: function (data) {
@@ -19,10 +26,34 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 		this.element.style.fontFamily = "'Arimo'";
 		this.element.style.padding = "20px";
 		this.element.style.boxSizing = "border-box";
+		this.element.style.overflowY = "auto";
+
+		let {
+			index,
+			cell
+		} = data.state;
 
 		this.updateTitle("Jupyter Markdown Cell");
 
-		this.element.innerHTML = marked(data.state.cell.source.join(""));
+		this.element.innerHTML = md.render(cell.source.join(""));
+
+		this.cellLabel = document.createElement("div");
+		this.cellLabel.style.position = "absolute";
+		this.cellLabel.style.left = 0;
+		this.cellLabel.style.bottom = 0;
+
+		this.cellLabel.style.background = "#a6cee3";
+		this.cellLabel.style.padding = "2px 4px 4px 8px";
+		this.cellLabel.style.borderRadius = "0 8px 0 0";
+		this.cellLabel.style.boxShadow = "2px -1px 6px 1px #6668";
+		this.cellLabel.style.color = "#333";
+		this.cellLabel.style.fontFamily = "'Arimo'";
+
+		this.cellLabel.innerHTML = cell.cell_type +
+			` <span style="font-family: 'Courier New';font-weight:bold;">[${+index +
+        1}]</span>`;
+
+		this.element.appendChild(this.cellLabel);
 
 		// move and resize callbacks
 		this.resizeEvents = "continuous"; // onfinish
@@ -36,12 +67,12 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 	},
 
 	load: function (date) {
-		console.log('JupyterLab> Load with state value', this.state.value);
+		// console.log('JupyterLab> Load with state value', this.state.value);
 		this.refresh(date);
 	},
 
 	draw: function (date) {
-		console.log('JupyterLab> Draw with state value', this.state.value);
+		// console.log('JupyterLab> Draw with state value', this.state.value);
 	},
 
 	toggleShowCode: function () {
@@ -126,6 +157,7 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 			// click release
 		} else if (eventType === "pointerScroll") {
 			// Scroll events for zoom
+			this.element.scrollTop += data.wheelDelta;
 		} else if (eventType === "widgetEvent") {
 			// widget events
 		} else if (eventType === "keyboard") {
