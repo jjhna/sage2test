@@ -1,0 +1,14 @@
+{
+  "name": "planner3D",
+  "version": "1.0.0",
+  "main": "planner3D.js",
+  "devDependencies": {
+    "eslint": "latest"
+  },
+  "scripts": {
+    "lint": "eslint -c eslintrc planner3D.js"
+  },
+  "author": "Krishna Bharadwaj <kbhara5@uic.edu>",
+  "license": "BSD-2-Clause",
+  "description": "SAGE2 application planner3D"
+}

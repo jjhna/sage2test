@@ -1,0 +1,31 @@
+{
+	"main_script": "planner.js",
+	"icon": "planner.png",
+	"width": 1000,
+	"height": 1000,
+	"resize": "free",
+	"animation": true,
+	"dependencies": [
+		"scripts/pathseg.js",
+		"scripts/util.js",
+		"scripts/fsm.js",
+		"scripts/menu.js",
+		"scripts/geometry.js",
+		"scripts/drawingManager.js"
+	],
+	"load": {
+		"structure": {
+			"walls": [],
+			"doorsAndWindows": [],
+			"furnitures": [],
+			"flags": []
+		},
+		"zoomLevel": 8
+	},
+	"title": "planner",
+	"version": "1.0.0",
+	"description": "SAGE2 application planner",
+	"keywords": [ "sage2", "planner" ],
+	"author": "Krishna Bharadwaj <kbhara5@uic.edu>",
+	"license": "SAGE2-Software-License"
+}

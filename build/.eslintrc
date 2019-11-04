@@ -32,7 +32,7 @@
 		"keyword-spacing": 2,
 		"dot-notation": 2,
 		"lines-around-comment": 2,
-		"linebreak-style": [2, "unix"],
+		"linebreak-style": [2, "windows"],
 		"no-unused-vars": [2, {"vars": "local", "args": "none"}],
 		"no-console": 0,
 		"no-process-exit": 0,

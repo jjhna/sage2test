@@ -1,0 +1,21 @@
+.planner3DControlPanel {
+  position: absolute;
+  border: none;
+  background-color: #4CAF50;
+}
+
+.planner3DButton {
+  background: #EFEFEF; /* Green */
+  position: absolute;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  margin: 4px 2px;
+}
+
+.planner3DButtonIcon {
+  position: absolute;
+}

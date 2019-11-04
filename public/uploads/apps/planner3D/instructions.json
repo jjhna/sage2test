@@ -1,0 +1,32 @@
+{
+	"main_script": "planner3D.js",
+	"icon": "planner3D.png",
+	"width": 1920,
+	"height": 1080,
+	"resize": "free",
+	"animation": true,
+	"dependencies": [
+		"scripts/three.min.js",
+		"scripts/GLTFLoader.js",
+		"scripts/ThreeCSG.js",
+		"style/style.css",
+		"scripts/util3D.js",
+		"scripts/fsm3D.js",
+		"scripts/menu3D.js",
+		"scripts/drawingManager3D.js"
+	],
+	"load": {
+		"structure": {
+			"walls": [],
+			"doorsAndWindows": [],
+			"furnitures": [],
+			"flags": []
+		}
+	},
+	"title": "planner3D",
+	"version": "1.0.0",
+	"description": "SAGE2 application planner3D",
+	"keywords": [ "sage2", "planner3D" ],
+	"author": "Krishna Bharadwaj <kbhara5@uic.edu>",
+	"license": "SAGE2-Software-License"
+}
