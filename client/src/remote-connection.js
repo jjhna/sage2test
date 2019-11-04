@@ -40,19 +40,23 @@ const pwdInput = document.getElementById('password');
 /********************** html classes and attribute values ********************/
 const buttonColorClass = "blue-grey darken-2";
 const pulseClass = "pulse";
-const onlineColor = "#60d277";
-const offlineColor = "#d5715d";
+// const onlineColor = "#60d277";
+// const offlineColor = "#d5715d";
 const blackColor = "#222222";
 
 const favorites_file_name = 'sage2_favorite_sites.json';
-const FAVORITES_CAROUSEL_UI = 1;
+const FILE_VERSION = 1;
 
 const PREDEFINED_LOCAL_PORT = "9090";
 
 //JS object containing list of favorites sites
 var favorites = {
-	list: [],
-	UIswitchPosition: FAVORITES_CAROUSEL_UI
+	list: [{
+		host: 'sage2server.evl.uic.edu',
+		name: 'SAGE2 test',
+		pinned: true
+	}],
+	Version: FILE_VERSION
 	// example of favorites object structure
 	// list: [{
 	//     host: 'orion-win.evl.uic.edu',
@@ -64,6 +68,7 @@ var favorites = {
 	//     name: 'CAVE3'
 	// }]
 };
+
 // Variables for the current site
 let passwordRequired = false;
 let isHashSaved = false;
@@ -74,12 +79,17 @@ let lastClickedCheck = false;
 
 // Reading the favorites json file
 fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
-	if (err) { // most likely no json file (first use), write empty favorites on file
+	if (err) {
+		// most likely no json file (first use), write empty favorites on file
 		console.log(err);
 		writeFavoritesOnFile(favorites);
+		if (favorites.list.length > 0) {
+			populateFavorites(favorites.list);
+		}
 	} else {
-		favorites = JSON.parse(data); //convert json to object
-		console.log(favorites);
+		// convert json to object
+		favorites = JSON.parse(data);
+		// console.log('favorites', favorites);
 		if (favorites.list.length > 0) {
 			populateFavorites(favorites.list);
 		}
@@ -160,12 +170,19 @@ function getAppDataPath(file_name) {
 
 function addSite() {
 	let URL = urlInput.value;
-	let sitename = lastClickedCheck ? lastCheckedSiteName : 'Unknown name';
+	let sitename = lastClickedCheck ? lastCheckedSiteName : URL.split('.')[0];
+	if (sitename === undefined) {
+		sitename = URL.split('.')[0];
+	}
 
-	addConnectedSiteToList({
+	var favoriteItem = {
 		name: sitename,
-		host: URL
-	});
+		host: URL,
+		pinned: false
+	};
+
+	addToFavorites(favoriteItem);
+	addItemToList(favoriteItem);
 }
 
 /**
@@ -275,19 +292,34 @@ function disablePassword() {
  * @return {void}
  */
 function addItemToList(item, index) {
+	var pinnedHTMLString = 'favorite';
+	if (!item.pinned) {
+		pinnedHTMLString = 'favorite_border';
+	}
 	let it = document.createElement("LI");
 	addClass(it, "collection-item grey lighten-2 z-depth-3");
 	let htmlCode = `<div><b><span>${item.name}</span> -</b> <span>${item.host}</span><a href="#!" class="secondary-content">
-                        <i class="material-icons style="color:${blackColor};">favorite</i>
+						<i class="material-icons style="color:${blackColor};">${pinnedHTMLString}</i><b>&nbsp&nbsp</b>
+						<i class="material-icons style="color:${blackColor};">delete</i>
                             </a>
                     </div>`;
 	it.innerHTML = htmlCode;
 
 	// it.addEventListener('click', selectFavoriteSite);
-	it.firstElementChild.lastElementChild.addEventListener('click', removeFavoriteSiteList);
+	if (item.pinned) {
+		it.firstElementChild.lastElementChild.firstElementChild.addEventListener('click', removeFavoriteSiteList);
+	} else {
+		it.firstElementChild.lastElementChild.firstElementChild.addEventListener('click', addFavoriteSiteList);
+	}
+	it.firstElementChild.lastElementChild.lastElementChild.addEventListener('click', deleteSite);
 	it.style.color = "grey";
-	favoriteList.insertBefore(it, favoriteList.firstChild);
-	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor; //color heart
+	if (item.pinned) {
+		favoriteList.insertBefore(it, favoriteList.firstChild);
+	} else {
+		favoriteList.appendChild(it);
+	}
+	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor;
+	it.firstElementChild.lastElementChild.lastElementChild.style.color = blackColor;
 	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
 
@@ -303,16 +335,19 @@ function addConnectedSiteToList(item, index) {
 	if (alreadyInFavorites(item.host)) {
 		return;
 	}
-	let it = document.createElement("LI");
+	let it = document.createElement("li");
 	addClass(it, "collection-item grey lighten-2 z-depth-3");
 	let htmlCode = `<div><b><span>${item.name}</span> -</b> <span>${item.host}</span><a href="#!" class="secondary-content">
-                        <i class="material-icons style="color:${blackColor};">favorite_border</i>
+	<i class="material-icons style="color:${blackColor};">favorite_border</i>
+	<b>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp</b>
+						 <i></i>
                             </a>
                     </div>`;
 	it.innerHTML = htmlCode;
 
 	// it.addEventListener('click', selectFavoriteSite);
-	it.firstElementChild.lastElementChild.addEventListener('click', addFavoriteSiteList);
+	it.firstElementChild.lastElementChild.firstElementChild.addEventListener('click', addFavoriteSiteList);
+	// it.firstElementChild.lastElementChild.lastElementChild.addEventListener('click', deleteSite);
 	it.style.color = "grey";
 	if (favoriteList.lastChild == null) {
 		favoriteList.appendChild(it);
@@ -320,6 +355,7 @@ function addConnectedSiteToList(item, index) {
 		favoriteList.insertBefore(it, favoriteList.lastChild.nextSibling);
 	}
 	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor;
+	// it.firstElementChild.lastElementChild.lastElementChild.style.color = blackColor;
 	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
 
@@ -369,9 +405,7 @@ function selectFavoriteSite(event) {
 
 /**
  * Onclick function for clicking on the heart on a card in the list
- * Remove from favorites JSON, write JSON file, update list removing the site,
- * color heart in white if the url in #url is the
- * same as the one just unselected
+ * unpin but keeps it in favorites
  *
  * @method removeFromFavorites
  * @param {<a> element}
@@ -389,7 +423,7 @@ function removeFavoriteSiteList(event) {
 	// event.target.removeEventListener('click', removeFavoriteSiteList);
 	// event.target.addEventListener('click', addFavoriteSiteList);
 	// let URL_in_form = urlInput.value;
-	removeFromFavorites(url);
+	unpinFavorite(url);
 	// if (URL_in_form === url) {
 	// 	setEmptyHeart();
 	// }
@@ -411,12 +445,15 @@ function addFavoriteSiteList(event) {
 	var itemInside = event.target.parentElement.parentElement;
 	var URL = itemInside.firstElementChild.nextElementSibling.innerText;
 	let sitename = itemInside.firstElementChild.firstElementChild.innerText;
-
+	// if(sitename === undefined){
+	// 	sitename =  URL.split('.')[0];
+	// }
+	removeFromFavorites(URL);
 	addToFavorites({
-		name: sitename || 'Unknown name', //TODO whenever site is online fetch name
-		host: URL
+		name: sitename || URL.split('.')[0], //TODO whenever site is online fetch name
+		host: URL,
+		pinned: true
 	});
-	// TODO set full heart
 	event.target.innerHTML = 'favorite';
 	// event.target.removeEventListener('click', addFavoriteSiteList);
 	// event.target.addEventListener('click', removeFavoriteSiteList);
@@ -424,6 +461,17 @@ function addFavoriteSiteList(event) {
 	// var parent = itemInside.parentElement.parentNode;
 	// var item = itemInside.parentElement;
 	// parent.removeChild(item);
+}
+
+function deleteSite(event) {
+	var url = event.target.parentElement.parentElement.firstElementChild.nextElementSibling.innerText;
+	// event.target.removeEventListener('click', removeFavoriteSiteList);
+	// event.target.addEventListener('click', addFavoriteSiteList);
+	// let URL_in_form = urlInput.value;
+	dynamicItemRemovingInList(url);
+	// if (URL_in_form === url) {
+	// 	setEmptyHeart();
+	// }
 }
 
 
@@ -478,6 +526,28 @@ function removeFromFavorites(favorite_url) {
 	}
 }
 
+function unpinFavorite(favorite_url) {
+	for (let i = 0; i < favorites.list.length; i++) {
+		if (favorite_url === favorites.list[i].host) {
+			favorites.list[i].pinned = false;
+			writeFavoritesOnFile(favorites);
+		}
+	}
+}
+
+
+function dynamicItemRemovingInList(url) {
+	for (let i = 0; i < favorites.list.length; i++) {
+		if (url === favorites.list[i].host) {
+			favorites.list.splice(i, 1);
+			writeFavoritesOnFile(favorites);
+		}
+		if (favoriteList.children[i].firstChild.firstChild.nextElementSibling.textContent == url) {
+			favoriteList.removeChild(favoriteList.children[i]);
+		}
+	}
+}
+
 /**
  * Writes favorites in a persistent way on local machine
  *
@@ -485,7 +555,12 @@ function removeFromFavorites(favorite_url) {
  * @param {Object} favorites_obj the object containing the list of favorites
  */
 function writeFavoritesOnFile(favorites_obj) {
-	fs.writeFile(getAppDataPath(favorites_file_name), JSON.stringify(favorites_obj), 'utf8', () => { });
+	fs.writeFile(
+		getAppDataPath(favorites_file_name),
+		JSON.stringify(favorites_obj, null, 4),
+		'utf8',
+		() => { }
+	);
 }
 
 /**
@@ -793,6 +868,8 @@ function fetchWithTimeout(url, delay, attachConnectedSites, onTimeout) {
 				setLoadInfoButtonOnline();
 			}
 		}
+	}).catch(err => {
+		setLoadInfoButtonOffline();
 	});
 }
 
@@ -862,7 +939,7 @@ function setOnlineStatus(url, elem, itemElem, delay) {
  */
 function resetSiteInfo() {
 	addClass(loadSiteInfoBtn, buttonColorClass);
-	statusText.innerHTML = "Enter valid site";
+	statusText.innerHTML = "Enter the hostname and port number of the secure server (example.com:4343)";
 }
 
 /**
@@ -870,8 +947,8 @@ function resetSiteInfo() {
  * @return {void}
  */
 function setLoadInfoButtonOnline() {
-	removeClass(loadSiteInfoBtn, buttonColorClass);
-	loadSiteInfoBtn.style.background = onlineColor;
+	// removeClass(loadSiteInfoBtn, buttonColorClass);
+	// loadSiteInfoBtn.style.background = onlineColor;
 	statusText.innerHTML = "Online";
 }
 
@@ -902,13 +979,51 @@ function disableConnection() {
 }
 
 /**
+ * Enables the connect button
+ *
+ * @return {void}
+ */
+function enableCheck() {
+	removeClass(loadSiteInfoBtn, 'disabled');
+	// pulseOnce(loadSiteInfoBtn);
+}
+
+/**
+ * Disables the connect button
+ *
+ * @return {void}
+ */
+function disableCheck() {
+	addClass(loadSiteInfoBtn, 'disabled');
+}
+
+/**
+ * Enables the connect button
+ *
+ * @return {void}
+ */
+function enableAddSite() {
+	removeClass(addBtn, 'disabled');
+	// pulseOnce(addBtn);
+}
+
+/**
+ * Disables the connect button
+ *
+ * @return {void}
+ */
+function disableAddSite() {
+	addClass(addBtn, 'disabled');
+}
+
+/**
  * Sets colors of the load site info button to display offline site
  * @return {void}
  */
 function setLoadInfoButtonOffline() {
-	removeClass(loadSiteInfoBtn, buttonColorClass);
-	loadSiteInfoBtn.style.background = offlineColor;
-	statusText.innerHTML = "Offline";
+	// removeClass(loadSiteInfoBtn, buttonColorClass);
+	// loadSiteInfoBtn.style.background = offlineColor;
+	statusText.innerHTML = "Unreachable";
 }
 
 /**
@@ -946,6 +1061,9 @@ function loadSiteInfo(host, attachConnectedSites) {
 // Catches the message sent from the main electron window that is providing the current location
 ipcRenderer.on('current-location', (e, host) => {
 	// urlInput.value = host;
+	if (!host) {
+		return;
+	}
 	loadSiteInfo(host, true);
 
 });
@@ -996,6 +1114,15 @@ loadSiteInfoBtn.addEventListener('click', loadCurrentSiteInfo);
 // Removes password and disables password input
 urlInput.addEventListener("input", (e) => {
 	let host = urlInput.value;
+	if (host === '') {
+		disableCheck();
+		disableAddSite();
+	} else {
+		if (host.length > 0) {
+			enableAddSite();
+			enableCheck();
+		}
+	}
 	resetPasswordStatus();
 	if (alreadyInFavorites(host)) {
 		// setFullHeart();

@@ -48,7 +48,12 @@ var zoom = SAGE2_App.extend({
 			showNavigator: true,
 			// remove the navigation button bar
 			showNavigationControl: false,
-
+			// minimum dimension of the viewport, here allows half size
+			minZoomImageRatio: 0.5,
+			// maximum ratio to allow a zoom-in
+			maxZoomPixelRatio: 10,
+			// At least half in the window
+			visibilityRatio: 0.5,
 			// change tileSources for your dataset
 			tileSources: dataset
 			// tileSources: this.resrcPath + "enceladus.dzi"
@@ -79,6 +84,8 @@ var zoom = SAGE2_App.extend({
 	},
 
 	draw: function(date) {
+		// Apply to zoom and position limits specified in options
+		this.viewer.viewport.applyConstraints();
 	},
 
 	resize: function(date) {
@@ -125,7 +132,6 @@ var zoom = SAGE2_App.extend({
 				} else {
 					this.viewer.viewport.zoomBy(1.4);
 				}
-				this.viewer.viewport.applyConstraints();
 				this.lastZoom = date;
 			} else {
 				// not a double clikc
@@ -151,12 +157,10 @@ var zoom = SAGE2_App.extend({
 			if (this.scrollAmount >= 24) {
 				// zoom out
 				this.viewer.viewport.zoomBy(0.9);
-				this.viewer.viewport.applyConstraints();
 				this.scrollAmount = 0;
 			} else if (this.scrollAmount <= -24) {
 				// zoom in
 				this.viewer.viewport.zoomBy(1.1);
-				this.viewer.viewport.applyConstraints();
 				this.scrollAmount = 0;
 			}
 		} else if (eventType === "specialKey") {
@@ -169,19 +173,15 @@ var zoom = SAGE2_App.extend({
 			if (data.code === 37 && data.state === "down") {
 				// left
 				this.viewer.viewport.panBy(new OpenSeadragon.Point(-0.01, 0));
-				this.viewer.viewport.applyConstraints();
 			} else if (data.code === 38 && data.state === "down") {
 				// up
 				this.viewer.viewport.panBy(new OpenSeadragon.Point(0, -0.01));
-				this.viewer.viewport.applyConstraints();
 			} else if (data.code === 39 && data.state === "down") {
 				// right
 				this.viewer.viewport.panBy(new OpenSeadragon.Point(0.01, 0));
-				this.viewer.viewport.applyConstraints();
 			} else if (data.code === 40 && data.state === "down") {
 				// down
 				this.viewer.viewport.panBy(new OpenSeadragon.Point(0, 0.01));
-				this.viewer.viewport.applyConstraints();
 			} else if (data.code === 189 && !this.isShift && data.state === "down") {
 				// - minus
 				this.viewer.viewport.zoomBy(0.9);
@@ -223,7 +223,6 @@ var zoom = SAGE2_App.extend({
 					console.log("No handler for:", data.identifier);
 					return;
 			}
-			this.viewer.viewport.applyConstraints();
 		}
 		this.refresh(date);
 	}

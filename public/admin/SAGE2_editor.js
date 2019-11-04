@@ -16,7 +16,7 @@
  * @class SAGE2_Editor
  */
 
-/* global SAGE2_init, ace */
+/* global ace */
 
 "use strict";
 

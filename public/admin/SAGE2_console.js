@@ -18,8 +18,6 @@
  * @class SAGE2_Console
  */
 
-/*global SAGE2_init: true */
-
 /**
  * Entry point of the console application
  *

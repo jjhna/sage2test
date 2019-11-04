@@ -50,7 +50,8 @@
 	font-weight: normal;
 	font-style: normal;
 	src:
-		local('/lib/webix/fonts/fontawesome-webfont'),
+		local('fontawesome-webfont'),
+		url(/lib/webix/fonts/fontawesome-webfont.woff2)  format('woff2'),
 		url(/lib/webix/fonts/fontawesome-webfont.woff)  format('woff');
 }
 

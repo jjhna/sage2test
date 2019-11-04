@@ -42,8 +42,8 @@ function SAGE2_interaction(wsio) {
 	this.mediaVideo  = null;
 	this.mediaResolution = 2;
 	this.mediaQuality    = 9;
-	// By default, do not use WebRTC
-	this.mediaUseRTC     = getCookie('SAGE2_useRTC') === "true" ? true : false;
+	// By default, USE WebRTC
+	this.mediaUseRTC     = getCookie('SAGE2_useRTC') === "false" ? false : true;
 
 	this.chromeDesktopCaptureEnabled = false;
 	this.broadcasting  = false;
@@ -513,6 +513,8 @@ function SAGE2_interaction(wsio) {
 	this.requestToStartScreenShare = function() {
 		if (!this.broadcasting) {
 			wsio.emit('requestToStartMediaStream');
+		} else {
+			this.startScreenShare();
 		}
 	};
 
@@ -567,8 +569,8 @@ function SAGE2_interaction(wsio) {
 				title: "Screen sharing",
 				ok: "Confirm",
 				cancel: "Cancel",
-				text: "Already sharing content.<br> Press <strong style='font-weight:bold;'>Confirm</strong> " +
-					"to close the existing window and share another one.<br>" +
+				text: "You are already sharing a window.<br> Press <strong style='font-weight:bold;'>Confirm</strong> " +
+					"to close the existing window and share a new one.<br>" +
 					"Press <strong style='font-weight:bold;'>Cancel</strong> to continue sharing the existing window.",
 				width: "60%",
 				position: "center",
@@ -1405,7 +1407,8 @@ function SAGE2_interaction(wsio) {
 							},
 							{
 								view: "checkbox",
-								label: "Use WebRTC",
+								label: "Fast mode",
+								tooltip: "Use WebRTC to share desktop (default)",
 								id:   "use_webrtc",
 								value: this.mediaUseRTC
 							}

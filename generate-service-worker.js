@@ -54,9 +54,10 @@ function generate() {
 			'display.html',
 			'sageUI.html',
 			// not caching session.html
-			'lib/webix/webix.js',
-			'lib/webix/webix.css',
-			'lib/webix/skins/compact.css',
+			'lib/webix/webix.min.js',
+			'lib/webix/webix.min.css',
+			'lib/webix/skins/compact.min.css',
+			'lib/webix/fonts/fontawesome-webfont.woff*',
 			'lib/moment.min.js',
 			'src/*.js'
 		]

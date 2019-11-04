@@ -6,7 +6,7 @@
     <title>Connect to Remote Site</title>
     <link rel="stylesheet" href="css/materialize.min.css">
     <link href="css/material.icons.css" rel="stylesheet">
-    <script src="js/materialize.min.js"></script>
+    <script src="src/materialize.min.js"></script>
 
 
 </head>
@@ -21,11 +21,12 @@
     <div class='container'>
         <form action="">
             <div class="section">
-                <h4>Connect to remote site</h4>
+                <div class="row"><div class="col s12"><h4>Connect to SAGE2 server</h4></div></div>
+                <!-- <h4>Connect to SAGE2 server</h4> -->
                 <div class="row">
                     <div class="col s8">
+                            <!-- <h4>Connect to SAGE2 server</h4> -->
                         <!-- <p>Connected sites and favorites</p> -->
-                        <br>
                         <div style="
                             height:261px;
                             overflow-y: scroll;
@@ -50,7 +51,7 @@
                     </div>
                     <div class="col s4">
                         <!-- <label>Options</label> -->
-                        <br>
+                        <!-- <br> -->
                         <p>
                             <label>
                                 <input class='checkb' id='check_2' type="checkbox" checked='true' />
@@ -101,7 +102,7 @@
                         <!-- <div class="divider"></div> -->
                             <div class="row">
                                 <div class="col s6"><a id="cancel_btn"
-                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>Cancel</a>
+                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>Info</a>
                                 </div>
                                 <div class="col s6">
                                     <!-- disabled TODO added pulse class for 2 second on enable-->
@@ -116,16 +117,16 @@
                 </div>
                 <div class="divider"></div>
                 <div class="section">
+                    <div class="row"><div class="col s12"><h5>Add site</h5></div></div>
                     <div class="row">
-                            <h6>Add site</h6>
-                            <br>
-                        <!-- <label>Enter URL of Remote Site</label> -->
                         <div class="col s8">
                             
                             <div class="input-field">
                                 <input type="text" id="url">  
                                 <label for="url">Enter URL of Remote Site</label>
-                                <span id="status_text" class="helper-text" data-error="Offline" data-success="Online">Enter valid site</span>
+                                <span id="status_text" class="helper-text" data-error="Offline" data-success="Online">
+                                    Enter the hostname and port number of the secure server (example.com:4343)
+                                </span>
                             </div>
                         </div>
                         <!-- <label>Check</label> -->
@@ -136,12 +137,12 @@
                             </div> -->
                             <div class="row">
                                     <div class="col s6"><a id="current_status_btn"
-                                            class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>Check status</a>
+                                            class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3 disabled'>Check</a>
                                     </div>
                                     <div class="col s6">
                                         <!-- disabled TODO added pulse class for 2 second on enable-->
                                         <a id="add_btn"
-                                            class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3 '>
+                                            class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3 disabled'>
                                             <!-- <i class="material-icons left">screen_share</i> -->
                                             Add site</a></div>
                                 </div>
@@ -159,7 +160,7 @@
 
         </form>
     </div>
-    <script src="js/remote-connection.js"></script>
+    <script src="src/remote-connection.js"></script>
 </body>
 
 </html>

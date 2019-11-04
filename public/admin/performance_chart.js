@@ -409,7 +409,7 @@ function drawDisplaySMMinimal(l, h) {
 	ids = [... new Set(ids)];
 
 	ids.forEach(id => {
-		if (clientColorMap.hasOwnProperty(id) === false) {
+		if (Object.prototype.hasOwnProperty.call(clientColorMap, id) === false) {
 			clientColorMap[id] = getNewColor(clientColorMap);
 		}
 	});

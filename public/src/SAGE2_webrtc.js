@@ -6,7 +6,7 @@
 //
 // See full text, terms and conditions in the LICENSE.txt included file
 //
-// Copyright (c) 2014-17
+// Copyright (c) 2014-19
 
 "use strict";
 
@@ -43,7 +43,7 @@ var SAGE2_webrtc_ui_tracker = {
 
 	debugprint: function(message) {
 		if (SAGE2_webrtc_ui_tracker.debug) {
-			console.log("SAGE2_webrtc> DEBUG> " + message);
+			console.log("SAGE2_webrtc> DEBUG> ", message);
 		}
 	}
 };
@@ -53,7 +53,8 @@ var SAGE2_webrtc_ui_tracker = {
 // stream is the UI stream of the screen captures
 // streamElement is the element displaying the stream on the Display
 class SAGE2WebrtcPeerConnection {
-	constructor(appId, streamerId, displayId, stream = null, streamElement = null, goingToSourceServer = null) {
+	constructor(appId, streamerId, displayId, stream = null,
+		streamElement = null, goingToSourceServer = null) {
 		// Enable debug printing
 		this.debug = false;
 
@@ -76,10 +77,15 @@ class SAGE2WebrtcPeerConnection {
 
 	setupProperties(appId, streamerId, displayId) {
 		// For identification of clients
-		this.appId = appId;              // Actually id of sage2 app
-		this.streamerId = streamerId;    // unique clientId
-		this.displayId = displayId;      // unique displayId, identified by offer because SAGE2 doesn't distinguish displays beyond which viewport they access
-		this.remoteDisplayServer = null; // Used if screen share is passed to remote site
+		// Actually id of sage2 app
+		this.appId = appId;
+		// unique clientId
+		this.streamerId = streamerId;
+		// unique displayId, identified by offer because SAGE2 doesn't distinguish displays
+		// beyond which viewport they access
+		this.displayId = displayId;
+		// Used if screen share is passed to remote site
+		this.remoteDisplayServer = null;
 
 		// Webrtc
 		this.offerOptions = {
@@ -87,14 +93,22 @@ class SAGE2WebrtcPeerConnection {
 			offerToReceiveAudio: 1
 		};
 		this.configForPeer = {
-			iceServers: [
-				// These stun servers from simplepeer.js
-				{ urls: "stun:stun.l.google.com:19302" }
-				// {urls:"stun:global.stun.twilio.com:3478?transport=udp"},
-			]
+			iceServers: [{
+				urls: [
+					"stun:stun.l.google.com:19302",
+					"stun:stun1.l.google.com:19302",
+					"stun:stun2.l.google.com:19302",
+					"stun:stun3.l.google.com:19302",
+					"stun:stun4.l.google.com:19302",
+					"stun:stun.ippi.fr:3478",
+					"stun:stun.ucsb.edu:3478",
+					"stun:stun.whoi.edu:3478"
+				]
+			}]
 		};
 
-		this.peer = new RTCPeerConnection(this.configForPeer); // a webkitRTCPeerConnection
+		// a webkitRTCPeerConnection
+		this.peer = new RTCPeerConnection(this.configForPeer);
 		this.peer.oniceconnectionstatechange = (e) => {
 			this.debugprint("ics state changed to " + this.peer.iceConnectionState);
 		};
@@ -117,7 +131,8 @@ class SAGE2WebrtcPeerConnection {
 				// Only if completed, then send
 				if (this.completedOfferAnswerResponse) {
 					this.sendMessage(JSON.stringify({ ice: event.candidate }));
-				} else { // Otherwise store until ready to send
+				} else {
+					// Otherwise store until ready to send
 					this.iceCandidatesReadyToSend.push({ ice: event.candidate });
 				}
 			}
@@ -125,7 +140,8 @@ class SAGE2WebrtcPeerConnection {
 
 		// Collect stream (screenshare) track and add it to the connection
 		stream.getTracks().forEach((track) => {
-			this.peer.addTrack(track, stream); // Add track from stream
+			// Add track from stream
+			this.peer.addTrack(track, stream);
 		});
 
 		// Create offer, after creating, send to display
@@ -156,7 +172,8 @@ class SAGE2WebrtcPeerConnection {
 				// Only send if completed connection
 				if (this.completedOfferAnswerResponse) {
 					this.sendMessage(JSON.stringify({ ice: event.candidate }));
-				} else { // Otherwise store until ready to send
+				} else {
+					// Otherwise store until ready to send
 					this.iceCandidatesReadyToSend.push({ ice: event.candidate });
 				}
 			}
@@ -182,7 +199,7 @@ class SAGE2WebrtcPeerConnection {
 					console.log("SAGE2_webrtc> discarding ontrack stream received");
 					if (!track.active) {
 						console.log("SAGE2_webrtc> - Reason: track inactive");
-					}	else if (this.streamElement.srcObject) {
+					} else if (this.streamElement.srcObject) {
 						console.log("SAGE2_webrtc> - Reason: streamElement already receiving");
 					}
 				}
@@ -317,7 +334,7 @@ class SAGE2WebrtcPeerConnection {
 		try {
 			// Interactor only exists in the UI client
 			if (interactor && interactor.mediaUseRTC) {
-				interactor.broadcasting = false;
+				interactor.broadcasting = true;
 			}
 		} catch (e) {
 			// Skipping to here if this is the display
@@ -327,7 +344,8 @@ class SAGE2WebrtcPeerConnection {
 		for (let i = 0; i < this.iceCandidatesReadyToSend.length; i++) {
 			this.sendMessage(this.iceCandidatesReadyToSend[i]);
 		}
-		this.iceCandidatesReadyToSend = []; // Clear it out
+		// Clear it out
+		this.iceCandidatesReadyToSend = [];
 	}
 }
 

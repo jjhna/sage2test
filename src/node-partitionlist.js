@@ -151,7 +151,7 @@ PartitionList.prototype.newBoundingPartition = function(items) {
   * @param {string} id - id of the Partition to remove
   */
 PartitionList.prototype.removePartition = function(id) {
-	if (this.list.hasOwnProperty(id)) {
+	if (Object.prototype.hasOwnProperty.call(this.list, id)) {
 		// remove all children from the partition
 		this.list[id].releaseAllChildren();
 
@@ -263,7 +263,7 @@ PartitionList.prototype.calculateNewPartition = function(item, pointer) {
   * @param {string} ptnID - The Partition for which we are finding neighbors
   */
 PartitionList.prototype.findNeighbors = function(ptnID) {
-	if (this.list.hasOwnProperty(ptnID)) {
+	if (Object.prototype.hasOwnProperty.call(this.list, ptnID)) {
 		let neighbors = {};
 		let thisPtn = this.list[ptnID];
 
@@ -342,7 +342,7 @@ PartitionList.prototype.findNeighbors = function(ptnID) {
   * @param {string} ptnID - The Partition for which we are updating neighbors
   */
 PartitionList.prototype.updateNeighbors = function(ptnID) {
-	if (this.list.hasOwnProperty(ptnID)) {
+	if (Object.prototype.hasOwnProperty.call(this.list, ptnID)) {
 		// update neighbors of selected partition
 
 		// reset snapping flags for sides of screen
