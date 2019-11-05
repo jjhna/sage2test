@@ -12,6 +12,126 @@
 "use strict";
 
 
+var sitesToShareWith = [];
+// var allowedApps = [
+// 	"movie_player",
+// 	"image_viewer",
+// 	"Webview"
+// ];
+
+// Rework, using the following now
+
+/*
+Remote Site objects look like:
+	remoteSites[index] = {
+		name: element.name,
+		wsio: null,
+		connected: "off",
+		geometry: rGeom,
+		index: index,
+		unavailable: false, // used for automated sharing
+		beingSharedWith: false // used for automated sharing
+	};
+*/
+function toggleSiteSharingWithRemoteSite(site, clients) {
+	// If sharing, stop
+	if (site.beingSharedWith) {
+		site.beingSharedWith = false;
+		// Notify displays
+		for (let i = 0; i < clients.length; i++) {
+			if (clients[i].clientType === "display") {
+				clients[i].emit('updateRemoteSiteShareVisual', {
+					siteName: site.name,
+					isSharing: false
+				});
+			}
+		}
+		// Remove from share list
+		sitesToShareWith.splice(sitesToShareWith.indexOf(site), 1);
+	} else { // Otherwise enable
+		site.beingSharedWith = true;
+		// Notify displays
+		for (let i = 0; i < clients.length; i++) {
+			if (clients[i].clientType === "display") {
+				clients[i].emit('updateRemoteSiteShareVisual', {
+					siteName: site.name,
+					isSharing: true
+				});
+			}
+		}
+		// Add to share list
+		sitesToShareWith.push(site);
+	}
+}
+
+
+/*
+*/
+function checkAppAndShareIfShould(app, wsCallFunctionOnApp) {
+	// Restrict apps that are shared?
+	// if ( allowedApps.indexOf(app.application.application) !== -1) {
+
+	if (sitesToShareWith.length > 0) {
+		// Prevent already shared applications. Those should have : and + in them
+		if ((app.id.indexOf(":") === -1) && (app.id.indexOf("+") === -1)) {
+			// Need a better way to do this...
+			// PDFs cannot be send immediately due to some kind of lock.
+			if (app.application === "pdf_viewer") {
+				setTimeout(() => {
+					sitesToShareWith.forEach(site => {
+						console.log("          " + site.name);
+						// Wsio replaced with the below id object
+						wsCallFunctionOnApp({id: "SAGE2_serverAutomatedShare"}, {
+							app: app.id,
+							func: "SAGE2_shareWithSite",
+							parameters: {
+								remoteSiteName: site.name
+							}
+						});
+					});
+				}, 3000);
+			} else {
+				sitesToShareWith.forEach(site => {
+					console.log("          " + site.name);
+					// Wsio replaced with the below id object
+					wsCallFunctionOnApp({id: "SAGE2_serverAutomatedShare"}, {
+						app: app.id,
+						func: "SAGE2_shareWithSite",
+						parameters: {
+							remoteSiteName: site.name
+						}
+					});
+				});
+			}
+		}
+	}
+}
+
+
+
+
+module.exports.toggleSiteSharingWithRemoteSite = toggleSiteSharingWithRemoteSite;
+module.exports.checkAppAndShareIfShould        = checkAppAndShareIfShould;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Not used for now
+/*
 function knockSend(data, remoteSites) {
 
 	console.log("TODO, try knock on the remote site using data:", data);
@@ -60,9 +180,7 @@ function makeUnavailable(data, remoteSites) {
 }
 
 
-
-
-
-module.exports.knockSend       = knockSend;
-module.exports.knockAtThisSite = knockAtThisSite;
-module.exports.makeUnavailable = makeUnavailable;
+// module.exports.knockSend       = knockSend;
+// module.exports.knockAtThisSite = knockAtThisSite;
+// module.exports.makeUnavailable = makeUnavailable;
+*/

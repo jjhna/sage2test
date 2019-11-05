@@ -1357,14 +1357,14 @@ function UIBuilder(json_cfg, clientID) {
 		// Add icons that are hidden for sharing status
 		let iconShare = document.createElement("img");
 		iconShare.id = remote.id + "_iconShare";
-		iconShare.src = "/images/rs04.png";
+		iconShare.src = "/images/si-08c.png";
 		iconShare.style.height = remote.style.height;
 		iconShare.style.width = remote.style.height; // make a square
 		iconShare.style.visibility = "hidden";
 		remote.appendChild(iconShare);
 		let iconShare1 = document.createElement("img");
 		iconShare1.id = remote.id + "_iconShare1";
-		iconShare1.src = "/images/rs04.png";
+		iconShare1.src = "/images/si-08c.png";
 		iconShare1.style.height = remote.style.height;
 		iconShare1.style.width = remote.style.height; // make a square
 		iconShare1.style.visibility = "hidden";
@@ -1396,6 +1396,8 @@ function UIBuilder(json_cfg, clientID) {
 		this.addedRemoteSites.push(data.name);
 
 		this.upperBar.appendChild(remote);
+
+		this.setRemoteIconVisibility(data.name, "iconShare", data.beingSharedWith);
 	};
 
 	/**
@@ -1439,7 +1441,6 @@ function UIBuilder(json_cfg, clientID) {
 	* @param status {bool} whether or not to show
 	*/
 	this.setRemoteIconVisibility = function(siteName, iconName, status) {
-		console.log("erase me, setRemoteIconVisibility");
 		try {
 			var icon = document.getElementById(siteName + "_" + iconName);
 			var icon1 = document.getElementById(siteName + "_" + iconName + "1");
@@ -1453,7 +1454,6 @@ function UIBuilder(json_cfg, clientID) {
 		} catch (e) {
 			console.log(e);
 		}
-		console.log("erase me, setRemoteIconVisibility complete");
 	};
 
 	/**

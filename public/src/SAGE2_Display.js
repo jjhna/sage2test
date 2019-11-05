@@ -1563,6 +1563,10 @@ function setupListeners() {
 			app.SAGE2Event('performanceData', null, null, data, data.date);
 		}
 	});
+
+	wsio.on('updateRemoteSiteShareVisual', function(data) {
+		ui.setRemoteIconVisibility(data.siteName, "iconShare", data.isSharing);
+	});
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {

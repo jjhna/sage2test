@@ -1487,7 +1487,12 @@ function initializeExistingPartitionsUI(wsio) {
 
 function initializeRemoteServerInfo(wsio) {
 	for (var i = 0; i < remoteSites.length; i++) {
-		var site = {name: remoteSites[i].name, connected: remoteSites[i].connected, geometry: remoteSites[i].geometry};
+		var site = {
+			name: remoteSites[i].name,
+			connected: remoteSites[i].connected,
+			geometry: remoteSites[i].geometry,
+			beingSharedWith: remoteSites[i].beingSharedWith
+		};
 		wsio.emit('addRemoteSite', site);
 	}
 }
@@ -1495,6 +1500,7 @@ function initializeRemoteServerInfo(wsio) {
 function wsAppWindowCreated(wsio, data) {
 	if (SAGE2Items.applications.list.hasOwnProperty(data.id) === true) {
 		handleStickyItem(data.id);
+		RemoteSiteSharing.checkAppAndShareIfShould(SAGE2Items.applications.list[data.id], wsCallFunctionOnApp);
 	}
 }
 // **************  Drawing Functions *****************
@@ -5739,7 +5745,8 @@ function initalizeRemoteSites() {
 					connected: "off",
 					geometry: rGeom,
 					index: index,
-					unavailable: false // used for automated sharing
+					unavailable: false, // used for automated sharing
+					beingSharedWith: false // used for automated sharing
 				};
 				// Create a websocket connection to the site
 				remoteSites[index].wsio = createRemoteConnection(wsURL, element, index);
@@ -6690,23 +6697,8 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 				break;
 			}
 		}
-		// Create the webview to the remote UI
-		wsLoadApplication({id: uniqueID}, {
-			application: "/uploads/apps/remoteSiteControls",
-			user: uniqueID,
-			// pass the url in the data object
-			data: {
-				id:  uniqueID,
-				url: viewURL,
-				remoteSiteInformation: {
-					name: config.remote_sites[remoteSite.index].name,
-					host: config.remote_sites[remoteSite.index].host,
-					port: config.remote_sites[remoteSite.index].port
-				}
-			},
-			position: [pointerX, config.ui.titleBarHeight + 10],
-			dimensions: [400, 800]
-		});
+		// Instead of load control application, set state
+		RemoteSiteSharing.toggleSiteSharingWithRemoteSite(remoteSite, clients);
 	} else if (obj.data.connected === "on" && sagePointers[uniqueID].visible) {
 		remoteSite = findRemoteSiteByConnection(obj.data.wsio);
 		// Build the UI URL
@@ -10384,7 +10376,6 @@ function wsCallFunctionOnApp(wsio, data) {
 			}
 			return;
 		} else if (data.func === "SAGE2_shareWithSite") {
-			console.log("erase me, SAGE2_shareWithSite:", data.parameters);
 			let remote = null;
 			if (typeof data.parameters.remoteSiteIndex === "number") { // 0 evals false
 				remote = remoteSites[data.parameters.remoteSiteIndex];
@@ -10412,13 +10403,9 @@ function wsCallFunctionOnApp(wsio, data) {
 						}
 					}
 				}
-				console.log("erase me, going to try share");
 				if ((remote !== null) && (remote.wsio != null)) {
-					console.log("erase me, thinks possible");
 					shareApplicationWithRemoteSite(uniqueID, app, remote);
 				}
-			} else {
-				console.log("erase me, tried to share, but not connected");
 			}
 			return;
 		} else if (data.func === "SAGE2PinStickyItem") {
