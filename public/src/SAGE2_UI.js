@@ -152,11 +152,38 @@ window.addEventListener('unload', function(event) {
 });
 
 /**
+ * Cookie Compliancy test
+ *
+ * @method testCookieCompliancy
+ */
+function testCookieCompliancy() {
+	var visitFirst = getCookie("SAGE2cookieCompliancyAccepted");
+	if (!visitFirst) {
+		// show the banner
+		document.getElementById("SAGE2CookieConsent").style.display = "block";
+	}
+	// else cookie already accepted
+}
+
+/**
  * When the page loads, SAGE2 starts
  *
  */
 window.addEventListener('load', function(event) {
 	SAGE2_init();
+
+	// Cookie Compliancy action button
+	document.getElementById("cookieButton").onclick = function() {
+		var expire = new Date();
+		// 90-day expiration date
+		expire = new Date(expire.getTime() + 7776000000);
+		// Add the cookie
+		document.cookie = "SAGE2cookieCompliancyAccepted=here; expires=" + expire + ";path=/";
+		// Remove the banner
+		document.getElementById("SAGE2CookieConsent").style.display = "none";
+	};
+	// Check if it is the first visit
+	testCookieCompliancy();
 });
 
 /**
@@ -318,6 +345,7 @@ function pasteHandler(event) {
 		}
 	}
 }
+
 
 /**
  * Entry point of the user interface
