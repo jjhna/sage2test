@@ -1576,6 +1576,7 @@ function setupListeners() {
 		console.log("erase me, sageVersion", data);
 		// setupSAGE2Version does exist, but is a text manpulation for display on UI.
 	});
+
 	wsio.on('showRemoteSiteInfoDialog', function(data) {
 		if (data.message) {
 			remoteSiteInfo.showAcceptRejectMessage(data);
@@ -1588,6 +1589,9 @@ function setupListeners() {
 		remoteSiteInfo.hideAcceptRejectMessage();
 	});
 
+	wsio.on('updateRemoteSiteShareVisual', function(data) {
+		ui.setRemoteIconVisibility(data.siteName, "iconShare", data.isSharing);
+	});
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {

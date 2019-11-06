@@ -1354,7 +1354,50 @@ function UIBuilder(json_cfg, clientID) {
 		name.textContent = data.name;
 		remote.appendChild(name);
 
+		// Add icons that are hidden for sharing status
+		let iconShare = document.createElement("img");
+		iconShare.id = remote.id + "_iconShare";
+		iconShare.src = "/images/si-08c.png";
+		iconShare.style.height = remote.style.height;
+		iconShare.style.width = remote.style.height; // make a square
+		iconShare.style.visibility = "hidden";
+		remote.appendChild(iconShare);
+		let iconShare1 = document.createElement("img");
+		iconShare1.id = remote.id + "_iconShare1";
+		iconShare1.src = "/images/si-08c.png";
+		iconShare1.style.height = remote.style.height;
+		iconShare1.style.width = remote.style.height; // make a square
+		iconShare1.style.visibility = "hidden";
+		iconShare1.style.position = "absolute";
+		iconShare1.style.left = "1px";
+		iconShare1.style.top = "1px";
+		remote.appendChild(iconShare1);
+		let iconUnavailable = document.createElement("img");
+		iconUnavailable.id = remote.id + "_iconUnavailable";
+		iconUnavailable.src = "/images/eye-crossedout.png";
+		iconUnavailable.style.height = remote.style.height;
+		iconUnavailable.style.width = remote.style.height; // make a square
+		iconUnavailable.style.visibility = "hidden";
+		remote.appendChild(iconUnavailable);
+		let iconUnavailable1 = document.createElement("img");
+		iconUnavailable1.id = remote.id + "_iconUnavailable1";
+		iconUnavailable1.src = "/images/eye-crossedout.png";
+		iconUnavailable1.style.height = remote.style.height;
+		iconUnavailable1.style.width = remote.style.height; // make a square
+		iconUnavailable1.style.visibility = "hidden";
+		iconUnavailable1.style.position = "absolute";
+		iconUnavailable1.style.left = parseInt(remote.style.height) + 1 + "px";
+		iconUnavailable1.style.top = "1px";
+		remote.appendChild(iconUnavailable1);
+
+		if (this.addedRemoteSites === undefined) {
+			this.addedRemoteSites = [];
+		}
+		this.addedRemoteSites.push(data.name);
+
 		this.upperBar.appendChild(remote);
+
+		this.setRemoteIconVisibility(data.name, "iconShare", data.beingSharedWith);
 	};
 
 	/**
@@ -1387,6 +1430,29 @@ function UIBuilder(json_cfg, clientID) {
 			remote.style.backgroundColor = lockedColor;
 		} else {
 			remote.style.backgroundColor = unknownColor;
+		}
+	};
+
+	/**
+	* Shows or hides the specified icon
+	*
+	* @method setRemoteIconVisibility
+	* @param siteName {string} name should also be id of div
+	* @param status {bool} whether or not to show
+	*/
+	this.setRemoteIconVisibility = function(siteName, iconName, status) {
+		try {
+			var icon = document.getElementById(siteName + "_" + iconName);
+			var icon1 = document.getElementById(siteName + "_" + iconName + "1");
+			if (status) {
+				icon.style.visibility = "visible";
+				icon1.style.visibility = "visible";
+			} else {
+				icon.style.visibility = "hidden";
+				icon1.style.visibility = "hidden";
+			}
+		} catch (e) {
+			console.log(e);
 		}
 	};
 

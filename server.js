@@ -82,8 +82,9 @@ var SharedDataManager	= require('./src/node-sharedserverdata');   // manager for
 var userlist            = require('./src/node-userlist');         // list of users
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
 var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
-var VoiceActionManager	= require('./src/node-voiceToAction');    // manager for shared data
-var VersionManager      = require('./src/node-versionChecker');   // manager for version tracking
+var VoiceActionManager	= require('./src/node-voiceToAction');      // manager for shared data
+var VersionManager      = require('./src/node-versionChecker');     // manager for version tracking
+var RemoteSiteSharing   = require('./src/node-remoteSiteSharing');  // remote sharing controls (2019 Nov, some functionality commented out)
 
 //
 // Globals
@@ -1339,6 +1340,11 @@ function setupListeners(wsio) {
 		// For testing, this should not be used otherwise
 		wsio.emit('hideRemoteSiteInfoDialog', data);
 	});
+
+	//Remote Site sharing
+	wsio.on('remoteSiteKnockSend',                  wsRemoteSiteKnockSend); // Note: handler is in remote section
+	wsio.on('remoteSiteUnavailable',                wsRemoteSiteUnavailable);
+
 }
 
 /**
@@ -1532,7 +1538,12 @@ function initializeExistingPartitionsUI(wsio) {
 
 function initializeRemoteServerInfo(wsio) {
 	for (var i = 0; i < remoteSites.length; i++) {
-		var site = {name: remoteSites[i].name, connected: remoteSites[i].connected, geometry: remoteSites[i].geometry};
+		var site = {
+			name: remoteSites[i].name,
+			connected: remoteSites[i].connected,
+			geometry: remoteSites[i].geometry,
+			beingSharedWith: remoteSites[i].beingSharedWith
+		};
 		wsio.emit('addRemoteSite', site);
 	}
 }
@@ -1540,6 +1551,7 @@ function initializeRemoteServerInfo(wsio) {
 function wsAppWindowCreated(wsio, data) {
 	if (SAGE2Items.applications.list.hasOwnProperty(data.id) === true) {
 		handleStickyItem(data.id);
+		RemoteSiteSharing.checkAppAndShareIfShould(SAGE2Items.applications.list[data.id], wsCallFunctionOnApp);
 	}
 }
 // **************  Drawing Functions *****************
@@ -5783,7 +5795,9 @@ function initalizeRemoteSites() {
 					wsio: null,
 					connected: "off",
 					geometry: rGeom,
-					index: index
+					index: index,
+					unavailable: false, // used for automated sharing
+					beingSharedWith: false // used for automated sharing
 				};
 				// Create a websocket connection to the site
 				remoteSites[index].wsio = createRemoteConnection(wsURL, element, index);
@@ -5793,7 +5807,8 @@ function initalizeRemoteSites() {
 
 				// attempt to connect every 15 seconds, if connection failed
 				setInterval(function() {
-					if (remoteSites[index].connected !== "on") {
+					if ((remoteSites[index].connected !== "on")
+					&& (!remoteSites[index].unavailable)) {
 						var rem = createRemoteConnection(wsURL, element, index);
 						remoteSites[index].wsio = rem;
 					}
@@ -5887,11 +5902,18 @@ function manageRemoteConnection(remote, site, index) {
 	remote.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
 	remote.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
 
+	// For remote site controls
+	remote.on('remoteSiteKnockOnSiteHandler',         wsRemoteSiteKnockOnSiteHandler);
+
 	remote.emit('addClient', clientDescription);
 	clients.push(remote);
 
 	remote.on('remoteConnection', function(remotesocket, data) {
-		if (data.status === "refused") {
+		if (data.status === "unavailable") {
+			sageutils.log("Remote", "Connection became unavailable", chalk.cyan(site.name), ": " + data.reason);
+			remoteSites[index].connected = "locked";
+			remoteSites[index].unavailable = true;
+		} else if (data.status === "refused") {
 			sageutils.log("Remote", "Connection refused to", chalk.cyan(site.name), ": " + data.reason);
 			remoteSites[index].connected = "locked";
 		} else {
@@ -6717,10 +6739,23 @@ function pointerPressOnOpenSpace(uniqueID, pointerX, pointerY, data) {
 function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt) {
 	// If the remote site is active (green button)
 	// also disable action through the web ui (visible pointer)
-	if (obj.data && (obj.data.connected === "on") && sagePointers[uniqueID].visible) {
-		// Validate the remote address
-		var remoteSite = findRemoteSiteByConnection(obj.data.wsio);
 
+	// Validate the remote address
+
+	// Any right click with a visible pointer. Even offline sites allowed.
+	var remoteSite;
+	if ((data.button === "right") && sagePointers[uniqueID].visible) {
+		remoteSite = null;
+		for (let i = 0; i < remoteSites.length; i++) {
+			if (remoteSites[i].name === obj.data.name) {
+				remoteSite = remoteSites[i];
+				break;
+			}
+		}
+		// Instead of load control application, set state
+		RemoteSiteSharing.toggleSiteSharingWithRemoteSite(remoteSite, clients);
+	} else if (obj.data.connected === "on" && sagePointers[uniqueID].visible) {
+		remoteSite = findRemoteSiteByConnection(obj.data.wsio);
 		// Build the UI URL
 		var viewURL = 'https://' + remoteSite.wsio.remoteAddress.address + ':'
 			+ remoteSite.wsio.remoteAddress.port;
@@ -10429,14 +10464,38 @@ function wsCallFunctionOnApp(wsio, data) {
 					true);
 			}
 			return;
-		} else if (data.func === "SAGE2_shareWithSite"
-			&& (remoteSites[data.parameters.remoteSiteIndex].connected === "on")) {
-			// share this application with a site.
-			let uniqueID = wsio.id;
-			// the release
-			let app = {application: SAGE2Items.applications.list[data.app]};
-			let remote = remoteSites[data.parameters.remoteSiteIndex];
-			shareApplicationWithRemoteSite(uniqueID, app, remote);
+		} else if (data.func === "SAGE2_shareWithSite") {
+			let remote = null;
+			if (typeof data.parameters.remoteSiteIndex === "number") { // 0 evals false
+				remote = remoteSites[data.parameters.remoteSiteIndex];
+			} else {
+				for (let i = 0; i < remoteSites.length; i++) {
+					if (remoteSites[i].name === data.parameters.remoteSiteName) {
+						remote = remoteSites[i];
+						break;
+					}
+				}
+			}
+			if ((remote != null) && (remote.connected === "on")) {
+				// share this application with a site.
+				let uniqueID = wsio.id;
+				// the release
+				let app = {application: SAGE2Items.applications.list[data.app]};
+				let remote = null;
+				if (typeof data.parameters.remoteSiteIndex === "number") { // 0 evals false
+					remote = remoteSites[data.parameters.remoteSiteIndex];
+				} else {
+					for (let i = 0; i < remoteSites.length; i++) {
+						if (remoteSites[i].name === data.parameters.remoteSiteName) {
+							remote = remoteSites[i];
+							break;
+						}
+					}
+				}
+				if ((remote !== null) && (remote.wsio != null)) {
+					shareApplicationWithRemoteSite(uniqueID, app, remote);
+				}
+			}
 			return;
 		} else if (data.func === "SAGE2PinStickyItem") {
 			toggleStickyPin(data.app);
@@ -11623,5 +11682,44 @@ function wsWebRtcRemoteScreenShareSendingUiMessage(wsio, data) {
 		data.parameters.cameFromSourceServer = data.cameFromSourceServer;
 		wsCallFunctionOnApp({id: data.clientId}, data);
 	}
+}
+
+/**
+ * This function received from a display client the action to knock
+ *
+ * @method wsRemoteSiteKnockSend
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain words.
+ */
+function wsRemoteSiteKnockSend(wsio, data) {
+	data.nameOfSiteKnocking = config.host;
+	RemoteSiteSharing.knockSend(data, remoteSites);
+}
+
+/**
+ * This function received from a display client the action to knock
+ *
+ * @method wsRemoteSiteKnockOnSite
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain words.
+ */
+function wsRemoteSiteKnockOnSiteHandler(wsio, data) {
+	var remoteSite = findRemoteSiteByConnection(wsio);
+	// TODO remove the next line which is used for debugging
+	if (!remoteSite) {
+		remoteSite = {name: "debug"};
+	}
+	RemoteSiteSharing.knockAtThisSite(wsio, data, remoteSite, wsLoadApplication);
+}
+
+/**
+ * This function received from a display client the action to become unavailable.
+ *
+ * @method wsRemoteSiteUnavailable
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain words.
+ */
+function wsRemoteSiteUnavailable(wsio, data) {
+	RemoteSiteSharing.makeUnavailable(data, remoteSites);
 }
 
