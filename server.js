@@ -9583,7 +9583,9 @@ function deleteApplication(appId, portalId, wsio) {
 		if (sender.wsio !== null) {
 			sender.wsio.emit('stopMediaCapture', {streamId: sender.streamId});
 		}
-	} else if (application === "JupyterLab") {
+	} else if (application === "JupyterLab"
+		|| application === "JupyterCodeCell"
+		|| application === "JupyterMarkdownCell") {
 		broadcast('jupyterShareTerminated', {id: appId});
 	}
 
@@ -11127,7 +11129,7 @@ function sendApplicationDataUpdate(data) {
   }
 */
 function wsSendNotebookDynamic(wsio, data) {
-	console.log("wsSendNotebookDynamic", data);
+	// console.log("wsSendNotebookDynamic", data);
 
 	spreadNotebookOnWall({
 		notebook: data.notebook,
@@ -11145,9 +11147,9 @@ function wsSendNotebookDynamic(wsio, data) {
   }
 */
 function wsUpdateDynamicNotebookCell(wsio, data) {
-	console.log("wsUpdateDynamicNotebookCell", data);
-
 	let appID = `${data.kernel_id}~${data.ind}`;
+	// console.log("wsUpdateDynamicNotebookCell", appID);
+	sageutils.log('Jupyter', "Update Cell " + appID);
 
 	let existingApp = Object.values(SAGE2Items.applications.list)
 		.find(app => app.id === appID);
@@ -11159,6 +11161,8 @@ function wsUpdateDynamicNotebookCell(wsio, data) {
 			ind: data.ind,
 			id: appID
 		});
+	} else {
+		// this app doesn't exist, notify back through WISO
 	}
 }
 

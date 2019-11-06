@@ -8,13 +8,6 @@
 
 "use strict";
 
-// const md = markdownit({
-// 	html: true,
-// 	xhtmlOut: true,
-// 	breaks: true,
-// 	typographer: true
-// }).use(markdownitMath);
-
 var JupyterMarkdownCell = SAGE2_App.extend({
 	init: function (data) {
 		// Create div into the DOM
