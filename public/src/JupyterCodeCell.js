@@ -24,26 +24,32 @@ var JupyterCodeCell = SAGE2_App.extend({
 
 		let {
 			index,
-			cell,
-			metadata
+			cell
 		} = data.state;
 
 		let cellOutputs = cell.outputs;
-		let language = metadata.language_info.name;
 
-		if (cellOutputs[0]) {
+		if (cellOutputs[0] && cellOutputs[0].data && Object.keys(cellOutputs[0].data).length) {
 			let cellData = cellOutputs[0].data;
 
 			if (cellData && cellData["image/png"]) {
 				this.img = document.createElement("img");
 				this.img.style.width = "100%";
 				this.img.style.height = "auto";
-
-				this.img.src = "data:image/png;base64, " + cellData["image/png"];
 				this.element.appendChild(this.img);
-			} else if (cellData && cellData["text/html"]) {
-				this.element.innerHTML = cellData["text/html"];
+			} else if (cellData && (cellData["text/html"] || cellData["text/plain"])) {
+				this.content = document.createElement("div");
+				this.content.style.width = "100%";
+				this.content.style.height = "100%";
+				this.element.appendChild(this.content);
+			} else {
+				this.codeVisible = true;
 			}
+		} else if (cellOutputs[0] && cellOutputs[0].traceback) {
+			this.content = document.createElement("div");
+			this.content.style.width = "100%";
+			this.content.style.height = "100%";
+			this.element.appendChild(this.content);
 		} else {
 			this.codeVisible = true;
 		}
@@ -57,7 +63,7 @@ var JupyterCodeCell = SAGE2_App.extend({
 		this.codeView.style.bottom = 0;
 
 		this.codeView.style.whiteSpace = "pre-line";
-		this.codeView.style.backgroundColor = "#fffa";
+		this.codeView.style.backgroundColor = "#fffc";
 		this.codeView.style.padding = "20px";
 		this.codeView.style.fontFamily = "'Oxygen Mono'";
 		this.codeView.style.fontWeight = "bold";
@@ -65,11 +71,12 @@ var JupyterCodeCell = SAGE2_App.extend({
 		this.codeView.style.transition = "opacity 250ms";
 		this.codeView.style.overflowY = "auto";
 
-		this.codeView.innerHTML = Prism.highlight(
-			cell.source.join(""),
-			Prism.languages[language],
-			language
-		);
+		// this.codeView.innerHTML = Prism.highlight(
+		// 	Array.isArray(cell.source) ? cell.source.join("") : cell.source,
+		// 	Prism.languages[language],
+		// 	language
+		// );
+		this.updateContent();
 
 		this.cellLabel = document.createElement("div");
 		this.cellLabel.style.position = "absolute";
@@ -146,7 +153,7 @@ var JupyterCodeCell = SAGE2_App.extend({
 			description: "Copy Source",
 			callback: "SAGE2_copyURL",
 			parameters: {
-				url: this.state.cell.source.join("")
+				url: Array.isArray(this.state.cell.source) ? this.state.cell.source.join("") : this.state.cell.source
 			}
 		});
 
@@ -155,27 +162,46 @@ var JupyterCodeCell = SAGE2_App.extend({
 
 	updateContent: function (data, date) {
 		// update title with nb/cell name
-		this.updateTitle("JupyterLab Cell - " + data.title);
+		// this.updateTitle("JupyterLab Cell - " + data.title);
+		let { cell, metadata } = this.state;
+		let cellOutputs = cell.outputs;
+		let language = metadata.language_info.name;
 
-		// calculate new size
-		// let newAspect = data.width / data.height;
+		if (cellOutputs[0] && cellOutputs[0].data && Object.keys(cellOutputs[0].data).length) {
+			let cellData = cellOutputs[0].data;
 
-		// // resize for new image aspect ratio
-		// if (newAspect > this.imgAspect) { // wider
-		//   this.sendResize(this.sage2_height * newAspect, this.sage2_height);
-		// } else { // taller
-		//   this.sendResize(this.sage2_width, this.sage2_width / newAspect);
-		// }
+			if (cellData && cellData["image/png"]) {
+				this.img.src = "data:image/png;base64, " + cellData["image/png"];
+			} else if (cellData && (cellData["text/html"] || cellData["text/plain"])) {
+				this.content.innerHTML = `<div style="padding:15px;
+				box-sizing: border-box;
+				font-weight:bold;
+				font-family:'Arimo';
+				width:100%;
+				height:100%;
+				">${cellData["text/html"] || cellData["text/plain"]}</div>`;
+			} else {
+				this.codeVisible = true;
+			}
+		} else if (cellOutputs[0] && cellOutputs[0].traceback) {
+			this.content.innerHTML = `<div style="color:red;
+				padding:15px;
+				box-sizing: border-box;
+				font-weight:bold;
+				font-family:'Oxygen Mono';
+				width:100%;
+				height:100%;
+				background-color:#ffe0e0;
+				">${cellOutputs[0].ename}: <span style="font-weight:normal;">${cellOutputs[0].evalue}</span></div>`;
+		} else {
+			this.codeVisible = true;
+		}
 
-		// // update image
-		// this.img.src = data.src.trim(); // update image contents
-		// this.img.style.width = this.sage2_width;
-		// this.img.style.height = this.sage2_height;
-
-		// this.codeView.innerHTML = Prism.highlight(this.state.code, Prism.languages.python, 'python');
-
-		// // save aspect ratio
-		// this.imgAspect = newAspect;
+		this.codeView.innerHTML = Prism.highlight(
+			Array.isArray(cell.source) ? cell.source.join("") : cell.source,
+			Prism.languages[language],
+			language
+		);
 	},
 
 	resize: function (date) {
@@ -223,8 +249,8 @@ var JupyterCodeCell = SAGE2_App.extend({
 		} else if (eventType === "dataUpdate") {
 			console.log("JupyterLab Data Update", data);
 
-			this.state.src = data.state.src;
-			this.state.code = data.state.code;
+			this.state.index = data.ind;
+			this.state.cell = data.cell;
 
 			this.updateContent(data, date);
 			this.refresh(date);

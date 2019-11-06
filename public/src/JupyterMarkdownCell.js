@@ -33,9 +33,15 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 			cell
 		} = data.state;
 
-		this.updateTitle("Jupyter Markdown Cell");
+		this.content = document.createElement("div");
 
-		this.element.innerHTML = md.render(cell.source.join(""));
+		this.content.innerHTML = md.render(
+			Array.isArray(cell.source) ? cell.source.join("") : cell.source
+		);
+
+		this.element.appendChild(this.content);
+
+		this.updateTitle("Jupyter Markdown Cell");
 
 		this.cellLabel = document.createElement("div");
 		this.cellLabel.style.position = "absolute";
@@ -92,7 +98,7 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 			description: "Copy Source",
 			callback: "SAGE2_copyURL",
 			parameters: {
-				url: this.state.cell.source.join("")
+				url: Array.isArray(this.state.cell.source) ? this.state.cell.source.join("") : this.state.cell.source
 			}
 		});
 
@@ -108,27 +114,13 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 
 	updateContent: function (data, date) {
 		// update title with nb/cell name
-		this.updateTitle("JupyterLab Cell - " + data.title);
+		// this.updateTitle("JupyterLab Cell - " + data.title);
 
-		// calculate new size
-		let newAspect = data.width / data.height;
+		let { cell } = this.state;
 
-		// resize for new image aspect ratio
-		if (newAspect > this.imgAspect) { // wider
-			this.sendResize(this.sage2_height * newAspect, this.sage2_height);
-		} else { // taller
-			this.sendResize(this.sage2_width, this.sage2_width / newAspect);
-		}
-
-		// update image
-		this.img.src = data.src.trim(); // update image contents
-		this.img.style.width = this.sage2_width;
-		this.img.style.height = this.sage2_height;
-
-		// this.codeView.innerHTML = Prism.highlight(this.state.code, Prism.languages.python, 'python');
-
-		// save aspect ratio
-		this.imgAspect = newAspect;
+		this.element.innerHTML = md.render(
+			Array.isArray(cell.source) ? cell.source.join("") : cell.source
+		);
 	},
 
 	resize: function (date) {
@@ -181,11 +173,10 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 		} else if (eventType === "dataUpdate") {
 			console.log("JupyterLab Data Update", data);
 
-			// this.state.src = data.state.src;
-			// this.state.code = data.state.code;
+			this.state.index = data.ind;
+			this.state.cell = data.cell;
 
 			this.updateContent(data, date);
-			this.refresh(date);
 		}
 	}
 });

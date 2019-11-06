@@ -1238,6 +1238,8 @@ function setupListeners(wsio) {
 
 	// Jupyter messages
 	wsio.on('updateJupyterSharing',                 wsUpdateJupyterSharing);
+	wsio.on('sendNotebookDynamic',									wsSendNotebookDynamic);
+	wsio.on('updateDynamicNotebookCell',						wsUpdateDynamicNotebookCell);
 
 	// message passing between clients
 	wsio.on('requestAppContextMenu',				wsRequestAppContextMenu);
@@ -11117,6 +11119,92 @@ function sendApplicationDataUpdate(data) {
 	broadcast('eventInItem', event);
 }
 
+/*
+	data: {
+    notebook: any,
+    show_markdown: boolean,
+    kernel_id: string
+  }
+*/
+function wsSendNotebookDynamic(wsio, data) {
+	console.log("wsSendNotebookDynamic", data);
+
+	spreadNotebookOnWall({
+		notebook: data.notebook,
+		id: data.kernel_id,
+		show_markdown: data.show_markdown
+	});
+}
+
+
+/*
+	data: {
+    cell: any,
+    ind: number,
+    kernel_id: string
+  }
+*/
+function wsUpdateDynamicNotebookCell(wsio, data) {
+	console.log("wsUpdateDynamicNotebookCell", data);
+
+	let appID = `${data.kernel_id}~${data.ind}`;
+
+	let existingApp = Object.values(SAGE2Items.applications.list)
+		.find(app => app.id === appID);
+
+	if (existingApp) {
+		sendApplicationDataUpdate({
+			cell: data.cell,
+			kernel_id: data.kernel_id,
+			ind: data.ind,
+			id: appID
+		});
+	}
+}
+
+function spreadNotebookOnWall({
+	notebook,
+	id,
+	show_markdown
+}) {
+	let cells = Object.entries(notebook.cells)
+		.filter(([i, c]) => show_markdown || c.cell_type === "code");
+
+	let numCells = cells.length;
+
+	// numCells = numTall * numTall * screenAspect
+	let numTall = Math.ceil(Math.sqrt(numCells / 1.25));
+	// let numTall = Math.ceil(Math.sqrt(numCells / (screenAspect)));
+
+	let gridSize = (config.totalHeight - 20) / numTall;
+
+	let numCols = Math.ceil(numCells / numTall);
+
+	let height = gridSize - 1.5 * config.ui.titleBarHeight;
+	let width = config.totalWidth / numCols - 40;
+
+	for (let i in cells) {
+		let [ind, cell] = cells[i];
+
+		appLoader.createJupyterCell(
+			cell,
+			notebook.metadata,
+			ind,
+			{
+				left: (Math.floor(i / numTall) * (width + 40)) + 20,
+				top: (i % numTall) * (height + config.ui.titleBarHeight + 10) + config.ui.titleBarHeight + 10,
+				width,
+				height
+			},
+			function (appInstance) {
+				appInstance.id = `${id}~${ind}`;
+
+				handleNewApplication(appInstance, null);
+			}
+		);
+	}
+}
+
 function loadJupyterNotebook(filename, codeOnly = false) {
 	var fullpath;
 
@@ -11136,42 +11224,11 @@ function loadJupyterNotebook(filename, codeOnly = false) {
 
 		let notebook = JSON.parse(data);
 
-		let cells = Object.entries(notebook.cells)
-			.filter(([i, c]) => !codeOnly || c.cell_type === "code");
-
-		let numCells = cells.length;
-
-		// numCells = numTall * numTall * screenAspect
-		let numTall = Math.ceil(Math.sqrt(numCells / 1.25));
-		// let numTall = Math.ceil(Math.sqrt(numCells / (screenAspect)));
-
-		let gridSize = (config.totalHeight - 20) / numTall;
-
-		let numCols = Math.ceil(numCells / numTall);
-
-		let height = gridSize - 1.5 * config.ui.titleBarHeight;
-		let width = config.totalWidth / numCols - 40;
-
-		for (let i in cells) {
-			let [ind, cell] = cells[i];
-
-			appLoader.createJupyterCell(
-				cell,
-				notebook.metadata,
-				ind,
-				{
-					left: (Math.floor(i / numTall) * (width + 40)) + 20,
-					top: (i % numTall) * (height + config.ui.titleBarHeight + 10) + config.ui.titleBarHeight + 10,
-					width,
-					height
-				},
-				function (appInstance) {
-					appInstance.id = `${path.basename(filename)}~${ind}`;
-
-					handleNewApplication(appInstance, null);
-				}
-			);
-		}
+		spreadNotebookOnWall({
+			notebook,
+			id: path.basename(filename),
+			show_markdown: !codeOnly
+		});
 
 		// console.log(notebook.metadata);
 	});
