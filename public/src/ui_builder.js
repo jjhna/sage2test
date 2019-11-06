@@ -64,6 +64,9 @@ function UIBuilder(json_cfg, clientID) {
 	this.bg   = document.getElementById("background");
 	this.main = document.getElementById("main");
 
+	// Keep track of the element used for img loading
+	this.bgImg          = null;
+
 	/**
 	* Build the background image/color
 	*
@@ -176,71 +179,135 @@ function UIBuilder(json_cfg, clientID) {
 			this.main.style.width  = this.json_cfg.resolution.width * (this.json_cfg.displays[this.clientID].width || 1) + "px";
 			this.main.style.height = this.json_cfg.resolution.height * (this.json_cfg.displays[this.clientID].height || 1) + "px";
 
+			// Regardless, always support the background setting
+			this.bgImg = new Image();
+			let bgImg = this.bgImg;
+			bgImg.addEventListener('load', function() {
+				if (_this.json_cfg.background.image.style === "tile") {
+					var top = -1 * (_this.offsetY % bgImg.naturalHeight);
+					var left = -1 * (_this.offsetX % bgImg.naturalWidth);
+
+					_this.bg.style.top    = top.toString() + "px";
+					_this.bg.style.left   = left.toString() + "px";
+					var tileW = _this.json_cfg.resolution.width *
+						(_this.json_cfg.displays[_this.clientID].width || 1);
+					var tileH = _this.json_cfg.resolution.height *
+						(_this.json_cfg.displays[_this.clientID].height || 1);
+					tileW -= left;
+					tileH -= top;
+					_this.bg.style.width  = tileW + "px";
+					_this.bg.style.height = tileH + "px";
+
+					_this.bg.style.backgroundImage    = "url(" + _this.json_cfg.background.image.url + ")";
+					_this.bg.style.backgroundPosition = "top left";
+					_this.bg.style.backgroundRepeat   = "repeat";
+					_this.bg.style.backgroundSize     = bgImg.naturalWidth + "px " + bgImg.naturalHeight + "px";
+
+					_this.main.style.top    = (-1 * top).toString()  + "px";
+					_this.main.style.left   = (-1 * left).toString() + "px";
+					_this.main.style.width  = _this.json_cfg.resolution.width *
+						(_this.json_cfg.displays[_this.clientID].width || 1)  + "px";
+					_this.main.style.height = _this.json_cfg.resolution.height *
+						(_this.json_cfg.displays[_this.clientID].height || 1) + "px";
+				} else if (_this.json_cfg.background.image.style === "center") {
+					// find the center of the space
+					let xCenter = (_this.json_cfg.resolution.width * _this.json_cfg.layout.columns) / 2;
+					let yCenter = (_this.json_cfg.resolution.height * _this.json_cfg.layout.rows) / 2;
+					// get the "true top and left"
+					let leftInWorkspace = xCenter - (bgImg.naturalWidth / 2);
+					let topInWorkspace = yCenter - (bgImg.naturalHeight / 2);
+					// position based on _this display's offset
+					let left = leftInWorkspace - _this.offsetX;
+					let top = topInWorkspace - _this.offsetY;
+
+					// Set values on the background element
+					_this.bg.style.width  = _this.json_cfg.resolution.width + "px";
+					_this.bg.style.height = _this.json_cfg.resolution.height + "px";
+					_this.bg.style.backgroundImage    = "url(" + _this.json_cfg.background.image.url + ")";
+					_this.bg.style.backgroundPosition = "top left";
+					_this.bg.style.backgroundRepeat   = "no-repeat";
+					_this.bg.style.backgroundSize     = bgImg.naturalWidth + "px " + bgImg.naturalHeight + "px";
+					//
+					_this.main.style.top    = top + "px";
+					_this.main.style.left   = left + "px";
+					_this.main.style.width  = _this.json_cfg.resolution.width *
+						(_this.json_cfg.displays[_this.clientID].width || 1)  + "px";
+					_this.main.style.height = _this.json_cfg.resolution.height *
+						(_this.json_cfg.displays[_this.clientID].height || 1) + "px";
+				} else if (_this.json_cfg.background.image.style === "centerfit") {
+					// // find the center of the space
+					// let xCenter = (_this.json_cfg.resolution.width * _this.json_cfg.layout.columns) / 2;
+					// let yCenter = (_this.json_cfg.resolution.height * _this.json_cfg.layout.rows) / 2;
+					// // get the "true top and left"
+					// // h * hmod = hend, w * wmod = wend
+					// let leftInWorkspace, topInWorkspace;
+					// let wmod = (_this.json_cfg.resolution.width * _this.json_cfg.layout.columns) / bgImg.naturalWidth; // wend / w
+					// let hmod = (_this.json_cfg.resolution.height * _this.json_cfg.layout.rows) / bgImg.naturalHeight; // hend / h
+					// if ((wmod * bgImg.naturalHeight) > (_this.json_cfg.resolution.height * _this.json_cfg.layout.rows)) {
+					// 	// use hmod since since wmod is too big
+					// 	leftInWorkspace = xCenter - (bgImg.naturalWidth * hmod / 2);
+					// 	topInWorkspace = yCenter - (bgImg.naturalHeight * hmod / 2);
+					// } else { // else use wmod
+					// 	leftInWorkspace = xCenter - (bgImg.naturalWidth * wmod / 2);
+					// 	topInWorkspace = yCenter - (bgImg.naturalHeight * wmod / 2);
+					// }
+					// // position based on _this display's offset
+					// let left = leftInWorkspace - _this.offsetX;
+					// let top = topInWorkspace - _this.offsetY;
+
+					// // Set values on the background element
+					// _this.bg.style.width  = _this.json_cfg.resolution.width + "px";
+					// _this.bg.style.height = _this.json_cfg.resolution.height + "px";
+					// _this.bg.style.backgroundImage    = "url(" + _this.json_cfg.background.image.url + ")";
+					// _this.bg.style.backgroundPosition = "top left";
+					// _this.bg.style.backgroundRepeat   = "no-repeat";
+					// _this.bg.style.backgroundSize     = bgImg.naturalWidth + "px " + bgImg.naturalHeight + "px";
+					// //
+					// _this.main.style.top    = "0px";
+					// _this.main.style.left   = "0px";
+					// _this.main.style.width  = _this.json_cfg.resolution.width *
+					// 	(_this.json_cfg.displays[_this.clientID].width || 1)  + "px";
+					// _this.main.style.height = _this.json_cfg.resolution.height *
+					// 	(_this.json_cfg.displays[_this.clientID].height || 1) + "px";
+				} else {
+					var bgImgFinal;
+					var ext = _this.json_cfg.background.image.url.lastIndexOf(".");
+					if (_this.json_cfg.background.image.style === "fit" &&
+							(bgImg.naturalWidth !== _this.json_cfg.totalWidth ||
+							bgImg.naturalHeight !== _this.json_cfg.totalHeight)) {
+						bgImgFinal = _this.json_cfg.background.image.url.substring(0, ext) + "_" + _this.clientID + ".png";
+					} else {
+						bgImgFinal = _this.json_cfg.background.image.url.substring(0, ext) + "_" + _this.clientID +
+							_this.json_cfg.background.image.url.substring(ext);
+					}
+
+					_this.bg.style.top    = 0;
+					_this.bg.style.left   = 0;
+					_this.bg.style.width  = _this.json_cfg.resolution.width *
+						(_this.json_cfg.displays[_this.clientID].width || 1) + "px";
+					_this.bg.style.height = _this.json_cfg.resolution.height *
+						(_this.json_cfg.displays[_this.clientID].height || 1) + "px";
+
+					_this.bg.style.backgroundImage    = "url(" + bgImgFinal + ")";
+					_this.bg.style.backgroundPosition = "top left";
+					_this.bg.style.backgroundRepeat   = "no-repeat";
+					_this.bg.style.backgroundSize     = _this.json_cfg.resolution.width *
+						(_this.json_cfg.displays[_this.clientID].width || 1) + "px " +
+						_this.json_cfg.resolution.height * (_this.json_cfg.displays[_this.clientID].height || 1) + "px";
+
+					_this.main.style.top    = 0;
+					_this.main.style.left   = 0;
+					_this.main.style.width  = _this.json_cfg.resolution.width *
+						(_this.json_cfg.displays[_this.clientID].width || 1)  + "px";
+					_this.main.style.height = _this.json_cfg.resolution.height *
+						(_this.json_cfg.displays[_this.clientID].height || 1) + "px";
+				}
+			}, false);
+
+			// But only set the src if the background is provided with the configuration file.
 			if (this.json_cfg.background.image !== undefined &&
 				this.json_cfg.background.image.url !== undefined &&
 				!__SAGE2__.browser.isMobile) {
-				var bgImg = new Image();
-				bgImg.addEventListener('load', function() {
-					if (_this.json_cfg.background.image.style === "tile") {
-						var top = -1 * (_this.offsetY % bgImg.naturalHeight);
-						var left = -1 * (_this.offsetX % bgImg.naturalWidth);
-
-						_this.bg.style.top    = top.toString() + "px";
-						_this.bg.style.left   = left.toString() + "px";
-						var tileW = _this.json_cfg.resolution.width *
-							(_this.json_cfg.displays[_this.clientID].width || 1);
-						var tileH = _this.json_cfg.resolution.height *
-							(_this.json_cfg.displays[_this.clientID].height || 1);
-						tileW -= left;
-						tileH -= top;
-						_this.bg.style.width  = tileW + "px";
-						_this.bg.style.height = tileH + "px";
-
-						_this.bg.style.backgroundImage    = "url(" + _this.json_cfg.background.image.url + ")";
-						_this.bg.style.backgroundPosition = "top left";
-						_this.bg.style.backgroundRepeat   = "repeat";
-						_this.bg.style.backgroundSize     = bgImg.naturalWidth + "px " + bgImg.naturalHeight + "px";
-
-						_this.main.style.top    = (-1 * top).toString()  + "px";
-						_this.main.style.left   = (-1 * left).toString() + "px";
-						_this.main.style.width  = _this.json_cfg.resolution.width *
-							(_this.json_cfg.displays[_this.clientID].width || 1)  + "px";
-						_this.main.style.height = _this.json_cfg.resolution.height *
-							(_this.json_cfg.displays[_this.clientID].height || 1) + "px";
-					} else {
-						var bgImgFinal;
-						var ext = _this.json_cfg.background.image.url.lastIndexOf(".");
-						if (_this.json_cfg.background.image.style === "fit" &&
-								(bgImg.naturalWidth !== _this.json_cfg.totalWidth ||
-								bgImg.naturalHeight !== _this.json_cfg.totalHeight)) {
-							bgImgFinal = _this.json_cfg.background.image.url.substring(0, ext) + "_" + _this.clientID + ".png";
-						} else {
-							bgImgFinal = _this.json_cfg.background.image.url.substring(0, ext) + "_" + _this.clientID +
-								_this.json_cfg.background.image.url.substring(ext);
-						}
-
-						_this.bg.style.top    = 0;
-						_this.bg.style.left   = 0;
-						_this.bg.style.width  = _this.json_cfg.resolution.width *
-							(_this.json_cfg.displays[_this.clientID].width || 1) + "px";
-						_this.bg.style.height = _this.json_cfg.resolution.height *
-							(_this.json_cfg.displays[_this.clientID].height || 1) + "px";
-
-						_this.bg.style.backgroundImage    = "url(" + bgImgFinal + ")";
-						_this.bg.style.backgroundPosition = "top left";
-						_this.bg.style.backgroundRepeat   = "no-repeat";
-						_this.bg.style.backgroundSize     = _this.json_cfg.resolution.width *
-							(_this.json_cfg.displays[_this.clientID].width || 1) + "px " +
-							_this.json_cfg.resolution.height * (_this.json_cfg.displays[_this.clientID].height || 1) + "px";
-
-						_this.main.style.top    = 0;
-						_this.main.style.left   = 0;
-						_this.main.style.width  = _this.json_cfg.resolution.width *
-							(_this.json_cfg.displays[_this.clientID].width || 1)  + "px";
-						_this.main.style.height = _this.json_cfg.resolution.height *
-							(_this.json_cfg.displays[_this.clientID].height || 1) + "px";
-					}
-				}, false);
 				bgImg.src = this.json_cfg.background.image.url;
 			}
 
@@ -1326,6 +1393,7 @@ function UIBuilder(json_cfg, clientID) {
 
 		var remote = document.createElement('div');
 		remote.id  = data.name;
+		remote.isRemoteSiteNode = true;
 		remote.style.position  = "absolute";
 		remote.style.textAlign = "center";
 		remote.style.width  = data.geometry.w.toString() + "px";
@@ -1398,6 +1466,23 @@ function UIBuilder(json_cfg, clientID) {
 		this.upperBar.appendChild(remote);
 
 		this.setRemoteIconVisibility(data.name, "iconShare", data.beingSharedWith);
+	};
+
+	/**
+	* Clears all bars for the remote sites from the upper bar
+	*
+	* @method removeRemoteSitesFromUpperBar
+	* @param data {Object} comes from the ws packet
+	*/
+	this.removeRemoteSitesFromUpperBar = function(data) {
+		// Currently data isn't used, more practical to remove all bars.
+		let ubChildren = ui.upperBar.children;
+		for (let i = 0; i < ubChildren.length; i++) {
+			if (ubChildren[i].isRemoteSiteNode) {
+				ubChildren[i].remove();
+				i--;
+			}
+		}
 	};
 
 	/**
@@ -1611,4 +1696,59 @@ function UIBuilder(json_cfg, clientID) {
 	this.isPointerShown = function(id) {
 		return this.pointerItems[id].isShown;
 	};
+
+
+
+
+	// runtimeConfigChange
+	this.updateBasedOnNewConfiguration = function(json_cfg) {
+		// Assuming it is correct and only modified.
+		this.old_cfg = this.json_cfg;
+		this.json_cfg = json_cfg;
+
+		// Start with just background update
+		this.backgroundUpdate();
+
+	};
+
+
+	this.backgroundUpdate = function() {
+		// Possible one part won't exist, if not use the new
+		try { // But if its the same, don't waste any time
+			if (this.old_cfg.background.image.url === this.json_cfg.background.image.url) {
+				return;
+			}
+		} catch (e) {
+			if (!this.json_cfg.background.image || !this.json_cfg.image.url) {
+				return;
+			}
+		}
+
+		// background color
+		if (typeof this.json_cfg.background.color !== "undefined" && this.json_cfg.background.color !== null) {
+			this.bg.style.backgroundColor = this.json_cfg.background.color;
+		} else {
+			this.bg.style.backgroundColor = "#000000";
+		}
+
+		// Based on previous loaded values, can just respecify the src and let the old handler work.
+		if (!this.json_cfg.background.image || !this.json_cfg.background.image.url) {
+			this.bg.style.backgroundImage = "";
+		} else {
+			this.bgImg.src = this.json_cfg.background.image.url;
+		}
+
+		if (this.json_cfg.background.clip !== undefined && this.json_cfg.background.clip === true) {
+			this.bg.style.overflow = "hidden";
+			this.main.style.overflow = "hidden";
+		} else {
+			this.bg.style.overflow = "visible";
+			this.main.style.overflow = "visible";
+		}
+
+	};
+
+
+
+
 }

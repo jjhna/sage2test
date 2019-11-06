@@ -655,7 +655,14 @@ function FileManager(wsio, mydiv, uniqueID) {
 				window.open("admin/performanceHistory.html", '_blank');
 			}
 		},
-		separator2: { value: "separator" }
+		separator2: { value: "separator" },
+		configurationEditor_menu: {value: "Configuration Editor",
+			tooltip: "Opens a new page to edit the wall configuration settings",
+			callback: function (evt) {
+				window.open("admin/assistedConfig.html", '_blank');
+			}
+		},
+		separator3: { value: "separator" }
 	};
 
 	// Advanced setting, right-aligned in the top menubar
@@ -1351,7 +1358,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 	var ctx_menu = webix.ui({
 		view: "contextmenu",
 		id: "cmenu",
-		data: ["Open", "Open With...", "Copy URL", "Open in Tab", "Download", { $template: "Separator" }, "Delete"],
+		data: ["Open", "Open With...", "Set as Background", "Copy URL",
+			"Open in Tab", "Download", { $template: "Separator" }, "Delete"],
 		on: {
 			onMenuItemClick: function(id) {
 				var i;
@@ -1368,6 +1376,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 					}
 				} else if (id === "Copy URL") {
 					copyURLItem(list.getItem(listId).id);
+				} else if (id === "Set as Background") {
+					setImageAsBackground(list.getItem(listId).id);
 				} else if (id === "Open in Tab") {
 					openURLItem(list.getItem(listId).id);
 				} else if (id === "Open") {
@@ -1421,11 +1431,11 @@ function FileManager(wsio, mydiv, uniqueID) {
 							if (yesno) {
 								// for all elements
 								tbd.map(function(tid) {
-									var apptype  = _this.allFiles[tid].exif.MIMEType;
+									var appType  = _this.allFiles[tid].exif.MIMEType;
 									// Send delete message to server
 									wsio.emit('deleteElementFromStoredFiles', {
 										filename: tid,
-										application: apptype
+										application: appType
 									});
 									// Element will be deleted from table by return message from server
 									// _this.allTable.remove(tid);
@@ -1439,31 +1449,40 @@ function FileManager(wsio, mydiv, uniqueID) {
 	});
 	ctx_menu.attachTo($$("all_table"));
 	// Hidding some menus
-	$$("all_table").attachEvent('onBeforeContextMenu', function(id, e, node) {
+	$$("all_table").attachEvent('onBeforeContextMenu', function(webixElement, mouseEvent, node) {
 		// Reset
+		$$('cmenu').hideItem('Set as Background');
 		$$('cmenu').enableItem('Copy URL');
 		$$('cmenu').enableItem('Open in Tab');
 		$$('cmenu').enableItem('Open With...');
 		$$('cmenu').enableItem('Download');
 		$$('cmenu').enableItem('Delete');
+
 		// Select
-		var dItems  = this.getSelectedId(true);
-		if (dItems.length === 1) {
-			let item = dItems[0].id;
-			let appType = _this.allFiles[item].exif.MIMEType;
-			if (appType === "sage2/session") {
-				$$('cmenu').disableItem('Copy URL');
-				$$('cmenu').disableItem('Open in Tab');
-				$$('cmenu').disableItem('Download');
-			} else if (appType === "application/custom") {
-				$$('cmenu').disableItem('Copy URL');
-				$$('cmenu').disableItem('Open in Tab');
-				$$('cmenu').disableItem('Download');
-				$$('cmenu').disableItem('Delete');
-			} else if (appType === "sage2/url") {
-				$$('cmenu').disableItem('Download');
-			}
+		// var dItems  = this.getSelectedId(true); // old one that may not always be true
+		let appType = _this.allFiles[webixElement.row].exif.MIMEType;
+		// if (dItems.length === 1) {
+		// 	let item = dItems[0].id;
+		// 	let appType = _this.allFiles[item].exif.MIMEType;
+		if (appType === "sage2/session") {
+			$$('cmenu').hideItem('Copy URL');
+			$$('cmenu').hideItem('Open in Tab');
+			$$('cmenu').hideItem('Download');
+		} else if (appType === "application/custom") {
+			$$('cmenu').hideItem('Copy URL');
+			$$('cmenu').hideItem('Open in Tab');
+			$$('cmenu').hideItem('Download');
+			$$('cmenu').hideItem('Delete');
+		} else if (appType === "sage2/url") {
+			$$('cmenu').hideItem('Download');
+		} else if (appType.includes("image/")) {
+			console.log(appType);
+			$$('cmenu').enableItem('Set as Background');
+			$$('cmenu').showItem('Set as Background');
 		}
+		// }
+		// console.log("BTW node", id, "that event occured on:", node);
+		// console.log("Compared to selected", dItems[0].id);
 		return true;
 	});
 
@@ -1610,11 +1629,11 @@ function FileManager(wsio, mydiv, uniqueID) {
 					if (yesno) {
 						// for all elements
 						tbd.map(function(tid) {
-							var apptype  = _this.allFiles[tid].exif.MIMEType;
+							var appType  = _this.allFiles[tid].exif.MIMEType;
 							// Send delete message to server
 							wsio.emit('deleteElementFromStoredFiles', {
 								filename: tid,
-								application: apptype
+								application: appType
 							});
 						});
 					}
@@ -1855,6 +1874,31 @@ function FileManager(wsio, mydiv, uniqueID) {
 			window.open(url, '_blank');
 		}
 	}
+
+	/**
+	 * Attempts to set the images as the workspace background
+	 *
+	 * @method     setImageAsBackground
+	 * @param      {<type>}  elt     The element
+	 */
+	function setImageAsBackground(elt) {
+		var sage2url = _this.allFiles[elt].sage2URL;
+		console.log("setImageAsBackground", _this.allFiles[elt]);
+
+		if (sage2url) {
+			wsio.emit('updateBackgroundImageFromUi', {newImageUrl: sage2url});
+		} else {
+			webix.alert({
+				type: "alert-warning",
+				title: "Set Image As Background",
+				width: "420px",
+				ok: "OK",
+				text: "The file could not be found on the server"
+			});
+		}
+	}
+
+
 
 	function updateSearch(searchParam) {
 		if (searchParam === "Image:/") {

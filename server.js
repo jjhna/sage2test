@@ -85,6 +85,7 @@ var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 perf
 var VoiceActionManager	= require('./src/node-voiceToAction');      // manager for shared data
 var VersionManager      = require('./src/node-versionChecker');     // manager for version tracking
 var RemoteSiteSharing   = require('./src/node-remoteSiteSharing');  // remote sharing controls (2019 Nov, some functionality commented out)
+var ConfigEditing       = require('./src/node-configurationEditing'); // Handler for configuration editing
 
 //
 // Globals
@@ -477,7 +478,7 @@ function initializeSage2Server() {
 	setUpRemoteSiteDialogsAsInteractableObjects();
 
 	// Setup the remote sites for collaboration
-	initalizeRemoteSites();
+	initializeRemoteSites();
 
 	// Set up http and https servers
 	var httpServerApp = new HttpServer(publicDirectory);
@@ -1345,6 +1346,14 @@ function setupListeners(wsio) {
 	wsio.on('remoteSiteKnockSend',                  wsRemoteSiteKnockSend); // Note: handler is in remote section
 	wsio.on('remoteSiteUnavailable',                wsRemoteSiteUnavailable);
 
+	// Configuration updates
+	// This one accepts setting an image as the background from with in the UI
+	wsio.on('updateBackgroundImageFromUi',          wsUpdateBackgroundImageFromUi);
+	wsio.on('checkConfigurationFileForChanges',     wsCheckConfigurationFileForChanges);
+	wsio.on('displayRequestingRemoteSites',         wsDisplayRequestingRemoteSites);
+	// Support for the assistedConfig.html
+	wsio.on('requestCurrentConfigurationFile',      wsRequestCurrentConfigurationFile);
+	wsio.on('assistedConfigSend',                   wsAssistedConfigSend);
 }
 
 /**
@@ -4962,8 +4971,7 @@ function wsOpenRadialMenuFromControl(wsio, data) {
 	createRadialMenu(wsio.id, ctrl.left, ctrl.top);
 }
 
-
-function loadConfiguration() {
+function getPathOfConfigFile() {
 	var configFile = null;
 
 	if (program.configuration) {
@@ -5025,6 +5033,11 @@ function loadConfiguration() {
 		console.log("----------\n\n");
 		process.exit(1);
 	}
+	return configFile;
+}
+
+function loadConfiguration() {
+	var configFile = getPathOfConfigFile();
 
 	// Read the specified configuration file
 	var json_str   = fs.readFileSync(configFile, 'utf8');
@@ -5772,9 +5785,62 @@ function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
 
 // **************  Remote Site Collaboration *****************
 
-function initalizeRemoteSites() {
+// function initializeRemoteSites() {
+// 	if (config.remote_sites) {
+// 		remoteSites = new Array(config.remote_sites.length);
+// 		config.remote_sites.forEach(function(element, index, array) {
+// 			// if we have a valid definition of a remote site (host, port and name)
+// 			if (element.host && element.port && element.name) {
+// 				var protocol = (element.secure === true) ? "wss" : "ws";
+// 				var wsURL = protocol + "://" + element.host + ":" + element.port.toString();
+
+// 				var rGeom = {};
+// 				rGeom.w = Math.min((0.5 * config.totalWidth) / remoteSites.length, config.ui.titleBarHeight * 6)
+// 					- (0.16 * config.ui.titleBarHeight);
+// 				rGeom.h = 0.84 * config.ui.titleBarHeight;
+// 				rGeom.x = (0.5 * config.totalWidth) + ((rGeom.w + (0.16 * config.ui.titleBarHeight))
+// 					* (index - (remoteSites.length / 2))) + (0.08 * config.ui.titleBarHeight);
+// 				rGeom.y = 0.08 * config.ui.titleBarHeight;
+
+// 				// Build the object
+// 				remoteSites[index] = {
+// 					name: element.name,
+// 					wsio: null,
+// 					connected: "off",
+// 					geometry: rGeom,
+// 					index: index
+// 				};
+// 				// Create a websocket connection to the site
+// 				remoteSites[index].wsio = createRemoteConnection(wsURL, element, index);
+
+// 				// Add the gemeotry for the button
+// 				interactMgr.addGeometry("remote_" + index, "staticUI", "rectangle", rGeom,  true, index, remoteSites[index]);
+
+// 				// attempt to connect every 15 seconds, if connection failed
+// 				setInterval(function() {
+// 					if (remoteSites[index].connected !== "on") {
+// 						var rem = createRemoteConnection(wsURL, element, index);
+// 						remoteSites[index].wsio = rem;
+// 					}
+// 				}, 15000);
+// 			} else {
+// 				// not a valid site definition, we ignore it
+// 				sageutils.log("Remote", chalk.bold.red('invalid host definition (ignored)'), element.name);
+// 			}
+// 		});
+// 	}
+// }
+
+function initializeRemoteSites() {
+// function updateRemoteSitesListFromConfigurationFile() {
 	if (config.remote_sites) {
-		remoteSites = new Array(config.remote_sites.length);
+		let configWasUpdated = remoteSites.length > 0 ? true : false;
+		// First remove all geometry
+		remoteSites.forEach(function(element, index, array) {
+			interactMgr.removeGeometry("remote_" + index, "staticUI");
+		});
+		// Create array for new sites (might not actually change, but don't want to lose previous yet)
+		let updatedSiteListing = new Array(config.remote_sites.length);
 		config.remote_sites.forEach(function(element, index, array) {
 			// if we have a valid definition of a remote site (host, port and name)
 			if (element.host && element.port && element.name) {
@@ -5782,43 +5848,128 @@ function initalizeRemoteSites() {
 				var wsURL = protocol + "://" + element.host + ":" + element.port.toString();
 
 				var rGeom = {};
-				rGeom.w = Math.min((0.5 * config.totalWidth) / remoteSites.length, config.ui.titleBarHeight * 6)
+				rGeom.w = Math.min((0.5 * config.totalWidth) / updatedSiteListing.length, config.ui.titleBarHeight * 6)
 					- (0.16 * config.ui.titleBarHeight);
 				rGeom.h = 0.84 * config.ui.titleBarHeight;
 				rGeom.x = (0.5 * config.totalWidth) + ((rGeom.w + (0.16 * config.ui.titleBarHeight))
-					* (index - (remoteSites.length / 2))) + (0.08 * config.ui.titleBarHeight);
+					* (index - (updatedSiteListing.length / 2))) + (0.08 * config.ui.titleBarHeight);
 				rGeom.y = 0.08 * config.ui.titleBarHeight;
 
 				// Build the object
-				remoteSites[index] = {
+				updatedSiteListing[index] = {
 					name: element.name,
 					wsio: null,
 					connected: "off",
 					geometry: rGeom,
 					index: index,
 					unavailable: false, // used for automated sharing
-					beingSharedWith: false // used for automated sharing
+					beingSharedWith: false, // used for automated sharing
+					reconnectIntervalId: null,
+					password: element.password,
+					session: element.session
 				};
-				// Create a websocket connection to the site
-				remoteSites[index].wsio = createRemoteConnection(wsURL, element, index);
-
+				// If no change to the entry was made, use the old one
+				if (remoteSitesEntryHasNotChanged(element, wsURL)) {
+					console.log("erase me, reusing socket for:", updatedSiteListing[index].name);
+					let oldEntry = remoteSites[remoteSitesIndexGivenName(updatedSiteListing[index].name)];
+					updatedSiteListing[index].wsio = oldEntry.wsio;
+					updatedSiteListing[index].connected = oldEntry.connected;
+					// Change name to prevent closure of ws later
+					oldEntry.name = null;
+				} else {
+					// // Otherwise create a websocket connection to the site
+					// console.log("erase me, creating websocket for remote site:", updatedSiteListing[index].name);
+					// updatedSiteListing[index].wsio = createRemoteConnection(wsURL, element, index);
+				}
+				// // attempt to connect every 15 seconds, if connection failed
+				// updatedSiteListing[index].reconnectIntervalId = setInterval(function() {
+				// 	if (updatedSiteListing[index].connected !== "on") {
+				// 		var rem = createRemoteConnection(wsURL, element, index);
+				// 		updatedSiteListing[index].wsio = rem;
+				// 	}
+				// }, 15000);
 				// Add the gemeotry for the button
-				interactMgr.addGeometry("remote_" + index, "staticUI", "rectangle", rGeom,  true, index, remoteSites[index]);
-
+				interactMgr.addGeometry("remote_" + index, "staticUI", "rectangle",
+					rGeom, true, index, updatedSiteListing[index]);
+			} else {
+				// not a valid site definition, we ignore it
+				sageutils.log("Remote", chalk.bold.red('invalid host definition (ignored)'), element.name);
+			}
+		});
+		// Now close down all ws that weren't reused and stop the intervals for them.
+		remoteSites.forEach(function(element, index, array) {
+			// All the old intervals will point at an obsolete object, clear them
+			clearInterval(element.reconnectIntervalId);
+			// Those used had the names changed to null
+			if (element.name !== null) {
+				// NOTE: close() is not exposed like in the client-side object
+				console.log("erase me, debug terinating:", element.name);
+				element.wsio.ws.terminate();
+			}
+		});
+		// Swap in the current set
+		remoteSites = updatedSiteListing;
+		// Create websockets for those who dont yet have them and make intervals for all
+		// Creation moved here where remoteSites now lines up with the potentially updated listing
+		// The createRemoteConnection and sub function would require significant editing if this was done earlier.
+		config.remote_sites.forEach(function(element, index, array) {
+			// if we have a valid definition of a remote site (host, port and name)
+			if (element.host && element.port && element.name) {
+				var protocol = (element.secure === true) ? "wss" : "ws";
+				var wsURL = protocol + "://" + element.host + ":" + element.port.toString();
+				// Only make websocket if it didn't carry over
+				if (remoteSites[index].wsio === null) {
+					remoteSites[index].wsio = createRemoteConnection(wsURL, element, index);
+				}
 				// attempt to connect every 15 seconds, if connection failed
-				setInterval(function() {
+				remoteSites[index].reconnectIntervalId = setInterval(function() {
 					if ((remoteSites[index].connected !== "on")
 					&& (!remoteSites[index].unavailable)) {
 						var rem = createRemoteConnection(wsURL, element, index);
 						remoteSites[index].wsio = rem;
 					}
 				}, 15000);
-			} else {
-				// not a valid site definition, we ignore it
-				sageutils.log("Remote", chalk.bold.red('invalid host definition (ignored)'), element.name);
 			}
 		});
+		if (configWasUpdated) {
+			// tell each display client they need to clear their current list
+			for (let i = 0; i < clients.length; i++) {
+				if (clients[i].clientType === "display") {
+					clients[i].emit("clearRemoteSiteBlocks");
+				}
+			}
+		}
 	}
+}
+
+function remoteSitesIndexGivenName(name) {
+	for (let i = 0; i < remoteSites.length; i++) {
+		if (remoteSites[i].name === name) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+function remoteSitesEntryHasNotChanged(configEntry, wsURL) {
+	let isTheSame = true;
+	let oldEntry = remoteSitesIndexGivenName(configEntry.name);
+	if (oldEntry != -1) {
+		oldEntry = remoteSites[oldEntry];
+		if (oldEntry.wsio.ws.url != wsURL) {
+			isTheSame = false;
+		}
+		let currentPassword = (configEntry.password === undefined) ? null : configEntry.password; // If undefined, set to null otherwise reuse
+		let currentHash = (configEntry.session === undefined) ? null : configEntry.session;
+		if (currentPassword != oldEntry.password) {
+			isTheSame = false;
+		} else if (currentHash != oldEntry.session) {
+			isTheSame = false;
+		}
+	} else {
+		isTheSame = false;
+	}
+	return isTheSame;
 }
 
 function manageRemoteConnection(remote, site, index) {
@@ -5847,13 +5998,17 @@ function manageRemoteConnection(remote, site, index) {
 	};
 	remote.clientType = "remoteServer";
 
+	let nameOfTheRemoteSite = remoteSites[index].name;
 	remote.onclose(function() {
-		sageutils.log("Remote", chalk.cyan(config.remote_sites[index].name), "offline");
-		// it was locked, keep the state locked
-		if (remoteSites[index].connected !== "locked") {
-			remoteSites[index].connected = "off";
-			var delete_site = {name: remoteSites[index].name, connected: remoteSites[index].connected};
-			broadcast('connectedToRemoteSite', delete_site);
+		sageutils.log("Remote", chalk.cyan(nameOfTheRemoteSite), "offline");
+		// The only case where this doesn't match is when the config file was updated during runtime.
+		if (nameOfTheRemoteSite == remoteSites[index].name) {
+			// it was locked, keep the state locked
+			if (remoteSites[index].connected !== "locked") {
+				remoteSites[index].connected = "off";
+				var delete_site = {name: remoteSites[index].name, connected: remoteSites[index].connected};
+				broadcast('connectedToRemoteSite', delete_site);
+			}
 		}
 		removeElement(clients, remote);
 
@@ -6754,18 +6909,20 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 		}
 		// Instead of load control application, set state
 		RemoteSiteSharing.toggleSiteSharingWithRemoteSite(remoteSite, clients);
-	} else if (obj.data.connected === "on" && sagePointers[uniqueID].visible) {
+	} else if (obj.data && (obj.data.connected === "on") && sagePointers[uniqueID].visible) {
 		remoteSite = findRemoteSiteByConnection(obj.data.wsio);
 		// Build the UI URL
 		var viewURL = 'https://' + remoteSite.wsio.remoteAddress.address + ':'
 			+ remoteSite.wsio.remoteAddress.port;
-		// pass the password or hash to the URL
+		// pass the password or session to the URL
 		if (config.remote_sites[remoteSite.index].password) {
 			viewURL += '/session.html?page=index.html?viewonly=true&session=' +
 				config.remote_sites[remoteSite.index].password;
-		} else if (config.remote_sites[remoteSite.index].hash) {
+		} else if (config.remote_sites[remoteSite.index].session) {
+			// Swapped to session from hash. Based on rest of code and wiki, session should be the correct value.
+			// https://bitbucket.org/sage2/sage2/wiki/Configuration
 			viewURL += '/session.html?page=index.html?viewonly=true&hash=' +
-				config.remote_sites[remoteSite.index].hash;
+				config.remote_sites[remoteSite.index].session;
 		} else {
 			// no password
 			viewURL += '/index.html?viewonly=true';
@@ -11722,4 +11879,67 @@ function wsRemoteSiteKnockOnSiteHandler(wsio, data) {
 function wsRemoteSiteUnavailable(wsio, data) {
 	RemoteSiteSharing.makeUnavailable(data, remoteSites);
 }
+
+
+/**
+ * Pass off to a file handler
+ *
+ * @method wsUpdateBackgroundImageFromUi
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a url
+ */
+function wsUpdateBackgroundImageFromUi(wsio, data) {
+	ConfigEditing.configUpdateBackgroundImage(data.newImageUrl, config, clients);
+}
+
+/**
+ * Pass off to a file handler
+ *
+ * @method wsCheckConfigurationFileForChanges
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a url
+ */
+function wsCheckConfigurationFileForChanges(wsio, data) {
+	ConfigEditing.recheckConfiguration(getPathOfConfigFile(), config, clients,
+		initializeRemoteSites);
+}
+
+/**
+ * Rebinding for remote site request.
+ * This should only activate after wall has cleared out their listing.
+ *
+ * @method wsDisplayRequestingRemoteSites
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a url
+ */
+function wsDisplayRequestingRemoteSites(wsio, data) {
+	initializeRemoteServerInfo(wsio);
+}
+
+/**
+ * Rebinding for remote site request.
+ * Support for runtime configuration edit page.
+ * This is a request for the current configuration file.
+ *
+ * @method wsRequestCurrentConfigurationFile
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a url
+ */
+function wsRequestCurrentConfigurationFile(wsio, data) {
+	ConfigEditing.handlerForRequestCurrentConfigurationFile(config, wsio);
+}
+
+/**
+ * Rebinding for remote site request.
+ * Will handle the new configuration submitted by the assitedConfig.html page.
+ *
+ * @method wsAssistedConfigSend
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a url
+ */
+function wsAssistedConfigSend(wsio, data) {
+	ConfigEditing.handlerForAssistedConfigSend(wsio, data, config);
+}
+
+
 

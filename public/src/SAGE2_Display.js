@@ -395,6 +395,14 @@ function setupListeners() {
 		remoteSiteInfo = new RemoteSiteInfoBuilder(json_cfg, clientID);
 	});
 
+	// runtimeConfigChange
+	wsio.on('updateDisplayConfiguration', function(json_cfg) {
+		// Starting with background as basic test
+		// Can make an assumption that the UI was already initialized?
+
+		ui.updateBasedOnNewConfiguration(json_cfg);
+	});
+
 	wsio.on('hideui', function(param) {
 		if (param) {
 			clearTimeout(uiTimer);
@@ -427,6 +435,7 @@ function setupListeners() {
 	});
 
 	wsio.on('addRemoteSite', function(data) {
+		console.log("wsio.on('addRemoteSite'");
 		ui.addRemoteSite(data);
 	});
 
@@ -1591,6 +1600,11 @@ function setupListeners() {
 
 	wsio.on('updateRemoteSiteShareVisual', function(data) {
 		ui.setRemoteIconVisibility(data.siteName, "iconShare", data.isSharing);
+	});
+
+	wsio.on('clearRemoteSiteBlocks', function(data) {
+		ui.removeRemoteSitesFromUpperBar(data);
+		wsio.emit('displayRequestingRemoteSites');
 	});
 }
 

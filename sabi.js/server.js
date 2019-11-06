@@ -1404,7 +1404,10 @@ function socketOnRequestConfigAndTips(socket) {
 */
 function socketOnAssistedConfigSend(socket, sentCfg) {
 	var cfg           = JSON5.parse(fs.readFileSync(pathToWinDefaultConfig));
-	var electronCfg   = JSON5.parse(fs.readFileSync(pathToElectronConfig));
+	
+	// TODO: possibly remove electronCfg usage
+	// this is old code that got shifted towards main SAGE2 server handling. It makes display client 0 the whole wall.
+	// var electronCfg   = JSON5.parse(fs.readFileSync(pathToElectronConfig));
 
 	// copy over layout
 	cfg.layout = sentCfg.layout;
@@ -1421,24 +1424,27 @@ function socketOnAssistedConfigSend(socket, sentCfg) {
 	fs.writeFileSync(pathToWinDefaultConfig, JSON5.stringify(cfg, null, 4));
 
 
-	// electron copy over
-	electronCfg.host = cfg.host;
-	electronCfg.port = cfg.port;
-	electronCfg.index_port      = cfg.index_port;
-	electronCfg.resolution      = {width: (cfg.resolution.width * cfg.layout.columns),
-		height: (cfg.resolution.height * cfg.layout.rows)};//cfg.resolution;
-	electronCfg.layout          = {rows: 1, columns: 1};
-	electronCfg.displays        = [{row: 0, column: 0}];
-	electronCfg.alternate_hosts = cfg.alternate_hosts;
-	electronCfg.remote_sites    = cfg.remote_sites;
+	// // electron copy over
+	// electronCfg.host = cfg.host;
+	// electronCfg.port = cfg.port;
+	// electronCfg.index_port      = cfg.index_port;
+	// electronCfg.resolution      = {width: (cfg.resolution.width * cfg.layout.columns),
+	// 	height: (cfg.resolution.height * cfg.layout.rows)};//cfg.resolution;
+	// electronCfg.layout          = {rows: 1, columns: 1};
+	// electronCfg.displays        = [{row: 0, column: 0}];
+	// electronCfg.alternate_hosts = cfg.alternate_hosts;
+	// electronCfg.remote_sites    = cfg.remote_sites;
 
-	// write
+	// // write
 	// console.log("Updating electron cfg");
 	// fs.writeFileSync(pathToElectronConfig, JSON5.stringify(electronCfg, null, 4));
 
 	if (sentCfg.makeCerts) {
 		updateCertificates();
 	}
+	
+	// Reply back to the client that the config was saved
+	socket.emit("serverConfirmingConfigFileUpdated", cfg);
 }
 
 
