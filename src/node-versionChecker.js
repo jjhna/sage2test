@@ -87,49 +87,55 @@ VersionChecker.prototype.determineIfVersionMismatch = function(remoteData, site,
 	// Versioning between remote sites.
 	let mismatch = this.determineIfVersionMismatchBetweenRemoteSiteAndThiServer(remoteData);
 
+	let messageForDisplay = "Note: " + remotesocketAddress + "\r\n";
+	let shouldSendMessage = false;
+
+
+	if (!found) {
+		shouldSendMessage = true;
+		messageForDisplay += " Isn't aware of this site\r\n";
+	}
 
 	if (mismatch) {
 		let mismatchMessage = [
 			"-----VERSION MISMATCH DETECTED-----",
 			"Warning mismatch with remote site" + site.name
 		];
+		shouldSendMessage = true;
 		if (mismatch.beforeCheckVersion) {
 			mismatchMessage.push("Remote site " + site.name + " has an older version and is unable to report its version");
+			messageForDisplay += " Unable to report version (OLDER).";
 		}
 		if (mismatch.base) {
 			mismatchMessage.push("Remote site " + site.name + " has "
 			+ mismatch.baseOfRemote + " version and may not work well with this site");
 			mismatchMessage.push("This site (" + this.myVersion.base
 			+ ") vs (" + remoteData.version.base + ") remote site");
+			messageForDisplay += " Using " + mismatch.baseOfRemote
+				+ " version (" + remoteData.version.base + ")";
 		}
 		if (mismatch.branch) {
 			mismatchMessage.push("Remote site " + site.name + " has a different branch ("
 			+ mismatch.branchOfRemote + ") and may not work well with this site");
 			mismatchMessage.push("This site (" + this.myVersion.branch
 			+ ") vs (" + remoteData.version.branch + ") remote site");
+			messageForDisplay += " Using differnt branch: " + remoteData.version.branch;
 		}
 		if (mismatch.date) {
 			mismatchMessage.push("Remote site " + site.name + " has a "
 			+ mismatch.dateOfRemote + " release and may not work well with this site");
 			mismatchMessage.push("This site (" + this.myVersion.date
 			+ ") vs (" + remoteData.version.date + ") remote site");
+			messageForDisplay += " Using " + mismatch.dateOfRemote
+				+ " version (" + remoteData.version.date + ")";
 		}
 		mismatchMessage.push("-----VERSION MISMATCH END OF REPORT-----");
 		mismatchMessage.forEach((line) => {
 			sageutils.log("Version manager", chalk.bgRed(line));
 		});
+		messageForDisplay += "\r\n";
 	}
-
-	let messageForDisplay = remotesocketAddress + "\r\n";
-	let shouldSendMessage = false;
-	if (!found) {
-		shouldSendMessage = true;
-		messageForDisplay += " Isn't aware of this site\r\n";
-	}
-	if (mismatch) {
-		shouldSendMessage = true;
-		messageForDisplay += " Doesn't have same version\r\n";
-	}
+	// The remote site didn't list this one, or version mismatch
 	if (shouldSendMessage) {
 		messageForDisplay += " Sharing may not work correctly\r\n";
 		this.tryShowMessageOnDisplay({message: messageForDisplay, hideReject: true}, remoteData, remotesocketAddress);
@@ -249,7 +255,7 @@ VersionChecker.prototype.tryShowNextMesageInQueueOnDisplay = function(acceptOrRe
 	// Remote the first message
 	this.messageQueue.splice(0, 1);
 	// MODIFY STATUS OF ACCEPT REJECT
-	sageutils.log("Version manager", chalk.bgRed("MODIFY STATUS OF ACCEPT REJECT"));
+	sageutils.log("Version manager", chalk.bgRed("MODIFIED STATUS OF ACCEPT REJECT"));
 	if (this.messageQueue.length > 0) {
 		// Show the message
 		this.showGenericInfoPaneOnDisplay(true, this.messageQueue[0].messageData);
@@ -263,7 +269,7 @@ VersionChecker.prototype.tryShowNextMesageInQueueOnDisplay = function(acceptOrRe
  * @method reportReject
  */
 VersionChecker.prototype.reportReject = function() {
-	sageutils.log("Version manager>", "Reporting REJECT");
+	sageutils.log("Version manager", "Reporting REJECT");
 	setTimeout(() => {
 		this.tryShowNextMesageInQueueOnDisplay("REJECT");
 	}, 1500);
@@ -276,7 +282,7 @@ VersionChecker.prototype.reportReject = function() {
  * @method reportAccept
  */
 VersionChecker.prototype.reportAccept = function() {
-	sageutils.log("Version manager>", "Reporting ACCEPT");
+	sageutils.log("Version manager", "Reporting ACCEPT");
 
 	if (this.messageQueue[0].remoteSiteIndex) {
 		this.remote_sites[this.messageQueue[0].remoteSiteIndex].hasAcceptedNotification = true;
