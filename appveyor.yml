@@ -6,6 +6,7 @@ branches:
   only:
   - master
   - beta
+  - lavaSc19Merge
 
 shallow_clone: true
 
