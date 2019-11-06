@@ -370,9 +370,13 @@ var Webview = SAGE2_App.extend({
 
 		// Console message from the embedded page
 		this.element.addEventListener('console-message', function(event) {
-			console.log('Webview>	console:', event.message);
-			// Add the message to the console layer
-			_this.pre.innerHTML += 'Webview> ' + event.message + '\n';
+			if (_this.checkIfYouTubeMessage(event.message)) {
+				_this.handleYouTubeMessage(event.message);
+			} else {
+				console.log('Webview>	console:', event.message);
+				// Add the message to the console layer
+				_this.pre.innerHTML += 'Webview> ' + event.message + '\n';
+			}
 		});
 
 		// When the webview tries to open a new window, for insance with ALT-click
@@ -559,10 +563,71 @@ var Webview = SAGE2_App.extend({
 	load: function(date) {
 		// only update if page changed.
 		if (this.element.src != this.state.url) {
-			// sync the change
-			this.element.src = this.state.url;
-			this.updateMode();
-			this.refresh(date);
+			// First check if YouTube view modification (play / pause)
+			if (this.checkIfYouTubeLoadEvent()) {
+				this.handleYouTubeLoadEvent();
+			} else {
+				// If not YouTube event sync the change
+				this.element.src = this.state.url;
+				this.updateMode();
+				this.refresh(date);
+			}
+		}
+	},
+
+	checkIfYouTubeLoadEvent: function(date) {
+		// Is a load even if the src already matches the core
+		if (this.state.url.includes(this.element.src)) {
+			return true;
+		}
+		return false;
+	},
+
+	handleYouTubeLoadEvent: function(date) {
+		let needToUpdate = true;
+		if (this.element.youTubeLastSrc) {
+			if (this.element.youTubeLastSrc == this.state.url) {
+				needToUpdate = false;
+			}
+		}
+		if (needToUpdate) {
+			if (!this.element.youTubeClickedAfterLoad) {
+				this.element.youTubeClickedAfterLoad = true;
+				this.element.sendInputEvent({
+					type: "mouseDown",
+					x: 1, y: 1,
+					button: "left",
+					modifiers: null,
+					clickCount: 1
+				});
+				this.element.sendInputEvent({
+					type: "mouseUp",
+					x: 1, y: 1,
+					button: "left",
+					modifiers: null,
+					clickCount: 1
+				});
+			}
+			// Get the time to jump to
+			let currentTime = this.state.url;
+			currentTime = currentTime.substring(currentTime.indexOf("s2_yt_currentTime"));
+			currentTime = currentTime.substring(currentTime.indexOf("=") + 1);
+			currentTime = parseInt(currentTime);
+			// Determine whether or not it is play or pause
+			if (this.state.url.includes("s2_yt_pause")) {
+				this.element.executeJavaScript(
+					'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
+					+ 'document.getElementsByTagName("video")[0].pause();'
+				);
+			}
+			if (this.state.url.includes("s2_yt_play")) {
+				this.element.executeJavaScript(
+					'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
+					+ 'document.getElementsByTagName("video")[0].play();'
+				);
+			}
+			// Keep the last action
+			this.element.youTubeLastSrc = this.state.url;
 		}
 	},
 
@@ -758,6 +823,62 @@ var Webview = SAGE2_App.extend({
 			"input, button, textarea, :focus { " +
 				"outline: none; " +
 			"}");
+
+		if (this.state.url.includes("youtube.com") || this.state.url.includes("youtu.be")) {
+			this.element.youTubeClickedAfterLoad = false;
+			this.element.executeJavaScript(
+				`
+console.log(JSON.stringify({ youTubeMessage: true, status: "beginning page evaluation"}));
+
+var addVideoEventHandlers = function() {
+	// First check if there are ads
+	if (document.getElementsByClassName("ytp-ad-text").length > 0) {
+		// If ad, then wait a bit
+		setTimeout(addVideoEventHandlers, 1000);
+		console.log(JSON.stringify({ youTubeMessage: true, status: "waiting for ads to finish"}));
+		return;
+	} else {
+
+		console.log(JSON.stringify({ youTubeMessage: true, status: "adding event handlers"}));
+
+
+		// else, no ad, add the event checks for: play, pause. seeking while playing will trigger a play and a pause
+		document.getElementsByTagName("video")[0].onplay = function(e) {
+			let print_data = {
+				youTubeMessage: true,
+				status: "play",
+				currentTime: this.currentTime
+			};
+			console.log(JSON.stringify(print_data));
+		}
+		document.getElementsByTagName("video")[0].onpause = function(e) {
+			let print_data = {
+				youTubeMessage: true,
+				status: "pause",
+				currentTime: this.currentTime
+			};
+			console.log(JSON.stringify(print_data));
+		}
+		if (!document.getElementsByTagName("video")[0].paused) {
+			let print_data = {
+				youTubeMessage: true,
+				status: "play",
+				currentTime: document.getElementsByTagName("video")[0].currentTime
+			};
+			console.log(JSON.stringify(print_data));
+		}
+	}
+}
+
+var videos = document.getElementsByTagName("video");
+// If there are video elements, on a youtube page that can play videos
+if (videos.length > 0) {
+	addVideoEventHandlers();
+}
+
+`
+			);
+		}
 	},
 
 
@@ -795,6 +916,33 @@ var Webview = SAGE2_App.extend({
 			this.changeURL(current, true); // true: update remote sites if activated
 		} catch (e) {
 			// console.log("The URL was not as expected:" + this.state.url);
+		}
+	},
+
+	checkIfYouTubeMessage: function(message) {
+		try {
+			let convertedMessage = JSON.parse(message);
+			if (convertedMessage.youTubeMessage) {
+				return true;
+			}
+		} catch (e) {
+			// Nothing for now...
+		}
+		return false;
+	},
+
+	handleYouTubeMessage: function(message) {
+		let convertedMessage = JSON.parse(message);
+		if (convertedMessage.status == "pause") {
+			console.log("youTubeMessage pause: ", convertedMessage);
+			this.state.url = this.element.src + "&s2_yt_pause=true&s2_yt_currentTime=" + convertedMessage.currentTime;
+			this.SAGE2Sync(true);
+		} else if (convertedMessage.status == "play") {
+			console.log("youTubeMessage play: ", convertedMessage);
+			this.state.url = this.element.src + "&s2_yt_play=true&s2_yt_currentTime=" + convertedMessage.currentTime;
+			this.SAGE2Sync(true);
+		} else {
+			console.log("youTubeMessage OTHER: ", convertedMessage);
 		}
 	},
 
