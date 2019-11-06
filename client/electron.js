@@ -115,6 +115,10 @@ var si = require('systeminformation');
 // Get the version from the package file
 var version = require('./package.json').version;
 
+// Store current site informations
+var currentDomain;
+var currentServer;
+
 /**
  * Setup the command line argument parsing (commander module)
  */
@@ -191,7 +195,7 @@ if (commander.server) {
 	// default domains are local
 	var domains   = "localhost,127.0.0.1";
 	// Store current site domain
-	var currentDomain = parsedURL.hostname;
+	currentDomain = parsedURL.hostname;
 	if (parsedURL.hostname) {
 		// add the hostname
 		domains +=  "," + parsedURL.hostname;
@@ -263,6 +267,7 @@ function openWindow() {
 	if (commander.server) {
 		// Start to build a URL to load
 		var location = commander.server;
+		currentServer = location;
 
 		// Test if we want an audio client
 		if (commander.audio) {
@@ -558,9 +563,12 @@ function createWindow() {
 	// Catch remote URL to connect to
 	ipcMain.on('connect-url', (e, URL) => {
 		var location = URL;
+		var parsedURL = url.parse(URL);
+		// Save the current location in global variable
+		currentServer = parsedURL.host;
 		// Update current domain
-		currentDomain = url.parse(URL).hostname;
-		var queryParams = querystring.parse(url.parse(URL).query);
+		currentDomain = parsedURL.hostname;
+		var queryParams = querystring.parse(parsedURL.query);
 		// If a password is provided, the md5 hash needed to connect to the site is stored locally
 		if (queryParams.session) {
 			var hash = generatePasswordHash(queryParams.session);
@@ -730,6 +738,39 @@ function myParseInt(str, defaultValue) {
 }
 
 /**
+ * Opens a SAGE2 interface in browser.
+ *
+ * @method     openInterfaceInBrowser
+ */
+function openInterfaceInBrowser() {
+	// function to start a process
+	var exec = require('child_process').exec;
+	// build the URL
+	let uiURL = 'https://' + currentServer + '/index.html';
+	// How to open an URL on each platform
+	let opener;
+
+	switch (process.platform) {
+		case 'darwin':
+			opener = 'open -a "Google Chrome"';
+			break;
+		case 'win32':
+			opener = 'start "" "Chrome"';
+			break;
+		default:
+			opener = 'xdg-open';
+			break;
+	}
+	// Lets go
+	exec(opener + ' "' + uiURL + '"', (error, stdout, stderr) => {
+		if (error) {
+			// In case of error, use the OS default app
+			electron.shell.openExternal(uiURL);
+		}
+	});
+}
+
+/**
  * Creates a remote site input window.
  *
  * @method     createRemoteSiteInputWindow
@@ -788,6 +829,13 @@ function buildMenu() {
 					click() {
 						createRemoteSiteInputWindow();
 					}
+				},
+				{
+					label: 'Open UI for Current Site in Browser',
+					accelerator: process.platform === 'darwin' ? 'Command+U' : 'Ctrl+U',
+					click() {
+						openInterfaceInBrowser();
+					}
 				}
 			]
 		},
@@ -833,7 +881,7 @@ function buildMenu() {
 			label: 'View',
 			submenu: [
 				{
-					label: 'Reload',
+					label: 'Reload Site',
 					accelerator: 'CmdOrCtrl+R',
 					click: function(item, focusedWindow) {
 						if (focusedWindow) {
@@ -852,7 +900,13 @@ function buildMenu() {
 					}()),
 					click: function(item, focusedWindow) {
 						if (focusedWindow) {
-							focusedWindow.fullScreenable = !focusedWindow.isFullScreen();
+							// focusedWindow.fullScreenable = !focusedWindow.isFullScreen();
+							focusedWindow.fullScreenable = true;
+							if (focusedWindow.isFullScreen()) {
+								focusedWindow.setFullScreen(false);
+							} else {
+								focusedWindow.setFullScreen(true);
+							}
 						}
 					}
 				},
