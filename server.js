@@ -3452,51 +3452,7 @@ function wsLoadApplication(wsio, data) {
 				}
 			}
 		} else {
-			let xApp, yApp;
-			// if this is the first app.
-			if (appLaunchPositioning.xLast === -1) {
-				xApp = appLaunchPositioning.xStart;
-				yApp = appLaunchPositioning.yStart;
-			} else {
-				// if not the first app, check that this app fits in the current row
-				let fit = false;
-				if (appLaunchPositioning.xLast + appLaunchPositioning.widthLast
-				+ appLaunchPositioning.padding + appInstance.width < config.totalWidth) {
-					fit = true;
-				}
-				// if the app fits, then let use the modified position
-				if (fit) {
-					xApp = appLaunchPositioning.xLast + appLaunchPositioning.widthLast
-					+ appLaunchPositioning.padding;
-					yApp = appLaunchPositioning.yLast;
-				} else {
-					// need to see if fits on next row or restart.
-					// either way changing row, set this app's height as tallest in row.
-					appLaunchPositioning.tallestInRow = appInstance.height;
-					// if fits on next row, put it there
-					if (appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
-					+ appLaunchPositioning.padding + appInstance.height < config.totalHeight) {
-						xApp = appLaunchPositioning.xStart;
-						yApp = appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
-						+ appLaunchPositioning.padding;
-					} else {
-						// doesn't fit, restart
-						xApp = appLaunchPositioning.xStart;
-						yApp = appLaunchPositioning.yStart;
-					}
-				}
-			}
-			// set the app values
-			appInstance.left = xApp;
-			appInstance.top  = yApp;
-			// track the values to position adjust next app
-			appLaunchPositioning.xLast = appInstance.left;
-			appLaunchPositioning.yLast = appInstance.top;
-			appLaunchPositioning.widthLast  = appInstance.width;
-			appLaunchPositioning.heightLast = appInstance.height;
-			if (appInstance.height > appLaunchPositioning.tallestInRow) {
-				appLaunchPositioning.tallestInRow = appInstance.height;
-			}
+			simplePlacementForNewApp(appInstance);
 		}
 
 		// Get the size if any specificed
@@ -3517,52 +3473,7 @@ function wsLoadApplication(wsio, data) {
 				if no fit, then restart
 		*/
 		if (data.wasLaunchedThroughMessage && !data.wasPositionGivenInMessage) {
-			let xApp, yApp;
-			// if this is the first app.
-			if (appLaunchPositioning.xLast === -1) {
-				xApp = appLaunchPositioning.xStart;
-				yApp = appLaunchPositioning.yStart;
-			} else {
-				// if not the first app, check that this app fits in the current row
-				let fit = false;
-				if (appLaunchPositioning.xLast + appLaunchPositioning.widthLast
-				+ appLaunchPositioning.padding + appInstance.width < config.totalWidth) {
-					if (appLaunchPositioning.yLast + appInstance.height < config.totalHeight) {
-						fit = true;
-					}
-				}
-				// if the app fits, then let use the modified position
-				if (fit) {
-					xApp = appLaunchPositioning.xLast + appLaunchPositioning.widthLast
-					+ appLaunchPositioning.padding;
-					yApp = appLaunchPositioning.yLast;
-				} else {
-					// need to see if fits on next row or restart.
-					// either way changing row, set this app's height as tallest in row.
-					appLaunchPositioning.tallestInRow = appInstance.height;
-					// if fits on next row, put it there
-					if (appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
-					+ appLaunchPositioning.padding + appInstance.height < config.totalHeight) {
-						xApp = appLaunchPositioning.xStart;
-						yApp = appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
-						+ appLaunchPositioning.padding;
-					} else { // doesn't fit, restart
-						xApp = appLaunchPositioning.xStart;
-						yApp = appLaunchPositioning.yStart;
-					}
-				}
-			}
-			// set the app values
-			appInstance.left = xApp;
-			appInstance.top  = yApp;
-			// track the values to position adjust next app
-			appLaunchPositioning.xLast = appInstance.left;
-			appLaunchPositioning.yLast = appInstance.top;
-			appLaunchPositioning.widthLast = appInstance.width;
-			appLaunchPositioning.heightLast = appInstance.height;
-			if (appInstance.height > appLaunchPositioning.tallestInRow) {
-				appLaunchPositioning.tallestInRow = appInstance.height;
-			}
+			simplePlacementForNewApp(appInstance);
 		}
 		// if supplied more values to init with
 		if (data.wasLaunchedThroughMessage && data.customLaunchParams) {
@@ -3579,6 +3490,56 @@ function wsLoadApplication(wsio, data) {
 			{application: {id: appInstance.id, type: appInstance.application}}, time: Date.now()});
 	});
 }
+
+function simplePlacementForNewApp(appInstance) {
+	let xApp, yApp;
+	// if this is the first app.
+	if (appLaunchPositioning.xLast === -1) {
+		xApp = appLaunchPositioning.xStart;
+		yApp = appLaunchPositioning.yStart;
+	} else {
+		// if not the first app, check that this app fits in the current row
+		let fit = false;
+		if (appLaunchPositioning.xLast + appLaunchPositioning.widthLast
+		+ appLaunchPositioning.padding + appInstance.width < config.totalWidth) {
+			fit = true;
+		}
+		// if the app fits, then let use the modified position
+		if (fit) {
+			xApp = appLaunchPositioning.xLast + appLaunchPositioning.widthLast
+			+ appLaunchPositioning.padding;
+			yApp = appLaunchPositioning.yLast;
+		} else {
+			// need to see if fits on next row or restart.
+			// either way changing row, set this app's height as tallest in row.
+			appLaunchPositioning.tallestInRow = appInstance.height;
+			// if fits on next row, put it there
+			if (appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
+			+ appLaunchPositioning.padding + appInstance.height < config.totalHeight) {
+				xApp = appLaunchPositioning.xStart;
+				yApp = appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
+				+ appLaunchPositioning.padding;
+			} else {
+				// doesn't fit, restart
+				xApp = appLaunchPositioning.xStart;
+				yApp = appLaunchPositioning.yStart;
+			}
+		}
+	}
+	// set the app values
+	appInstance.left = xApp;
+	appInstance.top  = yApp;
+	// track the values to position adjust next app
+	appLaunchPositioning.xLast = appInstance.left;
+	appLaunchPositioning.yLast = appInstance.top;
+	appLaunchPositioning.widthLast  = appInstance.width;
+	appLaunchPositioning.heightLast = appInstance.height;
+	if (appInstance.height > appLaunchPositioning.tallestInRow) {
+		appLaunchPositioning.tallestInRow = appInstance.height;
+	}
+}
+
+
 
 function wsLoadImageFromBuffer(wsio, data) {
 	if (!userlist.isAllowed(wsio.id, 'upload files')) {
@@ -3980,53 +3941,7 @@ function wsAddNewWebElement(wsio, data) {
 				}
 			}
 		} else {
-			// no position specified, so use a heuristic
-			let xApp, yApp;
-			// if this is the first app.
-			if (appLaunchPositioning.xLast === -1) {
-				xApp = appLaunchPositioning.xStart;
-				yApp = appLaunchPositioning.yStart;
-			} else {
-				// if not the first app, check that this app fits in the current row
-				let fit = false;
-				if (appLaunchPositioning.xLast + appLaunchPositioning.widthLast
-				+ appLaunchPositioning.padding + appInstance.width < config.totalWidth) {
-					// I dont consider the height here (app will be made to fit later)
-					fit = true;
-				}
-				// if the app fits, then let use the modified position
-				if (fit) {
-					xApp = appLaunchPositioning.xLast + appLaunchPositioning.widthLast
-					+ appLaunchPositioning.padding;
-					yApp = appLaunchPositioning.yLast;
-				} else {
-					// need to see if fits on next row or restart.
-					// either way changing row, set this app's height as tallest in row.
-					appLaunchPositioning.tallestInRow = appInstance.height;
-					// if fits on next row, put it there
-					if (appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
-					+ appLaunchPositioning.padding + appInstance.height < config.totalHeight) {
-						xApp = appLaunchPositioning.xStart;
-						yApp = appLaunchPositioning.yLast + appLaunchPositioning.tallestInRow
-						+ appLaunchPositioning.padding;
-					} else {
-						// doesn't fit, restart
-						xApp = appLaunchPositioning.xStart;
-						yApp = appLaunchPositioning.yStart;
-					}
-				}
-			}
-			// set the app position
-			appInstance.left = xApp;
-			appInstance.top  = yApp;
-			// track the values to position adjust next app
-			appLaunchPositioning.xLast = appInstance.left;
-			appLaunchPositioning.yLast = appInstance.top;
-			appLaunchPositioning.widthLast  = appInstance.width;
-			appLaunchPositioning.heightLast = appInstance.height;
-			if (appInstance.height > appLaunchPositioning.tallestInRow) {
-				appLaunchPositioning.tallestInRow = appInstance.height;
-			}
+			simplePlacementForNewApp(appInstance);
 		}
 
 		appInstance.id = getUniqueAppId();
@@ -4252,6 +4167,8 @@ function wsAddNewSharedElementFromRemoteServer(wsio, data) {
 
 		sageutils.mergeObjects(data.application.data, appInstance.data, ['video_url', 'video_type', 'audio_url', 'audio_type']);
 
+		// Remotely added apps will start in same location, use regular app positioning adjustment to prevent them from piling on top of each other.
+		simplePlacementForNewApp(appInstance);
 		handleNewApplication(appInstance, videohandle);
 
 		if (appInstance.animation) {
