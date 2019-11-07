@@ -43,7 +43,7 @@ const pulseClass = "pulse";
 const blackColor = "#222222";
 
 const favorites_file_name = 'sage2_favorite_sites.json';
-const REFRESH_SITES_STATUS_TIME = 15000;
+const REFRESH_SITES_STATUS_TIME = 5000;
 const FILE_VERSION = 1;
 
 const PREDEFINED_LOCAL_PORT = "9090";
@@ -773,7 +773,7 @@ function fetchWithTimeout(url, delay, attachConnectedSites, onTimeout) {
 }
 
 function setOnlineColorItem(elem) {
-	removeClass(elem, "grey lighten-2"); //TODO remove also green class
+	removeClass(elem, "grey lighten-2");
 	removeClass(elem, "teal");
 	addClass(elem, "blue-grey darken-2");
 }
@@ -955,7 +955,6 @@ function refreshSiteStatus(it) {
 }
 
 function refreshSitesStatus() {
-	console.log("REFRESH SITES");
 	var children = Array.from(favoriteList.children);
 	children.forEach(refreshSiteStatus);
 }
