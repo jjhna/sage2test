@@ -6699,7 +6699,7 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 		}
 		// Instead of load control application, set state
 		RemoteSiteSharing.toggleSiteSharingWithRemoteSite(remoteSite, clients);
-	} else if (obj.data.connected === "on" && sagePointers[uniqueID].visible) {
+	} else if ((obj.data) && (obj.data.connected === "on") && sagePointers[uniqueID].visible) {
 		remoteSite = findRemoteSiteByConnection(obj.data.wsio);
 		// Build the UI URL
 		var viewURL = 'https://' + remoteSite.wsio.remoteAddress.address + ':'

@@ -79,7 +79,6 @@ function checkAppAndShareIfShould(app, wsCallFunctionOnApp) {
 			if (app.application === "pdf_viewer") {
 				setTimeout(() => {
 					sitesToShareWith.forEach(site => {
-						console.log("          " + site.name);
 						// Wsio replaced with the below id object
 						wsCallFunctionOnApp({id: "SAGE2_serverAutomatedShare"}, {
 							app: app.id,
@@ -92,7 +91,6 @@ function checkAppAndShareIfShould(app, wsCallFunctionOnApp) {
 				}, 3000);
 			} else {
 				sitesToShareWith.forEach(site => {
-					console.log("          " + site.name);
 					// Wsio replaced with the below id object
 					wsCallFunctionOnApp({id: "SAGE2_serverAutomatedShare"}, {
 						app: app.id,
