@@ -40,11 +40,10 @@ const pwdInput = document.getElementById('password');
 /********************** html classes and attribute values ********************/
 const buttonColorClass = "blue-grey darken-2";
 const pulseClass = "pulse";
-// const onlineColor = "#60d277";
-// const offlineColor = "#d5715d";
 const blackColor = "#222222";
 
 const favorites_file_name = 'sage2_favorite_sites.json';
+const REFRESH_SITES_STATUS_TIME = 15000;
 const FILE_VERSION = 1;
 
 const PREDEFINED_LOCAL_PORT = "9090";
@@ -184,45 +183,6 @@ function addSite() {
 	addToFavorites(favoriteItem);
 	addItemToList(favoriteItem);
 }
-
-/**
- * add on click listener to heart (add/remove from favorites)
- */
-// favoriteHeart.addEventListener('click', (e) => {
-// 	let checked = e.target.innerHTML == 'favorite_border' ? false : true;
-// 	let URL = urlInput.value;
-// 	let sitename = urlInput.getAttribute('data-name');
-// 	if (URL) {
-// 		if (!checked) { //item added to favorites
-// 			setFullHeart();
-// 			addToFavorites({
-// 				name: sitename || 'Unknown name',
-// 				host: URL
-// 			});
-// 		} else { //item removed from favorites
-// 			setEmptyHeart();
-// 			removeFromFavorites(URL);
-// 		}
-// 	}
-// });
-
-// /**
-// * Sets the heart icon to full
-// *
-// * @method setFullHeart
-// */
-// function setFullHeart() {
-// 	favoriteHeart.innerHTML = 'favorite';
-// }
-
-// /**
-//  * Sets the heart icon to empty
-//  *
-//  * @method setEmptyHeart
-//  */
-// function setEmptyHeart() {
-// 	favoriteHeart.innerHTML = 'favorite_border';
-// }
 
 /**
  * Populates the carousel and list with the given array of sites objects
@@ -381,21 +341,11 @@ function selectFavoriteSite(event) {
 	}
 	if (elem.tagName === "LI") {
 		let host = elem.firstElementChild.firstElementChild.nextElementSibling.innerText;
-		// let name = elem.firstElementChild.firstElementChild.innerText;
-		// urlInput.value = host; //TODO delete these two lines but store current in a variable
-		// urlInput.setAttribute("data-name", name); // store site name in data-name attr of url
-		// color heart
-		// if (alreadyInFavorites(host)) {
-		// 	setFullHeart();
-		// } else {
-		// 	setEmptyHeart();
-		// }
 		if (currentlySelectedItemElem) {
 			setOnlineColorItem(currentlySelectedItemElem);
 		}
 		currentlySelectedItemElem = elem;
 		currentlySelectedHost = host;
-		// currentlySelectedName = name;
 		setSelectedColorItem(elem);
 
 		// fetch config file and update UI
@@ -420,13 +370,9 @@ function removeFavoriteSiteList(event) {
 	var url = event.target.parentElement.parentElement.firstElementChild.nextElementSibling.innerText;
 	console.log(event.target.innerHTML);
 	event.target.innerHTML = 'favorite_border';
-	// event.target.removeEventListener('click', removeFavoriteSiteList);
-	// event.target.addEventListener('click', addFavoriteSiteList);
-	// let URL_in_form = urlInput.value;
+
 	unpinFavorite(url);
-	// if (URL_in_form === url) {
-	// 	setEmptyHeart();
-	// }
+
 }
 
 /**
@@ -465,13 +411,7 @@ function addFavoriteSiteList(event) {
 
 function deleteSite(event) {
 	var url = event.target.parentElement.parentElement.firstElementChild.nextElementSibling.innerText;
-	// event.target.removeEventListener('click', removeFavoriteSiteList);
-	// event.target.addEventListener('click', addFavoriteSiteList);
-	// let URL_in_form = urlInput.value;
 	dynamicItemRemovingInList(url);
-	// if (URL_in_form === url) {
-	// 	setEmptyHeart();
-	// }
 }
 
 
@@ -520,9 +460,6 @@ function removeFromFavorites(favorite_url) {
 			favorites.list.splice(i, 1);
 			writeFavoritesOnFile(favorites);
 		}
-		// if (favoriteList.children[i].firstChild.firstChild.nextElementSibling.textContent == favorite_url) {
-		// 	favoriteList.removeChild(favoriteList.children[i]);
-		// }
 	}
 }
 
@@ -582,44 +519,6 @@ function buildConfigURL(domain) {
 	}
 	return 'https://' + domain + '/config';
 }
-
-
-// /**
-//  * Onclick function for a site in the sites dropdown: puts the host in the
-//  * URL input, stores in the data-name attribute of the URL input the name of
-//  * the site, updates the heart according to if the site is in the favorites
-//  * list, fetches the new config file and repopulates the dropdowns
-//  *
-//  * @param  {Object} e the click event
-//  * @return {void}
-//  */
-// function sitesOnClick(e) {
-// 	// set text of url field
-// 	urlInput.value = e.target.getAttribute('data-host');
-// 	urlInput.setAttribute("data-name", e.target.innerText);
-// 	//check if in favorites, if it is color heart in black, if not color it in white
-// 	// if (alreadyInFavorites(e.target.getAttribute('data-host'))) { //TODONOW
-// 	// 	setFullHeart();
-// 	// } else {
-// 	// 	setEmptyHeart();
-// 	// }
-// 	// fetch config file and update list
-// 	loadSiteInfo(e.target.getAttribute('data-host'));
-// }
-
-// /**
-//  * Adds an event listener to all sites in dropdown
-//  *
-//  * @method attachBehaviorDropdownSites
-//  * @return {void}
-//  */
-// function attachBehaviorDropdownSites() {
-// 	const dropd = document.querySelectorAll('.clickable');
-
-// 	// dropd.forEach(function (item) {
-// 	// 	item.addEventListener('click', sitesOnClick);
-// 	// });
-// }
 
 /**
  * Adds an event listener to all IDs in dropdown
@@ -1041,12 +940,6 @@ function loadCurrentSiteInfo() {
  * @return {void}
  */
 function loadSiteInfo(host, attachConnectedSites) {
-	// color heart
-	// if (alreadyInFavorites(host)) {
-	// 	setFullHeart();
-	// } else {
-	// 	setEmptyHeart();
-	// }
 	fetchWithTimeout(buildConfigURL(host), 1000, attachConnectedSites, () => {
 		onCurrentSiteDown();
 	})
@@ -1054,6 +947,17 @@ function loadSiteInfo(host, attachConnectedSites) {
 			lastClickedCheck = false;
 			throw err;
 		});
+}
+
+function refreshSiteStatus(it) {
+	var host = it.firstElementChild.firstElementChild.nextElementSibling.innerText;
+	setOnlineStatus(buildConfigURL(host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
+}
+
+function refreshSitesStatus() {
+	console.log("REFRESH SITES");
+	var children = Array.from(favoriteList.children);
+	children.forEach(refreshSiteStatus);
 }
 
 /**************************** Functions finished *****************************/
@@ -1133,3 +1037,5 @@ urlInput.addEventListener("input", (e) => {
 		disableConnection();
 	}
 });
+
+setInterval(refreshSitesStatus, REFRESH_SITES_STATUS_TIME);
