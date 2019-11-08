@@ -558,6 +558,7 @@ function createWindow() {
 	// Catch the close connection page event
 	ipcMain.on('close-connect-page', (e, value) => {
 		remoteSiteInputWindow.close();
+		remoteSiteInputWindow = undefined;
 	});
 
 	// Catch remote URL to connect to
@@ -590,6 +591,7 @@ function createWindow() {
 		}
 		// Close input window
 		remoteSiteInputWindow.close();
+		remoteSiteInputWindow = undefined;
 		mainWindow.loadURL(location);
 	});
 
@@ -777,11 +779,14 @@ function openInterfaceInBrowser() {
  */
 function createRemoteSiteInputWindow() {
 	// creating a new window
+	if (remoteSiteInputWindow != undefined) {
+		return;
+	}
 	remoteSiteInputWindow = new BrowserWindow({
 		width:  900,
 		height: 660,
 		frame:  true,
-		title: 'Connect to Remote Site',
+		title: 'Connect to SAGE2 server',
 		webPreferences: {
 			nodeIntegration: true,
 			webSecurity: true

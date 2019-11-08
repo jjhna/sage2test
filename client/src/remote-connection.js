@@ -32,7 +32,7 @@ const check2 = document.getElementById('check_2');
 const urlInput = document.getElementById('url');
 const okayBtn = document.getElementById('okay_btn');
 const addBtn = document.getElementById('add_btn');
-const cancelBtn = document.getElementById('cancel_btn');
+const siteInfoHTML = document.getElementById('site_info_html');
 const loadSiteInfoBtn = document.getElementById('current_status_btn');
 const statusText = document.getElementById('status_text');
 const pwdInput = document.getElementById('password');
@@ -75,6 +75,7 @@ let currentlySelectedItemElem;
 let currentlySelectedHost;
 let lastCheckedSiteName;
 let lastClickedCheck = false;
+let cached_config_files = {};
 
 // Reading the favorites json file
 fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallback(err, data) {
@@ -169,6 +170,12 @@ function getAppDataPath(file_name) {
 
 function addSite() {
 	let URL = urlInput.value;
+	if (URL.startsWith('https://')) {
+		URL = URL.substring(8);
+	}
+	if (URL.startsWith('http://')) {
+		URL = URL.substring(7);
+	}
 	let sitename = lastClickedCheck ? lastCheckedSiteName : URL.split('.')[0];
 	if (sitename === undefined) {
 		sitename = URL.split('.')[0];
@@ -344,6 +351,7 @@ function selectFavoriteSite(event) {
 		if (currentlySelectedItemElem) {
 			setOnlineColorItem(currentlySelectedItemElem);
 		}
+		populateSiteInfoPopup(host);
 		currentlySelectedItemElem = elem;
 		currentlySelectedHost = host;
 		setSelectedColorItem(elem);
@@ -689,14 +697,14 @@ function formatProperly(url) {
 	return url;
 }
 
-/**
- * Sends a message to the main electron window to say to close this menu
- *
- * @return {void}
- */
-function cancelOnClick() {
-	ipcRenderer.send('close-connect-page', "0");
-}
+// /**
+//  * Sends a message to the main electron window to say to close this menu
+//  *
+//  * @return {void}
+//  */
+// function cancelOnClick() {
+// 	// ipcRenderer.send('close-connect-page', "0");
+// }
 
 /**
  * Sends a message to the main electron window to request the connection to the specified page
@@ -761,6 +769,8 @@ function fetchWithTimeout(url, delay, attachConnectedSites, onTimeout) {
 		}
 	}).then((json) => {
 		if (json) {
+			//saved cached config file
+			cached_config_files[json.host] = json;
 			populateUI(json, attachConnectedSites);
 			if (!attachConnectedSites) {
 				enableConnection();
@@ -773,6 +783,7 @@ function fetchWithTimeout(url, delay, attachConnectedSites, onTimeout) {
 }
 
 function setOnlineColorItem(elem) {
+	console.log("online");
 	removeClass(elem, "grey lighten-2");
 	removeClass(elem, "teal");
 	addClass(elem, "blue-grey darken-2");
@@ -786,7 +797,10 @@ function setSelectedColorItem(elem) {
 function enableSiteItem(elem) {
 	elem.addEventListener('click', selectFavoriteSite);
 	elem.style.cursor = "pointer";
-	setOnlineColorItem(elem);
+	if (!elem.classList.contains("blue-grey") && !elem.classList.contains("teal")) {
+		//if it is not already colored to be online or selected, color it
+		setOnlineColorItem(elem);
+	}
 	elem.style.color = "white";
 
 	elem.addEventListener('dblclick', (e) => {
@@ -828,6 +842,12 @@ function setOnlineStatus(url, elem, itemElem, delay) {
 			return;
 		} else {
 			enableSiteItem(itemElem);
+			return response.json();
+		}
+	}).then((json) => {
+		if (json) {
+			//saved cached config file
+			cached_config_files[json.host] = json;
 		}
 	});
 }
@@ -959,6 +979,48 @@ function refreshSitesStatus() {
 	children.forEach(refreshSiteStatus);
 }
 
+function populateSiteInfoPopup(host) {
+	var conf = cached_config_files[host];
+	var html = buildInfoHTML(conf);
+
+	siteInfoHTML.innerHTML = html;
+}
+
+/**
+     * Build some HTML to show info about the SAGE2 server
+	 *
+	 * @method buildAboutHTML
+	 * @return {String} HTML popup showing version and info
+	 */
+function buildInfoHTML(config) {
+	var versionText = "<p>";
+
+	versionText += "<p class='textDialog'><span style='font-weight:bold;'>Name</span>: " + config.name + "</p>";
+
+	// Add host information
+	versionText += "<p class='textDialog'><span style='font-weight:bold;'>Host</span>: " + config.host + "</p>";
+
+	// Add version
+	versionText += "<p class='textDialog'><span style='font-weight:bold;'>SAGE2 Version: </span>";
+	if (config.version.branch && config.version.commit && config.version.date) {
+		versionText += "<b>v" + config.version.base + "-" + config.version.branch + "-" +
+		config.version.commit + "</b> " + config.version.date;
+	} else {
+		versionText += "<b>v" + config.version.base + "</b>";
+	}
+	versionText += "</p>";
+
+	// Configuration
+	versionText += "<p class='textDialog'><span style='font-weight:bold;'>Resolution</span>: " +
+			config.totalWidth + " x " +  config.totalHeight + " pixels";
+	versionText += " (" + config.layout.columns + " by " + config.layout.rows + " tiles";
+	versionText += "  - " + config.resolution.width + " x " + config.resolution.height + ")" + "</p>";
+	versionText += "<p class='textDialog'><span style='font-weight:bold;'>Password protected</span>: " + config.passwordProtected
+	+ "</p>";
+
+	return versionText;
+}
+
 /**************************** Functions finished *****************************/
 
 // Catches the message sent from the main electron window that is providing the current location
@@ -982,6 +1044,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		// noWrap: true
 	};
 	M.Dropdown.init(elems, options);
+
+	let opts = {};
+	var modals = document.querySelectorAll('.modal');
+	M.Modal.init(modals, opts);
 	// attachBehaviorDropdownSites();
 });
 
@@ -1009,7 +1075,7 @@ check2.addEventListener('click', (e) => {
 
 okayBtn.addEventListener('click', okayOnClick);
 addBtn.addEventListener('click', addSite);
-cancelBtn.addEventListener('click', cancelOnClick);
+// cancelBtn.addEventListener('click', cancelOnClick);
 loadSiteInfoBtn.addEventListener('click', loadCurrentSiteInfo);
 
 

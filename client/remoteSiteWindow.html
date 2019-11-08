@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Connect to Remote Site</title>
+    <title>Connect to SAGE2 server</title>
     <link rel="stylesheet" href="css/materialize.min.css">
     <link href="css/material.icons.css" rel="stylesheet">
     <script src="src/materialize.min.js"></script>
@@ -76,8 +76,19 @@
                         </div>
 
                             <div class="row">
-                                <div class="col s6"><a id="cancel_btn"
-                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3'>Info</a>
+                                <div class="col s6">
+                                    <!-- <a id="cancel_btn"
+                                        class='btn waves-effect wave-lights blue-grey darken-2 z-depth-3' href="#modal1">Info</a> -->
+                                        <button data-target="site_info" class="btn modal-trigger waves-effect wave-lights blue-grey darken-2 z-depth-3">Info</button>
+                                        <div id="site_info" class="modal">
+                                                <div class="modal-content">
+                                                  <h4>SAGE2 site info</h4>
+                                                  <div id="site_info_html">Select a site</div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                  <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+                                                </div>
+                                              </div>
                                 </div>
                                 <div class="col s6">
                                     <!-- disabled TODO added pulse class for 2 second on enable-->
