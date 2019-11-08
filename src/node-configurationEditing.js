@@ -67,15 +67,10 @@ function configUpdateBackgroundImage(url, config, clients) {
  * @param config {Object} Current configuration that was read (file might have changes)
  * @param clients {Array} all clients array
  */
-function recheckConfiguration(pathToConfigFile, currentConfig, clients,
-	initializeRemoteSites) {
-	console.log("TODO implmenent recheckConfiguration");
-
-
-	console.log("TODO: remove debugging: remotesites recheck");
+function recheckConfiguration(pathToConfigFile, currentConfig, initializeRemoteSites) {
 
 	// Read the specified configuration file
-	var json_str   = fs.readFileSync(pathToConfigFile, "utf8");
+	var json_str   = fs.readFileSync(getPathToConfig("debugfileinstead"), "utf8");
 	// Parse it using json5 syntax (more lax than strict JSON)
 	var userConfig = json5.parse(json_str);
 
@@ -112,24 +107,23 @@ function handlerForRequestCurrentConfigurationFile(currentConfig, wsio) {
  * @param currentConfig {Object} Current file
  * @param wsio {Object} who asked
  */
-function handlerForAssistedConfigSend(wsio, submittedConfig, currentConfig) {
+function handlerForAssistedConfigSend(wsio, submittedConfig, currentConfig, initializeRemoteSites) {
 	// For minimal changes the tips property needs to be filled out.
-	console.log("erase me, server received config from assistedConfig. btw submitted config:");
 	let diff = determineDifferentFields(submittedConfig, currentConfig);
 
-	//TODO probably need to move this up, in particular before restarting
+	// TODO probably need to move this up, in particular before restarting
 	applyChangesToActualFile(submittedConfig);
 
 	if (submittedConfig.makeCerts) {
 		updateCertificates(submittedConfig, () => {
-			restartIfChangedFieldsRequire(diff);
+			restartIfChangedFieldsRequire(diff, currentConfig, initializeRemoteSites);
 		});
 	} else {
-		restartIfChangedFieldsRequire(diff);
+		restartIfChangedFieldsRequire(diff, currentConfig, initializeRemoteSites);
 	}
-	console.log("erase me, adding starter entry {} to differences for formatting");
+	// Adding starter entry {} to differences for formatting
 	diff.splice(0, 0, {});
-	console.log("erase me, ", diff);
+	// Could print for debug;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -214,26 +208,14 @@ function applyChangesToActualFile(submittedConfig) {
 		"alternate_hosts",
 		"remote_sites"
 	];
-	// Path first
-	var pathToWinDefaultConfig		= path.join(homedir(), "Documents", "SAGE2_Media", "config", "defaultWin-cfg.json");
-	var pathToMacDefaultConfig		= path.join(homedir(), "Documents", "SAGE2_Media", "config", "default-cfg.json");
-	var pathToMacTesting		= path.join(homedir(), "Documents", "SAGE2_Media", "config", "configTesting-cfg.json");
-	// Then open config file
 	var cfg;
-	if (process.platform === "win32") {
-		cfg = json5.parse(fs.readFileSync(pathToWinDefaultConfig));
-	} else if (process.platform === "darwin") {
-		cfg = json5.parse(fs.readFileSync(pathToMacDefaultConfig));
-	// } else if (process.platform === "linux") {
-	} else {
-		sageutils.log("SAGE2", chalk.red.bold("Unknown platform " + process.platform + ". Unable to config edit"));
-	}
+	cfg = json5.parse(fs.readFileSync(getPathToConfig()));
 	// Copy over fields
 	for (let i = 0; i < entriesToCopyOver.length; i++) {
 		cfg[entriesToCopyOver[i]] = submittedConfig[entriesToCopyOver[i]];
 	}
 	sageutils.log("SAGE2", chalk.green.bold("Updating configuration file"));
-	fs.writeFileSync(pathToMacTesting, json5.stringify(cfg, null, 4));
+	fs.writeFileSync(getPathToConfig("pathToMacTesting"), json5.stringify(cfg, null, 4));
 	// TODO update to actual
 }
 
@@ -337,7 +319,7 @@ function updateCertificates(submittedConfig, callbackForRestart) {
  * @param currentConfig {Object} Current file
  * @param wsio {Object} who asked
  */
-function restartIfChangedFieldsRequire(differences) {
+function restartIfChangedFieldsRequire(differences, currentConfig, initializeRemoteSites) {
 
 	let entriesToTriggerRestart = [
 		"port",
@@ -346,7 +328,6 @@ function restartIfChangedFieldsRequire(differences) {
 		"alternate_hosts"
 	];
 	let diffString = JSON.stringify(differences);
-	console.log("erase me, string check on diff" + diffString);
 	let shouldRestart = false;
 	for (let i = 0; i < differences.length; i++) {
 		// Need the sc_ and cc_ prefix for submitted vs current context
@@ -360,6 +341,9 @@ function restartIfChangedFieldsRequire(differences) {
 	}
 	if (shouldRestart) {
 		serverRestarter();
+	} else {
+		// (pathToConfigFile, currentConfig, clients, initializeRemoteSites) {
+		recheckConfiguration(getPathToConfig(), currentConfig, initializeRemoteSites);
 	}
 }
 
@@ -385,6 +369,30 @@ function serverStopper() {
 	sageutils.log("SAGE2", chalk.red.bold("STOPPING"));
 	process.exit();
 }
+
+/**
+ * Get path to config file.
+ *
+ */
+function getPathToConfig(useTestFile = false) {
+	// Path first
+	var pathToWinDefaultConfig		= path.join(homedir(), "Documents", "SAGE2_Media", "config", "defaultWin-cfg.json");
+	var pathToMacDefaultConfig		= path.join(homedir(), "Documents", "SAGE2_Media", "config", "default-cfg.json");
+	var pathToMacTesting		= path.join(homedir(), "Documents", "SAGE2_Media", "config", "configTesting-cfg.json");
+
+	if (useTestFile) {
+		return pathToMacTesting;
+	} else if (process.platform === "win32") {
+		return pathToWinDefaultConfig;
+	} else if (process.platform === "darwin") {
+		return pathToMacDefaultConfig;
+	} else {
+		sageutils.log("SAGE2", chalk.red.bold("Unknown platform " + process.platform + ". Unable to config edit"));
+	}
+	throw "Unable to determine path to config";
+}
+
+
 // -------------------------------------------------------------------------------------------------
 
 module.exports.configUpdateBackgroundImage = configUpdateBackgroundImage;

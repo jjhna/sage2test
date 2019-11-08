@@ -11714,8 +11714,7 @@ function wsUpdateBackgroundImageFromUi(wsio, data) {
  * @param {Object} data - should have a url
  */
 function wsCheckConfigurationFileForChanges(wsio, data) {
-	ConfigEditing.recheckConfiguration(getPathOfConfigFile(), config, clients,
-		initializeRemoteSites);
+	ConfigEditing.recheckConfiguration(getPathOfConfigFile(), config, initializeRemoteSites);
 }
 
 /**
@@ -11752,7 +11751,7 @@ function wsRequestCurrentConfigurationFile(wsio, data) {
  * @param {Object} data - should have a url
  */
 function wsAssistedConfigSend(wsio, data) {
-	ConfigEditing.handlerForAssistedConfigSend(wsio, data, config);
+	ConfigEditing.handlerForAssistedConfigSend(wsio, data, config, initializeRemoteSites);
 }
 
 /**
