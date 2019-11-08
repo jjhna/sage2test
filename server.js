@@ -1240,6 +1240,7 @@ function setupListeners(wsio) {
 	wsio.on('updateJupyterSharing',                 wsUpdateJupyterSharing);
 	wsio.on('sendNotebookDynamic',									wsSendNotebookDynamic);
 	wsio.on('updateDynamicNotebookCell',						wsUpdateDynamicNotebookCell);
+	wsio.on('removeDynamicNotebookCells', 					wsRemoveDynamicNotebookCells);
 
 	// message passing between clients
 	wsio.on('requestAppContextMenu',				wsRequestAppContextMenu);
@@ -11071,13 +11072,13 @@ function wsPerformanceData(wsio, data) {
 }
 
 
-// /**
-//  * Update data from a JupyterLab connection, starting a new application if necessary.
-//  *
-//  * @method     wsUpdateJupyterSharing
-//  * @param      {Object}  wsio    The websocket
-//  * @param      {Object}  data    The data
-//  */
+/**
+ * Update data from a JupyterLab connection, starting a new application if necessary.
+ *
+ * @method     wsUpdateJupyterSharing
+ * @param      {Object}  wsio    The websocket
+ * @param      {Object}  data    The data
+ */
 function wsUpdateJupyterSharing(wsio, data) {
 	sageutils.log('Jupyter', "received update from:", data.id);
 
@@ -11162,7 +11163,24 @@ function wsUpdateDynamicNotebookCell(wsio, data) {
 			id: appID
 		});
 	} else {
-		// this app doesn't exist, notify back through WISO
+		// this app doesn't exist, notify back through WISO ?
+	}
+}
+
+/*
+	data: {
+    cell: Cell[],
+	}
+
+	Cell : {
+		ind: string,
+		info: any,
+		key: string
+	} // key === appId
+*/
+function wsRemoveDynamicNotebookCells(wsio, data) {
+	for (let cell of data.cells) {
+		deleteApplication(cell.key);
 	}
 }
 
