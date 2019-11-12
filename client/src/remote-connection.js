@@ -89,7 +89,6 @@ fs.readFile(getAppDataPath(favorites_file_name), 'utf8', function readFileCallba
 	} else {
 		// convert json to object
 		favorites = JSON.parse(data);
-		// console.log('favorites', favorites);
 		if (favorites.list.length > 0) {
 			populateFavorites(favorites.list);
 		}
@@ -287,7 +286,7 @@ function addItemToList(item, index) {
 	}
 	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor;
 	it.firstElementChild.lastElementChild.lastElementChild.style.color = blackColor;
-	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
+	setOnlineStatus(buildConfigURL(item.host), item.host, it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
 
 /**
@@ -323,7 +322,7 @@ function addConnectedSiteToList(item, index) {
 	}
 	it.firstElementChild.lastElementChild.firstElementChild.style.color = blackColor;
 	// it.firstElementChild.lastElementChild.lastElementChild.style.color = blackColor;
-	setOnlineStatus(buildConfigURL(item.host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
+	setOnlineStatus(buildConfigURL(item.host), item.host, it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
 
 /**
@@ -369,14 +368,11 @@ function selectFavoriteSite(event) {
  * @param {<a> element}
  */
 function removeFavoriteSiteList(event) {
-	console.log("remove");
 	if (event.target.innerHTML == 'favorite_border') {
-		// console.log("calling add favorite");
 		addFavoriteSiteList(event);
 		return;
 	}
 	var url = event.target.parentElement.parentElement.firstElementChild.nextElementSibling.innerText;
-	console.log(event.target.innerHTML);
 	event.target.innerHTML = 'favorite_border';
 
 	unpinFavorite(url);
@@ -391,7 +387,6 @@ function removeFavoriteSiteList(event) {
  * @param {<a> element}
  */
 function addFavoriteSiteList(event) {
-	console.log("add");
 	if (event.target.innerHTML == 'favorite') {
 		removeFavoriteSiteList(event);
 		return;
@@ -750,7 +745,7 @@ function onCurrentSiteDown() {
  * @param {int} delay the timeout time in ms
  * @param {function} onTimeout the function to be executed in case of timeout
  */
-function fetchWithTimeout(url, delay, attachConnectedSites, onTimeout) {
+function fetchWithTimeout(url, host, delay, attachConnectedSites, onTimeout) {
 	const timer = new Promise((resolve) => {
 		setTimeout(resolve, delay, {
 			timeout: true
@@ -770,7 +765,7 @@ function fetchWithTimeout(url, delay, attachConnectedSites, onTimeout) {
 	}).then((json) => {
 		if (json) {
 			//saved cached config file
-			cached_config_files[json.host] = json;
+			cached_config_files[host] = json;
 			populateUI(json, attachConnectedSites);
 			if (!attachConnectedSites) {
 				enableConnection();
@@ -783,7 +778,6 @@ function fetchWithTimeout(url, delay, attachConnectedSites, onTimeout) {
 }
 
 function setOnlineColorItem(elem) {
-	console.log("online");
 	removeClass(elem, "grey lighten-2");
 	removeClass(elem, "teal");
 	addClass(elem, "blue-grey darken-2");
@@ -821,12 +815,13 @@ function enableSiteItem(elem) {
 /**
  * Sets the color of card to display online/offline status
  *
- * @param  {String} url of the site
+ * @param  {String} url of the config file (https://url:port/config)
  * @param  {HTML element} elem card elem
+ * @param  {host} url and port (url:port)
  * @param  {any} delay time in ms to wait for fetch request before declaring to be offline
  * @return void
  */
-function setOnlineStatus(url, elem, itemElem, delay) {
+function setOnlineStatus(url, host, elem, itemElem, delay) {
 	// Setting offline as default
 	const timer = new Promise((resolve) => {
 		setTimeout(resolve, delay, {
@@ -847,7 +842,7 @@ function setOnlineStatus(url, elem, itemElem, delay) {
 	}).then((json) => {
 		if (json) {
 			//saved cached config file
-			cached_config_files[json.host] = json;
+			cached_config_files[host] = json;
 		}
 	});
 }
@@ -960,7 +955,7 @@ function loadCurrentSiteInfo() {
  * @return {void}
  */
 function loadSiteInfo(host, attachConnectedSites) {
-	fetchWithTimeout(buildConfigURL(host), 1000, attachConnectedSites, () => {
+	fetchWithTimeout(buildConfigURL(host), host, 1000, attachConnectedSites, () => {
 		onCurrentSiteDown();
 	})
 		.catch(err => {
@@ -971,7 +966,7 @@ function loadSiteInfo(host, attachConnectedSites) {
 
 function refreshSiteStatus(it) {
 	var host = it.firstElementChild.firstElementChild.nextElementSibling.innerText;
-	setOnlineStatus(buildConfigURL(host), it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
+	setOnlineStatus(buildConfigURL(host), host, it.firstElementChild.lastElementChild.firstElementChild, it, 1000);
 }
 
 function refreshSitesStatus() {
