@@ -518,7 +518,9 @@ function initializeSage2Server() {
 		var variablesUsedInVersionManger = {
 			config,
 			showGenericInfoPaneOnDisplay,
-			version: SAGE2_version
+			version: SAGE2_version,
+			clients,
+			block: remoteSites.versionMismatchBlock
 		};
 		versionHandler = new VersionManager(variablesUsedInVersionManger);
 	});
@@ -1555,6 +1557,12 @@ function initializeRemoteServerInfo(wsio) {
 		};
 		wsio.emit('addRemoteSite', site);
 	}
+	// Then send the version block
+	let warningSite = {
+		name: remoteSites.versionMismatchBlock.name,
+		connected: remoteSites.versionMismatchBlock.connected,
+		geometry: remoteSites.versionMismatchBlock.geometry};
+	wsio.emit('addRemoteSite', warningSite);
 }
 
 function wsAppWindowCreated(wsio, data) {
@@ -5756,6 +5764,12 @@ function initializeRemoteSites() {
 		remoteSites.forEach(function(element, index, array) {
 			interactMgr.removeGeometry("remote_" + index, "staticUI");
 		});
+		// Also need to remove the warningSite
+		try {
+			interactMgr.removeGeometry(VersionManager.remoteSiteBlockName, "staticUI");
+		} catch (e) {
+			// Ignoring case when it can't remove geometry. Means wasn't made.
+		}
 		// Create array for new sites (might not actually change, but don't want to lose previous yet)
 		let updatedSiteListing = new Array(config.remote_sites.length);
 		config.remote_sites.forEach(function(element, index, array) {
@@ -5848,6 +5862,26 @@ function initializeRemoteSites() {
 				}, 15000);
 			}
 		});
+		// Special Case for the remote site warning
+		// Copy pasted code from above, modified for index
+		var rGeom = {};
+		rGeom.w = Math.min((0.5 * config.totalWidth) / remoteSites.length, config.ui.titleBarHeight * 6)
+			- (0.16 * config.ui.titleBarHeight);
+		rGeom.h = 0.84 * config.ui.titleBarHeight;
+		rGeom.x = (0.5 * config.totalWidth) + ((rGeom.w + (0.16 * config.ui.titleBarHeight))
+			* (remoteSites.length - (remoteSites.length / 2))) + (0.08 * config.ui.titleBarHeight);
+		rGeom.y = 0.08 * config.ui.titleBarHeight;
+		// Adding to the remote sites reference
+		remoteSites.versionMismatchBlock = {
+			name: VersionManager.remoteSiteBlockName, // Not actually displayed
+			wsio: VersionManager.remoteSiteBlockName, // It shouldn't connect
+			connected: "off-noMismatch",         // Color doesn't matter too much since display will color change it
+			geometry: rGeom,          // Use same as others
+			index: remoteSites.length // Ok to always be last?
+		};
+		// Add the gemeotry for the button
+		interactMgr.addGeometry(VersionManager.remoteSiteBlockName, "staticUI",
+			"rectangle", rGeom,  true, remoteSites.length, remoteSites.versionMismatchBlock);
 		if (configWasUpdated) {
 			// tell each display client they need to clear their current list
 			for (let i = 0; i < clients.length; i++) {
@@ -6463,6 +6497,9 @@ function quitSAGE2() {
 
 function findRemoteSiteByConnection(wsio) {
 	var remoteIdx = -1;
+	if ((typeof wsio === "string") && (wsio === VersionManager.remoteSiteBlockName)) {
+		return remoteSites.versionMismatchBlock;
+	}
 	for (var i = 0; i < config.remote_sites.length; i++) {
 		if (wsio.remoteAddress.address === config.remote_sites[i].host &&
 			wsio.remoteAddress.port === config.remote_sites[i].port) {
@@ -6811,7 +6848,6 @@ function pointerPressOnOpenSpace(uniqueID, pointerX, pointerY, data) {
 function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt) {
 	// If the remote site is active (green button)
 	// also disable action through the web ui (visible pointer)
-
 	// Validate the remote address
 
 	// Any right click with a visible pointer. Even offline sites allowed.
@@ -6826,6 +6862,24 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 		}
 		// Instead of load control application, set state
 		RemoteSiteSharing.toggleSiteSharingWithRemoteSite(remoteSite, clients);
+	} else if (obj.data && obj.data.wsio && sagePointers[uniqueID].visible) {
+		// Check if it is a warningSite, this doesn't care what connected status is
+		var warningSite = findRemoteSiteByConnection(obj.data.wsio);
+		if (warningSite.name === VersionManager.remoteSiteBlockName) {
+			// Create the webview to the remote UI
+			wsLoadApplication({id: uniqueID}, {
+				application: "/uploads/apps/quickNote",
+				user: uniqueID,
+				// pass the url in the data object
+				data: {
+					clientName: config.host,
+					clientInput: versionHandler.getMismatchLog(),
+					colorChoice: "lightpink"
+				},
+				position: [pointerX, config.ui.titleBarHeight + 10],
+				dimensions: [400, config.resolution.height]
+			});
+		}
 	} else if ((obj.data) && (obj.data.connected === "on") && sagePointers[uniqueID].visible) {
 		remoteSite = findRemoteSiteByConnection(obj.data.wsio);
 		// Build the UI URL

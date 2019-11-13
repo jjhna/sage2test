@@ -1377,6 +1377,17 @@ function UIBuilder(json_cfg, clientID) {
 	* @param data {Object} remote site information
 	*/
 	this.addRemoteSite = function(data) {
+		if (data.name === "SAGE2_versionWarning") {
+			let versionBlock = document.getElementById(data.name);
+			if (versionBlock) {
+				if (data.connected === "off-noMismatch") {
+					versionBlock.style.visibility = "hidden";
+				} else if (data.connected === "off-mismatch") {
+					versionBlock.style.visibility = "visible";
+				}
+				return;
+			}
+		}
 		var connectedColor = "rgba(55, 153, 130, 1.0)";
 		if (this.json_cfg.ui.menubar !== undefined && this.json_cfg.ui.menubar.remoteConnectedColor !== undefined) {
 			connectedColor = this.json_cfg.ui.menubar.remoteConnectedColor;
@@ -1404,6 +1415,14 @@ function UIBuilder(json_cfg, clientID) {
 			remote.style.backgroundColor = connectedColor;
 		} else if (data.connected === "off") {
 			remote.style.backgroundColor = disconnectedColor;
+		} else if (data.connected === "off-noMismatch") { // Between mismatch states
+			remote.style.backgroundColor = disconnectedColor;
+			remote.style.visibility = "hidden";
+			data.name = "";
+		} else if (data.connected === "off-mismatch") { // It will either show or not
+			remote.style.backgroundColor = disconnectedColor;
+			remote.style.visibility = "visible";
+			data.name = "";
 		} else if (data.connected === "locked") {
 			remote.style.backgroundColor = lockedColor;
 		} else {
@@ -1466,6 +1485,49 @@ function UIBuilder(json_cfg, clientID) {
 		this.upperBar.appendChild(remote);
 
 		this.setRemoteIconVisibility(data.name, "iconShare", data.beingSharedWith);
+
+		if (data.connected.includes("off-")) {
+			let img = document.createElement("img");
+			img.src = "/images/warning.png";
+			img.style.position  = "absolute";
+			img.style.width = data.geometry.w.toString() + "px";
+			img.style.width = data.geometry.h.toString() + "px";
+			img.style.top = data.geometry.y + "px";
+			img.style.left = (parseInt(remote.style.width) / 2) - (parseInt(img.style.width) / 2) + "px";
+			// Add image to the remote bar
+			remote.appendChild(img);
+			remote.colorChange = {
+				start: { r: 173, g: 42, b: 42 },
+				end: { r: 254, g: 178, b: 76 },
+				diff: { r: 254 - 173, g: 178 - 42, b: 76 - 42 }, // for smaller assignment code
+				fullCycle: 10000, // ms
+				startTime: Date.now()
+			};
+			setInterval(() => {
+				// console.log("success");
+				let diff = Date.now() - remote.colorChange.startTime;
+				let percent;
+				if (diff > remote.colorChange.fullCycle) {
+					remote.colorChange.startTime = Date.now();
+				} else {
+					if (diff > remote.colorChange.fullCycle / 2) {
+						// Cycle back to start
+						diff -= remote.colorChange.fullCycle / 2;
+						percent = diff / (remote.colorChange.fullCycle / 2);
+						remote.style.backgroundColor = "rgba("
+							+ (remote.colorChange.end.r - remote.colorChange.diff.r * percent) + ", "
+							+ (remote.colorChange.end.g - remote.colorChange.diff.g * percent) + ", "
+							+ (remote.colorChange.end.b - remote.colorChange.diff.b * percent) + ", 1.0)";
+					}	else { // Cycle to end
+						percent = diff / (remote.colorChange.fullCycle / 2);
+						remote.style.backgroundColor = "rgba("
+							+ (remote.colorChange.start.r + remote.colorChange.diff.r * percent) + ", "
+							+ (remote.colorChange.start.g + remote.colorChange.diff.g * percent) + ", "
+							+ (remote.colorChange.start.b + remote.colorChange.diff.b * percent) + ", 1.0)";
+					}
+				}
+			}, 100); // 1/10 of a second good enough?
+		}
 	};
 
 	/**
