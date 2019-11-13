@@ -11181,21 +11181,29 @@ function spreadNotebookOnWall({
 		.filter(([i, c]) => show_markdown || c.cell_type === "code");
 
 	let numCells = cells.length;
+	let cellAspectRatio = 1.5; // constant value
+	let wallAspectRatio = (config.totalWidth / config.totalHeight);
 
-	// numCells = numTall * numTall * screenAspect
-	let numTall = Math.ceil(Math.sqrt(numCells / 1.5));
-	// let numTall = Math.ceil(Math.sqrt(numCells / (screenAspect)));
+	// calculate the number of columns and rows which can fit
+	let numCols = Math.ceil(Math.sqrt(numCells * (wallAspectRatio / cellAspectRatio)));
+	let numRows = Math.ceil(numCells / numCols);
 
-	let gridSize = (config.totalHeight - 20) / numTall;
+	// calculate the grid size for this configuration
+	let gridHeight = (config.totalHeight / numRows);
+	let gridWidth = (config.totalWidth / numCols);
 
-	let numCols = Math.ceil(numCells / numTall);
+	// get the actual height and width (maintaining aspect ratio of cells as constant)
+	let appHeight = Math.min(gridHeight - 20, (gridWidth / cellAspectRatio) - 40);
+	let height = appHeight - config.ui.titleBarHeight;
+	let width = appHeight * cellAspectRatio;
 
-	let height = gridSize - 1.5 * config.ui.titleBarHeight;
+	// calculate total size used by cells
+	let totalCellWidth = (width + 40) * numCols;
+	let totalCellHeight = (appHeight + 20) * numRows;
 
-	let width = gridSize * 1.5 - 40;
-	// let width = config.totalWidth / numCols - 40;
-
-	let leftOffset = (config.totalWidth - numCols * width) / 2;
+	// calculate a global offset for all cells to center them in the display
+	let globalLeftOffset = (config.totalWidth - totalCellWidth) / 2; // this seems to maybe not work correctly for left offset (?)
+	let globalTopOffset = config.ui.titleBarHeight + ((config.totalHeight - config.ui.titleBarHeight) - totalCellHeight) / 2;
 
 	for (let i in cells) {
 		let [ind, cell] = cells[i];
@@ -11205,8 +11213,8 @@ function spreadNotebookOnWall({
 			notebook.metadata,
 			ind,
 			{
-				left: (Math.floor(i / numTall) * (width + 40)) + 20 + leftOffset,
-				top: (i % numTall) * (height + config.ui.titleBarHeight + 10) + config.ui.titleBarHeight + 10,
+				left: (Math.floor(i / numRows) * (width + 40)) + 20 + globalLeftOffset,
+				top: (i % numRows) * (appHeight + 20) + 10 + globalTopOffset,
 				width,
 				height
 			},

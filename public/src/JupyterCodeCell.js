@@ -168,6 +168,17 @@ var JupyterCodeCell = SAGE2_App.extend({
 		let language = metadata.language_info.name;
 
 		if (cellOutputs[0] && cellOutputs[0].traceback) {
+			if (!this.content) {
+				if (this.img) {
+					this.element.removeChild(this.img);
+					this.img = null;
+				}
+				this.content = document.createElement("div");
+				this.content.style.width = "100%";
+				this.content.style.height = "100%";
+				this.element.appendChild(this.content);
+			}
+
 			this.content.innerHTML = `<div style="color:red;
 				padding:15px;
 				box-sizing: border-box;
