@@ -17,6 +17,7 @@ var JupyterCodeCell = SAGE2_App.extend({
 		// Set the background to black
 		this.element.style.backgroundColor = 'white';
 		this.element.style.margin = '0 auto';
+		this.element.style.fontSize = `${this.config.ui.titleTextSize}px`;
 		// this.element.style.display = 'flex';
 		// this.element.style.justifyContent = 'center';
 
@@ -29,7 +30,12 @@ var JupyterCodeCell = SAGE2_App.extend({
 
 		let cellOutputs = cell.outputs;
 
-		if (cellOutputs[0] && cellOutputs[0].data && Object.keys(cellOutputs[0].data).length) {
+		if (cellOutputs[0] && cellOutputs[0].traceback) {
+			this.content = document.createElement("div");
+			this.content.style.width = "100%";
+			this.content.style.height = "100%";
+			this.element.appendChild(this.content);
+		} else if (cellOutputs[0] && cellOutputs[0].data && Object.keys(cellOutputs[0].data).length) {
 			let cellData = cellOutputs[0].data;
 
 			if (cellData && cellData["image/png"]) {
@@ -45,11 +51,6 @@ var JupyterCodeCell = SAGE2_App.extend({
 			} else {
 				this.codeVisible = true;
 			}
-		} else if (cellOutputs[0] && cellOutputs[0].traceback) {
-			this.content = document.createElement("div");
-			this.content.style.width = "100%";
-			this.content.style.height = "100%";
-			this.element.appendChild(this.content);
 		} else {
 			this.codeVisible = true;
 		}
@@ -91,8 +92,7 @@ var JupyterCodeCell = SAGE2_App.extend({
 		this.cellLabel.style.fontFamily = "'Arimo'";
 
 		this.cellLabel.innerHTML = cell.cell_type +
-			`<i class="fas fa-code"></i> <span style="font-family: 'Courier New';font-weight:bold;">[${+index +
-		1}]</span>`;
+			`<i class="fas fa-code"></i> <span style="font-family: 'Courier New';font-weight:bold;">[${+index + 1}]</span>`;
 
 		// this.element.appendChild(this.img);
 		this.element.appendChild(this.codeView);
@@ -167,12 +167,44 @@ var JupyterCodeCell = SAGE2_App.extend({
 		let cellOutputs = cell.outputs;
 		let language = metadata.language_info.name;
 
-		if (cellOutputs[0] && cellOutputs[0].data && Object.keys(cellOutputs[0].data).length) {
+		if (cellOutputs[0] && cellOutputs[0].traceback) {
+			this.content.innerHTML = `<div style="color:red;
+				padding:15px;
+				box-sizing: border-box;
+				font-weight:bold;
+				font-family:'Oxygen Mono';
+				width:100%;
+				height:100%;
+				background-color:#ffe0e0;
+				">${cellOutputs[0].ename}: <span style="font-weight:normal;">${cellOutputs[0].evalue}</span></div>`;
+		} else if (cellOutputs[0] && cellOutputs[0].data && Object.keys(cellOutputs[0].data).length) {
 			let cellData = cellOutputs[0].data;
 
 			if (cellData && cellData["image/png"]) {
+				if (!this.img) {
+					if (this.content) {
+						this.element.removeChild(this.content);
+						this.content = null;
+					}
+
+					this.img = document.createElement("img");
+					this.img.style.width = "100%";
+					this.img.style.height = "auto";
+					this.element.appendChild(this.img);
+				}
 				this.img.src = "data:image/png;base64, " + cellData["image/png"];
 			} else if (cellData && (cellData["text/html"] || cellData["text/plain"])) {
+				if (!this.content) {
+					if (this.img) {
+						this.element.removeChild(this.img);
+						this.img = null;
+					}
+					this.content = document.createElement("div");
+					this.content.style.width = "100%";
+					this.content.style.height = "100%";
+					this.element.appendChild(this.content);
+				}
+
 				this.content.innerHTML = `<div style="padding:15px;
 				box-sizing: border-box;
 				font-weight:bold;
@@ -183,16 +215,6 @@ var JupyterCodeCell = SAGE2_App.extend({
 			} else {
 				this.codeVisible = true;
 			}
-		} else if (cellOutputs[0] && cellOutputs[0].traceback) {
-			this.content.innerHTML = `<div style="color:red;
-				padding:15px;
-				box-sizing: border-box;
-				font-weight:bold;
-				font-family:'Oxygen Mono';
-				width:100%;
-				height:100%;
-				background-color:#ffe0e0;
-				">${cellOutputs[0].ename}: <span style="font-weight:normal;">${cellOutputs[0].evalue}</span></div>`;
 		} else {
 			this.codeVisible = true;
 		}
@@ -247,8 +269,6 @@ var JupyterCodeCell = SAGE2_App.extend({
 				this.toggleShowCode();
 			}
 		} else if (eventType === "dataUpdate") {
-			console.log("JupyterLab Data Update", data);
-
 			this.state.index = data.ind;
 			this.state.cell = data.cell;
 

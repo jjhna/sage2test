@@ -1685,7 +1685,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 
 	this.openItem = function(tid, position) {
 		var appType = this.getApplicationFromId(tid);
-		console.log(appType, tid);
 		// Opening an app
 		if (appType === "application/custom") {
 			wsio.emit('loadApplication', {
@@ -1696,13 +1695,6 @@ function FileManager(wsio, mydiv, uniqueID) {
 		} else if (appType === "sage2/session") {
 			wsio.emit('loadFileFromServer',	{
 				application: 'load_session',
-				filename: tid,
-				user: _this.uniqueID,
-				position: position
-			});
-		} else if (appType === "application/x-ipynb+json") {
-			wsio.emit('loadFileFromServer', {
-				application: 'jupyter_notebook',
 				filename: tid,
 				user: _this.uniqueID,
 				position: position
@@ -1768,15 +1760,11 @@ function FileManager(wsio, mydiv, uniqueID) {
 		// Lookup the asset
 		var elt = this.allFiles[id];
 
-		console.log(elt);
-
 		// if found
 		if (elt) {
 			// Order important here (not the best situation)
 			if (elt.exif.MIMEType.indexOf('sage2/session') >= 0) {
 				response = "sage2/session";
-			} else if (id.endsWith(".ipynb")) {
-				response = "application/x-ipynb+json";
 			} else if (elt.exif.MIMEType.indexOf('sage2/url') >= 0) {
 				response = "sage2/url";
 			} else if (elt.exif.MIMEType.indexOf('video') >= 0) {

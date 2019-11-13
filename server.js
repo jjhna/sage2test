@@ -3642,18 +3642,6 @@ function wsLoadFileFromServer(wsio, data) {
 		broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
 		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
 			application: {id: null, type: "session"}}, time: Date.now()});
-	} else if (data.application === "jupyter_notebook") {
-		// special handling of jupyter notebook
-		loadJupyterNotebook(data.filename);
-
-		broadcast('userEvent', { type: 'load file', data: data, id: wsio.id });
-		addEventToUserLog(wsio.id, {
-			type: "openFile", data: {
-				name: data.filename,
-				application: { id: null, type: "ipynb" }
-			}, time: Date.now()
-		});
-
 	} else {
 		var fileLoadCallBack = function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
@@ -11195,7 +11183,7 @@ function spreadNotebookOnWall({
 	let numCells = cells.length;
 
 	// numCells = numTall * numTall * screenAspect
-	let numTall = Math.ceil(Math.sqrt(numCells / 1.25));
+	let numTall = Math.ceil(Math.sqrt(numCells / 1.5));
 	// let numTall = Math.ceil(Math.sqrt(numCells / (screenAspect)));
 
 	let gridSize = (config.totalHeight - 20) / numTall;
@@ -11203,7 +11191,11 @@ function spreadNotebookOnWall({
 	let numCols = Math.ceil(numCells / numTall);
 
 	let height = gridSize - 1.5 * config.ui.titleBarHeight;
-	let width = config.totalWidth / numCols - 40;
+
+	let width = gridSize * 1.5 - 40;
+	// let width = config.totalWidth / numCols - 40;
+
+	let leftOffset = (config.totalWidth - numCols * width) / 2;
 
 	for (let i in cells) {
 		let [ind, cell] = cells[i];
@@ -11213,7 +11205,7 @@ function spreadNotebookOnWall({
 			notebook.metadata,
 			ind,
 			{
-				left: (Math.floor(i / numTall) * (width + 40)) + 20,
+				left: (Math.floor(i / numTall) * (width + 40)) + 20 + leftOffset,
 				top: (i % numTall) * (height + config.ui.titleBarHeight + 10) + config.ui.titleBarHeight + 10,
 				width,
 				height
@@ -11225,35 +11217,6 @@ function spreadNotebookOnWall({
 			}
 		);
 	}
-}
-
-function loadJupyterNotebook(filename, codeOnly = false) {
-	var fullpath;
-
-	if (sageutils.fileExists(path.resolve(filename))) {
-		fullpath = filename;
-	}
-
-	// if it doesn't end in .ipynb, add it (probably shouldn't happen)
-	if (!fullpath.endsWith(".ipynb")) {
-		fullpath += '.ipynb';
-	}
-
-	fs.readFile(fullpath, function (err, data) {
-		if (err) {
-			console.error(err);
-		}
-
-		let notebook = JSON.parse(data);
-
-		spreadNotebookOnWall({
-			notebook,
-			id: path.basename(filename),
-			show_markdown: !codeOnly
-		});
-
-		// console.log(notebook.metadata);
-	});
 }
 
 /**

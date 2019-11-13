@@ -17,7 +17,8 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 		// Set the background to black
 		this.element.style.backgroundColor = 'white';
 		this.element.style.fontFamily = "'Arimo'";
-		this.element.style.padding = "20px";
+		this.element.style.padding = `${2 * this.config.ui.titleTextSize}px`;
+		this.element.style.fontSize = `${this.config.ui.titleTextSize}px`;
 		this.element.style.boxSizing = "border-box";
 		this.element.style.overflowY = "auto";
 
@@ -49,8 +50,7 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 		this.cellLabel.style.fontFamily = "'Arimo'";
 
 		this.cellLabel.innerHTML = cell.cell_type +
-			` <span style="font-family: 'Courier New';font-weight:bold;">[${+index +
-        1}]</span>`;
+			` <span style="font-family: 'Courier New';font-weight:bold;">[${+index + 1}]</span>`;
 
 		this.element.appendChild(this.cellLabel);
 
@@ -164,8 +164,6 @@ var JupyterMarkdownCell = SAGE2_App.extend({
 				this.refresh(date);
 			}
 		} else if (eventType === "dataUpdate") {
-			console.log("JupyterLab Data Update", data);
-
 			this.state.index = data.ind;
 			this.state.cell = data.cell;
 
