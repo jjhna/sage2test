@@ -21,6 +21,8 @@ var sageutils = require('../src/node-utils');
 // sageutils.log("Prefix before >", "Message", "additional");
 
 
+var remoteSiteBlockName = "SAGE2_versionWarning";
+
 /**
  * VersionChecker container object.
  *
@@ -40,9 +42,16 @@ function VersionChecker(obj) {
 	this.remote_sites = obj.config.remote_sites;
 	// Keep the function references
 	this.showGenericInfoPaneOnDisplay = obj.showGenericInfoPaneOnDisplay;
+	// For updating clients
+	this.clients = obj.clients;
 
 	// Using this to ensure all messages are visible.
 	this.messageQueue = [];
+
+	// Use for quick reference of mismatch status
+	this.versionMismatchExists = false;
+	this.mismatchVersionLog = "";
+	this.remoteSiteBlockReference = obj.block;
 }
 
 
@@ -63,9 +72,11 @@ VersionChecker.prototype.doesThisServerKnowAboutRemoteSite = function(host) {
 		}
 	}
 	if (found === false) {
-		sageutils.log("Version manager",
-			chalk.bgRed("Incomming remote connection initiated by site '" + host
-				+ " not specified by local config"));
+		this.setMismatchToTrue();
+		let info = "Incomming remote connection initiated by site '" + host
+		+ " not specified by local config.  ";
+		sageutils.log("Version manager", chalk.bgRed(info));
+		this.addToMismatchLog(info);
 	}
 	return found;
 };
@@ -87,58 +98,52 @@ VersionChecker.prototype.determineIfVersionMismatch = function(remoteData, site,
 	// Versioning between remote sites.
 	let mismatch = this.determineIfVersionMismatchBetweenRemoteSiteAndThiServer(remoteData);
 
-	let messageForDisplay = "Note: " + remotesocketAddress + "\r\n";
-	let shouldSendMessage = false;
-
 
 	if (!found) {
-		shouldSendMessage = true;
-		messageForDisplay += " Isn't aware of this site\r\n";
+		this.setMismatchToTrue();
+		this.addToMismatchLog(remotesocketAddress + " isn't aware of this site");
 	}
 
 	if (mismatch) {
+		this.setMismatchToTrue();
 		let mismatchMessage = [
 			"-----VERSION MISMATCH DETECTED-----",
-			"Warning mismatch with remote site" + site.name
+			"Warning mismatch with remote site " + site.name
 		];
-		shouldSendMessage = true;
+		this.addToMismatchLog(mismatchMessage[0]);
+		this.addToMismatchLog(mismatchMessage[1]);
 		if (mismatch.beforeCheckVersion) {
 			mismatchMessage.push("Remote site " + site.name + " has an older version and is unable to report its version");
-			messageForDisplay += " Unable to report version (OLDER).";
+			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
 		}
 		if (mismatch.base) {
 			mismatchMessage.push("Remote site " + site.name + " has "
 			+ mismatch.baseOfRemote + " version and may not work well with this site");
 			mismatchMessage.push("This site (" + this.myVersion.base
 			+ ") vs (" + remoteData.version.base + ") remote site");
-			messageForDisplay += " Using " + mismatch.baseOfRemote
-				+ " version (" + remoteData.version.base + ")";
+			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 2]);
+			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
 		}
 		if (mismatch.branch) {
 			mismatchMessage.push("Remote site " + site.name + " has a different branch ("
 			+ mismatch.branchOfRemote + ") and may not work well with this site");
 			mismatchMessage.push("This site (" + this.myVersion.branch
 			+ ") vs (" + remoteData.version.branch + ") remote site");
-			messageForDisplay += " Using differnt branch: " + remoteData.version.branch;
+			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 2]);
+			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
 		}
 		if (mismatch.date) {
 			mismatchMessage.push("Remote site " + site.name + " has a "
 			+ mismatch.dateOfRemote + " release and may not work well with this site");
 			mismatchMessage.push("This site (" + this.myVersion.date
 			+ ") vs (" + remoteData.version.date + ") remote site");
-			messageForDisplay += " Using " + mismatch.dateOfRemote
-				+ " version (" + remoteData.version.date + ")";
+			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 2]);
+			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
 		}
 		mismatchMessage.push("-----VERSION MISMATCH END OF REPORT-----");
 		mismatchMessage.forEach((line) => {
 			sageutils.log("Version manager", chalk.bgRed(line));
 		});
-		messageForDisplay += "\r\n";
-	}
-	// The remote site didn't list this one, or version mismatch
-	if (shouldSendMessage) {
-		messageForDisplay += " Sharing may not work correctly\r\n";
-		this.tryShowMessageOnDisplay({message: messageForDisplay, hideReject: true}, remoteData, remotesocketAddress);
 	}
 };
 
@@ -162,9 +167,12 @@ VersionChecker.prototype.doesRemoteSiteKnowAboutThisServer = function(remoteData
 		}
 		// Can only check if remote site know about this one post previously mentioned update
 		if (!found) {
+			this.setMismatchToTrue();
 			sageutils.log("Version manager",
 				chalk.bgRed("The site " + remoteData.locationInformation.host
 					+ " doesn't know about this host. They may not be able to share anything back."));
+			this.addToMismatchLog("The site " + remoteData.locationInformation.host
+			+ " doesn't know about this system.");
 		}
 	}
 	return found;
@@ -292,5 +300,53 @@ VersionChecker.prototype.reportAccept = function() {
 	}, 1500);
 };
 
+/**
+ * Function to get the log.
+ *
+ * @method setMismatchToTrue
+ * @param  {String} info - string of info to add to log
+ */
+VersionChecker.prototype.setMismatchToTrue = function() {
+	this.remoteSiteBlockReference.connected = "off-mismatch";
+	let site = {
+		name: this.remoteSiteBlockReference.name,
+		connected: this.remoteSiteBlockReference.connected,
+		geometry: this.remoteSiteBlockReference.geometry};
+	if (!this.versionMismatchExists) {
+		for (let i = 0; i < this.clients.length; i++) {
+			if (this.clients[i].clientType === "display") {
+				this.clients[i].emit('addRemoteSite', site);
+			}
+		}
+	}
+	this.versionMismatchExists = true;
+
+};
+
+/**
+ * Function to add to the log. Mainly used to populate the QuickNote
+ *
+ * @method addToMismatchLog
+ * @param  {String} info - string of info to add to log
+ */
+VersionChecker.prototype.addToMismatchLog = function(info, addToBottom = true) {
+	if (addToBottom) {
+		this.mismatchVersionLog += info + "\n";
+	} else {
+		this.mismatchVersionLog = info + "\n" + this.mismatchVersionLog;
+	}
+};
+
+/**
+ * Function to get the log.
+ *
+ * @method getMismatchLog
+ * @param  {String} info - string of info to add to log
+ */
+VersionChecker.prototype.getMismatchLog = function() {
+	return this.mismatchVersionLog;
+};
+
 
 module.exports = VersionChecker;
+module.exports.remoteSiteBlockName = remoteSiteBlockName;
