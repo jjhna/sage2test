@@ -473,7 +473,7 @@ let SAGE2_SnippetEditor = (function () {
 						.attr('class', "action-icons");
 
 					controls.append("i")
-						.attr("class", "fa fa-play")
+						.attr("class", "fas fa-play")
 						.on("click", function() {
 							let newAction = {
 								action: "execute",
@@ -490,13 +490,13 @@ let SAGE2_SnippetEditor = (function () {
 						});
 
 					controls.append("i")
-						.attr("class", "fa fa-copy")
+						.attr("class", "fas fa-copy")
 						.on("click", function() {
 							saveCopy(d.id);
 						});
 
 					controls.append("i")
-						.attr("class", "fa fa-folder-open")
+						.attr("class", "fas fa-folder-open")
 						.on("click", function() {
 							if (d.id !== self.loadedSnippet && !d.locked) {
 								loadScript(d.id);

@@ -277,7 +277,10 @@
 
 
 #codeSnippetEditor #snippetLoggingWrapper .log-title .log-filter-value::after {
-    content: "▼";
+    content: "\f0dd";
+    font-family: "Font Awesome 5 Free";
+    margin-bottom: 5px;
+    font-weight: 900;
 }
 
 #codeSnippetEditor #snippetLoggingWrapper .log-filter-options {
@@ -507,9 +510,10 @@
 }
 
 #codeSnippetEditor .controlDropdown:after {
-    content: "\f0d7";
-    font-family: "FontAwesome";
-    margin-left: 5px;
+    content: "\f0dd";
+    font-family: "Font Awesome 5 Free";
+    margin: 0 0 5px 5px;
+    font-weight: 900;
 }
 
 #codeSnippetEditor .dropdownWrapper {
