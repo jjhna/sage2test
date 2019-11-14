@@ -87,7 +87,8 @@ var Webview = SAGE2_App.extend({
 			interactionTime: "s2_yt_interactTime",
 			videoTime:  "s2_yt_currentTime",
 			roughTimeDifference: null, // Used to figure out if there is any major difference.
-			lastInteractionTime: null
+			lastInteractionTime: 0,
+			squelch: 0
 		};
 
 		// A youtube URL with a 'watch' video
@@ -603,6 +604,8 @@ var Webview = SAGE2_App.extend({
 			}
 		}
 		if (needToUpdate) {
+			// Keep the last action
+			this.element.youTubeLastSrc = this.state.url;
 			if (!this.element.youTubeClickedAfterLoad) {
 				this.element.youTubeClickedAfterLoad = true;
 				this.element.sendInputEvent({
@@ -625,42 +628,34 @@ var Webview = SAGE2_App.extend({
 			receivedTimeStamp = receivedTimeStamp.substring(receivedTimeStamp.indexOf("=") + 1, receivedTimeStamp.indexOf("&"));
 			receivedTimeStamp = parseInt(receivedTimeStamp);
 			if (this.ytValues.roughTimeDifference === null) {
-				console.log("erase me, keeping first time assignment");
 				// SHOULD always be positive since now is more recent then when it was sent.
 				// However, possible neg if computer localtime has some
 				this.ytValues.roughTimeDifference = Date.now() - receivedTimeStamp;
-				// Accept the first external update
-				this.ytValues.lastInteractionTime = receivedTimeStamp;
-			} else {
-				console.log("erase me, time check", (receivedTimeStamp - this.ytValues.roughTimeDifference),
-					this.ytValues.lastInteractionTime);
-				if (receivedTimeStamp - this.ytValues.roughTimeDifference > this.ytValues.lastInteractionTime) {
-					console.log("erase me, lastInteractionTime is less");
-					// Accept the new command.
-					// Get the time to jump to
-					let currentTime = this.state.url;
-					currentTime = currentTime.substring(currentTime.indexOf(this.ytValues.videoTime));
-					currentTime = currentTime.substring(currentTime.indexOf("=") + 1);
-					currentTime = parseInt(currentTime);
-					// Determine whether or not it is play or pause
-					if (this.state.url.includes(this.ytValues.pause)) {
-						this.element.executeJavaScript(
-							'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
-							+ 'document.getElementsByTagName("video")[0].pause();'
-						);
-					}
-					if (this.state.url.includes(this.ytValues.play)) {
-						this.element.executeJavaScript(
-							'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
-							+ 'document.getElementsByTagName("video")[0].play();'
-						);
-					}
-					// Keep the last action
-					this.element.youTubeLastSrc = this.state.url;
-				} else {
-					// Discard
-					console.log("erase me, DISCARDING lastInteractionTime is more");
+			}
+			if (receivedTimeStamp - this.ytValues.roughTimeDifference > this.ytValues.lastInteractionTime) {
+				this.ytValues.lastInteractionTime = receivedTimeStamp - this.ytValues.roughTimeDifference;
+
+				this.ytValues.squelch++; // Should start at 0;
+				// Accept the new command, Get the time to jump to
+				let currentTime = this.state.url;
+				currentTime = currentTime.substring(currentTime.indexOf(this.ytValues.videoTime));
+				currentTime = currentTime.substring(currentTime.indexOf("=") + 1);
+				currentTime = parseInt(currentTime);
+				// Determine whether or not it is play or pause
+				if (this.state.url.includes(this.ytValues.pause)) {
+					this.element.executeJavaScript(
+						'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
+						+ 'document.getElementsByTagName("video")[0].pause();'
+					);
 				}
+				if (this.state.url.includes(this.ytValues.play)) {
+					this.element.executeJavaScript(
+						'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
+						+ 'document.getElementsByTagName("video")[0].play();'
+					);
+				}
+			} else {
+				// Discard
 			}
 		}
 	},
@@ -972,23 +967,30 @@ if (videos.length > 0) {
 	handleYouTubeMessage: function(message) {
 		let convertedMessage = JSON.parse(message);
 		if (convertedMessage.status == "pause") {
-			console.log("youTubeMessage pause: ", convertedMessage);
-			this.state.url = this.element.src + "&"
-				+ this.ytValues.pause + "=true&"
-				+ this.ytValues.interactionTime + "=" + Date.now() + "&"
-				+ this.ytValues.videoTime + "=" + convertedMessage.currentTime;
-			this.SAGE2Sync(true);
-			this.ytValues.lastInteractionTime = Date.now();
+			if (this.ytValues.squelch > 0) {
+				this.ytValues.squelch--; // Prevent improper looping
+			} else {
+				this.state.url = this.element.src + "&"
+					+ this.ytValues.pause + "=true&"
+					+ this.ytValues.interactionTime + "=" + Date.now() + "&"
+					+ this.ytValues.videoTime + "=" + convertedMessage.currentTime;
+				this.SAGE2Sync(true);
+				this.ytValues.lastInteractionTime = Date.now() - this.ytValues.roughTimeDifference;
+			}
 		} else if (convertedMessage.status == "play") {
-			console.log("youTubeMessage play: ", convertedMessage);
-			this.state.url = this.element.src + "&"
-				+ this.ytValues.play + "=true&"
-				+ this.ytValues.interactionTime + "=" + Date.now() + "&"
-				+ this.ytValues.videoTime + "=" + convertedMessage.currentTime;
-			this.SAGE2Sync(true);
-			this.ytValues.lastInteractionTime = Date.now();
+			if (this.ytValues.squelch > 0) {
+				this.ytValues.squelch--; // Prevent improper looping
+			} else {
+				this.state.url = this.element.src + "&"
+					+ this.ytValues.play + "=true&"
+					+ this.ytValues.interactionTime + "=" + Date.now() + "&"
+					+ this.ytValues.videoTime + "=" + convertedMessage.currentTime;
+				this.SAGE2Sync(true);
+				this.ytValues.lastInteractionTime = Date.now() - this.ytValues.roughTimeDifference;
+			}
 		} else {
-			console.log("youTubeMessage OTHER: ", convertedMessage);
+			// Usually other is from an ad
+			// console.log("youTubeMessage OTHER: ", convertedMessage);
 		}
 	},
 
