@@ -79,6 +79,17 @@ var Webview = SAGE2_App.extend({
 		// Is the page hosted by SAGE server
 		this.connectingToSageHostedFile = this.isHostedBySelf(view_url);
 
+		// Custom youtube params to sync
+		this.ytValues = {
+			prefix: "s2_yt",
+			pause: "s2_yt_pause",
+			play:  "s2_yt_play",
+			interactionTime: "s2_yt_interactTime",
+			videoTime:  "s2_yt_currentTime",
+			roughTimeDifference: null, // Used to figure out if there is any major difference.
+			lastInteractionTime: null
+		};
+
 		// A youtube URL with a 'watch' video
 		if (view_url.startsWith('https://www.youtube.com')) {
 			if (view_url.indexOf('embed') === -1 ||
@@ -576,8 +587,9 @@ var Webview = SAGE2_App.extend({
 	},
 
 	checkIfYouTubeLoadEvent: function(date) {
-		// Is a load even if the src already matches the core
-		if (this.state.url.includes(this.element.src)) {
+		// Is a load event if the src already matches the core and has youtube prefix
+		if (this.state.url.includes(this.element.src)
+			&& this.state.url.includes(this.ytValues.prefix)) {
 			return true;
 		}
 		return false;
@@ -608,26 +620,48 @@ var Webview = SAGE2_App.extend({
 					clickCount: 1
 				});
 			}
-			// Get the time to jump to
-			let currentTime = this.state.url;
-			currentTime = currentTime.substring(currentTime.indexOf("s2_yt_currentTime"));
-			currentTime = currentTime.substring(currentTime.indexOf("=") + 1);
-			currentTime = parseInt(currentTime);
-			// Determine whether or not it is play or pause
-			if (this.state.url.includes("s2_yt_pause")) {
-				this.element.executeJavaScript(
-					'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
-					+ 'document.getElementsByTagName("video")[0].pause();'
-				);
+			// Get the timestamp (note: system time influences consistency)
+			let receivedTimeStamp = this.state.url.substring(this.state.url.indexOf(this.ytValues.interactionTime));
+			receivedTimeStamp = receivedTimeStamp.substring(receivedTimeStamp.indexOf("=") + 1, receivedTimeStamp.indexOf("&"));
+			receivedTimeStamp = parseInt(receivedTimeStamp);
+			if (this.ytValues.roughTimeDifference === null) {
+				console.log("erase me, keeping first time assignment");
+				// SHOULD always be positive since now is more recent then when it was sent.
+				// However, possible neg if computer localtime has some
+				this.ytValues.roughTimeDifference = Date.now() - receivedTimeStamp;
+				// Accept the first external update
+				this.ytValues.lastInteractionTime = receivedTimeStamp;
+			} else {
+				console.log("erase me, time check", (receivedTimeStamp - this.ytValues.roughTimeDifference),
+					this.ytValues.lastInteractionTime);
+				if (receivedTimeStamp - this.ytValues.roughTimeDifference > this.ytValues.lastInteractionTime) {
+					console.log("erase me, lastInteractionTime is less");
+					// Accept the new command.
+					// Get the time to jump to
+					let currentTime = this.state.url;
+					currentTime = currentTime.substring(currentTime.indexOf(this.ytValues.videoTime));
+					currentTime = currentTime.substring(currentTime.indexOf("=") + 1);
+					currentTime = parseInt(currentTime);
+					// Determine whether or not it is play or pause
+					if (this.state.url.includes(this.ytValues.pause)) {
+						this.element.executeJavaScript(
+							'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
+							+ 'document.getElementsByTagName("video")[0].pause();'
+						);
+					}
+					if (this.state.url.includes(this.ytValues.play)) {
+						this.element.executeJavaScript(
+							'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
+							+ 'document.getElementsByTagName("video")[0].play();'
+						);
+					}
+					// Keep the last action
+					this.element.youTubeLastSrc = this.state.url;
+				} else {
+					// Discard
+					console.log("erase me, DISCARDING lastInteractionTime is more");
+				}
 			}
-			if (this.state.url.includes("s2_yt_play")) {
-				this.element.executeJavaScript(
-					'document.getElementsByTagName("video")[0].currentTime = ' + currentTime + ";"
-					+ 'document.getElementsByTagName("video")[0].play();'
-				);
-			}
-			// Keep the last action
-			this.element.youTubeLastSrc = this.state.url;
 		}
 	},
 
@@ -931,16 +965,28 @@ if (videos.length > 0) {
 		return false;
 	},
 
+	/*
+	This handles the console printed message from the webview.
+	Generated from the script injection into a youtube page.
+	 */
 	handleYouTubeMessage: function(message) {
 		let convertedMessage = JSON.parse(message);
 		if (convertedMessage.status == "pause") {
 			console.log("youTubeMessage pause: ", convertedMessage);
-			this.state.url = this.element.src + "&s2_yt_pause=true&s2_yt_currentTime=" + convertedMessage.currentTime;
+			this.state.url = this.element.src + "&"
+				+ this.ytValues.pause + "=true&"
+				+ this.ytValues.interactionTime + "=" + Date.now() + "&"
+				+ this.ytValues.videoTime + "=" + convertedMessage.currentTime;
 			this.SAGE2Sync(true);
+			this.ytValues.lastInteractionTime = Date.now();
 		} else if (convertedMessage.status == "play") {
 			console.log("youTubeMessage play: ", convertedMessage);
-			this.state.url = this.element.src + "&s2_yt_play=true&s2_yt_currentTime=" + convertedMessage.currentTime;
+			this.state.url = this.element.src + "&"
+				+ this.ytValues.play + "=true&"
+				+ this.ytValues.interactionTime + "=" + Date.now() + "&"
+				+ this.ytValues.videoTime + "=" + convertedMessage.currentTime;
 			this.SAGE2Sync(true);
+			this.ytValues.lastInteractionTime = Date.now();
 		} else {
 			console.log("youTubeMessage OTHER: ", convertedMessage);
 		}
