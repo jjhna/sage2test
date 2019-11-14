@@ -11177,33 +11177,54 @@ function spreadNotebookOnWall({
 	id,
 	show_markdown
 }) {
+	// tile on entire wall
+	let wholeWall = true;
+	let downsizeRatio = 0.05; // 5% padding on all sides
+
+	let paddingUnit = config.ui.titleBarHeight;
+
+	let tiledArea = {
+		width: wholeWall ?  (1 - downsizeRatio * 2) * config.totalWidth : 1800,
+		height: wholeWall ? (1 - downsizeRatio * 2) * config.totalHeight - config.ui.titleBarHeight : 800,
+		left: wholeWall ? downsizeRatio * config.totalWidth : 400, // 0
+		top: wholeWall ? config.ui.titleBarHeight + (downsizeRatio * config.totalHeight) : 100 // config.ui.titleBarHeight
+	};
+
 	let cells = Object.entries(notebook.cells)
 		.filter(([i, c]) => show_markdown || c.cell_type === "code");
 
 	let numCells = cells.length;
 	let cellAspectRatio = 1.5; // constant value
-	let wallAspectRatio = (config.totalWidth / config.totalHeight);
+	let wallAspectRatio = (tiledArea.width / tiledArea.height);
 
 	// calculate the number of columns and rows which can fit
-	let numCols = Math.ceil(Math.sqrt(numCells * (wallAspectRatio / cellAspectRatio)));
-	let numRows = Math.ceil(numCells / numCols);
+	let numColsPreliminary = Math.ceil(
+		Math.sqrt(cells.length * (wallAspectRatio / cellAspectRatio))
+	);
+
+	let numRows = Math.ceil(numCells / numColsPreliminary);
+	let numCols = Math.ceil(cells.length / numRows);
 
 	// calculate the grid size for this configuration
-	let gridHeight = (config.totalHeight / numRows);
-	let gridWidth = (config.totalWidth / numCols);
+	let gridWidth = tiledArea.width / numCols;
+	let gridHeight = tiledArea.height / numRows;
 
 	// get the actual height and width (maintaining aspect ratio of cells as constant)
-	let appHeight = Math.min(gridHeight - 20, (gridWidth / cellAspectRatio) - 40);
+	let appHeight = Math.min(
+		gridHeight - paddingUnit,
+		(gridWidth / cellAspectRatio) - 2 * paddingUnit
+	);
+
 	let height = appHeight - config.ui.titleBarHeight;
 	let width = appHeight * cellAspectRatio;
 
 	// calculate total size used by cells
-	let totalCellWidth = (width + 40) * numCols;
-	let totalCellHeight = (appHeight + 20) * numRows;
+	let totalCellWidth = (width + 2 * paddingUnit) * numCols;
+	let totalCellHeight = (appHeight + paddingUnit) * numRows;
 
 	// calculate a global offset for all cells to center them in the display
-	let globalLeftOffset = (config.totalWidth - totalCellWidth) / 2; // this seems to maybe not work correctly for left offset (?)
-	let globalTopOffset = config.ui.titleBarHeight + ((config.totalHeight - config.ui.titleBarHeight) - totalCellHeight) / 2;
+	let globalLeftOffset = (tiledArea.width - totalCellWidth) / 2 + tiledArea.left; // this seems to maybe not work correctly for left offset (?)
+	let globalTopOffset = (tiledArea.height - totalCellHeight) / 2 + tiledArea.top;
 
 	for (let i in cells) {
 		let [ind, cell] = cells[i];
@@ -11213,8 +11234,14 @@ function spreadNotebookOnWall({
 			notebook.metadata,
 			ind,
 			{
-				left: (Math.floor(i / numRows) * (width + 40)) + 20 + globalLeftOffset,
-				top: (i % numRows) * (appHeight + 20) + 10 + globalTopOffset,
+				left:
+					Math.floor(i / numRows) * (width + 2 * paddingUnit) +
+					paddingUnit +
+					globalLeftOffset,
+				top:
+					(i % numRows) * (appHeight + paddingUnit) +
+					paddingUnit / 2 +
+					globalTopOffset,
 				width,
 				height
 			},
