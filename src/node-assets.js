@@ -239,6 +239,7 @@ var generateImageThumbnails = function(infile, outfile, sizes, index, callback) 
 			if (err) {
 				sageutils.log("Assets", "cannot generate " + sizes[index] +
 					"x" + sizes[index] + " thumbnail for:", infile);
+				callback();
 				return;
 			}
 			// recursive call to generate the next size

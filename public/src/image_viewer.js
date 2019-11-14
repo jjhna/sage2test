@@ -10,6 +10,8 @@
 
 "use strict";
 
+/* global Prism */
+
 /**
  * @module client
  * @submodule image_viewer
@@ -278,27 +280,8 @@ var image_viewer = SAGE2_App.extend({
 		if (typeof json !== 'string') {
 			json = JSON.stringify(json, undefined, 4);
 		}
-		json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-		/* eslint-disable max-len */
-		return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
-			function(match) {
-				var cls = 'color: darkorange;';
-				if (/^"/.test(match)) {
-					if (/:$/.test(match)) {
-						cls = 'color: CadetBlue;';
-					} else {
-						cls = 'color: green;';
-					}
-				} else if (/true|false/.test(match)) {
-					cls = 'color: blue;';
-				} else if (/null/.test(match)) {
-					cls = 'color: magenta;';
-				}
-				return '<span style="' + cls + '">' + match + '</span>';
-			});
-
-		/* eslint-enable max-len */
+		const html = Prism.highlight(json, Prism.languages.json, 'json');
+		return html;
 	},
 
 	/**

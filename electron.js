@@ -124,8 +124,8 @@ commander
 	.option('-u, --ui',                  'Open the user interface (instead of display)', false)
 	.option('-x, --xorigin <n>',         'Window position x (int)', myParseInt, 0)
 	.option('-y, --yorigin <n>',         'Window position y (int)', myParseInt, 0)
-	.option('--allowDisplayingInsecure', 'Allow displaying of insecure content (http on https)', false)
-	.option('--allowRunningInsecure',    'Allow running insecure content (scripts accessed on http vs https)', false)
+	.option('--allowDisplayingInsecure', 'Allow displaying of insecure content (http on https)', true)
+	.option('--allowRunningInsecure',    'Allow running insecure content (scripts accessed on http vs https)', true)
 	.option('--no-cache',                'Do not clear the cache at startup', true)
 	.option('--console',                 'Open the devtools console', false)
 	.option('--debug',                   'Open the port debug protocol (port number is 9222 + clientID)', false)
@@ -133,6 +133,7 @@ commander
 	.option('--hash <s>',                'Server password hash (string)', null)
 	.option('--height <n>',              'Window height (int)', myParseInt, 720)
 	.option('--password <s>',            'Server password (string)', null)
+	.option('--disable-hardware',        'Disable hardware acceleration', false)
 	.option('--show-fps',                'Display the Chrome FPS counter', false)
 	.option('--width <n>',               'Window width (int)', myParseInt, 1280)
 	.parse(args);
@@ -145,6 +146,10 @@ commander
 // 	electron.app.setAppPath(process.cwd());
 // 	// }
 
+// Disable hardware rendering (useful for some large display systems)
+if (commander.disableHardware) {
+	app.disableHardwareAcceleration();
+}
 
 // Load the flash plugin if asked
 if (commander.plugins) {
@@ -160,10 +165,11 @@ if (commander.plugins) {
 }
 
 // Reset the desktop scaling
-//if (os.platform() === "win32") {
 app.commandLine.appendSwitch("force-device-scale-factor", "1");
-app.commandLine.appendSwitch("ignore-gpu-blacklist");
-//}
+
+// As of 2019, video elements with sound will no longer autoplay unless user interacted with page.
+// switch found from: https://github.com/electron/electron/issues/13525/
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 // Remove the limit on the number of connections per domain
 //  the usual value is around 6
@@ -178,7 +184,7 @@ if (parsedURL.hostname) {
 app.commandLine.appendSwitch("ignore-connections-limit", domains);
 
 // For display clients, ignore certificate errors
-app.commandLine.appendSwitch("--ignore-certificate-errors");
+app.commandLine.appendSwitch("ignore-certificate-errors");
 
 // Enable the Chrome builtin FPS display for debug
 if (commander.showFps) {
@@ -196,10 +202,6 @@ if (commander.debug) {
 	// Add the parameter to the list of options on the command line
 	app.commandLine.appendSwitch("remote-debugging-port", port.toString());
 }
-
-// As of 2019, video elements with sound will no longer autoplay unless user interacted with page.
-// switch found from: https://github.com/electron/electron/issues/13525/
-app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 /**
  * Keep a global reference of the window object, if you don't, the window will
@@ -273,11 +275,11 @@ function openWindow() {
 		mainWindow.on('show', function() {
 			mainWindow.setFullScreen(true);
 			// Once all done, prevent changing the fullscreen state
-			mainWindow.setFullScreenable(false);
+			mainWindow.fullScreenable = false;
 		});
 	} else {
 		// Once all done, prevent changing the fullscreen state
-		mainWindow.setFullScreenable(false);
+		mainWindow.fullScreenable = false;
 	}
 }
 
@@ -319,6 +321,8 @@ function createWindow() {
 		backgroundColor: "#565656",
 		// resizable: !commander.fullscreen,
 		webPreferences: {
+			// Enable webviews
+			webviewTag: true,
 			nodeIntegration: true,
 			webSecurity: true,
 			backgroundThrottling: false,
@@ -344,7 +348,7 @@ function createWindow() {
 		const session = electron.session.defaultSession;
 		session.clearStorageData({
 			storages: ["appcache", "cookies", "local storage", "serviceworkers"]
-		}, function() {
+		}).then(()=> {
 			console.log('Electron>	Caches cleared');
 			openWindow();
 		});
@@ -362,7 +366,7 @@ function createWindow() {
 
 	// Mute the audio (just in case)
 	var playAudio = commander.audio || (commander.display === 0);
-	mainWindow.webContents.setAudioMuted(!playAudio);
+	mainWindow.webContents.audioMuted = !playAudio;
 
 	// Open the DevTools.
 	if (commander.console) {
@@ -424,9 +428,9 @@ function createWindow() {
 			hostname.endsWith("live.com") ||
 			hostname.endsWith("office.com")) {
 			params.partition = 'persist:office';
-		} else if (hostname.endsWith("appear.in")) {
+		} else if (hostname.endsWith("appear.in") || hostname.endsWith("whereby.com")) {
 			// VTC
-			params.partition = 'persist:appear';
+			params.partition = 'persist:whereby';
 		} else if (hostname.endsWith("youtube.com")) {
 			// VTC
 			params.partition = 'persist:youtube';
@@ -641,7 +645,7 @@ function buildMenu() {
 					}()),
 					click: function(item, focusedWindow) {
 						if (focusedWindow) {
-							focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+							focusedWindow.fullScreenable = !focusedWindow.isFullScreen();
 						}
 					}
 				},
@@ -693,7 +697,7 @@ function buildMenu() {
 	];
 
 	if (process.platform === 'darwin') {
-		const name = app.getName();
+		const name = app.name;
 		template.unshift({
 			label: name,
 			submenu: [

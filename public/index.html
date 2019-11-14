@@ -80,8 +80,9 @@
 
 <!-- File manager UI -->
 <script async src="src/SAGE2_fileManager.js"></script>
-<script async src="lib/webix/webix.js"></script>
+<script async src="lib/webix/webix.min.js"></script>
 <script async src="lib/moment.min.js"></script>
+<script async src="lib/prism.js"></script>
 
 <!-- (Will need to change this to be local -- it relies on external theme now, however) -->
 <!-- <script async src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.9/ace.js"></script> -->
@@ -106,11 +107,17 @@
 <!-- Style sheets -->
 <link rel="stylesheet" type="text/css" href="css/fonts.css"/>
 <link rel="stylesheet" type="text/css" href="css/style_ui.css" media="screen">
-<link rel="stylesheet" type="text/css" href="css/snippets_ui.css" media="screen">
-<link rel="stylesheet" type="text/css" href="lib/webix/webix.css">
-<link rel="stylesheet" type="text/css" href="lib/webix/skins/compact.css">
+
+<link rel="stylesheet" type="text/css" href="lib/webix/webix.min.css">
+<link rel="stylesheet" type="text/css" href="lib/webix/skins/compact.min.css">
 <link rel="stylesheet" type="text/css" href="css/fileManager.css" media="screen">
+
+<link rel="stylesheet" type="text/css" href="css/snippets_ui.css" media="screen">
 <link rel="stylesheet" href="https://unpkg.com/json-summary@1.1.0/dist/summarizer.css"/>
+
+<link rel="stylesheet" type="text/css" href="css/fileManager.css" media="screen">
+<link rel="stylesheet" type="text/css" href="css/prism.css">
+
 
 </head>
 
@@ -448,7 +455,7 @@
 	<div id="uiDrawZoneEraseReference">
 	</div>
 
-	<div id="voiceTranscriptOuterContainer" style="visibility: hidden;">
+<!-- 	<div id="voiceTranscriptOuterContainer" style="visibility: hidden;">
 		&nbsp;
 		<br>
 		<div>
@@ -457,6 +464,7 @@
 			</span>
 		</div>
 	</div>
+<<<<<<< HEAD
 
 	<div id="codeSnippetEditor" class="">
 		<div class="overlay"></div>
@@ -593,10 +601,25 @@
 		</div>
 	</div>
 
+=======
+ -->
+>>>>>>> origin/master
 
 	<!-- invisible text to test rendered width -->
 	<div id="textWidthTest"></div>
 	<canvas id="mediaCanvas" style="display: none;"></canvas>
 	<video id="mediaVideo" style="display: none;"></video>
+
+
+	<div id="SAGE2CookieConsent">
+		<a id="cookieButton">I Agree</a>
+		<div>We use cookies on this site to enhance your experience.
+			Click on “About Cookies” to learn more. By continuing to use SAGE2,
+			you agree to the storing of cookies and related technologies
+			on your device.
+			<a href="/help/index.html">“About Cookies”</a>
+		</div>
+	</div>
+
 </body>
 </html>

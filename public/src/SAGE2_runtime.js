@@ -28,7 +28,7 @@
  * @type {Object}
  */
 var __SAGE2__ = {};
-__SAGE2__.version = "4.0.0";
+__SAGE2__.version = "5.0.0";
 
 
 /**
@@ -274,7 +274,8 @@ SAGE2types.isaDate = function(obj) {
 
 SAGE2types.create = function(val) {
 	if (_typeOf(val) === 'object') {
-		if (val.hasOwnProperty('lat') && val.hasOwnProperty('lng')) {
+		if (Object.prototype.hasOwnProperty.call(val, 'lat') &&
+			Object.prototype.hasOwnProperty.call(val, 'lng')) {
 			return new SAGE2types.LatLng(val.lat, val.lng);
 		}
 		return new SAGE2types.Object(val);

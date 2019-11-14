@@ -157,11 +157,38 @@ window.addEventListener('unload', function(event) {
 });
 
 /**
+ * Cookie Compliancy test
+ *
+ * @method testCookieCompliancy
+ */
+function testCookieCompliancy() {
+	var visitFirst = getCookie("SAGE2cookieCompliancyAccepted");
+	if (!visitFirst) {
+		// show the banner
+		document.getElementById("SAGE2CookieConsent").style.display = "block";
+	}
+	// else cookie already accepted
+}
+
+/**
  * When the page loads, SAGE2 starts
  *
  */
 window.addEventListener('load', function(event) {
 	SAGE2_init();
+
+	// Cookie Compliancy action button
+	document.getElementById("cookieButton").onclick = function() {
+		var expire = new Date();
+		// 90-day expiration date
+		expire = new Date(expire.getTime() + 7776000000);
+		// Add the cookie
+		document.cookie = "SAGE2cookieCompliancyAccepted=here; expires=" + expire + ";path=/";
+		// Remove the banner
+		document.getElementById("SAGE2CookieConsent").style.display = "none";
+	};
+	// Check if it is the first visit
+	testCookieCompliancy();
 });
 
 /**
@@ -263,7 +290,10 @@ function setupFocusHandlers() {
 	document.addEventListener(visEvent, function(event) {
 		if (document[hidden]) {
 			if (interactor && interactor.broadcasting) {
-				note = notifyMe("Keep browser tab with SAGE2 UI visible during screen sharing");
+				// Only use the notification when not using webrtc
+				if (!interactor.mediaUseRTC) {
+					note = notifyMe("Keep browser tab with SAGE2 UI visible during screen sharing");
+				}
 			}
 		} else {
 			if (note) {
@@ -325,6 +355,7 @@ function pasteHandler(event) {
 		}
 	}
 }
+
 
 /**
  * Entry point of the user interface
@@ -434,6 +465,10 @@ function SAGE2_init() {
 		// show a popup
 		showSAGE2Message("Server unreachable: you are offline or the server is down");
 		// try to reload every few seconds
+		if ((evt.code === 1001) && (evt.reason === "wrongSessionHash")) {
+			window.location = "session.html";
+			return;
+		}
 		var refresh = setInterval(function() {
 			reloadIfServerRunning(function() {
 				clearInterval(refresh);
@@ -554,18 +589,17 @@ function SAGE2_init() {
 // if time given as parameter in seconds, close after delay
 //
 function showSAGE2Message(message, delay) {
-	var aMessage = webix.alert({
+	webix.alert({
 		type:  "alert-warning",
 		title: "SAGE2 Message",
 		ok:    "OK",
+		id:    "message",
 		width: "40%",
 		text:  "<span style='font-weight:bold;'>" + message + "</span>"
 	});
 	if (delay) {
 		setTimeout(function() {
-			if (aMessage) {
-				webix.modalbox.hide(aMessage);
-			}
+			webix.modalbox.hide("message");
 		}, delay * 1000);
 	}
 }
@@ -1170,7 +1204,6 @@ function fileDrop(event) {
 }
 
 var msgOpen = false;
-var uploadMessage, msgui;
 
 /**
  * File upload start callback
@@ -1221,11 +1254,12 @@ function fileUploadStart(files) {
 	// Add the progress bar element from template
 	form.push({id: 'progressBar', view: 'ProgressBar'});
 
-	// Create a modal window wit empty div
-	uploadMessage = webix.modalbox({
+	// Create a modal window with empty div
+	webix.modalbox({
 		title: aTitle,
 		buttons: ["Cancel"],
 		margin: 25,
+		id: "uploadMessage",
 		text: "<div id='box_content' style='width:100%; height:100%'></div>",
 		width: "80%",
 		position: "center",
@@ -1236,7 +1270,7 @@ function fileUploadStart(files) {
 		}
 	});
 	// Add the form into the div
-	msgui = webix.ui({
+	webix.ui({
 		container: "box_content",
 		height: panelHeight,
 		rows: form
@@ -1269,7 +1303,7 @@ function fileUploadProgress(percent) {
 function fileUploadComplete() {
 	// close the modal window if still open
 	if (msgOpen) {
-		webix.modalbox.hide(uploadMessage);
+		webix.modalbox.hide("uploadMessage");
 	}
 
 	// Seems useful, sometimes (at the end of upload)
@@ -1497,14 +1531,29 @@ function handleClick(element) {
 		} else {
 			// Open the new file manager
 			var fm = document.getElementById('fileManager');
-			if (fm.style.display === "none") {
+
+			// Remove the display overview if needed
+			if (self.overview) {
+				document.getElementById('overview').remove();
+				let elt = fm.firstElementChild;
+				elt.style.display = "block";
+				self.overview = false;
+				// Put back the file manager
 				fm.style.display = "block";
 				SAGE2_resize(0.6);
 				fileManager.refresh();
 			} else {
-				fm.style.display = "none";
-				SAGE2_resize(1.0);
+				// Show/hide the file manager
+				if (fm.style.display === "none") {
+					fm.style.display = "block";
+					SAGE2_resize(0.6);
+					fileManager.refresh();
+				} else {
+					fm.style.display = "none";
+					SAGE2_resize(1.0);
+				}
 			}
+
 		}
 	} else if (element.id === "arrangement" || element.id === "arrangementContainer" || element.id === "arrangementLabel") {
 		showDialog('arrangementDialog');
@@ -1530,7 +1579,7 @@ function handleClick(element) {
 							data: [
 								{id: 1, value: "Google Docs - documents"},
 								{id: 2, value: "Office 365 - office online"},
-								{id: 3, value: "Appear.in - videoconference"},
+								{id: 3, value: "Whereby.com - videoconference"},
 								{id: 4, value: "Youtube - videos"},
 								{id: 5, value: "Slack - team collaboration"},
 								{id: 6, value: "NbViewer - jupyter notebooks"},
@@ -1541,7 +1590,7 @@ function handleClick(element) {
 									var urls = [
 										"https://docs.google.com/",
 										"https://login.microsoftonline.com/",
-										"https://appear.in/",
+										"https://whereby.com/",
 										"https://www.youtube.com/",
 										"https://slack.com/signin",
 										"https://nbviewer.jupyter.org/",
@@ -2589,8 +2638,10 @@ function loadSelectedFile() {
 function noteMakerDialog(mode, params, app) {
 	// Default mode is 'create' a new note
 	let okButton = "Make Note [Shift-Enter]";
+	// use markdown
+	let useMarkdown = (getCookie('SAGE2_noteUseMarkdown') === "0") ? false : true; // webix uses 1 for true and 0 for false
 	// not anonymous
-	let isAnon = false;
+	let isAnon = (getCookie('SAGE2_noteIsAnon') === "1") ? true : false;
 	// empty note
 	let noteText = '';
 	// default is yellow
@@ -2647,7 +2698,10 @@ function noteMakerDialog(mode, params, app) {
 		"\n\"formatting \" +" +
 		"\n\"section\";\n" +
 		"alert(s);\n" +
-		"```\n";
+		"```\n" +
+		"\n" +
+		"For more information see the [showdownjs documentation page]" +
+		"(https://github.com/showdownjs/showdown/wiki/Showdown's-Markdown-syntax)";
 
 	let renderText = '<div style="font-family: \'Oxygen Mono\'; font-size: 10px;' +
 		'box-sizing: border-box; list-style-position: inside;">' +
@@ -2695,7 +2749,12 @@ function noteMakerDialog(mode, params, app) {
 		'<br>"formatting " +' +
 		'<br>"section";' +
 		'<br>alert(s);' +
-		'</code></pre></div>';
+		'</code></pre>' +
+		'<br>' +
+		'For more information see the ' +
+		'<a href="https://github.com/showdownjs/showdown/wiki/Showdown\'s-Markdown-syntax" style="font-family:\'Oxygen Mono\'">' +
+		'showdownjs documentation page</a><br>' +
+		'</div>';
 
 	// Build a webix dialog
 	webix.ui({
@@ -2720,6 +2779,22 @@ function noteMakerDialog(mode, params, app) {
 						padding: 5,
 						borderless: false,
 						elements: [
+							{
+								cols: [
+									{
+										view: "label",
+										width: 90,
+										label: "Use Markdown"
+									},
+									{
+										// Text box
+										view: "checkbox",
+										id: "quicknote_markdown",
+										name: "markdown",
+										value: useMarkdown
+									}
+								]
+							},
 							{
 								cols: [
 									{
@@ -2808,6 +2883,11 @@ function noteMakerDialog(mode, params, app) {
 												if (values.anon) {
 													data.parameters.clientName = "Anonymous";
 												}
+												if (!values.markdown) {
+													data.parameters.useMarkdown = false;
+												}
+												addCookie('SAGE2_noteUseMarkdown', values.markdown); // Keep preferences for markdown and anon
+												addCookie('SAGE2_noteIsAnon', values.anon);
 												data.parameters.colorChoice = values.color;
 												// Send update message to server
 												wsio.emit('callFunctionOnApp', data);
@@ -2820,6 +2900,11 @@ function noteMakerDialog(mode, params, app) {
 												if (values.anon) {
 													data.customLaunchParams.clientName = "Anonymous";
 												}
+												if (!values.markdown) {
+													data.customLaunchParams.useMarkdown = false;
+												}
+												addCookie('SAGE2_noteUseMarkdown', values.markdown); // Keep preferences for markdown and anon
+												addCookie('SAGE2_noteIsAnon', values.anon);
 												data.customLaunchParams.colorChoice = values.color;
 												// Send creation message to server
 												wsio.emit('launchAppWithValues', data);

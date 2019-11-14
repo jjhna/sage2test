@@ -24,6 +24,7 @@
                 "image/bmp",
                 "image/x-ms-bmp",
                 "image/gif",
+                "image/heic",
                 "image/tiff",
                 "image/svg",
                 "image/svg+xml",

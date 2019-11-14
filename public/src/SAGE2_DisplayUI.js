@@ -554,7 +554,7 @@ SAGE2DisplayUI.prototype.addPartitionBorder = function(data) {
 SAGE2DisplayUI.prototype.updateItemOrder = function(order) {
 	var key;
 	for (key in order) {
-		if (this.applications.hasOwnProperty(key)) {
+		if (Object.prototype.hasOwnProperty.call(this.applications, key)) {
 			var appWindow = document.getElementById(key);
 			appWindow.style.zIndex = order[key];
 		}
@@ -684,7 +684,7 @@ SAGE2DisplayUI.prototype.updateHighlightedPartition = function(data) {
 	} else {
 		var highlighted = document.getElementById(data.id + "_area");
 
-		if (this.partitions.hasOwnProperty(data.id) && highlighted) {
+		if (Object.prototype.hasOwnProperty.call(this.partitions, data.id) && highlighted) {
 
 			if (data.highlight) {
 				highlighted.style.backgroundColor = "rgba(1, 1, 1, 0.5)";

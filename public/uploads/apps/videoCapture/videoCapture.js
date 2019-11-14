@@ -35,6 +35,11 @@ var videoCapture = SAGE2_App.extend({
 		// this.element.controls = true;
 		this.element.muted = false;
 
+		// Transforms to zoom/flip video
+		this.zoomLevel = 1;
+		this.flip = "";
+		this.flop = "";
+
 		if (isMaster) {
 			let _this = this;
 
@@ -115,6 +120,30 @@ var videoCapture = SAGE2_App.extend({
 			});
 			this.element.srcObject = null;
 		}
+	},
+
+	/**
+	 * Flip and flop the video
+	 *
+	 * @method     transformVideo
+	 * @param      {Object}  responseObject  The response object
+	 */
+	transformVideo: function (responseObject) {
+		if (responseObject.direction === "horizontal") {
+			// this.element.style.transform += " scaleX(-1)";
+			this.flip += "scaleX(-1)";
+		} else if (responseObject.direction === "vertical") {
+			// this.element.style.transform += " rotate(180deg) scaleX(-1)";
+			this.flop += "rotate(180deg) scaleX(-1)";
+		} else if (responseObject.zoom) {
+			this.zoomLevel = parseFloat(responseObject.zoom);
+		} else {
+			this.flip = "";
+			this.flop = "";
+			this.zoomLevel = 1;
+		}
+		this.element.style.transform = this.flip + " " + this.flop + " " +
+			"scale(" + this.zoomLevel + ")";
 	},
 
 	/**
@@ -289,6 +318,48 @@ var videoCapture = SAGE2_App.extend({
 		entry.parameters = {
 			resolution: "640"
 		};
+		entries.push(entry);
+
+		// separator
+		entries.push({description: "separator"});
+
+		// Video transformations
+		entry = {};
+		entry.description = "Video Flip - Horizontal";
+		entry.callback = "transformVideo";
+		entry.parameters = {
+			direction: "horizontal"
+		};
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "Video Flip - Vertical";
+		entry.callback = "transformVideo";
+		entry.parameters = {
+			direction: "vertical"
+		};
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "Video Zoom - 2x";
+		entry.callback = "transformVideo";
+		entry.parameters = {
+			zoom: "2.0"
+		};
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "Video Zoom - 3x";
+		entry.callback = "transformVideo";
+		entry.parameters = {
+			zoom: "3.0"
+		};
+		entries.push(entry);
+
+		entry = {};
+		entry.description = "Video Reset";
+		entry.callback = "transformVideo";
+		entry.parameters = {};
 		entries.push(entry);
 
 		// separator

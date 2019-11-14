@@ -27,7 +27,10 @@
 // Don't make functions within a loop
 /* jshint -W083 */
 
-/*global mediaFolders */
+// need to rewrite the prototype calls
+/* eslint no-prototype-builtins: 0 */
+
+/* global mediaFolders */
 
 // require variables to be declared
 'use strict';
@@ -360,19 +363,6 @@ function initializeSage2Server() {
 	});
 	qr_png.pipe(fs.createWriteStream(qr_out));
 
-	// Update the web manifest for PWA support
-	var manifestFilename = path.join(__dirname, "public", "manifest.webmanifest");
-	if (sageutils.fileExists(path.resolve(manifestFilename))) {
-		// Load the existing manifest file
-		let manifest = fs.readFileSync(manifestFilename, 'utf8');
-		// Parse it
-		let parsed   = JSON.parse(manifest);
-		// Update the name with the local information
-		parsed.name  = "SAGE2 - " + (config.name || config.host);
-		// Save it back
-		fs.writeFileSync(manifestFilename, JSON.stringify(parsed, null, 4));
-	}
-
 	// Setup tmp directory for SAGE2 server
 	process.env.TMPDIR = path.join(__dirname, "tmp");
 	sageutils.log("SAGE2", "Temp folder:", chalk.yellow.bold(process.env.TMPDIR));
@@ -414,23 +404,27 @@ function initializeSage2Server() {
 		config.passwordProtected = true;
 		// New password, regenerate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
+	} else if (sageutils.fileExists(passwordFile) && (typeof program.password  === "string")) {
+		// If a password file exists, and the password flag was used but was empty, load from the file
+		// This is to allow sabi to launch using passwords, while still removing passwd on non password flag launches.
+		var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
+		var passwordFileJson       = JSON.parse(passwordFileJsonString);
+		if (passwordFileJson.pwd !== null) {
+			global.__SESSION_ID = passwordFileJson.pwd;
+			sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
+			// the session is protected
+			config.passwordProtected = true;
+		} else {
+			sageutils.log("Secure", "Invalid hash file", passwordFile);
+		}
+		// Now, generate the connection note
+		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, program.password);
 	} else if (sageutils.fileExists(passwordFile)) {
 		// remove pasword file, if option not specified
 		fs.unlinkSync(passwordFile);
+
 		// Now, generate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
-
-		// // If a password file exists, load it
-		// var passwordFileJsonString = fs.readFileSync(passwordFile, 'utf8');
-		// var passwordFileJson       = JSON.parse(passwordFileJsonString);
-		// if (passwordFileJson.pwd !== null) {
-		// 	global.__SESSION_ID = passwordFileJson.pwd;
-		// 	sageutils.log("Secure", "A sessionID was found:", passwordFileJson.pwd);
-		// 	// the session is protected
-		// 	config.passwordProtected = true;
-		// } else {
-		// 	sageutils.log("Secure", "Invalid hash file", passwordFile);
-		// }
 	} else {
 		// Now, generate the connection note
 		sageutils.generateConnectionNote(uploadsDirectory, hostOrigin, null);
@@ -923,7 +917,7 @@ function wsAddClient(wsio, data) {
 			// Send a message back to server
 			wsio.emit('remoteConnection', {status: "refused", reason: 'wrong session hash'});
 			// If server protected and wrong hash, close the socket and byebye
-			wsio.ws.close();
+			wsio.ws.close(1001, "wrongSessionHash");
 			// For debugging connections and slow down. This one logs failed connection attemps.
 			sharedServerData.updateInformationAboutConnectionsFailedRemoteSite(wsio);
 			return;
@@ -6159,19 +6153,21 @@ function processInputCommand(line) {
 					pos = [parseFloat(command[2]), parseFloat(command[3])];
 				}
 				var mt = assets.getMimeType(getSAGE2Path(file));
+				var defaultApp = registry.getDefaultApp(file);
 				if (mt === "application/custom") {
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
 						position: pos
 					});
+				} else if (defaultApp === "movie_player") {
+					wsLoadFileFromServer({id: "127.0.0.1:42"}, {
+						application: defaultApp,
+						filename: file,
+						user: "127.0.0.1:42",
+						position: pos
+					});
 				} else {
-					// wsLoadFileFromServer({id: "127.0.0.1:42"}, {
-					// 	application: "something",
-					// 	filename: file,
-					// 	user: "127.0.0.1:42",
-					// 	position: pos
-					// });
 					wsLoadApplication({id: "127.0.0.1:42"}, {
 						application: file,
 						user: "127.0.0.1:42",
@@ -7090,7 +7086,20 @@ function pointerPressOnApplication(uniqueID, pointerX, pointerY, data, obj, loca
 			if (remoteInteraction[uniqueID].appInteractionMode()) {
 				sendPointerPressToApplication(uniqueID, obj.data, pointerX, pointerY, data);
 			} else {
-				selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+
+				if (data.sourceType !== "touch") { // Normal SAGEPointer case
+					selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+				} else {
+					if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
+						// Dual interaction mode to allow non-Webview apps like PDF viewer
+						// to have interactable widgets, but still allow window drag
+						selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+						sendPointerPressToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+					} else {
+						// Disable window drag for Webviews since we want direct interaction
+						// Do not interact with Webviews - assuming native touch will handle this
+					}
+				}
 			}
 		}
 		return;
@@ -8811,7 +8820,7 @@ function sendPointerReleaseToApplication(uniqueID, app, pointerX, pointerY, data
 	broadcast('eventInItem', event);
 }
 
-function pointerDblClick(uniqueID, pointerX, pointerY) {
+function pointerDblClick(uniqueID, pointerX, pointerY, data) {
 	if (sagePointers[uniqueID] === undefined) {
 		return;
 	}
@@ -8824,7 +8833,7 @@ function pointerDblClick(uniqueID, pointerX, pointerY) {
 	var localPt = globalToLocal(pointerX, pointerY, obj.type, obj.geometry);
 	switch (obj.layerId) {
 		case "applications": {
-			pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt);
+			pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt, data);
 			break;
 		}
 		case "portals": {
@@ -8833,13 +8842,22 @@ function pointerDblClick(uniqueID, pointerX, pointerY) {
 	}
 }
 
-function pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt) {
+function pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt, data) {
 	var btn = SAGE2Items.applications.findButtonByPoint(obj.id, localPt);
 
 	// pointer press on app window
 	if (btn === null) {
 		if (remoteInteraction[uniqueID].windowManagementMode()) {
-			toggleApplicationFullscreen(uniqueID, obj.data, true);
+			if (data === undefined || data.sourceType !== "touch") { // Normal SAGEPointer case
+				toggleApplicationFullscreen(uniqueID, obj.data, true);
+			} else {
+				if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
+					toggleApplicationFullscreen(uniqueID, obj.data, true);
+				} else {
+					// Disable window drag for Webviews since we want direct interaction
+					// Do not interact with Webviews - assuming native touch will handle this
+				}
+			}
 		} else {
 			sendPointerDblClickToApplication(uniqueID, obj.data, pointerX, pointerY);
 		}
@@ -8866,7 +8884,7 @@ function pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt
 	}
 }
 
-function pointerScrollStart(uniqueID, pointerX, pointerY) {
+function pointerScrollStart(uniqueID, pointerX, pointerY, data) {
 	if (sagePointers[uniqueID] === undefined) {
 		return;
 	}
@@ -8889,7 +8907,7 @@ function pointerScrollStart(uniqueID, pointerX, pointerY) {
 			break;
 		}
 		case "applications": {
-			pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, localPt);
+			pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, localPt, data);
 			break;
 		}
 		case "portals": {
@@ -8898,7 +8916,7 @@ function pointerScrollStart(uniqueID, pointerX, pointerY) {
 	}
 }
 
-function pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, localPt) {
+function pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, localPt, data) {
 	var btn = SAGE2Items.applications.findButtonByPoint(obj.id, localPt);
 
 	interactMgr.moveObjectToFront(obj.id, obj.layerId);
@@ -8913,7 +8931,16 @@ function pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, loca
 	// pointer scroll on app window
 	if (btn === null) {
 		if (remoteInteraction[uniqueID].windowManagementMode()) {
-			selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
+			if (data === undefined || data.sourceType !== "touch") { // Normal SAGEPointer case
+				selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
+			} else {
+				if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
+					selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
+				} else {
+					// Disable window drag for Webviews since we want direct interaction
+					// Do not interact with Webviews - assuming native touch will handle this
+				}
+			}
 		} else if (remoteInteraction[uniqueID].appInteractionMode()) {
 			remoteInteraction[uniqueID].selectWheelItem = obj.data;
 			remoteInteraction[uniqueID].selectWheelDelta = 0;
@@ -9009,7 +9036,16 @@ function pointerScroll(uniqueID, data) {
 				break;
 			}
 			case "applications": {
-				sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+				if (data === undefined || data.sourceType !== "touch") { // Normal SAGEPointer case
+					sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+				} else {
+					if (omicronManager.isExcludedTouchApplication(obj.data.application) === false) {
+						sendPointerScrollToApplication(uniqueID, obj.data, pointerX, pointerY, data);
+					} else {
+						// Disable window drag for Webviews since we want direct interaction
+						// Do not interact with Webviews - assuming native touch will handle this
+					}
+				}
 				break;
 			}
 		}
@@ -9076,6 +9112,27 @@ function pointerScrollEnd(uniqueID) {
 				};
 				addEventToUserLog(uniqueID, {type: "applicationInteraction", data: eLogData, time: Date.now()});
 			}
+		}
+	}
+}
+
+function pointerSendToBack(uniqueID, pointerX, pointerY) {
+	if (sagePointers[uniqueID] === undefined) {
+		return;
+	}
+
+	var obj = interactMgr.searchGeometry({x: pointerX, y: pointerY});
+	if (obj === null) {
+		return;
+	}
+
+	switch (obj.layerId) {
+		case "applications": {
+			wsCallFunctionOnApp(uniqueID, {func: "SAGE2SendToBack", app: obj.id});
+			break;
+		}
+		case "portals": {
+			break;
 		}
 	}
 }
@@ -9727,7 +9784,7 @@ function handleNewApplication(appInstance, videohandle) {
 		w: cornerSize, h: cornerSize
 	}, 2);
 	if (appInstance.sticky === true) {
-		appInstance.pinned = true;
+		appInstance.pinned = false;
 		SAGE2Items.applications.addButtonToItem(appInstance.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: config.ui.titleBarHeight}, 1);
 		SAGE2Items.applications.editButtonVisibilityOnItem(appInstance.id, "pinButton", false);
@@ -9785,7 +9842,7 @@ function handleNewApplicationInDataSharingPortal(appInstance, videohandle, porta
 		w: cornerSize, h: cornerSize
 	}, 2);
 	if (appInstance.sticky === true) {
-		appInstance.pinned = true;
+		appInstance.pinned = false;
 		SAGE2Items.applications.addButtonToItem(appInstance.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: titleBarHeight}, 1);
 		SAGE2Items.applications.editButtonVisibilityOnItem(appInstance.id, "pinButton", false);
@@ -9931,7 +9988,9 @@ omicronManager.setCallbacks(
 	createRadialMenu,
 	omi_pointerChangeMode,
 	undefined, // sendKinectInput
-	remoteInteraction);
+	remoteInteraction,
+	wsCallFunctionOnApp,
+	pointerSendToBack);
 omicronManager.linkDrawingManager(drawingManager);
 
 /* ****** Radial Menu section ************************************************************** */
@@ -10194,7 +10253,8 @@ function hideStickyPin(app) {
 	// if it is in a Partition -- I assume it could happen in other cases as well)
 	broadcast('hideStickyPin', {
 		id: app.id,
-		sticky: app.sticky
+		sticky: app.sticky,
+		pinned: app.pinned
 	});
 }
 
@@ -10375,6 +10435,9 @@ function wsCallFunctionOnApp(wsio, data) {
 			let app = {application: SAGE2Items.applications.list[data.app]};
 			let remote = remoteSites[data.parameters.remoteSiteIndex];
 			shareApplicationWithRemoteSite(uniqueID, app, remote);
+			return;
+		} else if (data.func === "SAGE2PinStickyItem") {
+			toggleStickyPin(data.app);
 			return;
 		}
 

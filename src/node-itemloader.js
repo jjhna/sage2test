@@ -313,7 +313,8 @@ AppLoader.prototype.loadImageFromServer = function(width, height, mime_type, aUr
 AppLoader.prototype.loadImageFromFile = function(file, mime_type, aUrl, external_url, name, callback) {
 	var _this = this;
 
-	if (mime_type === "image/jpeg" || mime_type === "image/png" || mime_type === "image/webp") {
+	// Test if the image type is natively supported
+	if (registry.isImageWebNative(mime_type)) {
 		// Query the exif data
 		var dims = assets.getDimensions(file);
 		var exif = assets.getExifData(file);
@@ -342,10 +343,11 @@ AppLoader.prototype.loadImageFromFile = function(file, mime_type, aUrl, external
 			sageutils.log("Loader", "File not recognized:", file, mime_type, aUrl);
 		}
 	} else {
+		// Otherwise convert the image
 		var localPath = path.join(this.publicDir, "tmp", path.basename(name)) + ".png";
 		var localUrl  = getSAGE2URL(localPath);
 
-		imageMagick(file + "[0]").noProfile().bitdepth(8).flatten().setFormat("PNG").write(localPath, function(err, buffer) {
+		imageMagick(file + "[0]").noProfile().bitdepth(8).setFormat("PNG").write(localPath, function(err, buffer) {
 			if (err) {
 				sageutils.log("Loader", "Error processing image file", file, localPath);
 				return;
@@ -1130,12 +1132,12 @@ AppLoader.prototype.manageAndLoadUploadedFile = function(file, callback) {
 
 		// Check if it is a web-capable image, otherwise convert it to PNG
 		if (mime_type.startsWith("image/")) {
-			if (mime_type != "image/jpeg" && mime_type != "image/png" && mime_type != "image/webp") {
+			if (!registry.isImageWebNative(mime_type)) {
 				sageutils.log("Loader", "converting image", cleanFilename);
 				// setting up a tmp filename
 				var tmpPath = path.join(this.publicDir, "tmp", path.basename(cleanFilename)) + ".png";
 				// converting anything to PNG
-				imageMagick(file.path).noProfile().bitdepth(8).flatten().setFormat("PNG").write(tmpPath, function(err, buffer) {
+				imageMagick(file.path + '[0]').noProfile().bitdepth(8).setFormat("PNG").write(tmpPath, function(err, buffer) {
 					if (err) {
 						sageutils.log("Loader", "error processing image file", tmpPath);
 						return;
