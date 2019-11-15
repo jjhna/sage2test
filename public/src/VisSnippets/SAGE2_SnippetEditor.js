@@ -46,7 +46,7 @@ let SAGE2_SnippetEditor = (function () {
 
 	return function (targetID, config) {
 		let self = {
-			config: config.experimental && config.experimental.codesnippets ? config.experimental.codesnippets : {},
+			config: config.experimental && config.experimental.vissnippets ? config.experimental.vissnippets : {},
 			div: null,
 
 			editorDiv: null,
@@ -83,7 +83,16 @@ let SAGE2_SnippetEditor = (function () {
 			apiHelper: null
 		};
 
-		init();
+
+
+		// don't initialize
+		if (self.config.enabled) {
+			init();
+		} else {
+			document.getElementById("codeContainer").style.display = "none";
+
+		}
+
 
 		/**
 		 * Sets up editor, loadscript, newscript controls
@@ -188,15 +197,15 @@ let SAGE2_SnippetEditor = (function () {
 
 		// handles editor visibility
 		function openEditor() {
-			self.div.classList.add("open");
+			self.config.enabled && self.div.classList.add("open");
 		}
 
 		function hideEditor() {
-			self.div.classList.remove("open");
+			self.config.enabled && self.div.classList.remove("open");
 		}
 
 		function editorIsOpen() {
-			return self.div.classList.contains("open");
+			return self.config.enabled && self.div.classList.contains("open");
 		}
 
 
@@ -587,11 +596,33 @@ let SAGE2_SnippetEditor = (function () {
 		 */
 		function receiveProjectExport(data) {
 			// hand off project information to exporter
-			SAGE2_SnippetExporter.generateScriptFromWall(
-				data.functions,
-				data.links,
-				self.config.external_dependencies || []
-			);
+			// SAGE2_SnippetExporter.generateScriptFromWall(
+			// 	data.functions,
+			// 	data.links,
+			// 	self.config.external_dependencies || []
+			// );
+
+			let exportData = {
+				meta: {
+					time: (new Date()).toISOString(),
+					from: window.location.origin,
+					external_dependencies: self.config.external_dependencies
+					// instructions: "To open this file, go to ..."
+				},
+				snippets: data.functions,
+				links: data.links
+			};
+
+			let DL_link = document.createElement("a");
+			document.body.appendChild(DL_link);
+			let fileName = `VisSnippets-Export_${exportData.meta.time}.json`;
+
+			DL_link.download = fileName;
+			DL_link.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, undefined, 2));
+
+
+			DL_link.click();
+			document.body.removeChild(DL_link);
 		}
 
 

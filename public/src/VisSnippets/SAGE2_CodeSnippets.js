@@ -51,6 +51,11 @@ let SAGE2_CodeSnippets = (function() {
 		console.log("CodeSnippets> Initialized", config);
 		self.config = config;
 
+		// don't initialize
+		if (!self.config.enabled) {
+			return;
+		}
+
 		// // preload settings icon SVG to prevent flicker
 		let xhr = new XMLHttpRequest();
 		xhr.open("GET", "../images/radialMenu/three115.svg", false);

@@ -390,7 +390,7 @@ function setupListeners() {
 		}
 		makeSvgBackgroundForWidgetConnectors(ui.main.style.width, ui.main.style.height);
 
-		SAGE2_CodeSnippets.init(json_cfg.experimental ? json_cfg.experimental.codesnippets : {});
+		SAGE2_CodeSnippets.init(json_cfg.experimental ? json_cfg.experimental.vissnippets : {});
 	});
 
 	wsio.on('hideui', function(param) {

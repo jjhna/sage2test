@@ -24,8 +24,10 @@
 
 #codeSnippetEditor.open {
     pointer-events: initial;
-    opacity: 1;
+    /* doing this to eliminate a weird flash on page load */
+    opacity: 1 !important;
 }
+
 #codeSnippetEditor.open .ace_gutter-layer {
     pointer-events: auto;
 }
