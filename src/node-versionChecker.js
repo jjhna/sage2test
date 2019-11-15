@@ -98,26 +98,37 @@ VersionChecker.prototype.determineIfVersionMismatch = function(remoteData, site,
 	// Versioning between remote sites.
 	let mismatch = this.determineIfVersionMismatchBetweenRemoteSiteAndThiServer(remoteData);
 
+	if (mismatch || !found) {
+		// If a mismatch, then OK to state version mismatch
+		if (mismatch) {
+			// Start message here
+			this.addToMismatchLog("# --- " + site.name + " - Version Mismatch Detected ---#");
+			this.addToMismatchLog("");
+		} else {
+			// Otherwise it was just awareness of site
+			// Start message here
+			this.addToMismatchLog("# --- " + site.name + " - Not Aware Of This Site ---#");
+			this.addToMismatchLog("");
+		}
+	}
 
 	if (!found) {
 		this.setMismatchToTrue();
-		this.addToMismatchLog(remotesocketAddress + " isn't aware of this site");
+		this.addToMismatchLog(remotesocketAddress + " isn't aware of this site and cannot share back");
 	}
 
 	if (mismatch) {
 		this.setMismatchToTrue();
 		let mismatchMessage = [
 			"-----VERSION MISMATCH DETECTED-----",
-			"Warning mismatch with remote site " + site.name
+			"Warning mismatch with" + site.name
 		];
-		this.addToMismatchLog(mismatchMessage[0]);
-		this.addToMismatchLog(mismatchMessage[1]);
 		if (mismatch.beforeCheckVersion) {
-			mismatchMessage.push("Remote site " + site.name + " has an older version and is unable to report its version");
-			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
+			mismatchMessage.push(site.name + " has an older version and is unable to report its version");
+			this.addToMismatchLog("* " + mismatchMessage[mismatchMessage.length - 1]);
 		}
 		if (mismatch.base) {
-			mismatchMessage.push("Remote site " + site.name + " has "
+			mismatchMessage.push(site.name + " has "
 			+ mismatch.baseOfRemote + " version and may not work well with this site");
 			mismatchMessage.push("This site (" + this.myVersion.base
 			+ ") vs (" + remoteData.version.base + ") remote site");
@@ -125,15 +136,23 @@ VersionChecker.prototype.determineIfVersionMismatch = function(remoteData, site,
 			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
 		}
 		if (mismatch.branch) {
-			mismatchMessage.push("Remote site " + site.name + " has a different branch ("
-			+ mismatch.branchOfRemote + ") and may not work well with this site");
-			mismatchMessage.push("This site (" + this.myVersion.branch
-			+ ") vs (" + remoteData.version.branch + ") remote site");
-			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 2]);
-			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
+			if (mismatch.branchOfRemote.trim().length === 0) {
+				mismatchMessage.push(site.name + " did not state their branch");
+				mismatchMessage.push("This site (" + this.myVersion.branch
+				+ ") vs ( ??? ) remote site");
+				this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 2]);
+				this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
+			} else {
+				mismatchMessage.push(site.name + " has a different branch ("
+				+ mismatch.branchOfRemote + ") and may not work well with this site");
+				mismatchMessage.push("This site (" + this.myVersion.branch
+				+ ") vs (" + remoteData.version.branch + ") remote site");
+				this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 2]);
+				this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
+			}
 		}
 		if (mismatch.date) {
-			mismatchMessage.push("Remote site " + site.name + " has a "
+			mismatchMessage.push(site.name + " has a "
 			+ mismatch.dateOfRemote + " release and may not work well with this site");
 			mismatchMessage.push("This site (" + this.myVersion.date
 			+ ") vs (" + remoteData.version.date + ") remote site");
@@ -171,8 +190,6 @@ VersionChecker.prototype.doesRemoteSiteKnowAboutThisServer = function(remoteData
 			sageutils.log("Version manager",
 				chalk.bgRed("The site " + remoteData.locationInformation.host
 					+ " doesn't know about this host. They may not be able to share anything back."));
-			this.addToMismatchLog("The site " + remoteData.locationInformation.host
-			+ " doesn't know about this system.");
 		}
 	}
 	return found;
