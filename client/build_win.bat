@@ -1,6 +1,6 @@
 @echo off
 
-copy /Y ..\electron.js  electron.js
+rem copy /Y ..\electron.js  electron.js
 md /s public\uploads\apps\Webview
 copy /Y ..\public\uploads\apps\Webview\SAGE2_script_supplement.js public\uploads\apps\Webview\SAGE2_script_supplement.js
 
