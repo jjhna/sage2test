@@ -772,10 +772,6 @@ var voiceHandler = new VoiceActionManager(variablesUsedInVoiceHandler);
 // Snippets backend manager
 var snippetsManager = new SnippetsManager({ broadcast, clients }, config);  // eslint-disable-line no-unused-vars
 
-// setup logger
-console.log(mediaFolders.user.path);
-
-
 //
 // Catch the uncaught errors that weren't wrapped in a domain or try catch statement
 //
