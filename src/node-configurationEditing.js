@@ -88,6 +88,24 @@ function recheckConfiguration(pathToConfigFile, currentConfig, clients,
 }
 
 /**
+ * For rechecking the config file after updated
+ *
+ * @param pathToConfigFile {String} Path to the config file
+ * @param config {Object} Current configuration that was read (file might have changes)
+ * @param clients {Array} all clients array
+ */
+function checkForFieldsThatDontNeedRestart(diffResults, submittedConfig, currentConfig, initializeRemoteSites) {
+	let diffString = JSON.stringify(diffResults);
+	if (diffString.includes("remote_sites")) {
+		currentConfig.remote_sites = submittedConfig.remote_sites;
+		// Must now recheck
+		initializeRemoteSites();
+	}
+}
+
+
+
+/**
  * Pass back appropriate configuration file data
  *
  * @param currentConfig {Object} Current file
@@ -112,9 +130,9 @@ function handlerForRequestCurrentConfigurationFile(currentConfig, wsio) {
  * @param currentConfig {Object} Current file
  * @param wsio {Object} who asked
  */
-function handlerForAssistedConfigSend(wsio, submittedConfig, currentConfig) {
+function handlerForAssistedConfigSend(wsio, submittedConfig, currentConfig, initializeRemoteSites) {
 	// For minimal changes the tips property needs to be filled out.
-	console.log("erase me, server received config from assistedConfig. btw submitted config:");
+	console.log("erase me, server received config from assistedConfig. btw submitted config:", submittedConfig);
 	let diff = determineDifferentFields(submittedConfig, currentConfig);
 
 	//TODO probably need to move this up, in particular before restarting
@@ -123,13 +141,16 @@ function handlerForAssistedConfigSend(wsio, submittedConfig, currentConfig) {
 	if (submittedConfig.makeCerts) {
 		updateCertificates(submittedConfig, () => {
 			restartIfChangedFieldsRequire(diff);
+			checkForFieldsThatDontNeedRestart(diff, submittedConfig, currentConfig, initializeRemoteSites);
 		});
 	} else {
 		restartIfChangedFieldsRequire(diff);
+		checkForFieldsThatDontNeedRestart(diff, submittedConfig, currentConfig, initializeRemoteSites);
 	}
 	console.log("erase me, adding starter entry {} to differences for formatting");
 	diff.splice(0, 0, {});
 	console.log("erase me, ", diff);
+
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -338,16 +359,28 @@ function updateCertificates(submittedConfig, callbackForRestart) {
  * @param wsio {Object} who asked
  */
 function restartIfChangedFieldsRequire(differences) {
-
+	// For "only these entries cause restart"
 	let entriesToTriggerRestart = [
+		"host",
 		"port",
 		"index_port",
-		"host",
+		"resolution",
+		"layout",
+		"experimental",
 		"alternate_hosts"
 	];
-	let diffString = JSON.stringify(differences);
-	console.log("erase me, string check on diff" + diffString);
+	// // For "anything except these entries cause restart"
+	// let entriesThatDontTriggerRestart = [
+	// 	"remote_sites",
+	// 	"makeCerts",
+	// 	"uniqueToSubmitted",
+	// 	"uniqueToCurrent",
+	// 	"rproxy_port",
+	// ];
 	let shouldRestart = false;
+	console.log("erase me, string check on diff:" + JSON.stringify(differences));
+	// For "only these entries cause restart"
+	let diffString = JSON.stringify(differences);
 	for (let i = 0; i < differences.length; i++) {
 		// Need the sc_ and cc_ prefix for submitted vs current context
 		if ((diffString.includes('"sc_' + entriesToTriggerRestart[i] + '":'))
@@ -358,7 +391,23 @@ function restartIfChangedFieldsRequire(differences) {
 			break;
 		}
 	}
+	// // For "anything except these entries cause restart"
+	// let diffKeys = [];
+	// for (let i = 0; i < differences.length; i++) {
+	// 	diffKeys.push(...Object.keys(differences[i]));
+	// }
+	// console.log("erase me, diffkeys:", diffKeys);
+	// console.log("erase me, also as a string diffKeys:", diffKeys);
+	// for (let i = 0; i < diffKeys.length; i++) {
+
+	// 	if (!entriesThatDontTriggerRestart.includes(diffKeys[i].substring(3))) {
+	// 		sageutils.log("SAGE2", chalk.red.bold("Configuration change in field [" + diffKeys[i] + "] detected"));
+	// 		shouldRestart = true;
+	// 		break;
+	// 	}
+	// }
 	if (shouldRestart) {
+		console.log("erase me, need to restart, but need better way");
 		serverRestarter();
 	}
 }
@@ -369,11 +418,19 @@ function restartIfChangedFieldsRequire(differences) {
  */
 function serverRestarter() {
 	sageutils.log("SAGE2", chalk.red.bold("Restarting"));
-	spawn(process.argv0, process.argv.slice(1), {
-		detached: true,
-		stdio: "inherit"
-		// stdio: ["ignore", out, err]
-	}).unref();
+
+	if (process.platform === "win32") {
+		console.log("windows restarter bat");
+	}
+	if (process.platform === "darwin") { // mac
+		console.log("mac restarter");
+		// spawn(process.argv0, process.argv.slice(1), {
+		// 	detached: true,
+		// 	stdio: "inherit"
+		// 	// stdio: ["ignore", out, err]
+		// }).unref();
+	}
+	// if (process.platform === "linux") { }
 	process.exit();
 }
 

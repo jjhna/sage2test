@@ -513,7 +513,6 @@ function initializeSage2Server() {
 
 		if (users !== null) {
 			users.session.version = SAGE2_version;
-			console.log("erase me, after getFullVersion", SAGE2_version);
 		}
 
 		var variablesUsedInVersionManger = {
@@ -6027,8 +6026,6 @@ function manageRemoteConnection(remote, site, index) {
 			sageutils.log("Remote", "Connected to", chalk.cyan(site.name));
 			remoteSites[index].connected = "on";
 
-
-			console.log("erase me, the data from remotesite:", data);
 			versionHandler.determineIfVersionMismatch(data, site, remotesocket.remoteAddress.address);
 		}
 		var update_site = {name: remoteSites[index].name, connected: remoteSites[index].connected};
@@ -11910,7 +11907,7 @@ function wsRequestCurrentConfigurationFile(wsio, data) {
  * @param {Object} data - should have a url
  */
 function wsAssistedConfigSend(wsio, data) {
-	ConfigEditing.handlerForAssistedConfigSend(wsio, data, config);
+	ConfigEditing.handlerForAssistedConfigSend(wsio, data, config, initializeRemoteSites);
 }
 
 
