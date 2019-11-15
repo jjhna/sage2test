@@ -4,9 +4,6 @@
 rm -fr node_modules
 npm install
 
-# update the electron.js file
-npm run update
-
 # add the webview runtime
 mkdir -p public/uploads/apps/Webview
 cp ../public/uploads/apps/Webview/SAGE2_script_supplement.js public/uploads/apps/Webview/SAGE2_script_supplement.js
