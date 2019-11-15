@@ -13,7 +13,7 @@ To pass extra parameters (from the command-line):
 
 Fullscreen.sh is similar but goes fullscreen (same parameters can be added)
 
-Default is opening the client 0 on default port (http://localhost:9292).
+If no server is specified, a popup window opens.
 
 
 # Electron SAGE2 arguments
