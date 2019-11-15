@@ -1271,6 +1271,9 @@ function setupListeners(wsio) {
 
 	// Jupyter messages
 	wsio.on('updateJupyterSharing',                 wsUpdateJupyterSharing);
+	wsio.on('sendNotebookDynamic',									wsSendNotebookDynamic);
+	wsio.on('updateDynamicNotebookCell',						wsUpdateDynamicNotebookCell);
+	wsio.on('removeDynamicNotebookCells', 					wsRemoveDynamicNotebookCells);
 
 	// message passing between clients
 	wsio.on('requestAppContextMenu',				wsRequestAppContextMenu);
@@ -9657,7 +9660,9 @@ function deleteApplication(appId, portalId, wsio) {
 		if (sender.wsio !== null) {
 			sender.wsio.emit('stopMediaCapture', {streamId: sender.streamId});
 		}
-	} else if (application === "JupyterLab") {
+	} else if (application === "JupyterLab"
+		|| application === "JupyterCodeCell"
+		|| application === "JupyterMarkdownCell") {
 		broadcast('jupyterShareTerminated', {id: appId});
 	}
 
@@ -11143,13 +11148,13 @@ function wsPerformanceData(wsio, data) {
 }
 
 
-// /**
-//  * Update data from a JupyterLab connection, starting a new application if necessary.
-//  *
-//  * @method     wsUpdateJupyterSharing
-//  * @param      {Object}  wsio    The websocket
-//  * @param      {Object}  data    The data
-//  */
+/**
+ * Update data from a JupyterLab connection, starting a new application if necessary.
+ *
+ * @method     wsUpdateJupyterSharing
+ * @param      {Object}  wsio    The websocket
+ * @param      {Object}  data    The data
+ */
 function wsUpdateJupyterSharing(wsio, data) {
 	sageutils.log('Jupyter', "received update from:", data.id);
 
@@ -11157,7 +11162,15 @@ function wsUpdateJupyterSharing(wsio, data) {
 
 	// create an app if one does not already exist for this connection+cell
 	if (!existingApp) {
-		appLoader.createJupyterApp(data.src, data.mime, "base64", data.title, "#F27729", data.width, data.height,
+		appLoader.createJupyterApp(
+			data.src,
+			data.mime,
+			"base64",
+			data.title,
+			"#F27729",
+			data.width,
+			data.height,
+			data.code,
 			function (appInstance) {
 				appInstance.id = data.id;
 
@@ -11185,6 +11198,149 @@ function sendApplicationDataUpdate(data) {
 	broadcast('eventInItem', event);
 }
 
+/*
+	data: {
+    notebook: any,
+    show_markdown: boolean,
+    kernel_id: string
+  }
+*/
+function wsSendNotebookDynamic(wsio, data) {
+	// console.log("wsSendNotebookDynamic", data);
+
+	spreadNotebookOnWall({
+		notebook: data.notebook,
+		id: data.kernel_id,
+		show_markdown: data.show_markdown
+	});
+}
+
+
+/*
+	data: {
+    cell: any,
+    ind: number,
+    kernel_id: string
+  }
+*/
+function wsUpdateDynamicNotebookCell(wsio, data) {
+	let appID = `${data.kernel_id}~${data.ind}`;
+	// console.log("wsUpdateDynamicNotebookCell", appID);
+	sageutils.log('Jupyter', "Update Cell " + appID);
+
+	let existingApp = Object.values(SAGE2Items.applications.list)
+		.find(app => app.id === appID);
+
+	if (existingApp) {
+		sendApplicationDataUpdate({
+			cell: data.cell,
+			kernel_id: data.kernel_id,
+			ind: data.ind,
+			id: appID
+		});
+	} else {
+		// this app doesn't exist, notify back through WISO ?
+	}
+}
+
+/*
+	data: {
+    cell: Cell[],
+	}
+
+	Cell : {
+		ind: string,
+		info: any,
+		key: string
+	} // key === appId
+*/
+function wsRemoveDynamicNotebookCells(wsio, data) {
+	for (let cell of data.cells) {
+		deleteApplication(cell.key);
+	}
+}
+
+function spreadNotebookOnWall({
+	notebook,
+	id,
+	show_markdown
+}) {
+	// tile on entire wall
+	let wholeWall = true;
+	let downsizeRatio = 0.05; // 5% padding on all sides
+
+	let paddingUnit = config.ui.titleBarHeight;
+
+	let tiledArea = {
+		width: wholeWall ?  (1 - downsizeRatio * 2) * config.totalWidth : 1800,
+		height: wholeWall ? (1 - downsizeRatio * 2) * config.totalHeight - config.ui.titleBarHeight : 800,
+		left: wholeWall ? downsizeRatio * config.totalWidth : 400, // 0
+		top: wholeWall ? config.ui.titleBarHeight + (downsizeRatio * config.totalHeight) : 100 // config.ui.titleBarHeight
+	};
+
+	let cells = Object.entries(notebook.cells)
+		.filter(([i, c]) => show_markdown || c.cell_type === "code");
+
+	let numCells = cells.length;
+	let cellAspectRatio = 1.5; // constant value
+	let wallAspectRatio = (tiledArea.width / tiledArea.height);
+
+	// calculate the number of columns and rows which can fit
+	let numColsPreliminary = Math.ceil(
+		Math.sqrt(cells.length * (wallAspectRatio / cellAspectRatio))
+	);
+
+	let numRows = Math.ceil(numCells / numColsPreliminary);
+	let numCols = Math.ceil(cells.length / numRows);
+
+	// calculate the grid size for this configuration
+	let gridWidth = tiledArea.width / numCols;
+	let gridHeight = tiledArea.height / numRows;
+
+	// get the actual height and width (maintaining aspect ratio of cells as constant)
+	let appHeight = Math.min(
+		gridHeight - paddingUnit,
+		(gridWidth / cellAspectRatio) - 2 * paddingUnit
+	);
+
+	let height = appHeight - config.ui.titleBarHeight;
+	let width = appHeight * cellAspectRatio;
+
+	// calculate total size used by cells
+	let totalCellWidth = (width + 2 * paddingUnit) * numCols;
+	let totalCellHeight = (appHeight + paddingUnit) * numRows;
+
+	// calculate a global offset for all cells to center them in the display
+	let globalLeftOffset = (tiledArea.width - totalCellWidth) / 2 + tiledArea.left; // this seems to maybe not work correctly for left offset (?)
+	let globalTopOffset = (tiledArea.height - totalCellHeight) / 2 + tiledArea.top;
+
+	for (let i in cells) {
+		let [ind, cell] = cells[i];
+
+		appLoader.createJupyterCell(
+			cell,
+			notebook.metadata,
+			ind,
+			{
+				left:
+					Math.floor(i / numRows) * (width + 2 * paddingUnit) +
+					paddingUnit +
+					globalLeftOffset,
+				top:
+					(i % numRows) * (appHeight + paddingUnit) +
+					paddingUnit / 2 +
+					globalTopOffset,
+				width,
+				height
+			},
+			function (appInstance) {
+				appInstance.id = `${id}~${ind}`;
+
+				handleNewApplication(appInstance, null);
+			}
+		);
+	}
+}
 
 /**
  * Method handling a file save request from a SAGE2_App

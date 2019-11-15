@@ -4,6 +4,7 @@
 //
 // Copyright (c) 2015
 //
+/* global Prism */
 
 "use strict";
 
@@ -22,14 +23,40 @@ var JupyterLab = SAGE2_App.extend({
 		this.img.style.height = data.height + "px";
 		this.img.style.backgroundColor = "white";
 
+		// add image holder
+		this.codeView = document.createElement("div");
+		this.codeView.style.position = "absolute";
+		this.codeView.style.left = 0;
+		this.codeView.style.top = 0;
+		this.codeView.style.right = 0;
+		this.codeView.style.bottom = 0;
+
+		// this.codeView.style.alignItems = "center";
+		// this.codeView.style.display = "flex";
+		// this.codeView.style.justifyContent = "center";
+
+		this.codeView.style.whiteSpace = "pre-line";
+		this.codeView.style.backgroundColor = "#fff8";
+		this.codeView.style.padding = "20px";
+		this.codeView.style.fontFamily = "'Oxygen Mono'";
+		this.codeView.style.fontWeight = "bold";
+		this.codeView.style.opacity = 0;
+		this.codeView.style.transition = "opacity 250ms";
+
+		this.codeView.innerHTML = Prism.highlight(this.state.code, Prism.languages.python, 'python');
+
+		this.element.appendChild(this.img);
+		this.element.appendChild(this.codeView);
+
+		this.codeVisible = false;
+
 		this.updateContent({
 			src: data.state.src,
+			code: data.state.code,
 			height: data.height,
 			width: data.width,
 			title: data.title
 		});
-
-		this.element.appendChild(this.img);
 
 		// move and resize callbacks
 		this.resizeEvents = "continuous"; // onfinish
@@ -51,6 +78,37 @@ var JupyterLab = SAGE2_App.extend({
 		console.log('JupyterLab> Draw with state value', this.state.value);
 	},
 
+	toggleShowCode: function() {
+		this.codeVisible = !this.codeVisible;
+
+		if (this.codeVisible && this.state.code) {
+			this.codeView.style.opacity = 1;
+		} else {
+			this.codeView.style.opacity = 0;
+		}
+	},
+
+	getContextEntries: function () {
+		var entries = [];
+
+		// entries.push({
+		// 	description: "Copy URL",
+		// 	callback: "SAGE2_copyURL",
+		// 	parameters: {
+		// 		url: cleanURL(this.state.src || this.state.img_url)
+		// 	}
+		// });
+
+		// Show overlay with EXIF data
+		entries.push({
+			description: "Show Code",
+			callback: "toggleShowCode",
+			parameters: {}
+		});
+
+		return entries;
+	},
+
 	updateContent: function (data, date) {
 		// update title with nb/cell name
 		this.updateTitle("JupyterLab Cell - " + data.title);
@@ -69,6 +127,8 @@ var JupyterLab = SAGE2_App.extend({
 		this.img.src = data.src.trim(); // update image contents
 		this.img.style.width = this.sage2_width;
 		this.img.style.height = this.sage2_height;
+
+		this.codeView.innerHTML = Prism.highlight(this.state.code, Prism.languages.python, 'python');
 
 		// save aspect ratio
 		this.imgAspect = newAspect;
@@ -123,8 +183,11 @@ var JupyterLab = SAGE2_App.extend({
 		} else if (eventType === "dataUpdate") {
 			console.log("JupyterLab Data Update", data);
 
+			this.state.src = data.state.src;
+			this.state.code = data.state.code;
+
 			this.updateContent(data, date);
-			// this.refresh(date);
+			this.refresh(date);
 		}
 	}
 });

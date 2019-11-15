@@ -1777,6 +1777,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 		var response = "application/custom";
 		// Lookup the asset
 		var elt = this.allFiles[id];
+
 		// if found
 		if (elt) {
 			// Order important here (not the best situation)

@@ -17,6 +17,7 @@
 </script>
 
 <!-- CSS style -->
+<link rel="stylesheet" type="text/css" href="lib/prism.css"/>
 <link rel="stylesheet" type="text/css" href="css/fonts.css"/>
 <link rel="stylesheet" type="text/css" href="css/style.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="css/snippetinput.css" media="screen" />
@@ -32,6 +33,19 @@
 <script src="lib/snap.svg-min.js"></script>
 <script src="lib/d3.min.js"></script>
 <script src="lib/prism.js"></script>
+
+<script src="lib/prism.js" data-manual></script>
+<script src="lib/markdown-it.min.js"></script>
+<script src="lib/markdown-it-math.min.js"></script>
+
+<script>
+	window.md = markdownit({
+		html: true,
+		xhtmlOut: true,
+		breaks: true,
+		typographer: true
+	}).use(markdownitMath)
+</script>
 
 <!-- Put the module object back -->
 <script>if (window.module) module = window.module;</script>
