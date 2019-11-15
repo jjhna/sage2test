@@ -9,9 +9,6 @@
 
 /* global  require */
 
-// Global counter of partition
-var partitionNumber = 0;
-
 var Webview = SAGE2_App.extend({
 	init: function(data) {
 		if (this.isElectron()) {
@@ -198,8 +195,7 @@ var Webview = SAGE2_App.extend({
 			this.element.partition = 'persist:google';
 		} else {
 			// Isolation for other content
-			this.element.partition = "part_" + partitionNumber;
-			partitionNumber++;
+			this.element.partition = "partition_" + this.id;
 		}
 
 		// Auto-refresh time
