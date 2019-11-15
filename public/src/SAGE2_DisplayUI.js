@@ -175,6 +175,8 @@ SAGE2DisplayUI.prototype.resize = function(ratio) {
 	var sage2UI          = document.getElementById('sage2UICanvas');
 	var applicationsDiv  = document.getElementById('applicationsDiv');
 	var partitionsDiv 	 = document.getElementById('partitionsDiv');
+	var snippetsOverlay  = document.getElementById("snippetsOverlayWrapper");
+	var snippetsSVG      = document.getElementById('snippetsOverlay');
 
 	// Extra scaling factor
 	ratio = ratio || 1.0;
@@ -231,6 +233,10 @@ SAGE2DisplayUI.prototype.resize = function(ratio) {
 	applicationsDiv.style.height = drawHeight + "px";
 	partitionsDiv.style.width    = drawWidth  + "px";
 	partitionsDiv.style.height   = drawHeight + "px";
+	snippetsOverlay.style.width  = drawWidth  + "px";
+	snippetsOverlay.style.height = drawHeight + "px";
+	snippetsSVG.setAttribute("width", drawWidth);
+	snippetsSVG.setAttribute("height", drawHeight);
 	displayUI.style.height = (drawHeight + 5) + "px";
 
 	// adjust the top menubar width
@@ -860,6 +866,8 @@ SAGE2DisplayUI.prototype.highlightApplication = function(x, y) {
 		var title = document.getElementById(topApp.id + "_title");
 		title.className = "appWindowTitleHover";
 	}
+
+	return topApp;
 };
 
 /**

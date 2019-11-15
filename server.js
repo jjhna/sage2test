@@ -82,6 +82,7 @@ var SharedDataManager	= require('./src/node-sharedserverdata'); // manager for s
 var userlist            = require('./src/node-userlist');         // list of users
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
 var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
+var SnippetsManager			= require('./src/node-snippets');
 var VoiceActionManager	= require('./src/node-voiceToAction');    // manager for shared data
 
 //
@@ -201,6 +202,7 @@ partitions = new PartitionList(config);
 // FileBufferManager, I guess
 fileBufferManager = new FileBufferManager();
 
+
 // Create structure to handle automated placement of apps
 var appLaunchPositioning = {
 	xStart: 10,
@@ -228,6 +230,8 @@ if (config.folders) {
 var publicDirectory  = "public";
 var uploadsDirectory = path.join(publicDirectory, "uploads");
 var sessionDirectory = path.join(publicDirectory, "sessions");
+let snippetDirectory = path.join(publicDirectory, "snippets");
+
 var whiteboardDirectory = sessionDirectory;
 // Validate all the media folders
 for (var folder in mediaFolders) {
@@ -244,9 +248,13 @@ for (var folder in mediaFolders) {
 		uploadsDirectory = f.path;
 		mainFolder = f;
 		sessionDirectory = path.join(uploadsDirectory, "sessions");
+		snippetDirectory = path.join(uploadsDirectory, "snippets");
 		whiteboardDirectory = path.join(uploadsDirectory, "whiteboard");
 		if (!sageutils.folderExists(sessionDirectory)) {
 			sageutils.mkdirParent(sessionDirectory);
+		}
+		if (!sageutils.folderExists(snippetDirectory)) {
+			sageutils.mkdirParent(snippetDirectory);
 		}
 		sageutils.log("Folders", 'upload to', chalk.yellow.bold(f.path));
 	}
@@ -372,6 +380,11 @@ function initializeSage2Server() {
 	// Make sure sessions directory exists
 	if (!sageutils.folderExists(sessionDirectory)) {
 		fs.mkdirSync(sessionDirectory);
+	}
+
+	// Make sure snippets directory exists
+	if (!sageutils.folderExists(snippetDirectory)) {
+		fs.mkdirSync(snippetDirectory);
 	}
 
 	// Add a flag into the configuration to denote password status (used on display side)
@@ -755,6 +768,14 @@ var variablesUsedInVoiceHandler = {
 };
 var voiceHandler = new VoiceActionManager(variablesUsedInVoiceHandler);
 
+
+// Snippets backend manager
+var snippetsManager = new SnippetsManager({ broadcast, clients }, config);  // eslint-disable-line no-unused-vars
+
+// setup logger
+console.log(mediaFolders.user.path);
+
+
 //
 // Catch the uncaught errors that weren't wrapped in a domain or try catch statement
 //
@@ -983,6 +1004,15 @@ function wsAddClient(wsio, data) {
 		reportIfCanWallScreenshot();
 	}
 
+	// Handle snippet initialization for a connecting client
+	if (wsio.clientType === "display") {
+		// handle initialization for display
+		// snippetsManager.displayClientConnect(wsio);
+	} else if (wsio.clientType === "sageUI") {
+		// handle sageUI initialization
+		snippetsManager.sageUIClientConnect(wsio);
+	}
+
 	// If it is a stand alone app page, create the app window
 	if (wsio.clientType === "standAloneApp") {
 		initializeExistingApps(wsio, data.app);
@@ -1032,6 +1062,7 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 	if (wsio.clientType === "display") {
 		initializeExistingSagePointers(wsio);
 		initializeExistingPartitions(wsio);
+		snippetsManager.displayClientConnect(wsio); // send snippets states before opening apps
 		initializeExistingApps(wsio);
 		initializeRemoteServerInfo(wsio);
 		initializeExistingWallUI(wsio);
@@ -1047,6 +1078,8 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 		}
 		initializeExistingAppsPositionSizeTypeOnly(wsio);
 		initializeExistingPartitionsUI(wsio);
+		// Have the Snippets Manager send an update with the associations/state
+		snippetsManager.initializeSnippetsClient(wsio);
 	} else if (wsio.clientType === "standAloneApp") {
 		initializeExistingSagePointers(wsio);
 		createSagePointer(wsio.id);
@@ -1285,11 +1318,29 @@ function setupListeners(wsio) {
 	wsio.on('requestClientUpdate',			        		wsRequestClientUpdate);
 
 	// message from stand alone app
-	wsio.on('setSagePointerToAppInteraction', 	  	wsSetSagePointerToAppInteraction);
+	wsio.on('setSagePointerToAppInteraction', 		wsSetSagePointerToAppInteraction);
 
 	// Message from a ScreenShare needing to connect with original ScreenShare client
 	wsio.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
 	wsio.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
+
+	// == SAGE2_CodeSnippets messages ==
+	// - Display to Server
+	wsio.on('snippetSaveIntoServer', wsSnippetSaveIntoServer);
+	wsio.on('updateSnippetAssociationState', wsSaveSnippetState);
+	// - WebUI to Display
+	wsio.on('editorSnippetLoadRequest', wsEditorSnippetLoadRequest);
+	wsio.on('editorSnippetCloseNotify', wsEditorSnippetCloseNotify);
+	wsio.on('editorSaveSnippet', wsEditorSaveSnippet);
+	wsio.on('editorCloneSnippet', wsEditorCloneSnippet);
+	wsio.on("editorRequestSnippetsExport", wsEditorRequestSnippetsExport);
+	wsio.on("editorSnippetActionPerformed", wsEditorSnippetActionPerformed);
+	// - Display to WebUI
+	wsio.on("snippetsStateUpdated", wsSnippetsStateUpdated);
+	wsio.on("snippetsSendLog", wsSnippetsSendLog);
+	wsio.on("snippetSendCodeOnLoad", wsSnippetSendCodeOnLoad);
+	wsio.on("snippetsSendProjectExport", wsSnippetsSendProjectExport);
+
 }
 
 /**
@@ -2706,6 +2757,7 @@ function saveSession(filename) {
 	states.numapps = 0;
 	states.partitions = [];
 	states.numpartitions = 0;
+	states.snippets = {};
 	states.date    = Date.now();
 	for (key in SAGE2Items.applications.list) {
 		// make a copy of the application object
@@ -2757,6 +2809,12 @@ function saveSession(filename) {
 		states.partitions.push(p);
 		states.numpartitions++;
 	}
+
+	// save snippet information
+	states.snippets = {
+		loaded: snippetsManager.getLoadedSnippetInfo(),
+		associations: snippetsManager.getSnippetAssociations()
+	};
 
 	// session with only partitions considered a "LAYOUT"
 	if (states.numapps === 0 && states.numpartitions > 0 && filename !== "default.json") {
@@ -2969,6 +3027,21 @@ function loadSession(filename) {
 
 			var session = JSON.parse(data);
 			sageutils.log("Session", "number of applications", session.numapps);
+
+			// reload snippets in the display and get them ready for session load
+			if (session.snippets) {
+				let { loaded, associations } = session.snippets;
+
+				// load existing snippets
+				for (let filename of Object.keys(loaded)) {
+					snippetsManager.addLoadedSnippet(loaded[filename]);
+					broadcast("createSnippetFromFileWithID", loaded[filename]);
+				}
+
+				// snippetsManager.updateSnippetAssociations(associations);
+				// send the snippet associations
+				broadcast("initializeSnippetAssociations", associations);
+			}
 
 			// recreate partitions
 			if (session.partitions) {
@@ -3642,6 +3715,12 @@ function wsLoadFileFromServer(wsio, data) {
 		broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
 		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
 			application: {id: null, type: "session"}}, time: Date.now()});
+	} else if (data.application === "load_snippet") {
+		loadSnippet(data.filename);
+
+		broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
+		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
+			application: {id: null, type: "snippet"}}, time: Date.now()});
 	} else {
 		var fileLoadCallBack = function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
@@ -5650,6 +5729,15 @@ function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
 	var fileKeys = Object.keys(files);
 	fileKeys.forEach(function(key) {
 		var file = files[key];
+
+		// handle snippet loading
+		if (registry.getMimeType(file.name) === "sage2/snippet") {
+			uploadSnippet(file);
+
+			// don't use appLoader for snippets
+			return;
+		}
+
 		appLoader.manageAndLoadUploadedFile(file, function(appInstance, videohandle) {
 
 			if (appInstance === null) {
@@ -11592,6 +11680,274 @@ function wsVoiceToAction(wsio, data) {
 
 function wsRequestClientUpdate(wsio) {
 	performanceManager.updateClient(wsio);
+}
+
+/* ======== Code Snippets Event Handlers ======== */
+
+/**
+ * Loads a snippet with a .snip filename from file for uploaded files
+ *
+ * @method uploadSnippet
+ * @param {Object} file - file of .snip format
+ */
+function uploadSnippet(file) {
+	// move the snippet to the correct directory
+	let newPath = path.join(mediaFolders.user.path, "snippets", file.name);
+
+	// move asset from tmp (and process into asset manager)
+	assets.moveAsset(file.path, newPath, function() {
+		loadSnippet(newPath);
+	});
+}
+
+/**
+ * Loads a snippet with a .snip filename from file
+ *
+ * @method loadSnippet
+ * @param {String} filename - filename to a file of .snip format
+ */
+function loadSnippet(filename) {
+
+	let content = JSON.parse(fs.readFileSync(filename).toString());
+
+	broadcast("createSnippetFromFile", {
+		snippet: content,
+		filename: path.basename(filename)
+	});
+}
+
+/**
+ * Updates the stored file in the SAGE2 Media Folders for a snippet when it is created
+ * or when the contents are changed
+ *
+ * @method wsSnippetSaveIntoServer
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain packaged snippet information.
+ */
+function wsSnippetSaveIntoServer(wsio, data) {
+	let snippetWritePath = path.join(mediaFolders.user.path, "snippets");
+
+	var now = new Date();
+	// Assign a unique name
+	let oldname = data.filename;
+	var filename = `${data.type}-${data.desc.replace(" ", "_")}-${now.getTime()}.snip`;
+	var fullpath = path.join(snippetWritePath, filename);
+
+	var writepath = path.join(snippetWritePath, filename);
+
+	let fileContents = {
+		text: data.text,
+		type: data.type,
+		desc: data.desc,
+		creator: data.creator,
+		editor: data.editor
+	};
+
+	let fileString = JSON.stringify(fileContents);
+
+	// if the specified name is the same as it previously was
+	if (oldname !== null && filename && oldname.split("-")[1] === filename.split("-")[1] && !fs.existsSync(fullpath)) {
+		// reuse old name if possible
+		filename = oldname;
+		fullpath = path.join(snippetWritePath, filename);
+		writepath = fullpath;
+	} else if (oldname !== "null") {
+		// rename old file if the name changed
+		let oldpath = path.join(snippetWritePath, oldname);
+		writepath = oldpath;
+	}
+
+	// write to the file
+	fs.writeFileSync(writepath, fileString);
+
+	// if the file needs to be moved because of a name update
+	if (writepath !== fullpath) {
+
+		// move the asset with the manager
+		assets.moveAsset(writepath, fullpath, function() {
+			snippetAssetAdded();
+		});
+	} else {
+		// otherwise just add the new asset
+		exiftool.file(fullpath, function(err2, data) {
+			if (err2) {
+				sageutils.log("Loader", "internal error", err2);
+			} else {
+				assets.addFile(data.SourceFile, data, function() {
+					assets.addTag(fullpath, "SAGE2user", fileContents.creator);
+
+					// add the user and save
+					assets.saveAssets();
+
+					snippetAssetAdded();
+				});
+			}
+		});
+	}
+
+
+	// callback for asset addition finishing
+	function snippetAssetAdded() {
+		// add snippet as loaded to state manager
+		snippetsManager.addLoadedSnippet({
+			snippetID: data.snippetID,
+			snippet: fileContents,
+			filename
+		});
+
+		// notify the display runtime that the sourcefile could be updated
+		broadcast("snippetSourceFileUpdated", {
+			snippetID: data.snippetID,
+			filename
+		});
+
+		// update the stored file list (name could change)
+		broadcast('storedFileList', getSavedFilesList());
+	}
+}
+
+function wsSaveSnippetState(wsio, data) {
+	snippetsManager.updateSnippetAssociations(data);
+}
+
+/* ===== Code Snippets Messages from WebUI ====== */
+/**
+ * Pass-through function to bounce a load request to the display client
+ *
+ * @method wsEditorSnippetLoadRequest
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information.
+ */
+function wsEditorSnippetLoadRequest(wsio, data) {
+	data.from = wsio.id;
+
+	broadcast("snippetLoadRequest", data);
+}
+
+/**
+ * Pass-through function to bounce a close notification to the display client
+ *
+ * @method wsEditorSnippetCloseNotify
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information.
+ */
+function wsEditorSnippetCloseNotify(wsio, data) {
+	broadcast("snippetCloseNotify", data);
+}
+
+
+/**
+ * Pass-through function to bounce a snippet save action to the display client
+ *
+ * @method wsEditorSaveSnippet
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information.
+ */
+function wsEditorSaveSnippet(wsio, data) {
+	data.from = wsio.id;
+
+	broadcast("saveSnippet", data);
+}
+
+
+/**
+ * Pass-through function to bounce a snippet clone request to the display client
+ *
+ * @method wsEditorCloneSnippet
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information.
+ */
+function wsEditorCloneSnippet(wsio, data) {
+	data.from = wsio.id;
+
+	broadcast("cloneSnippet", data);
+}
+
+
+/**
+ * Pass-through function to bounce a package/export request to the display client
+ *
+ * @method wsEditorRequestSnippetsExport
+ * @param {Object} wsio - ws to originator.
+ */
+function wsEditorRequestSnippetsExport(wsio) {
+
+	broadcast("snippetsExportRequest", {from: wsio.id});
+}
+
+/**
+ * Pass-through function to execute an action on the display from the WebUI
+ *
+ * @method wsEditorSnippetActionPerformed
+ * @param {Object} wsio - ws to originator.
+ */
+function wsEditorSnippetActionPerformed(wsio, data) {
+
+	broadcast("snippetsActionPerformed", data);
+}
+
+/* ===== Code Snippets Messages from Display ===== */
+/**
+ * Pass-through function to bounce the new snippet list to the WebUI
+ *
+ * @method wsSnippetsStateUpdated
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the snippet list information.
+ */
+function wsSnippetsStateUpdated(wsio, data) {
+	// update the snippets manager with the new states
+	snippetsManager.updateFunctionStatus(data);
+
+	broadcast("editorReceiveSnippetStates", data);
+}
+
+
+/**
+ * Pass-through function to bounce a completed snippet load request back to the WebUI
+ *
+ * @method wsSnippetsSendLog
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information, along with the destination.
+ */
+function wsSnippetsSendLog(wsio, data) {
+
+	let ind = clients.findIndex(c => c.id === data.to);
+
+	if (ind !== -1) {
+		clients[ind].emit("editorReceiveSnippetLog", data);
+	}
+}
+
+/**
+ * Pass-through function to bounce a completed snippet load request back to the WebUI
+ *
+ * @method wsSnippetSendCodeOnLoad
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information, along with the destination.
+ */
+function wsSnippetSendCodeOnLoad(wsio, data) {
+
+	let ind = clients.findIndex(c => c.id === data.to);
+
+	if (ind !== -1) {
+		clients[ind].emit("editorReceiveLoadedSnippet", data);
+	}
+}
+
+/**
+ * Pass-through function to bounce a completed snippet export request back to the WebUI
+ *
+ * @method wsSnippetsSendProjectExport
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested export information, along with the destination.
+ */
+function wsSnippetsSendProjectExport(wsio, data) {
+
+	let ind = clients.findIndex(c => c.id === data.to);
+
+	if (ind !== -1) {
+		clients[ind].emit("editorReceiveSnippetsExport", data);
+	}
 }
 
 /**

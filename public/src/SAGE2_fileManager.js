@@ -77,6 +77,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				{id: "App:/",     value: "Application", icon: "search", data: [], tooltip: "Show all the applications"},
 				{id: "Session:/", value: "Session", icon: "search", data: [], tooltip: "Show all the sessions"},
 				{id: "Link:/",    value: "Link", icon: "search", data: [], tooltip: "Show all the links"},
+				{id: "Snippet:/", value: "Snippet", icon: "search", data: [], tooltip: "Show all the code snippets"},
 				{id: "Mine:/",    value: "My files", icon: "search", data: [], tooltip: "Show all my uploaded files"}
 			]
 		}
@@ -1107,6 +1108,15 @@ function FileManager(wsio, mydiv, uniqueID) {
 				value: _this.allFiles[elt.id].exif.Creator || '-'});
 			metadata.config.elements.push({label: "File",
 				value: _this.allFiles[elt.id].exif.MIMEType || '-'});
+		} else if (_this.allFiles[elt.id].sage2Type.indexOf('sage2/snippet') >= 0) {
+			// Clear the panel
+			metadata.config.elements = [];
+
+			metadata.config.elements.push({label: "Metadata", type: "label"});
+			metadata.config.elements.push({label: "Author",
+				value: _this.allFiles[elt.id].exif.Creator || '-'});
+			metadata.config.elements.push({label: "File",
+				value: _this.allFiles[elt.id].exif.MIMEType || '-'});
 		}
 
 		// Done updating metadata
@@ -1207,6 +1217,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 			context.target.startsWith("App:")     ||
 			context.target.startsWith("Session:") ||
 			context.target.startsWith("Link:")     ||
+			context.target.startsWith("Snippet:")  ||
 			context.target.startsWith("Mine:")) {
 			// No DnD on search icons
 			return false;
@@ -1474,7 +1485,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	///////////////////////////////////////////////////////////////////////////////////
 
 	/**
-     * Setup the callbacks for a menu, using a closure (tricky one)
+		 * Setup the callbacks for a menu, using a closure (tricky one)
 	 *
 	 * @method attachCallbacks
 	 * @param element {Object} webix menu object to attach the callbacks to
@@ -1497,7 +1508,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Build a submenu for a description object. Each entry with id and value fields.
+		 * Build a submenu for a description object. Each entry with id and value fields.
 	 *
 	 * @method buildSubmenu
 	 * @param actions {Object} object containing the callback for each id
@@ -1528,7 +1539,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Return the tooltip field of an object or empty string
+		 * Return the tooltip field of an object or empty string
 	 *
 	 * @method showTooltip
 	 * @param element {Object} object with tooltip value or not
@@ -1539,7 +1550,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Build some HTML to show info about the SAGE2 server
+		 * Build some HTML to show info about the SAGE2 server
 	 *
 	 * @method buildAboutHTML
 	 * @return {String} HTML popup showing version and info
@@ -1578,7 +1589,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Try to delete one or several selected files
+		 * Try to delete one or several selected files
 	 *
 	 * @method deleteFilesUI
 	 */
@@ -1624,7 +1635,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 	}
 
 	/**
-     * Try to create a folder inside the currently selected folder
+		 * Try to create a folder inside the currently selected folder
 	 *
 	 * @method createFolderUI
 	 */
@@ -1712,6 +1723,13 @@ function FileManager(wsio, mydiv, uniqueID) {
 				user: _this.uniqueID,
 				position: position
 			});
+		} else if (appType === "sage2/snippet") {
+			wsio.emit('loadFileFromServer',	{
+				application: 'load_snippet',
+				filename: tid,
+				user: _this.uniqueID,
+				position: position
+			});
 		} else {
 			// Opening a file
 			wsio.emit('loadApplication', {
@@ -1773,6 +1791,8 @@ function FileManager(wsio, mydiv, uniqueID) {
 				response = "image_viewer";
 			} else if (elt.exif.MIMEType.indexOf('pdf') >= 0) {
 				response = "pdf_viewer";
+			} else if (elt.sage2Type.indexOf('sage2/snippet') >= 0) {
+				response = "load_snippet";
 			}
 			// } else if (elt.sage2Type) {
 			// 	// if we set a SAGE2 type, use it
@@ -1888,6 +1908,12 @@ function FileManager(wsio, mydiv, uniqueID) {
 		} else if (searchParam === "Link:/") {
 			_this.allTable.filter(function(obj) {
 				return _this.allFiles[obj.id].exif.MIMEType.indexOf('sage2/url') >= 0;
+			});
+		} else if (searchParam === "Snippet:/") {
+			_this.allTable.filter(function(obj) {
+				return (_this.allFiles[obj.id].sage2Type &&
+					_this.allFiles[obj.id].sage2Type.indexOf('sage2/snippet') >= 0
+				);
 			});
 		} else if (searchParam === "Mine:/") {
 			_this.allTable.filter(function(obj) {
@@ -2055,6 +2081,11 @@ function FileManager(wsio, mydiv, uniqueID) {
 			f = data.links[i];
 			this.allFiles[f.id] = f;
 		}
+		for (i = 0; i < data.snippets.length; i++) {
+			f = data.snippets[i];
+			this.allFiles[f.id] = f;
+		}
+
 
 		i = 0;
 		var mm, createDate;
@@ -2096,6 +2127,28 @@ function FileManager(wsio, mydiv, uniqueID) {
 					date: mm.format("YYYY/MM/DD HH:mm:ss"),
 					ago:  mm.fromNow(),
 					type: "LINK",
+					size: fileSizeIEC(f.exif.FileSize)
+				});
+			} else if (f.sage2Type.indexOf('sage2/snippet') >= 0) {
+				// It's a SAGE2 code snippet
+				createDate = f.exif.CreateDate ||
+						f.exif.DateTimeOriginal ||
+						f.exif.ModifyDate ||
+						f.exif.FileModifyDate;
+				mm = moment(createDate, 'YYYY/MM/DD HH:mm:ssZ');
+				f.exif.FileModifyDate = mm;
+
+				if (!mm.isValid()) {
+					// sometimes a value is not valid
+					mm = moment(f.exif.FileModifyDate, "YYYY:MM:DD HH:mm:ssZ");
+				}
+
+				this.allTable.data.add({id: f.id,
+					name: f.exif.FileName,
+					user: f.exif.SAGE2user ? f.exif.SAGE2user : "-",
+					date: mm.format("YYYY/MM/DD HH:mm:ss"),
+					ago:  mm.fromNow(),
+					type: "SNIPPET",
 					size: fileSizeIEC(f.exif.FileSize)
 				});
 			} else {

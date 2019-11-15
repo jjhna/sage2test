@@ -11,6 +11,7 @@
 "use strict";
 
 /* global FileManager, SAGE2_interaction, SAGE2DisplayUI, SAGE2_speech */
+/* global SAGE2_SnippetEditor, SAGE2_SnippetOverlayManager*/
 /* global removeAllChildren, SAGE2_copyToClipboard, parseBool */
 /* global SAGE2_webrtc_ui_tracker */
 
@@ -89,6 +90,8 @@ var wsio;
 var displayUI;
 var interactor;
 var fileManager;
+var snippetEditor;
+var snippetOverlayManager;
 var keyEvents;
 var touchMode;
 var touchDist;
@@ -149,6 +152,8 @@ window.addEventListener('unload', function(event) {
 			note.close();
 		}
 	}
+
+	snippetEditor.browserClose();
 });
 
 /**
@@ -305,6 +310,11 @@ function setupFocusHandlers() {
  * @param      {<type>}  event   The event
  */
 function pasteHandler(event) {
+	// bail if the snippet editor is open and don't paste
+	if (snippetEditor.isOpen()) {
+		return;
+	}
+
 	// get the clipboard data
 	let items = event.clipboardData;
 	// Iterate over the various types
@@ -661,6 +671,9 @@ function setupListeners() {
 		} else {
 			document.title = "SAGE2 - " + config.host;
 		}
+
+		snippetEditor = new SAGE2_SnippetEditor("codeSnippetEditor", config);
+		snippetOverlayManager = new SAGE2_SnippetOverlayManager(config);
 	});
 
 	wsio.on('createAppWindowPositionSizeOnly', function(data) {
@@ -681,14 +694,17 @@ function setupListeners() {
 
 	wsio.on('updateItemOrder', function(data) {
 		displayUI.updateItemOrder(data);
+		snippetOverlayManager.updateItemOrder(data);
 	});
 
 	wsio.on('setItemPosition', function(data) {
 		displayUI.setItemPosition(data);
+		snippetOverlayManager.itemUpdated(data);
 	});
 
 	wsio.on('setItemPositionAndSize', function(data) {
 		displayUI.setItemPositionAndSize(data);
+		snippetOverlayManager.itemUpdated(data);
 	});
 
 	// webUI partition wsio messages
@@ -782,23 +798,27 @@ function setupListeners() {
 		document.getElementById('pdfs-dir').checked     = false;
 		document.getElementById('videos-dir').checked   = false;
 		document.getElementById('sessions-dir').checked = false;
+		document.getElementById('snippets-dir').checked = false;
 
 		var images   = document.getElementById('images');
 		var videos   = document.getElementById('videos');
 		var pdfs     = document.getElementById('pdfs');
 		var sessions = document.getElementById('sessions');
+		var snippets = document.getElementById('snippets');
 
 		removeAllChildren(images);
 		removeAllChildren(videos);
 		removeAllChildren(pdfs);
 		removeAllChildren(sessions);
+		removeAllChildren(snippets);
 
 		var longestImageName   = createFileList(data, "images",   images);
 		var longestVideoName   = createFileList(data, "videos",   videos);
 		var longestPdfName     = createFileList(data, "pdfs",     pdfs);
 		var longestSessionName = createFileList(data, "sessions", sessions);
+		var longestSnippetName = createFileList(data, "snippets", snippets);
 
-		var longest = Math.max(longestImageName, longestVideoName, longestPdfName, longestSessionName);
+		var longest = Math.max(longestImageName, longestVideoName, longestPdfName, longestSessionName, longestSnippetName);
 		document.getElementById('fileListElems').style.width = (longest + 60).toString() + "px";
 
 		if (fileManager) {
@@ -877,6 +897,24 @@ function setupListeners() {
 		// SAGE2_speech.failSound.play();
 		SAGE2_speech.textToSpeech(data.message);
 	});
+
+	// vis snippets listeners
+	wsio.on("editorReceiveSnippetStates", function(data) {
+		snippetEditor.updateSnippetStates(data);
+	});
+	wsio.on('editorReceiveLoadedSnippet', function(data) {
+		snippetEditor.receiveLoadedSnippet(data);
+	});
+	wsio.on('editorReceiveSnippetsExport', function(data) {
+		snippetEditor.receiveProjectExport(data);
+	});
+	wsio.on('editorReceiveSnippetLog', function(data) {
+		snippetEditor.receiveSnippetLog(data);
+	});
+	wsio.on("updateSnippetAssociations", function(data) {
+		snippetOverlayManager.updateAssociations(data);
+	});
+
 	wsio.on('zipFolderPathForDownload', function(data) {
 		var url = data.filename;
 		if (url) {
@@ -1408,7 +1446,8 @@ function pointerMove(event) {
 			displayUI.pointerMove(pointerX, pointerY);
 		} else {
 			// Otherwise test for application hover
-			displayUI.highlightApplication(pointerX, pointerY);
+			let highlightedApp = displayUI.highlightApplication(pointerX, pointerY);
+			snippetOverlayManager.updateHighlightedApp(highlightedApp);
 		}
 
 	} else {
@@ -1733,6 +1772,8 @@ function handleClick(element) {
 		Dialog will not be shown here.
 		Rather than show the dialog, the client will respond back, then it will be shown.
 		*/
+	} else if (element.id === "code" || element.id === "codeContainer" || element.id === "codeLabel") {
+		snippetEditor.open();
 	} else if (element.id === "appOpenBtn") {
 		// App Launcher Dialog
 		loadSelectedApplication();
