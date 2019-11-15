@@ -30,13 +30,29 @@ var JupyterCodeCell = SAGE2_App.extend({
 
 		let cellOutputs = cell.outputs;
 
-		if (cellOutputs[0] && cellOutputs[0].traceback) {
+		let displayedOutput = cellOutputs && cellOutputs.find(output => {
+			return output.traceback
+				|| output.data
+				&& (
+					output.data["image/png"]
+					|| output.data["text/html"]
+				);
+		});
+
+		// look for text output as fallback
+		if (!displayedOutput) {
+			displayedOutput = cellOutputs && cellOutputs.find(output => {
+				return output.data && output.data["text/plain"];
+			});
+		}
+
+		if (displayedOutput && displayedOutput.traceback) {
 			this.content = document.createElement("div");
 			this.content.style.width = "100%";
 			this.content.style.height = "100%";
 			this.element.appendChild(this.content);
-		} else if (cellOutputs[0] && cellOutputs[0].data && Object.keys(cellOutputs[0].data).length) {
-			let cellData = cellOutputs[0].data;
+		} else if (displayedOutput && displayedOutput.data && Object.keys(displayedOutput.data).length) {
+			let cellData = displayedOutput.data;
 
 			if (cellData && cellData["image/png"]) {
 				this.img = document.createElement("img");
@@ -167,7 +183,23 @@ var JupyterCodeCell = SAGE2_App.extend({
 		let cellOutputs = cell.outputs;
 		let language = metadata.language_info.name;
 
-		if (cellOutputs[0] && cellOutputs[0].traceback) {
+		let displayedOutput = cellOutputs && cellOutputs.find(output => {
+			return output.traceback
+				|| output.data
+				&& (
+					output.data["image/png"]
+					|| output.data["text/html"]
+				);
+		});
+
+		// look for text output as fallback
+		if (!displayedOutput) {
+			displayedOutput = cellOutputs && cellOutputs.find(output => {
+				return output.data && output.data["text/plain"];
+			});
+		}
+
+		if (displayedOutput && displayedOutput.traceback) {
 			if (!this.content) {
 				if (this.img) {
 					this.element.removeChild(this.img);
@@ -187,9 +219,10 @@ var JupyterCodeCell = SAGE2_App.extend({
 				width:100%;
 				height:100%;
 				background-color:#ffe0e0;
-				">${cellOutputs[0].ename}: <span style="font-weight:normal;">${cellOutputs[0].evalue}</span></div>`;
-		} else if (cellOutputs[0] && cellOutputs[0].data && Object.keys(cellOutputs[0].data).length) {
-			let cellData = cellOutputs[0].data;
+				">${displayedOutput.ename}: <span style="font-weight:normal;">${displayedOutput.evalue}</span></div>`;
+
+		} else if (displayedOutput && displayedOutput.data && Object.keys(displayedOutput.data).length) {
+			let cellData = displayedOutput.data;
 
 			if (cellData && cellData["image/png"]) {
 				if (!this.img) {
