@@ -413,11 +413,16 @@ function createWindow() {
 	});
 
 	// New webview going to be added
-	var partitionNumber = 0;
+	// var partitionNumber = 0;
 	mainWindow.webContents.on('will-attach-webview', function(event, webPreferences, params) {
 		// Load the SAGE2 addon code
 		webPreferences.preloadURL = "file://" + path.join(__dirname + '/public/uploads/apps/Webview/SAGE2_script_supplement.js');
 
+		// Override the plugin value
+		params.plugins = commander.plugins;
+
+		/*
+		// In client code now, electron version >= 7
 		// Parse the URL
 		let destination = url.parse(params.src);
 		// Get the domain
@@ -445,6 +450,7 @@ function createWindow() {
 			params.partition = 'partition_' + partitionNumber;
 			partitionNumber = partitionNumber + 1;
 		}
+		*/
 	});
 
 	mainWindow.webContents.on('did-attach-webview', function(event, webContents) {

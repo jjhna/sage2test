@@ -9,6 +9,9 @@
 
 /* global  require */
 
+// Global counter of partition
+var partitionNumber = 0;
+
 var Webview = SAGE2_App.extend({
 	init: function(data) {
 		if (this.isElectron()) {
@@ -175,8 +178,30 @@ var Webview = SAGE2_App.extend({
 			this.sendResize(this.sage2_width, this.sage2_width / 1.777777778);
 		}
 
-		// Store the zoom level, when in desktop emulation
-		// this.zoomFactor = 1;
+		// Special partitions to keep login info (wont work with multiple accounts)
+		if (view_url.indexOf("sharepoint.com") >= 0 ||
+			view_url.indexOf("live.com")   >= 0 ||
+			view_url.indexOf("office.com") >= 0) {
+			this.element.partition = 'persist:office';
+		} else if (view_url.indexOf("appear.in") >= 0 ||
+			view_url.indexOf("whereby.com") >= 0) {
+			// VTC
+			this.element.partition = 'persist:whereby';
+		} else if (view_url.indexOf("youtube.com") >= 0) {
+			// VTC
+			this.element.partition = 'persist:youtube';
+		} else if (view_url.indexOf("github.com") >= 0) {
+			// GITHUB
+			this.element.partition = 'persist:github';
+		} else if (view_url.indexOf("google.com") >= 0) {
+			// GOOGLE
+			this.element.partition = 'persist:google';
+		} else {
+			// Isolation for other content
+			this.element.partition = "part_" + partitionNumber;
+			partitionNumber++;
+		}
+
 		// Auto-refresh time
 		this.autoRefresh = null;
 
@@ -218,7 +243,7 @@ var Webview = SAGE2_App.extend({
 				// save the url
 				_this.state.url = evt.url;
 				// set the zoom value
-				_this.element.zoomFactor = _this.state.zoom;
+				_this.element.getWebContents().zoomFactor = _this.state.zoom;
 				// sync the state object
 				_this.SAGE2Sync(true);
 			}
@@ -242,7 +267,7 @@ var Webview = SAGE2_App.extend({
 			// save the url
 			_this.state.url = evt.url;
 			// set the zoom value
-			_this.element.zoomFactor = _this.state.zoom;
+			_this.element.getWebContents().zoomFactor = _this.state.zoom;
 			// sync the state object
 			_this.SAGE2Sync(true);
 		});
@@ -252,7 +277,7 @@ var Webview = SAGE2_App.extend({
 			// save the url
 			_this.state.url = evt.url;
 			// set the zoom value
-			_this.element.zoomFactor = _this.state.zoom;
+			_this.element.getWebContents().zoomFactor = _this.state.zoom;
 			// sync the state object
 			_this.SAGE2Sync(true);
 		});
@@ -1142,7 +1167,7 @@ var Webview = SAGE2_App.extend({
 				// Just reload once
 				this.isLoading = true;
 				this.element.reload();
-				this.element.zoomFactor = this.state.zoom;
+				this.element.getWebContents().zoomFactor = this.state.zoom;
 			}
 		}
 	},
@@ -1205,13 +1230,13 @@ var Webview = SAGE2_App.extend({
 			// zoomin
 			if (dir === "zoomin") {
 				this.state.zoom *= 1.50;
-				this.element.zoomFactor = this.state.zoom;
+				this.element.getWebContents().zoomFactor = this.state.zoom;
 			}
 
 			// zoomout
 			if (dir === "zoomout") {
 				this.state.zoom /= 1.50;
-				this.element.zoomFactor = this.state.zoom;
+				this.element.getWebContents().zoomFactor = this.state.zoom;
 			}
 
 			this.refresh();
