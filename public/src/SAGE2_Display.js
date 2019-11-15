@@ -435,7 +435,6 @@ function setupListeners() {
 	});
 
 	wsio.on('addRemoteSite', function(data) {
-		console.log("wsio.on('addRemoteSite'");
 		ui.addRemoteSite(data);
 	});
 

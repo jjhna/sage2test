@@ -73,7 +73,8 @@ function checkAppAndShareIfShould(app, wsCallFunctionOnApp) {
 
 	if (sitesToShareWith.length > 0) {
 		// Prevent already shared applications. Those should have : and + in them
-		if ((app.id.indexOf(":") === -1) && (app.id.indexOf("+") === -1)) {
+		// Note: screenshares have : in them
+		if (app.id.indexOf("+") === -1) {
 			// Need a better way to do this...
 			// PDFs cannot be send immediately due to some kind of lock.
 			if (app.application === "pdf_viewer") {

@@ -513,6 +513,7 @@ function initializeSage2Server() {
 
 		if (users !== null) {
 			users.session.version = SAGE2_version;
+			console.log("erase me, after getFullVersion", SAGE2_version);
 		}
 
 		var variablesUsedInVersionManger = {
@@ -6027,7 +6028,7 @@ function manageRemoteConnection(remote, site, index) {
 			remoteSites[index].connected = "on";
 
 
-
+			console.log("erase me, the data from remotesite:", data);
 			versionHandler.determineIfVersionMismatch(data, site, remotesocket.remoteAddress.address);
 		}
 		var update_site = {name: remoteSites[index].name, connected: remoteSites[index].connected};
