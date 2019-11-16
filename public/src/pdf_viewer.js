@@ -955,6 +955,13 @@ var pdf_viewer = SAGE2_App.extend({
 	* @param date {Date} current time from the server
 	*/
 	event: function(eventType, position, user, data, date) {
+		// Show UI if touch event, hide if pointer
+		if (data.sourceType === "touch" && this.showUI === false) {
+			this.presentationMode();
+		} else if (data.sourceType !== "touch" && this.showUI === true) {
+			this.presentationMode();
+		}
+
 		if (eventType === "pointerPress" && (data.button === "left")) {
 			if (this.showUI) {
 				this.leftClickDown(position.x, position.y, user.id);
