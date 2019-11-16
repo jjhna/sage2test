@@ -490,8 +490,6 @@ let SAGE2_SnippetEditor = (function () {
 								type: d.type
 							};
 
-							console.log(newAction);
-
 							snippetOverlayManager.setInteractMode(true);
 							snippetOverlayManager.setUserSelectedAction(newAction);
 
@@ -633,13 +631,10 @@ let SAGE2_SnippetEditor = (function () {
 		 * @param {Object} data - The log from a snippet's execution
 		 */
 		function receiveSnippetLog(data) {
-			console.log("Recieved Snippet Log: ", data);
-
 			self.log = data.log;
 
 			let apps = Object.keys(data.log);
 
-			console.log(apps);
 			// sort out filters for apps
 
 			// if the currently selected app is not in the list of app logs, reset the filters
@@ -729,8 +724,6 @@ let SAGE2_SnippetEditor = (function () {
 
 		function showLogMessages(log) {
 			let apps = Object.keys(log);
-
-			console.log(log);
 
 			let errors = [];
 			let consoleLog = [];

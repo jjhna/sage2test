@@ -51,7 +51,6 @@ let SAGE2_SnippetOverlayManager = (function() {
 		init();
 
 		function init() {
-			console.log(config);
 			self.overlay.attr(
 				"viewBox",
 				[
@@ -295,8 +294,6 @@ let SAGE2_SnippetOverlayManager = (function() {
 		}
 
 		function updateSnippetStates(states) {
-			console.log("Snippet States:", states, self.snippetLinks);
-
 			self.snippetStates = states;
 
 			self.linkGroup
