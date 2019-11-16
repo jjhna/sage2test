@@ -710,11 +710,10 @@ var exifAsync = function(cmds, cb) {
 					instructions.directory !== null && instructions.directory !== "") {
 				metadata.fileTypes = instructions.fileTypes;
 				metadata.directory = instructions.directory;
-				metadata.removeFromLauncher = !!instructions.removeFromLauncher; // convert to bool
 			} else {
 				metadata.fileTypes = [];
-				metadata.removeFromLauncher = false;
 			}
+			metadata.removeFromLauncher = sageutils.isTrue(instructions.removeFromLauncher);
 
 			var exif = {FileName: app, icon: appIcon, MIMEType: "application/custom", metadata: metadata};
 
@@ -757,12 +756,13 @@ var exifAsync = function(cmds, cb) {
 };
 
 var listAssets = function() {
-	var pdfs   = [];
-	var videos = [];
-	var apps   = [];
-	var images = [];
-	var links  = [];
-	var others = [];
+	var pdfs     = [];
+	var videos   = [];
+	var apps     = [];
+	var images   = [];
+	var links    = [];
+	var snippets = [];
+	var others   = [];
 
 	// Get all the assets
 	var keys = Object.keys(AllAssets.list);
@@ -790,6 +790,8 @@ var listAssets = function() {
 				videos.push(one);
 			} else if (defaultApp === "Webview") {
 				links.push(one);
+			} else if (defaultApp === "load_snippet") {
+				snippets.push(one);
 			} else {
 				others.push(one);
 			}
@@ -801,10 +803,11 @@ var listAssets = function() {
 	pdfs.sort(sageutils.compareFilename);
 	apps.sort(sageutils.compareFilename);
 	links.sort(sageutils.compareFilename);
+	snippets.sort(sageutils.compareFilename);
 
 	return {
 		images: images, videos: videos, pdfs: pdfs,
-		applications: apps, links: links,
+		applications: apps, links: links, snippets: snippets,
 		others: others
 	};
 };

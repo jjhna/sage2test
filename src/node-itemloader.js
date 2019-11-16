@@ -987,7 +987,7 @@ AppLoader.prototype.loadFileFromWebURL = function(file, callback) {
 		callback);
 };
 
-AppLoader.prototype.createJupyterApp = function(source, type, encoding, name, color, width, height, callback) {
+AppLoader.prototype.createJupyterApp = function(source, type, encoding, name, color, width, height, code, callback) {
 	var aspectRatio = width / height;
 
 	var metadata         = {};
@@ -1008,8 +1008,9 @@ AppLoader.prototype.createJupyterApp = function(source, type, encoding, name, co
 		url: "src",
 		data: {
 			src: source,
-			type: type,
-			encoding: encoding
+			type,
+			encoding,
+			code
 		},
 		load: {
 			imgDict: {},
@@ -1033,6 +1034,74 @@ AppLoader.prototype.createJupyterApp = function(source, type, encoding, name, co
 		animation: false,
 		sticky: false,
 		metadata: metadata,
+		date: new Date()
+	};
+	this.scaleAppToFitDisplay(appInstance);
+	callback(appInstance);
+};
+
+AppLoader.prototype.createJupyterCell = function (
+	cell,
+	metadata,
+	index,
+	{
+		left = this.titleBarHeight,
+		top = 1.5 * this.titleBarHeight,
+		width = 300,
+		height = 300
+	},
+	callback
+) {
+
+	var app_metadata = {
+		title: "Jupyter",
+		version: "1.0.0",
+		description: "JupyterLab-SAGE2 Application",
+		author: "SAGE2",
+		license: "SAGE2-Software-License",
+		keywords: ["jupyter", "jupyterlab"]
+	};
+
+	let application = cell.cell_type === "code"
+		? "JupyterCodeCell"
+		: "JupyterMarkdownCell";
+
+	var appInstance = {
+		id: null,
+		title: application,
+		color: "#aaa",
+		application,
+		icon: "/images/jupyter.png",
+		type: "mime_type",
+		url: "src",
+		data: {
+			cell,
+			metadata,
+			index
+		},
+		load: {
+			imgDict: {},
+			mainImgs: {},
+			page: 1
+		},
+		resrc: null,
+		left,
+		top,
+		width,
+		height,
+		native_width: width,
+		native_height: height,
+		previous_left: null,
+		previous_top: null,
+		previous_width: null,
+		previous_height: null,
+		maximized: false,
+		// aspect: aspectRatio,
+		aspect: width / height,
+		resizeMode: "free",
+		animation: false,
+		sticky: false,
+		metadata: app_metadata,
 		date: new Date()
 	};
 	this.scaleAppToFitDisplay(appInstance);

@@ -17,8 +17,11 @@
 </script>
 
 <!-- CSS style -->
+<link rel="stylesheet" type="text/css" href="lib/prism.css"/>
 <link rel="stylesheet" type="text/css" href="css/fonts.css"/>
 <link rel="stylesheet" type="text/css" href="css/style.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="css/snippetinput.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="css/summarizer.css" />
 <!-- Code highlighting -->
 <link href="css/prism.css" rel="stylesheet" />
 
@@ -31,11 +34,25 @@
 <script src="lib/d3.min.js"></script>
 <script src="lib/prism.js"></script>
 
+<script src="lib/prism.js" data-manual></script>
+<script src="lib/markdown-it.min.js"></script>
+<script src="lib/markdown-it-math.min.js"></script>
+
+<script>
+	window.md = markdownit({
+		html: true,
+		xhtmlOut: true,
+		breaks: true,
+		typographer: true
+	}).use(markdownitMath)
+</script>
+
 <!-- Put the module object back -->
 <script>if (window.module) module = window.module;</script>
 
 <script src="lib/glMatrix-0.9.5.min.js"></script>
 <script src="lib/moment.min.js"></script>
+<script async src="lib/json-summary.min.js"></script>
 
 <!-- SAGE2 code -->
 <script src="src/websocket.io.js"></script>
@@ -64,6 +81,12 @@
 <script async src="src/SAGE2_MouseEventPassing.js"></script>
 
 <script async src="src/SAGE2_Partition.js"></script>
+
+<script async src="src/VisSnippets/CodeSnippetInput.js"></script>
+<script async src="src/VisSnippets/SAGE2_SnippetsAPI.js"></script>
+<script async src="src/VisSnippets/SAGE2_SnippetsUtil.js"></script>
+<script async src="src/VisSnippets/SAGE2_CodeSnippets.js"></script>
+<script async src="src/VisSnippets/SAGE2_SnippetCompiler.js"></script>
 
 <script async src="src/SAGE2_RemoteSitePointer.js"></script>
 

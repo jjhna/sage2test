@@ -1,11 +1,10 @@
-version: 4.0.{build}
+version: 5.0.{build}
 
 image: Visual Studio 2017
 
 branches:
   only:
   - master
-  - beta
 
 shallow_clone: true
 
@@ -28,8 +27,8 @@ init:
   - dir C:\Dev\ffmpeg-win64-dev\lib
 
 install:
-  - ps: Get-NodeJsLatestBuild 12.6
-  - ps: Install-Product node 12.6.0 x64
+  - ps: Get-NodeJsLatestBuild 12.13
+  - ps: Install-Product node 12.13.0 x64
   - dir C:\avvm\node
   - node -v
   - cd %APPVEYOR_BUILD_FOLDER%

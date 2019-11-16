@@ -17,7 +17,7 @@
 /* global insertTextIntoTextInputWidget, removeWidgetToAppConnector */
 /* global hideWidgetToAppConnectors */
 /* global createWidgetToAppConnector, getTextFromTextInputWidget */
-/* global SAGE2_Partition, require */
+/* global SAGE2_Partition, SAGE2_CodeSnippets, require */
 /* global SAGE2RemoteSitePointer, process */
 
 "use strict";
@@ -389,6 +389,8 @@ function setupListeners() {
 			}, uiTimerDelay * 1000);
 		}
 		makeSvgBackgroundForWidgetConnectors(ui.main.style.width, ui.main.style.height);
+
+		SAGE2_CodeSnippets.init(json_cfg.experimental ? json_cfg.experimental.vissnippets : {});
 	});
 
 	wsio.on('hideui', function(param) {
@@ -1573,6 +1575,65 @@ function setupListeners() {
 			app = applications[perfAppList[i]];
 			app.SAGE2Event('performanceData', null, null, data, data.date);
 		}
+	});
+
+	/*
+	 * SAGE2 Code Snippets WebSocketIO Handlers
+	 */
+	wsio.on("initializeSnippetAssociations", function(data) {
+		SAGE2_CodeSnippets.initializeSnippetAssociations(data);
+	});
+
+	wsio.on("snippetLoadRequest", function(data) {
+
+		SAGE2_CodeSnippets.requestSnippetLoad(data.from, data.scriptID);
+	});
+
+	wsio.on("snippetCloseNotify", function(data) {
+
+		SAGE2_CodeSnippets.notifySnippetClosed(data.scriptID);
+
+	});
+
+	wsio.on("saveSnippet", function(data) {
+
+		// { uniqueID, code, desc, type, scriptID, author }
+		SAGE2_CodeSnippets.saveSnippet(data.from, data.text, data.desc, data.type, data.scriptID, data.author);
+	});
+
+	wsio.on("cloneSnippet", function(data) {
+
+		// { uniqueID, code, desc, type, scriptID }
+		SAGE2_CodeSnippets.cloneSnippet(data.from, data.scriptID, data.author);
+	});
+
+	wsio.on("snippetSourceFileUpdated", function(data) {
+
+		SAGE2_CodeSnippets.sourceFileUpdated(data.snippetID, data.filename);
+	});
+
+	wsio.on("createSnippetFromFile", function(data) {
+
+		SAGE2_CodeSnippets.loadFromFile(data.snippet, data.filename);
+	});
+
+	wsio.on("createSnippetFromFileWithID", function(data) {
+
+		SAGE2_CodeSnippets.loadFromFile(data.snippet, data.filename, data.snippetID);
+	});
+
+	wsio.on("snippetsExportRequest", function(data) {
+
+		// only package export on master display client
+		if (isMaster) {
+			SAGE2_CodeSnippets.requestSnippetsProjectExport(data.from);
+		}
+	});
+
+	wsio.on("snippetsActionPerformed", function(data) {
+		console.log("snippetsActionPerformed", data);
+
+		SAGE2_CodeSnippets.handleActionFromUI(data);
 	});
 }
 

@@ -8,7 +8,8 @@ Example:
    open /Applications/SAGE2_client.app --args electron.js -d 0
 
 
-Default is opening the client 0 on default port (UI at http://localhost:9292).
+If no server is specified, a popup window opens.
+
 
 Command line help
 -----------------

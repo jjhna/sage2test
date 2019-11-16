@@ -343,7 +343,126 @@ body {
 	cursor:none !important
 }
 
-/* quickNote text */
 .showdown * {
 	font-family: Oxygen Mono;
+}
+
+
+.snippetAncestry {
+	position: absolute;
+	background: rgb(217,217,217);
+	border-bottom: 2px solid lightgray;
+	width: 100%;
+	left: 0;
+	top: 0;
+	padding: 3px;
+	box-sizing: border-box;
+	overflow: hidden;
+	text-rendering: optimizeLegibility;
+	box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.snippetsExecutionOrderBlock {
+	position: relative;
+	font-size: 10px;
+	display: inline-block;
+	font-weight: bold;
+	padding: 5px;
+	font-family: monospace;
+	margin: 0px 2px;
+	max-height: 100%;
+	box-sizing: border-box;
+	/* overflow: hidden; */
+	border-radius: 3px;
+	box-shadow: 0 0 10px 2px rgba(0,0,0,0.75), 13px 0 20px 3px rgba(0,0,0,0.5);
+}
+
+.snippetsExecutionOrderBlock:after {
+	left: 100%;
+	top: 50%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+}
+
+.snippetsExecutionOrderBlock:after {
+	border-left-color: inherit;
+	border-width: 13px;
+}
+
+/* .json-summary-checkbox {
+  display: none;
+}
+
+.json-summary-layer {
+    display: inline;
+}
+
+.json-summary-layer>.json-summary-keys {
+    display: none;
+}
+
+.json-summary-child {
+    display: inline;
+}
+
+.json-summary-type {
+	color: var(--snippets-yellow);
+}
+
+.json-summary-value {
+	color: #abb2bf;
+
+	margin-left: 4px;
+	font-style: italic;
+}
+
+.json-summary-value.json-summary-value::before {
+	content: "(";
+}
+
+.json-summary-value.json-summary-value::after {
+	content: ")";
+}
+
+.json-summary-value.json-summary-value-string::before {
+	content: "('";
+}
+
+.json-summary-value.json-summary-value-string::after {
+	content: "')";
+}
+
+.json-summary-type.json-summary-type-string {
+	color: var(--snippets-green);
+}
+
+.json-summary-name {
+	color: var(--snippets-red);
+}
+
+.json-summary-length {
+	color: var(--snippets-blue);
+}
+
+.json-summary-circular {
+	color: var(--snippets-purple);
+} */
+
+.json-summary-value {
+	display: inline !important;
+}
+
+.json-summary-range {
+	display: inline !important;
+}
+:root {
+	--snippets-yellow: #e5c07b;
+	--snippets-blue: #61afef;
+	--snippets-red: #ef596f;
+	--snippets-purple: #d55fde;
+	--snippets-green: #89ca78;
 }
