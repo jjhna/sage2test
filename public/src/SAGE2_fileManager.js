@@ -1723,7 +1723,7 @@ function FileManager(wsio, mydiv, uniqueID) {
 				user: _this.uniqueID,
 				position: position
 			});
-		} else if (appType === "sage2/snippet") {
+		} else if (appType === "load_snippet") {
 			wsio.emit('loadFileFromServer',	{
 				application: 'load_snippet',
 				filename: tid,
