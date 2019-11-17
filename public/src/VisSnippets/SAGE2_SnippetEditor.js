@@ -433,38 +433,6 @@ let SAGE2_SnippetEditor = (function () {
 
 			let list = d3.select(self.snippetList);
 
-			// for (let script of Object.values(scriptStates)) {
-			// 	// populate Dropdown
-			// 	let newOption = document.createElement("div");
-			// 	let typeBadge = document.createElement("div");
-			// 	let name = document.createElement("span");
-
-			// 	newOption.className = "dropdownOption";
-			// 	typeBadge.className = "colorBadge " + script.type + "SnippetColor";
-
-			// 	newOption.onclick = function() {
-			// 		if (script.locked && script.id !== self.loadedSnippet) {
-			// 			saveCopy(script.id);
-			// 		} else if (script.id !== self.loadedSnippet) {
-			// 			loadScript(script.id);
-			// 		}
-			// 	};
-
-			// 	name.innerHTML = `[${script.id.split("-")[1]}] - ${script.desc}`;
-
-			// 	if (script.id === self.loadedSnippet) {
-			// 		newOption.disabled = true;
-			// 		newOption.classList.add("loaded");
-			// 	} else if (script.locked) {
-			// 		newOption.disabled = true;
-			// 		newOption.classList.add("locked");
-			// 	}
-
-			// 	newOption.appendChild(typeBadge);
-			// 	newOption.appendChild(name);
-			// 	self.scriptDropdown.appendChild(newOption);
-			// }
-
 			let listBind = list.selectAll(".list-item")
 				.data(Object.values(scriptStates), d => d.id);
 

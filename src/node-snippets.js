@@ -15,10 +15,11 @@ const path = require("path");
 
 let SnippetsManager = (function() {
 	return function(communication, sysConfig) {
+		let config = (sysConfig.experimental && (sysConfig.experimental.vissnippets || {})) || {};
 		// private
 		let self = {
 			comm: communication, // { broadcast, clients }
-			config: (sysConfig.experimental && (sysConfig.experimental.codesnippets || {})) || {},
+			config,
 
 			loaded: {},
 			associations: {
@@ -29,7 +30,7 @@ let SnippetsManager = (function() {
 			},
 			status: [],
 
-			logging: false // true
+			logging: config.logging ? config.logging : false // true
 		};
 
 		init();

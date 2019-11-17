@@ -228,7 +228,7 @@ let SAGE2_CodeSnippets = (function() {
 			snippetInfo.code = CodeSnippetCompiler.createFunction(type, code);
 			snippetInfo.text = code.replace(/`/gi, "\\`").replace(/\$/gi, "\\$");
 		} catch (err) {
-			console.log("Error parsing code", err);
+			// console.log("Error parsing code", err);
 			// throwErrorToUser(scriptID, err, uniqueID);
 		}
 
@@ -286,6 +286,12 @@ let SAGE2_CodeSnippets = (function() {
 			self.reloadSnippetFilemap[filename] = id;
 		}
 
+		// only create a list application if there are none referenced
+		// and the file is not reloading from state
+		if (Object.values(self.listApps).length === 0 && id === "new") {
+			createListApplication();
+		}
+
 		if (id === "new") {
 			id = getNewFunctionID();
 		}
@@ -295,7 +301,7 @@ let SAGE2_CodeSnippets = (function() {
 			type: func.type,
 			desc: func.desc,
 			creator: func.creator || "unknown",
-			editor: func.editor || null,
+			editor: null,
 			links: []
 		};
 
@@ -305,14 +311,11 @@ let SAGE2_CodeSnippets = (function() {
 			snippetInfo.code = CodeSnippetCompiler.createFunction(func.type, func.text);
 			snippetInfo.text = func.text.replace(/`/gi, "\\`").replace(/\${/gi, "\\${");
 		} catch (err) {
-			console.log("Error parsing code", err);
+			// console.log("Error parsing code", err);
 		}
 
-		// only create a list application if there are none referenced
-		// and the file is not reloading from state
-		if (Object.values(self.listApps).length === 0 && id === "new") {
-			createListApplication();
-		}
+		let functionState = getFunctionInfo();
+		wsio.emit("snippetsStateUpdated", functionState);
 
 		updateListApps();
 	}
@@ -433,7 +436,6 @@ let SAGE2_CodeSnippets = (function() {
 	 */
 	function createViewApplication(snippetsID, center) {
 		if (isMaster) {
-			console.log(snippetsID, center);
 			let minDim = Math.min(ui.json_cfg.totalWidth, ui.json_cfg.totalHeight * 2);
 
 			wsio.emit("loadApplication", {
@@ -525,7 +527,6 @@ let SAGE2_CodeSnippets = (function() {
 	 */
 	function displayApplicationLoaded(id, app) {
 		let originalID = app.state.snippetsID;
-		console.log(id, originalID);
 
 		// if the saved ID of the application is already in use, update
 		if (self.outputApps[app.state.snippetsID]) {
@@ -798,7 +799,7 @@ let SAGE2_CodeSnippets = (function() {
 	}
 
 	function handleActionFromUI(action) {
-		console.log("handleActionFromUI", action);
+		// console.log("handleActionFromUI", action);
 
 		executeCodeSnippet(action.snippetID, action.source, action.targetCenter);
 	}
@@ -826,8 +827,6 @@ let SAGE2_CodeSnippets = (function() {
 			// then this is a new link that must be created
 			// OR if the snippet specifies input elements, since these can be inconsistent across calls
 			let newLink = new Link(parent, null, snippetID);
-
-			console.log(parent, snippetID);
 
 			let linkID = "link-" + self.linkCount++;
 			self.links[linkID] = newLink;
@@ -1045,7 +1044,6 @@ let SAGE2_CodeSnippets = (function() {
 			fullLog[self.links[link].getChild().id] = log;
 		}
 
-		console.log("Send to ", uniqueID, fullLog);
 		wsio.emit("snippetsSendLog", {
 			to: uniqueID,
 			log: fullLog,
@@ -1102,8 +1100,6 @@ let SAGE2_CodeSnippets = (function() {
 
 
 	function initializeSnippetAssociations(info) {
-		console.log(info);
-
 		let appPromises = [];
 		self.dataCount = info.dataCount;
 		self.visCount = info.visCount;
@@ -1205,7 +1201,7 @@ let SAGE2_CodeSnippets = (function() {
 								// string = JSON.stringify(SAGE2_SnippetsUtil.summarizeJSON(a));
 								string = JSON.stringify(jsonSummary.summarize(a, {arraySampleCount: 100}));
 							} catch (e) {
-								console.log(e);
+								// console.log(e);
 
 								string = "[object Object]";
 							}
