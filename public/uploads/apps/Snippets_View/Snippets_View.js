@@ -262,7 +262,7 @@ var Snippets_View = SAGE2_App.extend({
     this.createAncestorList();
 
     // if it has a visualization in the view
-    if (this.parentLink && this.snippetVisElement) {
+    if (this.parentLink && this.snippetsVisElement) {
       this.parentLink.update(); // redraw
     }
 

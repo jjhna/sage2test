@@ -1674,7 +1674,6 @@ function setupListeners() {
 	});
 
 	wsio.on("snippetsActionPerformed", function(data) {
-		console.log("snippetsActionPerformed", data);
 
 		SAGE2_CodeSnippets.handleActionFromUI(data);
 	});

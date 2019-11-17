@@ -83,7 +83,7 @@ var SAGE2 = SAGE2 || {};
 	SAGE2.SnippetVisElement = function(specification, app) {
 		let {type} = specification;
 
-		if (app.snippetVisElement && app.snippetsVisElement.tagName !== type) {
+		if (app.snippetsVisElement && app.snippetsVisElement.tagName !== type) {
 			app.snippetsVisElement.remove();
 			delete app.snippetsVisElement;
 		}

@@ -812,7 +812,7 @@ let SAGE2_CodeSnippets = (function() {
 	 * @param {String} parentID - the SAGE2 ID of the app as the target
 	 */
 	function executeCodeSnippet(snippetID, parentID, targetLocation) {
-		console.log(snippetID, parentID);
+		// console.log(snippetID, parentID);
 
 		let snippet = self.functions[snippetID];
 
