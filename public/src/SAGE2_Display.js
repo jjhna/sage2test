@@ -17,9 +17,11 @@
 /* global insertTextIntoTextInputWidget, removeWidgetToAppConnector */
 /* global hideWidgetToAppConnectors */
 /* global createWidgetToAppConnector, getTextFromTextInputWidget */
-/* global SAGE2_Partition, require */
+/* global SAGE2_Partition, SAGE2_CodeSnippets, require */
 /* global SAGE2RemoteSitePointer RemoteSiteInfoBuilder */
 /* global process */
+
+
 
 "use strict";
 
@@ -391,6 +393,7 @@ function setupListeners() {
 			}, uiTimerDelay * 1000);
 		}
 		makeSvgBackgroundForWidgetConnectors(ui.main.style.width, ui.main.style.height);
+		SAGE2_CodeSnippets.init(json_cfg.experimental ? json_cfg.experimental.vissnippets : {});
 		// Make messages for remote site
 		remoteSiteInfo = new RemoteSiteInfoBuilder(json_cfg, clientID);
 	});
@@ -544,6 +547,7 @@ function setupListeners() {
 	wsio.on('loadApplicationOptions', function(data) {
 		var fullSync = true;
 		var windowTitle = document.getElementById(data.id + "_title");
+		var dragBar = document.getElementById(data.id + "_dragBar");
 		var windowIconSync = document.getElementById(data.id + "_iconSync");
 		var windowIconUnSync = document.getElementById(data.id + "_iconUnSync");
 		var app = applications[data.id];
@@ -553,10 +557,12 @@ function setupListeners() {
 			if (fullSync === true) {
 				if (data.options[Object.keys(data.options)[0]]._sync === true) {
 					windowTitle.style.backgroundColor = "#39C4A6";
+					dragBar.style.backgroundColor = "#39C4A6";
 					windowIconSync.style.display = "block";
 					windowIconUnSync.style.display = "none";
 				} else {
 					windowTitle.style.backgroundColor = "#666666";
+					dragBar.style.backgroundColor = "#666666";
 					windowIconSync.style.display = "none";
 					windowIconUnSync.style.display = "block";
 				}
@@ -825,8 +831,10 @@ function setupListeners() {
 			var translate = "translate(" + position_data.elemLeft + "px," + position_data.elemTop + "px)";
 			var selectedElemTitle = document.getElementById(position_data.elemId + "_title");
 			var selectedElem = document.getElementById(position_data.elemId);
+			var selectedElemDragBar = document.getElementById(position_data.elemId + "_dragBar");
 			requestAnimationFrame(function(ts) {
 				selectedElemTitle.style.transform = translate;
+				selectedElemDragBar.style.transform = translate;
 				selectedElem.style.transform = translate;
 			});
 		}
@@ -935,7 +943,12 @@ function setupListeners() {
 
 		var translate = "translate(" + position_data.elemLeft + "px," + position_data.elemTop + "px)";
 		var selectedElemTitle = document.getElementById(position_data.elemId + "_title");
+		var selectedElemDragBar = document.getElementById(position_data.elemId + "_dragBar");
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
+
+		selectedElemDragBar.style.width = Math.round(position_data.elemWidth).toString() + "px";
+		selectedElemDragBar.style.top = (
+			Math.round(position_data.elemHeight + selectedElemDragBar.style.height)).toString() + "px";
 
 		if (position_data.elemId.split("_")[0] === "portal") {
 			dataSharingPortals[position_data.elemId].setPosition(position_data.elemLeft, position_data.elemTop);
@@ -952,6 +965,7 @@ function setupListeners() {
 		}
 
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
+		selectedElemDragBar.style.width = Math.round(position_data.elemWidth).toString() + "px";
 
 		var selectedElemState = document.getElementById(position_data.elemId + "_state");
 		selectedElemState.style.width = Math.round(position_data.elemWidth).toString() + "px";
@@ -1605,6 +1619,65 @@ function setupListeners() {
 		ui.removeRemoteSitesFromUpperBar(data);
 		wsio.emit('displayRequestingRemoteSites');
 	});
+
+	/*
+	 * SAGE2 Code Snippets WebSocketIO Handlers
+	 */
+	wsio.on("initializeSnippetAssociations", function(data) {
+		SAGE2_CodeSnippets.initializeSnippetAssociations(data);
+	});
+
+	wsio.on("snippetLoadRequest", function(data) {
+
+		SAGE2_CodeSnippets.requestSnippetLoad(data.from, data.scriptID);
+	});
+
+	wsio.on("snippetCloseNotify", function(data) {
+
+		SAGE2_CodeSnippets.notifySnippetClosed(data.scriptID);
+
+	});
+
+	wsio.on("saveSnippet", function(data) {
+
+		// { uniqueID, code, desc, type, scriptID, author }
+		SAGE2_CodeSnippets.saveSnippet(data.from, data.text, data.desc, data.type, data.scriptID, data.author);
+	});
+
+	wsio.on("cloneSnippet", function(data) {
+
+		// { uniqueID, code, desc, type, scriptID }
+		SAGE2_CodeSnippets.cloneSnippet(data.from, data.scriptID, data.author);
+	});
+
+	wsio.on("snippetSourceFileUpdated", function(data) {
+
+		SAGE2_CodeSnippets.sourceFileUpdated(data.snippetID, data.filename);
+	});
+
+	wsio.on("createSnippetFromFile", function(data) {
+
+		SAGE2_CodeSnippets.loadFromFile(data.snippet, data.filename);
+	});
+
+	wsio.on("createSnippetFromFileWithID", function(data) {
+
+		SAGE2_CodeSnippets.loadFromFile(data.snippet, data.filename, data.snippetID);
+	});
+
+	wsio.on("snippetsExportRequest", function(data) {
+
+		// only package export on master display client
+		if (isMaster) {
+			SAGE2_CodeSnippets.requestSnippetsProjectExport(data.from);
+		}
+	});
+
+	wsio.on("snippetsActionPerformed", function(data) {
+		console.log("snippetsActionPerformed", data);
+
+		SAGE2_CodeSnippets.handleActionFromUI(data);
+	});
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {
@@ -1630,6 +1703,23 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	if (ui.uiHidden === true) {
 		windowTitle.style.display   = "none";
 	}
+
+	var dragBar = document.createElement("div");
+	dragBar.id  = data.id + "_dragBar";
+	dragBar.className    = "windowTitle";
+	dragBar.style.width  = data.width.toString() + "px";
+	dragBar.style.height = titleBarHeight.toString() + "px";
+	dragBar.style.left   = (-offsetX).toString() + "px";
+	dragBar.style.top    = (-offsetY + data.height + titleBarHeight).toString() + "px";
+	dragBar.style.transform = translate;
+	dragBar.style.zIndex = itemCount.toString();
+	// if (ui.noDropShadow === true) {
+	dragBar.style.boxShadow = "none";
+	// }
+	// if (ui.uiHidden === true) {
+	dragBar.style.display   = "none";
+	// }
+	parent.appendChild(dragBar);
 
 	var iconWidth = Math.round(titleBarHeight) * (300 / 235);
 	var iconSpace = 0.1 * iconWidth;

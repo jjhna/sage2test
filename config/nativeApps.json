@@ -59,6 +59,13 @@
             "types": [
                 "application/stream"
             ]
+        },
+        {
+            "name": "load_snippet",
+            "types": [
+                "sage2/snippet"
+            ],
+            "directory": "snippets"
         }
     ]
 }

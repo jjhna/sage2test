@@ -84,22 +84,40 @@
 <script async src="lib/moment.min.js"></script>
 <script async src="lib/prism.js"></script>
 
+<!-- (Will need to change this to be local -- it relies on external theme now, however) -->
+<!-- <script async src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.9/ace.js"></script> -->
+<script async src="ace/ace.js"></script>
+<script async src="lib/d3.min.js"></script>
+<script async src="lib/json-summary.min.js"></script>
+
 <!-- SAGE2 code -->
 <script async src="src/websocket.io.js"></script>
 <script async src="src/SAGE2_runtime.js"></script>
 <script async src="src/SAGE2_interaction.js"></script>
 <script async src="src/SAGE2_DisplayUI.js"></script>
 <script async src="src/SAGE2_Speech.js"></script>
+<script async src="src/VisSnippets/SAGE2_SnippetsUtil.js"></script>
+<script async src="src/VisSnippets/SAGE2_SnippetEditor.js"></script>
+<script async src="src/VisSnippets/SAGE2_SnippetExporter.js"></script>
+<script async src="src/VisSnippets/SAGE2_SnippetCompiler.js"></script>
+<script async src="src/VisSnippets/SAGE2_SnippetOverlayManager.js"></script>
 <script async src="src/SAGE2_UI.js"></script>
 <script async src="src/SAGE2_webrtc.js"></script>
 
 <!-- Style sheets -->
 <link rel="stylesheet" type="text/css" href="css/fonts.css"/>
 <link rel="stylesheet" type="text/css" href="css/style_ui.css" media="screen">
+
 <link rel="stylesheet" type="text/css" href="lib/webix/webix.min.css">
 <link rel="stylesheet" type="text/css" href="lib/webix/skins/compact.min.css">
 <link rel="stylesheet" type="text/css" href="css/fileManager.css" media="screen">
+
+<link rel="stylesheet" type="text/css" href="css/snippets_ui.css" media="screen">
+<link rel="stylesheet" type="text/css" href="css/summarizer.css"/>
+
+<link rel="stylesheet" type="text/css" href="css/fileManager.css" media="screen">
 <link rel="stylesheet" type="text/css" href="css/prism.css">
+<link rel="stylesheet" type="text/css" href="css/font-awesome.min.css">
 
 
 </head>
@@ -109,7 +127,7 @@
 
 		<!-- Loading panel -->
 		<div id="loadingUI" style="display:block;">
-			<h1 style="margin-top:40px;font-size:32px;text-align:center;text-valign:center;">Loading SAGE2 Interface...</h1>
+			<h1 style="margin-top:40px;font-size:32px;text-align:center;text-align:center;">Loading SAGE2 Interface...</h1>
 		</div>
 
 		<div class="clear"></div>
@@ -120,6 +138,9 @@
 		<div id="displayUIDiv" style="display:none;">
 			<div id="partitionsDiv"></div>
 			<div id="applicationsDiv"></div>
+			<div id="snippetsOverlayWrapper">
+				<svg id="snippetsOverlay"></svg>
+			</div>
 			<canvas id="sage2UICanvas"></canvas>
 		</div>
 
@@ -142,6 +163,10 @@
 					<td id="mediabrowserContainer">
 						<img id="mediabrowser" alt="mediabrowser" src="images/ui/graycircle-mediabrowser.svg" width="48" height="48"/>
 						<p id="mediabrowserLabel">Media Browser</p>
+					</td>
+					<td id="codeContainer">
+						<img id="code" alt="code" src="images/ui/graycircle-codeeditor.svg" width="48" height="48"/>
+						<p id="codeLabel">Snippet Editor</p>
 					</td>
 					<!-- <td id="arrangementContainer">
 						<img id="arrangement"  alt="arrangement"  src="images/ui/graycircle-arrangement.svg"  width="48" height="48"/>
@@ -226,6 +251,11 @@
 						<input type="checkbox" id="sessions-dir">
 						<label for="sessions-dir">Sessions</label>
 						<ul id="sessions" class="fileItem"></ul>
+					</li>
+					<li>
+						<input type="checkbox" id="snippets-dir">
+						<label for="snippets-dir">Snippets</label>
+						<ul id="snippets" class="fileItem"></ul>
 					</li>
 				</ul>
 			</div>
@@ -435,7 +465,142 @@
 			</span>
 		</div>
 	</div>
- -->
+-->
+
+	<div id="codeSnippetEditor" class="" style="opacity: 0;">
+		<div class="overlay"></div>
+		<div class="editorWrapper">
+			<div id="snippetEditorTitlebar">
+				<div style="font-size: 16px;">
+					<div style="font-size: inherit; font-weight: bold; display: inline;">
+						VisSnippets 
+					</div>
+					Editor
+
+					<label style="margin-left: 24px; font-size: 14px; color: black;">
+						Show App Overlay
+						<input checked type="checkbox" name="snippetsOverlay" id="snippetsOverlayCheckbox" style="vertical-align: middle; width: 16px; height: 16px;">
+					</label>
+
+				</div>
+				<div class="control title-control" style="margin-right: 0;">
+					<div id="exportProject" class="controlButton">
+						<i class="fas fa-download" style="margin-right: 5px; font-size: 1.25em;"></i>
+						</i>
+						Export Project
+					</div>
+					<div id="snippetEditorClose" class="controlButton" style="height: initial; width: 30px;">
+						<i class="fas fa-times" style="font-size: 1.25em;"></i>
+					</div>
+				</div>
+			</div>
+			
+			<div id="editorContentWrapper">
+				<div id="snippetListWrapper" class="panel-wrapper">
+					<div class="panel-title list-title">
+
+						<div class="label">Snippet List</div>
+
+						<div class="control title-control">
+							<div id="newSnippetDropdown" class="dropdownWrapper">
+								<div class="controlButton controlDropdown">
+									<i class="fas fa-plus" style="margin-left: 5px; font-size: 1.25em;"></i>
+								</div>
+								<div id="newSnippetOptions" class="dropdownOptionList right">
+									<div id="newSnippetGen" class="dropdownOption">
+										<div class="colorBadge genSnippetColor"></div>
+										<span>
+											Data Generator
+										</span>
+									</div>
+									<div id="newSnippetData" class="dropdownOption">
+										<div class="colorBadge dataSnippetColor"></div>
+										<span>
+											Data Processing
+										</span>
+									</div>
+									<div id="newSnippetDraw" class="dropdownOption">
+										<div class="colorBadge drawSnippetColor"></div>
+										<span>
+											Visualization
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+
+					</div>
+					<div class="panel-content list-content"></div>
+				</div>
+				
+
+				<div id="reflowWrapper">
+					<div id="snippetEditorWrapper" class="panel-wrapper">
+						<div class="panel-title">
+							<div class="label">
+								Code Editor
+							</div>
+	
+							<div class="control title-control">
+								<input type="text" id="snippetDescription" placeholder="Snippet Name">
+								<div id="snippetEditorSave" class="controlButton">Save</div>
+							</div>
+	
+							<div class="control title-control">
+								<div id="snippetApiDropdown" class="dropdownWrapper">
+									<div class="controlButton controlDropdown">
+										<div style="font-weight: bold; font-size: 20px;margin-right:5px;">+</div>API Call
+									</div>
+									<div id="snippetApiOptions" class="dropdownOptionList right">
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="panel-content" id="snippetEditor">
+						</div>
+					</div>
+	
+					<div id="snippetLoggingWrapper">
+						<div class=" panel-wrapper log-section-wrapper">
+							<div class="panel-title log-title">
+								<div class="label">
+									Errors
+								</div>
+								<div class="log-filter">
+									<div class="log-filter-value">
+										All
+									</div>
+									<div class="log-filter-options">
+									</div>
+								</div>
+							</div>
+							<div id="errorMessages" class="panel-content log-items"></div>
+						</div>
+						<div class="panel-wrapper log-section-wrapper">
+							<div class="panel-title log-title">
+								<div class="label">
+									Console Messages
+								</div>
+								<div class="log-filter">
+									<div class="log-filter-value">
+										All
+									</div>
+									<div class="log-filter-options">
+									</div>
+								</div>
+							</div>
+							<div id="consoleMessages" class="panel-content log-items"></div>
+						</div>
+					</div>
+
+				</div>
+
+			</div>
+
+			</div>
+		</div>
+	</div>
 
 	<!-- invisible text to test rendered width -->
 	<div id="textWidthTest"></div>

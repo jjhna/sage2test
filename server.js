@@ -82,6 +82,7 @@ var SharedDataManager	= require('./src/node-sharedserverdata');   // manager for
 var userlist            = require('./src/node-userlist');         // list of users
 var S2Logger            = require('./src/node-logger');           // SAGE2 logging module
 var PerformanceManager	= require('./src/node-performancemanager'); // SAGE2 performance module
+var SnippetsManager			= require('./src/node-snippets');
 var VoiceActionManager	= require('./src/node-voiceToAction');      // manager for shared data
 var VersionManager      = require('./src/node-versionChecker');     // manager for version tracking
 var RemoteSiteSharing   = require('./src/node-remoteSiteSharing');  // remote sharing controls (2019 Nov, some functionality commented out)
@@ -204,6 +205,7 @@ partitions = new PartitionList(config);
 // FileBufferManager, I guess
 fileBufferManager = new FileBufferManager();
 
+
 // Create structure to handle automated placement of apps
 var appLaunchPositioning = {
 	xStart: 10,
@@ -231,6 +233,8 @@ if (config.folders) {
 var publicDirectory  = "public";
 var uploadsDirectory = path.join(publicDirectory, "uploads");
 var sessionDirectory = path.join(publicDirectory, "sessions");
+let snippetDirectory = path.join(publicDirectory, "snippets");
+
 var whiteboardDirectory = sessionDirectory;
 // Validate all the media folders
 for (var folder in mediaFolders) {
@@ -247,9 +251,13 @@ for (var folder in mediaFolders) {
 		uploadsDirectory = f.path;
 		mainFolder = f;
 		sessionDirectory = path.join(uploadsDirectory, "sessions");
+		snippetDirectory = path.join(uploadsDirectory, "snippets");
 		whiteboardDirectory = path.join(uploadsDirectory, "whiteboard");
 		if (!sageutils.folderExists(sessionDirectory)) {
 			sageutils.mkdirParent(sessionDirectory);
+		}
+		if (!sageutils.folderExists(snippetDirectory)) {
+			sageutils.mkdirParent(snippetDirectory);
 		}
 		sageutils.log("Folders", 'upload to', chalk.yellow.bold(f.path));
 	}
@@ -375,6 +383,11 @@ function initializeSage2Server() {
 	// Make sure sessions directory exists
 	if (!sageutils.folderExists(sessionDirectory)) {
 		fs.mkdirSync(sessionDirectory);
+	}
+
+	// Make sure snippets directory exists
+	if (!sageutils.folderExists(snippetDirectory)) {
+		fs.mkdirSync(snippetDirectory);
 	}
 
 	// Add a flag into the configuration to denote password status (used on display side)
@@ -801,6 +814,10 @@ var voiceHandler = new VoiceActionManager(variablesUsedInVoiceHandler);
 var versionHandler = null;
 
 
+
+// Snippets backend manager
+var snippetsManager = new SnippetsManager({ broadcast, clients }, config);  // eslint-disable-line no-unused-vars
+
 //
 // Catch the uncaught errors that weren't wrapped in a domain or try catch statement
 //
@@ -1025,6 +1042,15 @@ function wsAddClient(wsio, data) {
 		reportIfCanWallScreenshot();
 	}
 
+	// Handle snippet initialization for a connecting client
+	if (wsio.clientType === "display") {
+		// handle initialization for display
+		// snippetsManager.displayClientConnect(wsio);
+	} else if (wsio.clientType === "sageUI") {
+		// handle sageUI initialization
+		snippetsManager.sageUIClientConnect(wsio);
+	}
+
 	// If it is a stand alone app page, create the app window
 	if (wsio.clientType === "standAloneApp") {
 		initializeExistingApps(wsio, data.app);
@@ -1074,6 +1100,7 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 	if (wsio.clientType === "display") {
 		initializeExistingSagePointers(wsio);
 		initializeExistingPartitions(wsio);
+		snippetsManager.displayClientConnect(wsio); // send snippets states before opening apps
 		initializeExistingApps(wsio);
 		initializeRemoteServerInfo(wsio);
 		initializeExistingWallUI(wsio);
@@ -1089,6 +1116,8 @@ function initializeWSClient(wsio, reqConfig, reqVersion, reqTime, reqConsole) {
 		}
 		initializeExistingAppsPositionSizeTypeOnly(wsio);
 		initializeExistingPartitionsUI(wsio);
+		// Have the Snippets Manager send an update with the associations/state
+		snippetsManager.initializeSnippetsClient(wsio);
 	} else if (wsio.clientType === "standAloneApp") {
 		initializeExistingSagePointers(wsio);
 		createSagePointer(wsio.id);
@@ -1280,6 +1309,9 @@ function setupListeners(wsio) {
 
 	// Jupyter messages
 	wsio.on('updateJupyterSharing',                 wsUpdateJupyterSharing);
+	wsio.on('sendNotebookDynamic',									wsSendNotebookDynamic);
+	wsio.on('updateDynamicNotebookCell',						wsUpdateDynamicNotebookCell);
+	wsio.on('removeDynamicNotebookCells', 					wsRemoveDynamicNotebookCells);
 
 	// message passing between clients
 	wsio.on('requestAppContextMenu',				wsRequestAppContextMenu);
@@ -1324,11 +1356,29 @@ function setupListeners(wsio) {
 	wsio.on('requestClientUpdate',			        		wsRequestClientUpdate);
 
 	// message from stand alone app
-	wsio.on('setSagePointerToAppInteraction', 	  	wsSetSagePointerToAppInteraction);
+	wsio.on('setSagePointerToAppInteraction', 		wsSetSagePointerToAppInteraction);
 
 	// Message from a ScreenShare needing to connect with original ScreenShare client
 	wsio.on('webRtcRemoteScreenShareSendingDisplayMessage', wsWebRtcRemoteScreenShareSendingDisplayMessage);
 	wsio.on('webRtcRemoteScreenShareSendingUiMessage',      wsWebRtcRemoteScreenShareSendingUiMessage);
+
+	// == SAGE2_CodeSnippets messages ==
+	// - Display to Server
+	wsio.on('snippetSaveIntoServer', wsSnippetSaveIntoServer);
+	wsio.on('updateSnippetAssociationState', wsSaveSnippetState);
+	// - WebUI to Display
+	wsio.on('editorSnippetLoadRequest', wsEditorSnippetLoadRequest);
+	wsio.on('editorSnippetCloseNotify', wsEditorSnippetCloseNotify);
+	wsio.on('editorSaveSnippet', wsEditorSaveSnippet);
+	wsio.on('editorCloneSnippet', wsEditorCloneSnippet);
+	wsio.on("editorRequestSnippetsExport", wsEditorRequestSnippetsExport);
+	wsio.on("editorSnippetActionPerformed", wsEditorSnippetActionPerformed);
+	// - Display to WebUI
+	wsio.on("snippetsStateUpdated", wsSnippetsStateUpdated);
+	wsio.on("snippetsSendLog", wsSnippetsSendLog);
+	wsio.on("snippetSendCodeOnLoad", wsSnippetSendCodeOnLoad);
+	wsio.on("snippetsSendProjectExport", wsSnippetsSendProjectExport);
+
 
 	// Testing versioning and sharing
 	// erase me, will maybe erase these functions after done testing.
@@ -1356,6 +1406,7 @@ function setupListeners(wsio) {
 	// Support for the assistedConfig.html
 	wsio.on('requestCurrentConfigurationFile',      wsRequestCurrentConfigurationFile);
 	wsio.on('assistedConfigSend',                   wsAssistedConfigSend);
+
 }
 
 /**
@@ -2784,6 +2835,7 @@ function saveSession(filename) {
 	states.numapps = 0;
 	states.partitions = [];
 	states.numpartitions = 0;
+	states.snippets = {};
 	states.date    = Date.now();
 	for (key in SAGE2Items.applications.list) {
 		// make a copy of the application object
@@ -2835,6 +2887,12 @@ function saveSession(filename) {
 		states.partitions.push(p);
 		states.numpartitions++;
 	}
+
+	// save snippet information
+	states.snippets = {
+		loaded: snippetsManager.getLoadedSnippetInfo(),
+		associations: snippetsManager.getSnippetAssociations()
+	};
 
 	// session with only partitions considered a "LAYOUT"
 	if (states.numapps === 0 && states.numpartitions > 0 && filename !== "default.json") {
@@ -3047,6 +3105,21 @@ function loadSession(filename) {
 
 			var session = JSON.parse(data);
 			sageutils.log("Session", "number of applications", session.numapps);
+
+			// reload snippets in the display and get them ready for session load
+			if (session.snippets) {
+				let { loaded, associations } = session.snippets;
+
+				// load existing snippets
+				for (let filename of Object.keys(loaded)) {
+					snippetsManager.addLoadedSnippet(loaded[filename]);
+					broadcast("createSnippetFromFileWithID", loaded[filename]);
+				}
+
+				// snippetsManager.updateSnippetAssociations(associations);
+				// send the snippet associations
+				broadcast("initializeSnippetAssociations", associations);
+			}
 
 			// recreate partitions
 			if (session.partitions) {
@@ -3681,6 +3754,12 @@ function wsLoadFileFromServer(wsio, data) {
 		broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
 		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
 			application: {id: null, type: "session"}}, time: Date.now()});
+	} else if (data.application === "load_snippet") {
+		loadSnippet(data.filename);
+
+		broadcast('userEvent', {type: 'load file', data: data, id: wsio.id});
+		addEventToUserLog(wsio.id, {type: "openFile", data: {name: data.filename,
+			application: {id: null, type: "snippet"}}, time: Date.now()});
 	} else {
 		var fileLoadCallBack = function(appInstance, videohandle) {
 			// Get the drop position and convert it to wall coordinates
@@ -4653,7 +4732,9 @@ function wsUpdateApplicationPosition(wsio, data) {
 	app.width = data.appPositionAndSize.elemWidth;
 	app.height = data.appPositionAndSize.elemHeight;
 	var im = findInteractableManager(data.appPositionAndSize.elemId);
-	im.editGeometry(app.id, "applications", "rectangle", {x: app.left, y: app.top, w: app.width, h: app.height + titleBarHeight});
+	im.editGeometry(app.id, "applications", "rectangle", {
+		x: app.left, y: app.top,
+		w: app.width, h: app.height + titleBarHeight + config.ui.dragBarHeight});
 	broadcast('setItemPosition', data.appPositionAndSize);
 	if (SAGE2Items.renderSync.hasOwnProperty(app.id)) {
 		calculateValidBlocks(app, mediaBlockSize, SAGE2Items.renderSync[app.id]);
@@ -4687,7 +4768,9 @@ function wsUpdateApplicationPositionAndSize(wsio, data) {
 	app.width = data.appPositionAndSize.elemWidth;
 	app.height = data.appPositionAndSize.elemHeight;
 	var im = findInteractableManager(data.appPositionAndSize.elemId);
-	im.editGeometry(app.id, "applications", "rectangle", {x: app.left, y: app.top, w: app.width, h: app.height + titleBarHeight});
+	im.editGeometry(app.id, "applications", "rectangle", {
+		x: app.left, y: app.top,
+		w: app.width, h: app.height + titleBarHeight + config.ui.dragBarHeight});
 	handleApplicationResize(app.id);
 	broadcast('setItemPositionAndSize', data.appPositionAndSize);
 	if (SAGE2Items.renderSync.hasOwnProperty(app.id)) {
@@ -5182,6 +5265,9 @@ function loadConfiguration() {
 		userConfig.ui.widgetControlSize = calcuatedWidgetControlSize;
 	}
 
+	// Touch drag bar. By default same as title bar height or 0 if disabled
+	userConfig.ui.dragBarHeight = 0;
+
 	// Automatically populate the displays entry if undefined. Adds left to right, starting from the top.
 	if (userConfig.displays === undefined || userConfig.displays.length == 0) {
 		userConfig.displays = [];
@@ -5649,6 +5735,15 @@ function manageUploadedFiles(files, position, ptrName, ptrColor, openAfter) {
 	var fileKeys = Object.keys(files);
 	fileKeys.forEach(function(key) {
 		var file = files[key];
+
+		// handle snippet loading
+		if (registry.getMimeType(file.name) === "sage2/snippet") {
+			uploadSnippet(file);
+
+			// don't use appLoader for snippets
+			return;
+		}
+
 		appLoader.manageAndLoadUploadedFile(file, function(appInstance, videohandle) {
 
 			if (appInstance === null) {
@@ -7008,7 +7103,7 @@ function createNewDataSharingSession(remoteName, remoteHost, remotePort, remoteW
 		x: dataSession.left,
 		y: dataSession.top,
 		w: dataSession.width,
-		h: dataSession.height + config.ui.titleBarHeight
+		h: dataSession.height + config.ui.titleBarHeight + config.ui.dragBarHeight
 	};
 
 	var cornerSize   = 0.2 * Math.min(geometry.w, geometry.h);
@@ -7034,7 +7129,8 @@ function createNewDataSharingSession(remoteName, remoteHost, remotePort, remoteW
 		{x: startButtons + buttonsPad + oneButton, y: 0, w: oneButton, h: config.ui.titleBarHeight}, 1);
 	SAGE2Items.portals.addButtonToItem(dataSession.id, "dragCorner", "rectangle",
 		{x: geometry.w - cornerSize, y: geometry.h + config.ui.titleBarHeight - cornerSize, w: cornerSize, h: cornerSize}, 2);
-
+	SAGE2Items.portals.addButtonToItem(dataSession.id, "dragBottomBar", "rectangle",
+		{x: 0, y: geometry.h + config.ui.titleBarHeight, w: geometry.w, h: config.ui.titleBarHeight}, 2);
 	SAGE2Items.portals.interactMgr[dataSession.id] = new InteractableManager();
 	SAGE2Items.portals.interactMgr[dataSession.id].addLayer("radialMenus",  2);
 	SAGE2Items.portals.interactMgr[dataSession.id].addLayer("widgets",      1);
@@ -7287,6 +7383,11 @@ function pointerPressOnApplication(uniqueID, pointerX, pointerY, data, obj, loca
 				selectApplicationForResize(uniqueID, obj.data, pointerX, pointerY, portalId);
 			}
 			break;
+		case "dragBottomBar":
+			if (drawingManager.paletteID !== uniqueID) {
+				selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY, portalId);
+			}
+			break;
 		case "syncButton":
 			if (sagePointers[uniqueID].visible) {
 				// only if pointer on the wall, not the web UI
@@ -7339,6 +7440,9 @@ function pointerPressOnPartition(uniqueID, pointerX, pointerY, data, obj, localP
 			break;
 		case "dragCorner":
 			selectApplicationForResize(uniqueID, obj.data, pointerX, pointerY, portalId);
+			break;
+		case "dragBottomBar":
+			selectApplicationForMove(uniqueID, obj.data, pointerX, pointerY);
 			break;
 		case "tileButton":
 			if (sagePointers[uniqueID].visible) {
@@ -7425,6 +7529,10 @@ function pointerPressOnDataSharingPortal(uniqueID, pointerX, pointerY, data, obj
 			if (remoteInteraction[uniqueID].windowManagementMode()) {
 				selectPortalForResize(uniqueID, obj.data, pointerX, pointerY);
 			}
+			break;
+		}
+		case "dragBottomBar": {
+			selectPortalForMove(uniqueID, obj.data, pointerX, pointerY);
 			break;
 		}
 		case "fullscreenButton": {
@@ -8070,6 +8178,10 @@ function pointerMoveOnApplication(uniqueID, pointerX, pointerY, data, obj, local
 			}
 			break;
 		}
+		case "dragBottomBar": {
+			removeExistingHoverCorner(uniqueID, portalId);
+			break;
+		}
 		case "fullscreenButton": {
 			removeExistingHoverCorner(uniqueID, portalId);
 			break;
@@ -8108,6 +8220,9 @@ function pointerMoveOnPartition(uniqueID, pointerX, pointerY, data, obj, localPt
 				remoteInteraction[uniqueID].setHoverCornerItem(obj.data);
 				broadcast('hoverOverItemCorner', {elemId: obj.data.id, flag: true});
 			}
+			break;
+		case "dragBottomBar":
+
 			break;
 		case "tileButton":
 
@@ -8191,6 +8306,10 @@ function pointerMoveOnDataSharingPortal(uniqueID, pointerX, pointerY, data, obj,
 			}
 			break;
 		}
+		case "dragBottomBar": {
+			removeExistingHoverCorner(uniqueID, obj.data.id);
+			break;
+		}
 		case "fullscreenButton": {
 			removeExistingHoverCorner(uniqueID, obj.data.id);
 			break;
@@ -8230,7 +8349,8 @@ function moveApplicationWindow(uniqueID, moveApp, portalId) {
 	if (im) {
 		drawingManager.applicationMoved(moveApp.elemId, moveApp.elemLeft, moveApp.elemTop);
 		im.editGeometry(moveApp.elemId, "applications", "rectangle",
-			{x: moveApp.elemLeft, y: moveApp.elemTop, w: moveApp.elemWidth, h: moveApp.elemHeight + titleBarHeight});
+			{x: moveApp.elemLeft, y: moveApp.elemTop,
+				w: moveApp.elemWidth, h: moveApp.elemHeight + titleBarHeight + config.ui.dragBarHeight});
 		broadcast('setItemPosition', moveApp);
 		if (SAGE2Items.renderSync.hasOwnProperty(moveApp.elemId)) {
 			calculateValidBlocks(app, mediaBlockSize, SAGE2Items.renderSync[app.id]);
@@ -8250,7 +8370,7 @@ function moveApplicationWindow(uniqueID, moveApp, portalId) {
 			var stickyItem = updatedStickyItems[idx];
 			im.editGeometry(stickyItem.elemId, "applications", "rectangle", {
 				x: stickyItem.elemLeft, y: stickyItem.elemTop,
-				w: stickyItem.elemWidth, h: stickyItem.elemHeight + config.ui.titleBarHeight
+				w: stickyItem.elemWidth, h: stickyItem.elemHeight + config.ui.titleBarHeight + config.ui.dragBarHeight
 			});
 			broadcast('setItemPosition', updatedStickyItems[idx]);
 		}
@@ -8274,7 +8394,8 @@ function moveAndResizeApplicationWindow(resizeApp, portalId) {
 	drawingManager.applicationResized(resizeApp.elemId, resizeApp.elemWidth, resizeApp.elemHeight + titleBarHeight,
 		{x: resizeApp.elemLeft, y: resizeApp.elemTop});
 	im.editGeometry(resizeApp.elemId, "applications", "rectangle",
-		{x: resizeApp.elemLeft, y: resizeApp.elemTop, w: resizeApp.elemWidth, h: resizeApp.elemHeight + titleBarHeight});
+		{x: resizeApp.elemLeft, y: resizeApp.elemTop,
+			w: resizeApp.elemWidth, h: resizeApp.elemHeight + titleBarHeight + config.ui.dragBarHeight});
 	handleApplicationResize(resizeApp.elemId);
 	broadcast('setItemPositionAndSize', resizeApp);
 	if (SAGE2Items.renderSync.hasOwnProperty(resizeApp.elemId)) {
@@ -8295,7 +8416,7 @@ function moveAndResizeApplicationWindow(resizeApp, portalId) {
 		var stickyItem = updatedStickyItems[idx];
 		im.editGeometry(stickyItem.elemId, "applications", "rectangle", {
 			x: stickyItem.elemLeft, y: stickyItem.elemTop,
-			w: stickyItem.elemWidth, h: stickyItem.elemHeight + config.ui.titleBarHeight
+			w: stickyItem.elemWidth, h: stickyItem.elemHeight + config.ui.titleBarHeight + config.ui.dragBarHeight
 		});
 		broadcast('setItemPosition', updatedStickyItems[idx]);
 	}
@@ -8347,7 +8468,7 @@ function updatePartitionInnerLayout(partition, animateAppMovement) {
 function moveDataSharingPortalWindow(movePortal) {
 	interactMgr.editGeometry(movePortal.elemId, "portals", "rectangle", {
 		x: movePortal.elemLeft, y: movePortal.elemTop,
-		w: movePortal.elemWidth, h: movePortal.elemHeight + config.ui.titleBarHeight
+		w: movePortal.elemWidth, h: movePortal.elemHeight + config.ui.titleBarHeight + config.ui.dragBarHeight
 	});
 	broadcast('setItemPosition', movePortal);
 }
@@ -8355,7 +8476,7 @@ function moveDataSharingPortalWindow(movePortal) {
 function moveAndResizeDataSharingPortalWindow(resizePortal) {
 	interactMgr.editGeometry(resizePortal.elemId, "portals", "rectangle",
 		{x: resizePortal.elemLeft, y: resizePortal.elemTop,
-			w: resizePortal.elemWidth, h: resizePortal.elemHeight + config.ui.titleBarHeight});
+			w: resizePortal.elemWidth, h: resizePortal.elemHeight + config.ui.titleBarHeight + config.ui.dragBarHeight});
 	handleDataSharingPortalResize(resizePortal.elemId);
 	broadcast('setItemPositionAndSize', resizePortal);
 }
@@ -9035,6 +9156,9 @@ function pointerDblClickOnApplication(uniqueID, pointerX, pointerY, obj, localPt
 		case "dragCorner": {
 			break;
 		}
+		case "dragBottomBar": {
+			break;
+		}
 		case "fullscreenButton": {
 			break;
 		}
@@ -9123,6 +9247,10 @@ function pointerScrollStartOnApplication(uniqueID, pointerX, pointerY, obj, loca
 				remoteInteraction[uniqueID].selectWheelItem = obj.data;
 				remoteInteraction[uniqueID].selectWheelDelta = 0;
 			}
+			break;
+		}
+		case "dragBottomBar": {
+			selectApplicationForScrollResize(uniqueID, obj.data, pointerX, pointerY);
 			break;
 		}
 		case "fullscreenButton": {
@@ -9820,7 +9948,9 @@ function deleteApplication(appId, portalId, wsio) {
 		if (sender.wsio !== null) {
 			sender.wsio.emit('stopMediaCapture', {streamId: sender.streamId});
 		}
-	} else if (application === "JupyterLab") {
+	} else if (application === "JupyterLab"
+		|| application === "JupyterCodeCell"
+		|| application === "JupyterMarkdownCell") {
 		broadcast('jupyterShareTerminated', {id: appId});
 	}
 
@@ -9917,7 +10047,7 @@ function handleNewApplication(appInstance, videohandle) {
 	var zIndex = SAGE2Items.applications.numItems + SAGE2Items.portals.numItems + 20;
 	interactMgr.addGeometry(appInstance.id, "applications", "rectangle", {
 		x: appInstance.left, y: appInstance.top,
-		w: appInstance.width, h: appInstance.height + config.ui.titleBarHeight},
+		w: appInstance.width, h: appInstance.height + config.ui.titleBarHeight + config.ui.dragBarHeight},
 	true, zIndex, appInstance);
 
 	var cornerSize   = 0.2 * Math.min(appInstance.width, appInstance.height);
@@ -9945,6 +10075,11 @@ function handleNewApplication(appInstance, videohandle) {
 		x: appInstance.width - cornerSize,
 		y: appInstance.height + config.ui.titleBarHeight - cornerSize,
 		w: cornerSize, h: cornerSize
+	}, 2);
+	SAGE2Items.applications.addButtonToItem(appInstance.id, "dragBottomBar", "rectangle", {
+		x: 0,
+		y: appInstance.height + config.ui.dragBarHeight,
+		w: appInstance.width, h: config.ui.dragBarHeight
 	}, 2);
 	if (appInstance.sticky === true) {
 		appInstance.pinned = false;
@@ -9976,7 +10111,7 @@ function handleNewApplicationInDataSharingPortal(appInstance, videohandle, porta
 	var titleBarHeight = SAGE2Items.portals.list[portalId].titleBarHeight;
 	SAGE2Items.portals.interactMgr[portalId].addGeometry(appInstance.id, "applications", "rectangle", {
 		x: appInstance.left, y: appInstance.top,
-		w: appInstance.width, h: appInstance.height + titleBarHeight
+		w: appInstance.width, h: appInstance.height + titleBarHeight + config.ui.dragBarHeight
 	}, true, zIndex, appInstance);
 
 	var cornerSize = 0.2 * Math.min(appInstance.width, appInstance.height);
@@ -10003,6 +10138,11 @@ function handleNewApplicationInDataSharingPortal(appInstance, videohandle, porta
 	SAGE2Items.applications.addButtonToItem(appInstance.id, "dragCorner", "rectangle", {
 		x: appInstance.width - cornerSize, y: appInstance.height + titleBarHeight - cornerSize,
 		w: cornerSize, h: cornerSize
+	}, 2);
+	SAGE2Items.applications.addButtonToItem(appInstance.id, "dragBottomBar", "rectangle", {
+		x: 0,
+		y: appInstance.height + config.ui.dragBarHeight,
+		w: appInstance.width, h: config.ui.dragBarHeight
 	}, 2);
 	if (appInstance.sticky === true) {
 		appInstance.pinned = false;
@@ -10050,6 +10190,8 @@ function handleApplicationResize(appId) {
 		{x: startButtons + (2 * (buttonsPad + oneButton)), y: 0, w: oneButton, h: titleBarHeight});
 	SAGE2Items.applications.editButtonOnItem(appId, "dragCorner", "rectangle",
 		{x: app.width - cornerSize, y: app.height + titleBarHeight - cornerSize, w: cornerSize, h: cornerSize});
+	SAGE2Items.applications.editButtonOnItem(appId, "dragBottomBar", "rectangle",
+		{x: 0, y: app.height + config.ui.dragBarHeight, w: app.width, h: config.ui.dragBarHeight});
 	if (app.sticky === true) {
 		SAGE2Items.applications.editButtonOnItem(app.id, "pinButton", "rectangle",
 			{x: buttonsPad, y: 0, w: oneButton, h: titleBarHeight});
@@ -10087,7 +10229,8 @@ function handleDataSharingPortalResize(portalId) {
 		{x: startButtons + buttonsPad + oneButton, y: 0, w: oneButton, h: config.ui.titleBarHeight});
 	SAGE2Items.portals.editButtonOnItem(portalId, "dragCorner", "rectangle",
 		{x: portalWidth - cornerSize, y: portalHeight + config.ui.titleBarHeight - cornerSize, w: cornerSize, h: cornerSize});
-
+	SAGE2Items.portals.editButtonOnItem(portalId, "dragBottomBar", "rectangle",
+		{x: 0, y: portalHeight + config.ui.dragBarHeight, w: portalWidth, h: config.ui.dragBarHeight});
 }
 
 function findInteractableManager(appId) {
@@ -11330,13 +11473,13 @@ function wsPerformanceData(wsio, data) {
 }
 
 
-// /**
-//  * Update data from a JupyterLab connection, starting a new application if necessary.
-//  *
-//  * @method     wsUpdateJupyterSharing
-//  * @param      {Object}  wsio    The websocket
-//  * @param      {Object}  data    The data
-//  */
+/**
+ * Update data from a JupyterLab connection, starting a new application if necessary.
+ *
+ * @method     wsUpdateJupyterSharing
+ * @param      {Object}  wsio    The websocket
+ * @param      {Object}  data    The data
+ */
 function wsUpdateJupyterSharing(wsio, data) {
 	sageutils.log('Jupyter', "received update from:", data.id);
 
@@ -11344,7 +11487,15 @@ function wsUpdateJupyterSharing(wsio, data) {
 
 	// create an app if one does not already exist for this connection+cell
 	if (!existingApp) {
-		appLoader.createJupyterApp(data.src, data.mime, "base64", data.title, "#F27729", data.width, data.height,
+		appLoader.createJupyterApp(
+			data.src,
+			data.mime,
+			"base64",
+			data.title,
+			"#F27729",
+			data.width,
+			data.height,
+			data.code,
 			function (appInstance) {
 				appInstance.id = data.id;
 
@@ -11372,6 +11523,149 @@ function sendApplicationDataUpdate(data) {
 	broadcast('eventInItem', event);
 }
 
+/*
+	data: {
+    notebook: any,
+    show_markdown: boolean,
+    kernel_id: string
+  }
+*/
+function wsSendNotebookDynamic(wsio, data) {
+	// console.log("wsSendNotebookDynamic", data);
+
+	spreadNotebookOnWall({
+		notebook: data.notebook,
+		id: data.kernel_id,
+		show_markdown: data.show_markdown
+	});
+}
+
+
+/*
+	data: {
+    cell: any,
+    ind: number,
+    kernel_id: string
+  }
+*/
+function wsUpdateDynamicNotebookCell(wsio, data) {
+	let appID = `${data.kernel_id}~${data.ind}`;
+	// console.log("wsUpdateDynamicNotebookCell", appID);
+	sageutils.log('Jupyter', "Update Cell " + appID);
+
+	let existingApp = Object.values(SAGE2Items.applications.list)
+		.find(app => app.id === appID);
+
+	if (existingApp) {
+		sendApplicationDataUpdate({
+			cell: data.cell,
+			kernel_id: data.kernel_id,
+			ind: data.ind,
+			id: appID
+		});
+	} else {
+		// this app doesn't exist, notify back through WISO ?
+	}
+}
+
+/*
+	data: {
+    cell: Cell[],
+	}
+
+	Cell : {
+		ind: string,
+		info: any,
+		key: string
+	} // key === appId
+*/
+function wsRemoveDynamicNotebookCells(wsio, data) {
+	for (let cell of data.cells) {
+		deleteApplication(cell.key);
+	}
+}
+
+function spreadNotebookOnWall({
+	notebook,
+	id,
+	show_markdown
+}) {
+	// tile on entire wall
+	let wholeWall = true;
+	let downsizeRatio = 0.05; // 5% padding on all sides
+
+	let paddingUnit = config.ui.titleBarHeight;
+
+	let tiledArea = {
+		width: wholeWall ?  (1 - downsizeRatio * 2) * config.totalWidth : 1800,
+		height: wholeWall ? (1 - downsizeRatio * 2) * config.totalHeight - config.ui.titleBarHeight : 800,
+		left: wholeWall ? downsizeRatio * config.totalWidth : 400, // 0
+		top: wholeWall ? config.ui.titleBarHeight + (downsizeRatio * config.totalHeight) : 100 // config.ui.titleBarHeight
+	};
+
+	let cells = Object.entries(notebook.cells)
+		.filter(([i, c]) => show_markdown || c.cell_type === "code");
+
+	let numCells = cells.length;
+	let cellAspectRatio = 1.5; // constant value
+	let wallAspectRatio = (tiledArea.width / tiledArea.height);
+
+	// calculate the number of columns and rows which can fit
+	let numColsPreliminary = Math.ceil(
+		Math.sqrt(cells.length * (wallAspectRatio / cellAspectRatio))
+	);
+
+	let numRows = Math.ceil(numCells / numColsPreliminary);
+	let numCols = Math.ceil(cells.length / numRows);
+
+	// calculate the grid size for this configuration
+	let gridWidth = tiledArea.width / numCols;
+	let gridHeight = tiledArea.height / numRows;
+
+	// get the actual height and width (maintaining aspect ratio of cells as constant)
+	let appHeight = Math.min(
+		gridHeight - paddingUnit,
+		(gridWidth / cellAspectRatio) - 2 * paddingUnit
+	);
+
+	let height = appHeight - config.ui.titleBarHeight;
+	let width = appHeight * cellAspectRatio;
+
+	// calculate total size used by cells
+	let totalCellWidth = (width + 2 * paddingUnit) * numCols;
+	let totalCellHeight = (appHeight + paddingUnit) * numRows;
+
+	// calculate a global offset for all cells to center them in the display
+	let globalLeftOffset = (tiledArea.width - totalCellWidth) / 2 + tiledArea.left; // this seems to maybe not work correctly for left offset (?)
+	let globalTopOffset = (tiledArea.height - totalCellHeight) / 2 + tiledArea.top;
+
+	for (let i in cells) {
+		let [ind, cell] = cells[i];
+
+		appLoader.createJupyterCell(
+			cell,
+			notebook.metadata,
+			ind,
+			{
+				left:
+					Math.floor(i / numRows) * (width + 2 * paddingUnit) +
+					paddingUnit +
+					globalLeftOffset,
+				top:
+					(i % numRows) * (appHeight + paddingUnit) +
+					paddingUnit / 2 +
+					globalTopOffset,
+				width,
+				height
+			},
+			function (appInstance) {
+				appInstance.id = `${id}~${ind}`;
+
+				handleNewApplication(appInstance, null);
+			}
+		);
+	}
+}
 
 /**
  * Method handling a file save request from a SAGE2_App
@@ -11711,6 +12005,274 @@ function wsVoiceToAction(wsio, data) {
 
 function wsRequestClientUpdate(wsio) {
 	performanceManager.updateClient(wsio);
+}
+
+/* ======== Code Snippets Event Handlers ======== */
+
+/**
+ * Loads a snippet with a .snip filename from file for uploaded files
+ *
+ * @method uploadSnippet
+ * @param {Object} file - file of .snip format
+ */
+function uploadSnippet(file) {
+	// move the snippet to the correct directory
+	let newPath = path.join(mediaFolders.user.path, "snippets", file.name);
+
+	// move asset from tmp (and process into asset manager)
+	assets.moveAsset(file.path, newPath, function() {
+		loadSnippet(newPath);
+	});
+}
+
+/**
+ * Loads a snippet with a .snip filename from file
+ *
+ * @method loadSnippet
+ * @param {String} filename - filename to a file of .snip format
+ */
+function loadSnippet(filename) {
+
+	let content = JSON.parse(fs.readFileSync(filename).toString());
+
+	broadcast("createSnippetFromFile", {
+		snippet: content,
+		filename: path.basename(filename)
+	});
+}
+
+/**
+ * Updates the stored file in the SAGE2 Media Folders for a snippet when it is created
+ * or when the contents are changed
+ *
+ * @method wsSnippetSaveIntoServer
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should contain packaged snippet information.
+ */
+function wsSnippetSaveIntoServer(wsio, data) {
+	let snippetWritePath = path.join(mediaFolders.user.path, "snippets");
+
+	var now = new Date();
+	// Assign a unique name
+	let oldname = data.filename;
+	var filename = `${data.type}-${data.desc.replace(" ", "_")}-${now.getTime()}.snip`;
+	var fullpath = path.join(snippetWritePath, filename);
+
+	var writepath = path.join(snippetWritePath, filename);
+
+	let fileContents = {
+		text: data.text,
+		type: data.type,
+		desc: data.desc,
+		creator: data.creator,
+		editor: data.editor
+	};
+
+	let fileString = JSON.stringify(fileContents);
+
+	// if the specified name is the same as it previously was
+	if (oldname !== null && filename && oldname.split("-")[1] === filename.split("-")[1] && !fs.existsSync(fullpath)) {
+		// reuse old name if possible
+		filename = oldname;
+		fullpath = path.join(snippetWritePath, filename);
+		writepath = fullpath;
+	} else if (oldname !== "null") {
+		// rename old file if the name changed
+		let oldpath = path.join(snippetWritePath, oldname);
+		writepath = oldpath;
+	}
+
+	// write to the file
+	fs.writeFileSync(writepath, fileString);
+
+	// if the file needs to be moved because of a name update
+	if (writepath !== fullpath) {
+
+		// move the asset with the manager
+		assets.moveAsset(writepath, fullpath, function() {
+			snippetAssetAdded();
+		});
+	} else {
+		// otherwise just add the new asset
+		exiftool.file(fullpath, function(err2, data) {
+			if (err2) {
+				sageutils.log("Loader", "internal error", err2);
+			} else {
+				assets.addFile(data.SourceFile, data, function() {
+					assets.addTag(fullpath, "SAGE2user", fileContents.creator);
+
+					// add the user and save
+					assets.saveAssets();
+
+					snippetAssetAdded();
+				});
+			}
+		});
+	}
+
+
+	// callback for asset addition finishing
+	function snippetAssetAdded() {
+		// add snippet as loaded to state manager
+		snippetsManager.addLoadedSnippet({
+			snippetID: data.snippetID,
+			snippet: fileContents,
+			filename
+		});
+
+		// notify the display runtime that the sourcefile could be updated
+		broadcast("snippetSourceFileUpdated", {
+			snippetID: data.snippetID,
+			filename
+		});
+
+		// update the stored file list (name could change)
+		broadcast('storedFileList', getSavedFilesList());
+	}
+}
+
+function wsSaveSnippetState(wsio, data) {
+	snippetsManager.updateSnippetAssociations(data);
+}
+
+/* ===== Code Snippets Messages from WebUI ====== */
+/**
+ * Pass-through function to bounce a load request to the display client
+ *
+ * @method wsEditorSnippetLoadRequest
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information.
+ */
+function wsEditorSnippetLoadRequest(wsio, data) {
+	data.from = wsio.id;
+
+	broadcast("snippetLoadRequest", data);
+}
+
+/**
+ * Pass-through function to bounce a close notification to the display client
+ *
+ * @method wsEditorSnippetCloseNotify
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information.
+ */
+function wsEditorSnippetCloseNotify(wsio, data) {
+	broadcast("snippetCloseNotify", data);
+}
+
+
+/**
+ * Pass-through function to bounce a snippet save action to the display client
+ *
+ * @method wsEditorSaveSnippet
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information.
+ */
+function wsEditorSaveSnippet(wsio, data) {
+	data.from = wsio.id;
+
+	broadcast("saveSnippet", data);
+}
+
+
+/**
+ * Pass-through function to bounce a snippet clone request to the display client
+ *
+ * @method wsEditorCloneSnippet
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information.
+ */
+function wsEditorCloneSnippet(wsio, data) {
+	data.from = wsio.id;
+
+	broadcast("cloneSnippet", data);
+}
+
+
+/**
+ * Pass-through function to bounce a package/export request to the display client
+ *
+ * @method wsEditorRequestSnippetsExport
+ * @param {Object} wsio - ws to originator.
+ */
+function wsEditorRequestSnippetsExport(wsio) {
+
+	broadcast("snippetsExportRequest", {from: wsio.id});
+}
+
+/**
+ * Pass-through function to execute an action on the display from the WebUI
+ *
+ * @method wsEditorSnippetActionPerformed
+ * @param {Object} wsio - ws to originator.
+ */
+function wsEditorSnippetActionPerformed(wsio, data) {
+
+	broadcast("snippetsActionPerformed", data);
+}
+
+/* ===== Code Snippets Messages from Display ===== */
+/**
+ * Pass-through function to bounce the new snippet list to the WebUI
+ *
+ * @method wsSnippetsStateUpdated
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the snippet list information.
+ */
+function wsSnippetsStateUpdated(wsio, data) {
+	// update the snippets manager with the new states
+	snippetsManager.updateFunctionStatus(data);
+
+	broadcast("editorReceiveSnippetStates", data);
+}
+
+
+/**
+ * Pass-through function to bounce a completed snippet load request back to the WebUI
+ *
+ * @method wsSnippetsSendLog
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information, along with the destination.
+ */
+function wsSnippetsSendLog(wsio, data) {
+
+	let ind = clients.findIndex(c => c.id === data.to);
+
+	if (ind !== -1) {
+		clients[ind].emit("editorReceiveSnippetLog", data);
+	}
+}
+
+/**
+ * Pass-through function to bounce a completed snippet load request back to the WebUI
+ *
+ * @method wsSnippetSendCodeOnLoad
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested snippet information, along with the destination.
+ */
+function wsSnippetSendCodeOnLoad(wsio, data) {
+
+	let ind = clients.findIndex(c => c.id === data.to);
+
+	if (ind !== -1) {
+		clients[ind].emit("editorReceiveLoadedSnippet", data);
+	}
+}
+
+/**
+ * Pass-through function to bounce a completed snippet export request back to the WebUI
+ *
+ * @method wsSnippetsSendProjectExport
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - the requested export information, along with the destination.
+ */
+function wsSnippetsSendProjectExport(wsio, data) {
+
+	let ind = clients.findIndex(c => c.id === data.to);
+
+	if (ind !== -1) {
+		clients[ind].emit("editorReceiveSnippetsExport", data);
+	}
 }
 
 /**
