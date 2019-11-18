@@ -156,7 +156,6 @@ var Snippets_View = SAGE2_App.extend({
 
       let summary = jsonSummary.summarize(data, {arraySampleCount: 100});
       let printedSummary = jsonSummary.printSummary(summary, {theme: "monokai", startExpanded: true});
-      console.log(summary);
 
       this.errorBox.style.display = "none";
 
