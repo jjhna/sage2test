@@ -56,7 +56,8 @@
 				"https://cdn.jsdelivr.net/npm/vega-embed@3",
 				"https://cdnjs.cloudflare.com/ajax/libs/three.js/92/three.min.js",
 				"https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js",
-				"https://cdn.plot.ly/plotly-latest.min.js"
+				"https://cdn.plot.ly/plotly-latest.min.js",
+				"https://maps.googleapis.com/maps/api/js?key=AIzaSyANE6rJqcfc7jH-bDOwhXQZK_oYq9BWRDY"
 			]
 		}
 	},

@@ -93,8 +93,6 @@ var SAGE2 = SAGE2 || {};
 
 		// if the app doesn't have a vis element, create one
 		if (!app.snippetsVisElement) {
-			console.log(app.content);
-
 			app.snippetsVisElement = app.content
 				.append(type)
 				.style("position", "absolute")
