@@ -248,6 +248,8 @@
     flex-direction: column;
     
     opacity: 1;
+
+    max-height: 350px;
     /* margin: 15px; */
     /* margin-left: 0px; */
 
