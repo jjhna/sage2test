@@ -42,9 +42,36 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		this.shouldSendCommands = false;
 		this.shouldReceiveCommands = false;
 
+		// which column to display (assumes #rows in wall === 1)
+		var slice = parseInt(clientID);
+
 		// Determine if should use HTML player mode
-		if (this.isOnlyDisplay() && this.isFileTypeSupportedByHtmlPlayer(this.state.video_url)) {
-			if (!((ui.json_cfg.experimental) && (ui.json_cfg.experimental.disableHTMLPlayer === true))) {
+		if (true) { //(this.isOnlyDisplay() && this.isFileTypeSupportedByHtmlPlayer(this.state.video_url)) {
+			if (true) { // (!((ui.json_cfg.experimental) && (ui.json_cfg.experimental.disableHTMLPlayer === true))) {
+                                var url = this.state.video_url;
+                                var stemIndex = url.lastIndexOf("/");
+                                var stem = url.substring(0,stemIndex);
+                                var file = url.substring(stemIndex+1,url.length);
+                                var segurl = stem+'/.segments/'+file+'/_'+slice+'_0.mp4';
+                                var testurl = stem+'/.segments/'+file+'/_small.mp4';
+                                console.log("client "+clientID+" Movie player trying segment url "+segurl);
+                                var request = new XMLHttpRequest();
+                                request.open('GET', testurl, true);
+                                var self = this;
+                                request.onreadystatechange = function(){
+                                    if (request.readyState === 4){
+                                        console.log(clientID+" videoplayer url "+segurl+" "+request.status);
+                                        if (request.status === 404) {
+                                            // segments not available
+                                            self.makeHtmlPlayer(url,{slice:false});
+                                        } else {
+                                            // segments available
+                                            self.makeHtmlPlayer(segurl,{slice:true});
+                                        }
+                                    }
+                                };
+                                request.send();
+
 				this.makeHtmlPlayer(this.state.video_url);
 			}
 		}
@@ -818,29 +845,50 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 	* @param url {string} URL path of hte file to be played.
 	*/
 	makeHtmlPlayer: function(url) {
-		// Create elements
-		this.videoElement = document.createElement("video");
-		this.videoElement.style.width = "100%";
-		this.videoElement.style.height = "100%";
-		this.sourceElement = document.createElement("source");
-		this.sourceElement.src = url;
-		// Keep the HTML player muted, let the sound come through the audioManager.
-		this.videoElement.muted = true;
-		// Add Them
-		this.videoElement.appendChild(this.sourceElement);
-		this.element.appendChild(this.videoElement);
+                // Create elements
+                this.videoElement = document.createElement("video");
+                this.slice = options.slice;
 
-		// Hide default. This doesn't remove them.
-		this.canvas.style.display = "none";
-		this.canvas.style.width = "1px";
-		this.canvas.style.height = "1px";
-		// Remove the draw calculations, this prevents some cases of flickering while updating.
-		this.draw = function() {};
-		// Ignore updates from server caused by delay.
-		this.videoElement.frameUpdateIgnoreCount = 0;
+                if (options.slice) {
+                        this.videoElement.style.position = "fixed";
+                        this.videoElement.style.right = 0;
+                        this.videoElement.style.bottom = 0;
+                        this.videoElement.style.width = "100%";
+                        this.videoElement.style.height = "100%";
+                        this.sourceElement = document.createElement("source");
+                        this.sourceElement.src = url;
+                        console.log("makeHtmlPlayer "+url);
+                        // Keep the HTML player muted, let the sound come through the audioManager.
+                        this.videoElement.muted = true;
+                        // Add Them
+                        this.videoElement.appendChild(this.sourceElement);
+                        //this.element.appendChild(this.videoElement);
+                        document.body.appendChild(this.videoElement);
+                } else {
+                        this.videoElement.style.position = "absolute";
+                        this.videoElement.style.width = "100%";
+                        this.videoElement.style.height = "100%";
+                        this.sourceElement = document.createElement("source");
+                        this.sourceElement.src = url;
+                        console.log("makeHtmlPlayer "+url);
+                        // Keep the HTML player muted, let the sound come through the audioManager.
+                        this.videoElement.muted = true;
+                        // Add Them
+                        this.videoElement.appendChild(this.sourceElement);
+                        this.element.appendChild(this.videoElement);
+                }
 
-		this.isUsingHtmlPlayer = true;
-		this.htmlSetSeekTime();
+                // Hide default. This doesn't remove them.
+                this.canvas.style.display = "none";
+                this.canvas.style.width = "1px";
+                this.canvas.style.height = "1px";
+                // Remove the draw calculations, this prevents some cases of flickering while updating.
+                this.draw = function() {};
+                // Ignore updates from server caused by delay.
+                this.videoElement.frameUpdateIgnoreCount = 0;
+
+                this.isUsingHtmlPlayer = true;
+                this.htmlSetSeekTime();
 	},
 
 	/**
