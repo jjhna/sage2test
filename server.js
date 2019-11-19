@@ -5337,6 +5337,11 @@ function loadConfiguration() {
 		}
 	}
 
+	// Check for remote sites array
+	if (userConfig.remote_sites === undefined) {
+		userConfig.remote_sites = [];
+	}
+
 	return userConfig;
 }
 
