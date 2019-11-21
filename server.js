@@ -6598,10 +6598,12 @@ function findRemoteSiteByConnection(wsio) {
 	if ((typeof wsio === "string") && (wsio === VersionManager.remoteSiteBlockName)) {
 		return remoteSites.versionMismatchBlock;
 	}
-	for (var i = 0; i < config.remote_sites.length; i++) {
-		if (wsio.remoteAddress.address === config.remote_sites[i].host &&
-			wsio.remoteAddress.port === config.remote_sites[i].port) {
-			remoteIdx = i;
+	if (wsio.remoteAddress) {
+		for (var i = 0; i < config.remote_sites.length; i++) {
+			if (wsio.remoteAddress.address === config.remote_sites[i].host &&
+				wsio.remoteAddress.port === config.remote_sites[i].port) {
+				remoteIdx = i;
+			}
 		}
 	}
 	if (remoteIdx >= 0) {
@@ -6950,6 +6952,14 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 
 	// Any right click with a visible pointer. Even offline sites allowed.
 	var remoteSite;
+	var warningSite = null;
+	// Check to see if it is the warning site.
+	if (sagePointers[uniqueID].visible && obj.data
+		&& obj.data.wsio && (obj.data.wsio === VersionManager.remoteSiteBlockName)) {
+		warningSite = findRemoteSiteByConnection(obj.data.wsio);
+	}
+
+	// The only right click capabilities are share with site.
 	if ((data.button === "right") && sagePointers[uniqueID].visible) {
 		remoteSite = null;
 		for (let i = 0; i < remoteSites.length; i++) {
@@ -6960,24 +6970,22 @@ function pointerPressOnStaticUI(uniqueID, pointerX, pointerY, data, obj, localPt
 		}
 		// Instead of load control application, set state
 		RemoteSiteSharing.toggleSiteSharingWithRemoteSite(remoteSite, clients);
-	} else if (obj.data && obj.data.wsio && sagePointers[uniqueID].visible) {
+	} else if (sagePointers[uniqueID].visible
+		&& warningSite && (warningSite.name === VersionManager.remoteSiteBlockName)) {
 		// Check if it is a warningSite, this doesn't care what connected status is
-		var warningSite = findRemoteSiteByConnection(obj.data.wsio);
-		if (warningSite.name === VersionManager.remoteSiteBlockName) {
-			// Create the webview to the remote UI
-			wsLoadApplication({id: uniqueID}, {
-				application: "/uploads/apps/quickNote",
-				user: uniqueID,
-				// pass the url in the data object
-				data: {
-					clientName: config.host,
-					clientInput: versionHandler.getMismatchLog(),
-					colorChoice: "lightpink"
-				},
-				position: [pointerX, config.ui.titleBarHeight + 10],
-				dimensions: [400, config.resolution.height]
-			});
-		}
+		// Create the webview to the remote UI
+		wsLoadApplication({id: uniqueID}, {
+			application: "/uploads/apps/quickNote",
+			user: uniqueID,
+			// pass the url in the data object
+			data: {
+				clientName: config.host,
+				clientInput: versionHandler.getMismatchLog(),
+				colorChoice: "lightpink"
+			},
+			position: [pointerX, config.ui.titleBarHeight + 10],
+			dimensions: [400, config.resolution.height]
+		});
 	} else if ((obj.data) && (obj.data.connected === "on") && sagePointers[uniqueID].visible) {
 		remoteSite = findRemoteSiteByConnection(obj.data.wsio);
 		// Build the UI URL

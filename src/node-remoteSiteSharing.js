@@ -34,33 +34,37 @@ Remote Site objects look like:
 	};
 */
 function toggleSiteSharingWithRemoteSite(site, clients) {
-	// If sharing, stop
-	if (site.beingSharedWith) {
-		site.beingSharedWith = false;
-		// Notify displays
-		for (let i = 0; i < clients.length; i++) {
-			if (clients[i].clientType === "display") {
-				clients[i].emit('updateRemoteSiteShareVisual', {
-					siteName: site.name,
-					isSharing: false
-				});
+	// The major case of no site is due to versioning block
+	// Someone that right clicks on the versioning block should not initiate anything.
+	if (site) {
+		// If sharing, stop
+		if (site.beingSharedWith) {
+			site.beingSharedWith = false;
+			// Notify displays
+			for (let i = 0; i < clients.length; i++) {
+				if (clients[i].clientType === "display") {
+					clients[i].emit('updateRemoteSiteShareVisual', {
+						siteName: site.name,
+						isSharing: false
+					});
+				}
 			}
-		}
-		// Remove from share list
-		sitesToShareWith.splice(sitesToShareWith.indexOf(site), 1);
-	} else { // Otherwise enable
-		site.beingSharedWith = true;
-		// Notify displays
-		for (let i = 0; i < clients.length; i++) {
-			if (clients[i].clientType === "display") {
-				clients[i].emit('updateRemoteSiteShareVisual', {
-					siteName: site.name,
-					isSharing: true
-				});
+			// Remove from share list
+			sitesToShareWith.splice(sitesToShareWith.indexOf(site), 1);
+		} else { // Otherwise enable
+			site.beingSharedWith = true;
+			// Notify displays
+			for (let i = 0; i < clients.length; i++) {
+				if (clients[i].clientType === "display") {
+					clients[i].emit('updateRemoteSiteShareVisual', {
+						siteName: site.name,
+						isSharing: true
+					});
+				}
 			}
+			// Add to share list
+			sitesToShareWith.push(site);
 		}
-		// Add to share list
-		sitesToShareWith.push(site);
 	}
 }
 
