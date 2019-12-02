@@ -6126,13 +6126,23 @@ function manageRemoteConnection(remote, site, index) {
 			sageutils.log("Remote", "Connected to", chalk.cyan(site.name));
 			remoteSites[index].connected = "on";
 
-			versionHandler.determineIfVersionMismatch(data, site, remotesocket.remoteAddress.address);
+			delayedVersionCheck(data, site, remotesocket.remoteAddress.address);
 		}
 		var update_site = {name: remoteSites[index].name, connected: remoteSites[index].connected};
 		broadcast('connectedToRemoteSite', update_site);
 	});
 }
 
+function delayedVersionCheck(data, site, address) {
+	if (versionHandler) {
+		versionHandler.determineIfVersionMismatch(data, site, address);
+	} else {
+		// Wait one frame. Exact time doesn't matter that much. Just has to be later.
+		setTimeout(() => {
+			delayedVersionCheck(data, site, address);
+		}, 1);
+	}
+}
 
 function createRemoteConnection(wsURL, element, index) {
 	var remote = new WebsocketIO(wsURL, false, function() {

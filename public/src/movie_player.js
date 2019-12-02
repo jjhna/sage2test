@@ -183,7 +183,7 @@ var movie_player = SAGE2_BlockStreamingApp.extend({
 		if (this.isUsingHtmlPlayer) {
 			duration = parseInt(1000 * this.videoElement.currentTime);
 			current = formatHHMMSS(duration);
-			let titleString = this.title + " - " + current + " / " + this.lengthString + " (HTML mode)";
+			let titleString = this.title + " - " + current + " / " + this.lengthString + " (Fast mode)";
 			if (this.state.looped) {
 				// Add a unicode character in the title
 				titleString += " &#8634;";
