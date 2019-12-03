@@ -1381,7 +1381,6 @@ function setupListeners(wsio) {
 
 
 	// Testing versioning and sharing
-	// erase me, will maybe erase these functions after done testing.
 	wsio.on('requestingVersion', (wsio, data) => {
 		wsio.emit('sageVersion', SAGE2_version);
 	});
@@ -5901,7 +5900,6 @@ function initializeRemoteSites() {
 				};
 				// If no change to the entry was made, use the old one
 				if (remoteSitesEntryHasNotChanged(element, wsURL)) {
-					console.log("erase me, reusing socket for:", updatedSiteListing[index].name);
 					let oldEntry = remoteSites[remoteSitesIndexGivenName(updatedSiteListing[index].name)];
 					updatedSiteListing[index].wsio = oldEntry.wsio;
 					updatedSiteListing[index].connected = oldEntry.connected;
@@ -5909,7 +5907,6 @@ function initializeRemoteSites() {
 					oldEntry.name = null;
 				} else {
 					// // Otherwise create a websocket connection to the site
-					// console.log("erase me, creating websocket for remote site:", updatedSiteListing[index].name);
 					// updatedSiteListing[index].wsio = createRemoteConnection(wsURL, element, index);
 				}
 				// // attempt to connect every 15 seconds, if connection failed
@@ -5934,7 +5931,6 @@ function initializeRemoteSites() {
 			// Those used had the names changed to null
 			if (element.name !== null) {
 				// NOTE: close() is not exposed like in the client-side object
-				console.log("erase me, debug terinating:", element.name);
 				element.wsio.ws.terminate();
 			}
 		});

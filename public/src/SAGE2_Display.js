@@ -1505,26 +1505,27 @@ function setupListeners() {
 		} else {
 			// set a rectangle of the client size
 			var captureRect = { x: 0, y: 0, width: ui.main.clientWidth, height: ui.main.clientHeight };
-			require('electron').remote.getCurrentWindow().capturePage(captureRect, function(img) {
-				var imageData, resized;
-				// get the size of the screenshot image
-				var shot = img.getSize();
-				if (shot.width !== captureRect.width) {
-					// in retina mode, need to downscale the image
-					resized = img.resize({width: captureRect.width, quality: 'better'});
-					// use JPEG with quality 90%
-					imageData = resized.toJPEG(90);
-				} else {
-					imageData = img.toJPEG(90);
-				}
-				// Send the image back to the server as JPEG
-				wsio.emit("wallScreenshotFromDisplay", {
-					capable: true,
-					imageData: imageData
+			require('electron').remote.getCurrentWindow().capturePage(captureRect)
+				.then(function (img) {
+					var imageData, resized;
+					// get the size of the screenshot image
+					var shot = img.getSize();
+					if (shot.width !== captureRect.width) {
+						// in retina mode, need to downscale the image
+						resized = img.resize({width: captureRect.width, quality: 'better'});
+						// use JPEG with quality 90%
+						imageData = resized.toJPEG(90);
+					} else {
+						imageData = img.toJPEG(90);
+					}
+					// Send the image back to the server as JPEG
+					wsio.emit("wallScreenshotFromDisplay", {
+						capable: true,
+						imageData: imageData
+					});
+					// Close the dialog
+					// deleteElement('makingScreenshotDialog');
 				});
-				// Close the dialog
-				// deleteElement('makingScreenshotDialog');
-			});
 		}
 	});
 
@@ -1595,7 +1596,6 @@ function setupListeners() {
 
 	// Versioning and sharing controls
 	wsio.on('sageVersion', function (data) {
-		console.log("erase me, sageVersion", data);
 		// setupSAGE2Version does exist, but is a text manpulation for display on UI.
 	});
 
