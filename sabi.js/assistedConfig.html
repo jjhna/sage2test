@@ -747,6 +747,10 @@
 	function checkMainServerThenRedirect() {
 		try {
 			wsio = new WebsocketIO("ws://" + serverGivenCfgCopy.host);
+			wsio.on('close', function() {
+				// Redirect if socket closes, usually caused by being unable to make contact
+				redirectToAdminPanel();
+			});
 			wsio.open(function() {
 				console.log("Checking main server");
 				wsio.on('initialize', function(data) {
