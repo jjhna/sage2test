@@ -92,6 +92,8 @@
 	// for experimental features: true/false
 	
 	experimental: {
+		displayClientNativeTouch: false,
+		
 		omicron: {
 			enable: false,
 			

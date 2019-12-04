@@ -1677,6 +1677,20 @@ function setupListeners() {
 
 		SAGE2_CodeSnippets.handleActionFromUI(data);
 	});
+
+
+	/*
+	 * SAGE2 Display Client Native Touch WebSocketIO Handlers
+	 */
+	wsio.on("enableClientNativeTouch", function(data) {
+
+		setupNativeTouch();
+	});
+
+	wsio.on("disableClientNativeTouch", function(data) {
+
+		disableNativeTouch();
+	});
 }
 
 function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX, offsetY) {
@@ -2024,4 +2038,147 @@ function moveItemWithAnimation(updatedApp) {
 		elemTitle.style.transition = "opacity 0.2s ease-in";
 		elem.style.transition = "opacity 0.2s ease-in";
 	}, 200);
+}
+
+var touchDebugToConsole = false;
+var ongoingTouches = [];
+var touchID = [];
+var nextTouchID = 0;
+
+/**
+ * Helper function for copying native touch event
+ *
+ * @method copyTouch
+ */
+function copyTouch({ identifier, pageX, pageY }) {
+	return { identifier, pageX, pageY };
+}
+
+/**
+ * Helper function for id'ing native touch event
+ *
+ * @method ongoingTouchIndexById
+ */
+function ongoingTouchIndexById(idToFind) {
+	for (var i = 0; i < ongoingTouches.length; i++) {
+		var id = ongoingTouches[i].identifier;
+
+		if (id == idToFind) {
+			return i;
+		}
+	}
+	return -1;    // not found
+}
+
+function sendTouchToServer(touch, eventType) {
+	var mappedID = -1;
+
+	if (eventType === 5) {
+		mappedID = nextTouchID;
+		touchID[touch.identifier] = nextTouchID;
+		nextTouchID++;
+	} else {
+		mappedID = touchID[touch.identifier];
+	}
+	var touchEvt = {
+		id: mappedID,
+		type: eventType,
+		x: touch.pageX,
+		y: touch.pageY,
+		w: touch.radiusX,
+		h: touch.radiusY,
+		clientID: clientID
+	};
+	wsio.emit('clientTouch', touchEvt);
+}
+
+function setupNativeTouch() {
+	var el = document.getElementById("main");
+	el.addEventListener("touchstart", handleStart, false);
+	el.addEventListener("touchend", handleEnd, false);
+	el.addEventListener("touchcancel", handleCancel, false);
+	el.addEventListener("touchmove", handleMove, false);
+}
+
+function disableNativeTouch() {
+	var el = document.getElementById("main");
+	el.removeEventListener("touchstart", handleStart, false);
+	el.removeEventListener("touchend", handleEnd, false);
+	el.removeEventListener("touchcancel", handleCancel, false);
+	el.removeEventListener("touchmove", handleMove, false);
+}
+
+function handleStart(evt) {
+	evt.preventDefault();
+	// console.log("touchstart.");
+
+	var touches = evt.changedTouches;
+	for (var i = 0; i < touches.length; i++) {
+		if (touchDebugToConsole) {
+			console.log("touchstart(" + i + ":...)");
+		}
+		sendTouchToServer(touches[i], 5);
+		ongoingTouches.push(copyTouch(touches[i]));
+	}
+}
+
+function handleEnd(evt) {
+	evt.preventDefault();
+	// console.log("touchend.");
+
+	var touches = evt.changedTouches;
+
+	for (var i = 0; i < touches.length; i++) {
+		var idx = ongoingTouchIndexById(touches[i].identifier);
+
+		if (idx >= 0) {
+			if (touchDebugToConsole) {
+				console.log("touchend(" + touches[i].identifier + ":...)");
+			}
+			sendTouchToServer(touches[i], 6);
+			ongoingTouches.splice(idx, 1);  // remove it; we're done
+		} else {
+			if (touchDebugToConsole) {
+				console.log("can't figure out which touch to end");
+			}
+		}
+	}
+}
+
+function handleCancel(evt) {
+	evt.preventDefault();
+	// console.log("touchcancel.");
+
+	var touches = evt.changedTouches;
+
+	for (var i = 0; i < touches.length; i++) {
+		var idx = ongoingTouchIndexById(touches[i].identifier);
+		sendTouchToServer(touches[i], 6);
+		ongoingTouches.splice(idx, 1);  // remove it; we're done
+	}
+}
+
+function handleMove(evt) {
+	evt.preventDefault();
+	// console.log("touchmove.");
+
+	var touches = evt.changedTouches;
+
+	for (var i = 0; i < touches.length; i++) {
+		var idx = ongoingTouchIndexById(touches[i].identifier);
+
+		if (idx >= 0) {
+			if (touchDebugToConsole) {
+				console.log("touchmove(" + touches[i].identifier + ": "
+				+ ongoingTouches[idx].pageX + ", "
+				+ ongoingTouches[idx].pageY + ");");
+			}
+			sendTouchToServer(touches[i], 4);
+			ongoingTouches.splice(idx, 1, copyTouch(touches[i]));  // swap in the new touch record
+		} else {
+			if (touchDebugToConsole) {
+				console.log("can't figure out which touch to continue");
+			}
+		}
+	}
 }

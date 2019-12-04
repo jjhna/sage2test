@@ -1051,6 +1051,20 @@ function wsAddClient(wsio, data) {
 		snippetsManager.sageUIClientConnect(wsio);
 	}
 
+	// Handle native touch initialization for a connecting client
+	if (wsio.clientType === "display") {
+		// handle initialization for display
+		if (config.experimental) {
+			if (config.experimental.displayClientNativeTouch === true) {
+				wsio.emit("enableClientNativeTouch");
+			} else {
+				wsio.emit("disableClientNativeTouch");
+			}
+		}
+	} else if (wsio.clientType === "sageUI") {
+		// handle sageUI initialization
+	}
+
 	// If it is a stand alone app page, create the app window
 	if (wsio.clientType === "standAloneApp") {
 		initializeExistingApps(wsio, data.app);
@@ -1406,6 +1420,8 @@ function setupListeners(wsio) {
 	wsio.on('requestCurrentConfigurationFile',      wsRequestCurrentConfigurationFile);
 	wsio.on('assistedConfigSend',                   wsAssistedConfigSend);
 
+	// Display client native touch
+	wsio.on('clientTouch', wsClientTouch);
 }
 
 /**
@@ -12491,5 +12507,42 @@ function wsAssistedConfigSend(wsio, data) {
 	ConfigEditing.handlerForAssistedConfigSend(wsio, data, config, initializeRemoteSites);
 }
 
+/**
+ * Processing incoming client touch event
+ *
+ * @method wsClientTouch
+ * @param {Object} wsio - ws to originator.
+ * @param {Object} data - should have a touch object
+ */
+function wsClientTouch(wsio, data) {
+	// console.log(data);
 
+	var sourceID = data.id;
+	var address = "client" + data.clientID + ".touch:" + sourceID;
+	var posX = data.x;
+	var posY = data.y;
+
+	if (data.type === 5) { // DOWN
+		createSagePointer(address);
+
+		showPointer(address, {
+			label:  "Touch: " + sourceID,
+			color: "rgba(242, 182, 15, 1.0)",
+			sourceType: "Pointer"
+		});
+
+		pointerPosition(address, { pointerX: posX, pointerY: posY, sourceType: "touch" });
+
+		// Single click
+		pointerPress(address, posX, posY, { button: "left", sourceType: "touch" });
+	} else if (data.type === 4) { // MOVE
+		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY, sourceType: "touch" });
+	} else if (data.type === 6) { // UP
+		// Hide pointer
+		hidePointer(address);
+
+		// Release event
+		pointerRelease(address, posX, posY, { sourceType: "touch", button: "left" });
+	}
+}
 
