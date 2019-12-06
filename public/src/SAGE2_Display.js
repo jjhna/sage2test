@@ -150,8 +150,8 @@ function setupFocusHandlers() {
 	}, false);
 
 	// Get Browser Prefix
-	var prefix   = getBrowserPrefix();
-	var hidden   = hiddenProperty(prefix);
+	var prefix	 = getBrowserPrefix();
+	var hidden	 = hiddenProperty(prefix);
 	// var visState = visibilityState(prefix);
 	var visEvent = visibilityEvent(prefix);
 
@@ -345,7 +345,7 @@ function setupListeners() {
 		var app = applications[data.app];
 		if (app === undefined) {
 			// should have better way to determine if app is loaded
-			//   or already killed
+			//	 or already killed
 			setTimeout(function() {
 				if (app && app[data.func]) {
 					// Send the call to the application
@@ -374,10 +374,10 @@ function setupListeners() {
 
 		http_port = json_cfg.port === 80 ? "" : ":" + json_cfg.port;
 		https_port = json_cfg.secure_port === 443 ? "" : ":" + json_cfg.secure_port;
-		hostAlias["http://"  + json_cfg.host + http_port]  = window.location.origin;
+		hostAlias["http://"	 + json_cfg.host + http_port]  = window.location.origin;
 		hostAlias["https://" + json_cfg.host + https_port] = window.location.origin;
 		for (i = 0; i < json_cfg.alternate_hosts.length; i++) {
-			hostAlias["http://"  + json_cfg.alternate_hosts[i] + http_port]  = window.location.origin;
+			hostAlias["http://"	 + json_cfg.alternate_hosts[i] + http_port]	 = window.location.origin;
 			hostAlias["https://" + json_cfg.alternate_hosts[i] + https_port] = window.location.origin;
 		}
 
@@ -597,9 +597,9 @@ function setupListeners() {
 	});
 
 	wsio.on('updateMediaBlockStreamFrame', function(data) {
-		var appId     = byteBufferToString(data);
+		var appId	  = byteBufferToString(data);
 		var blockIdx  = byteBufferToInt(data.subarray(appId.length + 1, appId.length + 3));
-		var date      = byteBufferToInt(data.subarray(appId.length + 3, appId.length + 11));
+		var date	  = byteBufferToInt(data.subarray(appId.length + 3, appId.length + 11));
 		var yuvBuffer = data.subarray(appId.length + 11, data.length);
 
 		if (applications[appId] !== undefined && applications[appId] !== null) {
@@ -613,9 +613,9 @@ function setupListeners() {
 	});
 
 	wsio.on('updateVideoFrame', function(data) {
-		var appId     = byteBufferToString(data);
+		var appId	  = byteBufferToString(data);
 		var blockIdx  = byteBufferToInt(data.subarray(appId.length + 1, appId.length + 3));
-		var date      = byteBufferToInt(data.subarray(appId.length + 7, appId.length + 15));
+		var date	  = byteBufferToInt(data.subarray(appId.length + 7, appId.length + 15));
 		var yuvBuffer = data.subarray(appId.length + 15, data.length);
 
 		if (applications[appId] !== undefined && applications[appId] !== null) {
@@ -806,7 +806,7 @@ function setupListeners() {
 	wsio.on('hoverOverItemCorner', function(elem_data) {
 		var selectedElem = document.getElementById(elem_data.elemId);
 		if (selectedElem) {
-			var dragCorner   = selectedElem.getElementsByClassName("dragCorner");
+			var dragCorner	 = selectedElem.getElementsByClassName("dragCorner");
 			if (elem_data.flag) {
 				dragCorner[0].style.backgroundColor = "rgba(255,255,255,0.7)";
 				dragCorner[0].style.border = "2px solid #333333";
@@ -848,7 +848,7 @@ function setupListeners() {
 			app.sage2_y = (position_data.elemTop + ui.titleBarHeight + border) * parentTransform.scale.y
 				+ parentTransform.translate.y;
 			app.sage2_y = Math.round(app.sage2_y);
-			app.sage2_width  = parseInt(position_data.elemWidth, 10) * parentTransform.scale.x;
+			app.sage2_width	 = parseInt(position_data.elemWidth, 10) * parentTransform.scale.x;
 			app.sage2_height = parseInt(position_data.elemHeight, 10) * parentTransform.scale.y;
 
 			var date  = new Date(position_data.date);
@@ -935,7 +935,7 @@ function setupListeners() {
 			return;
 		}
 		var selectedElem = document.getElementById(position_data.elemId);
-		var child        = selectedElem.getElementsByClassName("sageItem");
+		var child		 = selectedElem.getElementsByClassName("sageItem");
 		// If application not ready, return
 		if (child.length < 1) {
 			return;
@@ -960,7 +960,7 @@ function setupListeners() {
 		} else {
 			requestAnimationFrame(function(ts) {
 				selectedElemTitle.style.transform = translate;
-				selectedElem.style.transform      = translate;
+				selectedElem.style.transform	  = translate;
 			});
 		}
 
@@ -975,18 +975,18 @@ function setupListeners() {
 		var cornerSize = Math.min(position_data.elemWidth, position_data.elemHeight) / 5;
 		dragCorner[0].style.width  = cornerSize.toString() + "px";
 		dragCorner[0].style.height = cornerSize.toString() + "px";
-		dragCorner[0].style.top    = (Math.round(position_data.elemHeight) - cornerSize).toString() + "px";
-		dragCorner[0].style.left   = (Math.round(position_data.elemWidth) - cornerSize).toString()  + "px";
+		dragCorner[0].style.top	   = (Math.round(position_data.elemHeight) - cornerSize).toString() + "px";
+		dragCorner[0].style.left   = (Math.round(position_data.elemWidth) - cornerSize).toString()	+ "px";
 
 		// if the element is a div or iframe, resize should use the style object
 		if (child[0].tagName.toLowerCase() === "div" ||
 			child[0].tagName.toLowerCase() === "iframe" ||
 			child[0].tagName.toLowerCase() === "webview") {
-			child[0].style.width  = Math.round(position_data.elemWidth)  + "px";
+			child[0].style.width  = Math.round(position_data.elemWidth)	 + "px";
 			child[0].style.height = Math.round(position_data.elemHeight) + "px";
 		} else {
 			// if it's a canvas or else, just use width and height
-			child[0].width  = Math.round(position_data.elemWidth);
+			child[0].width	= Math.round(position_data.elemWidth);
 			child[0].height = Math.round(position_data.elemHeight);
 		}
 
@@ -999,7 +999,7 @@ function setupListeners() {
 			app.sage2_y = (position_data.elemTop + ui.titleBarHeight + border) * parentTransform.scale.y
 				+ parentTransform.translate.y;
 			app.sage2_y = Math.round(app.sage2_y);
-			app.sage2_width  = parseInt(position_data.elemWidth, 10) * parentTransform.scale.x;
+			app.sage2_width	 = parseInt(position_data.elemWidth, 10) * parentTransform.scale.x;
 			app.sage2_height = parseInt(position_data.elemHeight, 10) * parentTransform.scale.y;
 
 			var date = new Date(position_data.date);
@@ -1210,7 +1210,7 @@ function setupListeners() {
 				}
 				ctrlId = ctrlParent.attr("id").replace("button", "");
 			} else if (/radio/.test(ctrlId) === true) {
-				var radioButtonId =  ctrlParent.attr("id");
+				var radioButtonId =	 ctrlParent.attr("id");
 				var radioState = ctrlParent.data("radioState");
 				radioButtonSelected = ctrlId.replace(radioButtonId, "");
 				radioState.value = radioButtonSelected;
@@ -1223,7 +1223,7 @@ function setupListeners() {
 			}
 
 			var appId = data.ctrl.appId;
-			var app   = applications[appId];
+			var app	  = applications[appId];
 			switch (ctrlId) {
 				case "CloseApp":
 					if (isMaster) {
@@ -1265,12 +1265,12 @@ function setupListeners() {
 		var app = applications[appId];
 		var ctrlId = slider.attr("id").replace("slider", "");
 		app.SAGE2Event("widgetEvent", null, data.user, {identifier: ctrlId, action: "sliderLock"}, new Date(data.date));
-		var ctrHandle    = document.getElementById(slider.data("instanceID"));
+		var ctrHandle	 = document.getElementById(slider.data("instanceID"));
 		var widgetOffset = ctrHandle ? parseInt(ctrHandle.style.left) : 0;
 		var pos = data.x - ui.offsetX - widgetOffset;
 		var sliderKnob = slider.select("rect");
 		var knobWidthHalf = parseInt(sliderKnob.attr("width")) / 2;
-		var knobCenterX   = parseInt(sliderKnob.attr("x")) + knobWidthHalf;
+		var knobCenterX	  = parseInt(sliderKnob.attr("x")) + knobWidthHalf;
 		if (Math.abs(pos - knobCenterX) > knobWidthHalf) {
 			var updatedSliderInfo = mapMoveToSlider(sliderKnob, pos);
 			var appObj = getPropertyHandle(applications[slider.data("appId")], slider.data("appProperty"));
@@ -1281,7 +1281,7 @@ function setupListeners() {
 
 	wsio.on('moveSliderKnob', function(data) {
 		// TODO: add `date` to `data` object
-		//       DON'T USE `new Date()` CLIENT SIDE (apps will get out of sync)
+		//		 DON'T USE `new Date()` CLIENT SIDE (apps will get out of sync)
 		var ctrl = getWidgetControlInstanceById(data.ctrl);
 		var slider = ctrl.parent();
 		var ctrHandle = document.getElementById(slider.data("instanceID"));
@@ -1292,14 +1292,14 @@ function setupListeners() {
 		var appObj = getPropertyHandle(applications[slider.data("appId")], slider.data("appProperty"));
 		appObj.handle[appObj.property] = updatedSliderInfo.sliderValue;
 		var appId  = data.ctrl.appId;
-		var app    = applications[appId];
+		var app	   = applications[appId];
 		var ctrlId = slider.attr("id").replace("slider", "");
 		app.SAGE2Event("widgetEvent", null, data.user, {identifier: ctrlId, action: "sliderUpdate"}, new Date(data.date));
 	});
 
 	wsio.on('keyInTextInputWidget', function(data) {
 		// TODO: add `date` to `data` object
-		//       DON'T USE `new Date()` CLIENT SIDE (apps will get out of sync)
+		//		 DON'T USE `new Date()` CLIENT SIDE (apps will get out of sync)
 
 		var ctrl = getWidgetControlInstanceById(data);
 		if (ctrl) {
@@ -1431,8 +1431,8 @@ function setupListeners() {
 				windowTitle.style.borderLeftColor  = unsyncColor;
 				windowTitle.style.borderTopColor   = unsyncColor;
 
-				appTile.style.borderRightColor  = unsyncColor;
-				appTile.style.borderLeftColor   = unsyncColor;
+				appTile.style.borderRightColor	= unsyncColor;
+				appTile.style.borderLeftColor	= unsyncColor;
 				appTile.style.borderBottomColor = unsyncColor;
 
 				for (key in applications[data.id].SAGE2StateOptions) {
@@ -1448,8 +1448,8 @@ function setupListeners() {
 				windowTitle.style.borderLeftColor  = syncColor;
 				windowTitle.style.borderTopColor   = syncColor;
 
-				appTile.style.borderRightColor  = syncColor;
-				appTile.style.borderLeftColor   = syncColor;
+				appTile.style.borderRightColor	= syncColor;
+				appTile.style.borderLeftColor	= syncColor;
 				appTile.style.borderBottomColor = syncColor;
 
 				for (key in applications[data.id].SAGE2StateOptions) {
@@ -1472,8 +1472,8 @@ function setupListeners() {
 				windowTitle.style.borderLeftColor  = unsyncColor;
 				windowTitle.style.borderTopColor   = unsyncColor;
 
-				appTile.style.borderRightColor  = unsyncColor;
-				appTile.style.borderLeftColor   = unsyncColor;
+				appTile.style.borderRightColor	= unsyncColor;
+				appTile.style.borderLeftColor	= unsyncColor;
 				appTile.style.borderBottomColor = unsyncColor;
 			} else {
 				applications[data.id].SAGE2StateSyncOptions.visible = false;
@@ -1484,8 +1484,8 @@ function setupListeners() {
 				windowTitle.style.borderLeftColor  = syncColor;
 				windowTitle.style.borderTopColor   = syncColor;
 
-				appTile.style.borderRightColor  = syncColor;
-				appTile.style.borderLeftColor   = syncColor;
+				appTile.style.borderRightColor	= syncColor;
+				appTile.style.borderLeftColor	= syncColor;
 				appTile.style.borderBottomColor = syncColor;
 			}
 		}
@@ -1494,7 +1494,7 @@ function setupListeners() {
 	wsio.on('sendServerWallScreenshot', function(data) {
 		// first tell user that screenshot is happening, because screen will freeze
 		// makingScreenshotDialog = ui.buildMessageBox('makingScreenshotDialog',
-		// 	'Please wait, wall is taking a screenshot');
+		//	'Please wait, wall is taking a screenshot');
 		// Add to the DOM
 		// ui.main.appendChild(makingScreenshotDialog);
 		// Make the dialog visible
@@ -1702,35 +1702,35 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	var translate = "translate(" + data.left + "px," + data.top + "px)";
 
 	var windowTitle = document.createElement("div");
-	windowTitle.id  = data.id + "_title";
-	windowTitle.className    = "windowTitle";
-	windowTitle.style.width  = data.width.toString() + "px";
+	windowTitle.id	= data.id + "_title";
+	windowTitle.className	 = "windowTitle";
+	windowTitle.style.width	 = data.width.toString() + "px";
 	windowTitle.style.height = titleBarHeight.toString() + "px";
-	windowTitle.style.left   = (-offsetX).toString() + "px";
-	windowTitle.style.top    = (-offsetY).toString() + "px";
+	windowTitle.style.left	 = (-offsetX).toString() + "px";
+	windowTitle.style.top	 = (-offsetY).toString() + "px";
 	windowTitle.style.transform = translate;
 	windowTitle.style.zIndex = itemCount.toString();
 	if (ui.noDropShadow === true) {
 		windowTitle.style.boxShadow = "none";
 	}
 	if (ui.uiHidden === true) {
-		windowTitle.style.display   = "none";
+		windowTitle.style.display	= "none";
 	}
 
 	var dragBar = document.createElement("div");
-	dragBar.id  = data.id + "_dragBar";
-	dragBar.className    = "windowTitle";
-	dragBar.style.width  = data.width.toString() + "px";
+	dragBar.id	= data.id + "_dragBar";
+	dragBar.className	 = "windowTitle";
+	dragBar.style.width	 = data.width.toString() + "px";
 	dragBar.style.height = titleBarHeight.toString() + "px";
-	dragBar.style.left   = (-offsetX).toString() + "px";
-	dragBar.style.top    = (-offsetY + data.height + titleBarHeight).toString() + "px";
+	dragBar.style.left	 = (-offsetX).toString() + "px";
+	dragBar.style.top	 = (-offsetY + data.height + titleBarHeight).toString() + "px";
 	dragBar.style.transform = translate;
 	dragBar.style.zIndex = itemCount.toString();
 	// if (ui.noDropShadow === true) {
 	dragBar.style.boxShadow = "none";
 	// }
 	// if (ui.uiHidden === true) {
-	dragBar.style.display   = "none";
+	dragBar.style.display	= "none";
 	// }
 	parent.appendChild(dragBar);
 
@@ -1741,71 +1741,71 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	windowIconSync.src = "images/window-sync.svg";
 	windowIconSync.height = Math.round(titleBarHeight);
 	windowIconSync.style.position = "absolute";
-	windowIconSync.style.right    = Math.round(2 * (iconWidth + iconSpace)) + "px";
+	windowIconSync.style.right	  = Math.round(2 * (iconWidth + iconSpace)) + "px";
 	windowIconSync.style.display  = "none";
 	windowTitle.appendChild(windowIconSync);
 
 	var windowIconUnSync = document.createElement("img");
-	windowIconUnSync.id  = data.id + "_iconUnSync";
+	windowIconUnSync.id	 = data.id + "_iconUnSync";
 	windowIconUnSync.src = "images/window-unsync.svg";
 	windowIconUnSync.height = Math.round(titleBarHeight);
 	windowIconUnSync.style.position = "absolute";
-	windowIconUnSync.style.right    = Math.round(2 * (iconWidth + iconSpace)) + "px";
-	windowIconUnSync.style.display  = "none";
+	windowIconUnSync.style.right	= Math.round(2 * (iconWidth + iconSpace)) + "px";
+	windowIconUnSync.style.display	= "none";
 	windowTitle.appendChild(windowIconUnSync);
 
 	var windowIconFullscreen = document.createElement("img");
-	windowIconFullscreen.id  = data.id + "_iconFullscreen";
+	windowIconFullscreen.id	 = data.id + "_iconFullscreen";
 	windowIconFullscreen.src = "images/window-fullscreen.svg";
 	windowIconFullscreen.height = Math.round(titleBarHeight);
 	windowIconFullscreen.style.position = "absolute";
-	windowIconFullscreen.style.right    = Math.round(1 * (iconWidth + iconSpace)) + "px";
+	windowIconFullscreen.style.right	= Math.round(1 * (iconWidth + iconSpace)) + "px";
 	windowTitle.appendChild(windowIconFullscreen);
 
 	var windowIconClose = document.createElement("img");
-	windowIconClose.id  = data.id + "_iconClose";
+	windowIconClose.id	= data.id + "_iconClose";
 	windowIconClose.src = "images/window-close3.svg";
 	windowIconClose.height = Math.round(titleBarHeight);
 	windowIconClose.style.position = "absolute";
-	windowIconClose.style.right    = "0px";
+	windowIconClose.style.right	   = "0px";
 	windowTitle.appendChild(windowIconClose);
 
 	if (data.sticky === true) {
 		var windowIconPinned = document.createElement("img");
-		windowIconPinned.id  = data.id + "_iconPinned";
+		windowIconPinned.id	 = data.id + "_iconPinned";
 		windowIconPinned.src = "images/window-pinned.svg";
 		windowIconPinned.height = Math.round(titleBarHeight);
 		windowIconPinned.style.position = "absolute";
-		windowIconPinned.style.left    = Math.round(iconSpace) + "px";
-		windowIconPinned.style.display  = "none";
+		windowIconPinned.style.left	   = Math.round(iconSpace) + "px";
+		windowIconPinned.style.display	= "none";
 		windowTitle.appendChild(windowIconPinned);
 
 		var windowIconPinout = document.createElement("img");
-		windowIconPinout.id  = data.id + "_iconPinout";
+		windowIconPinout.id	 = data.id + "_iconPinout";
 		windowIconPinout.src = "images/window-pinout.svg";
 		windowIconPinout.height = Math.round(titleBarHeight);
 		windowIconPinout.style.position = "absolute";
-		windowIconPinout.style.left    = Math.round(iconSpace) + "px";
-		windowIconPinout.style.display  = "none";
+		windowIconPinout.style.left	   = Math.round(iconSpace) + "px";
+		windowIconPinout.style.display	= "none";
 		windowTitle.appendChild(windowIconPinout);
 	}
 	var titleText = document.createElement("p");
 	titleText.id  = data.id + "_text";
 	titleText.style.lineHeight = Math.round(titleBarHeight) + "px";
 	titleText.style.fontSize   = Math.round(titleTextSize) + "px";
-	titleText.style.color      = "#FFFFFF";
+	titleText.style.color	   = "#FFFFFF";
 	titleText.style.marginLeft = Math.round(titleBarHeight / 4.0) + "px";
-	titleText.textContent      = data.title;
+	titleText.textContent	   = data.title;
 	windowTitle.appendChild(titleText);
 
 	var windowItem = document.createElement("div");
 	windowItem.id = data.id;
-	windowItem.className       = "windowItem";
-	windowItem.style.left      = (-offsetX).toString() + "px";
-	windowItem.style.top       = (titleBarHeight - offsetY).toString() + "px";
+	windowItem.className	   = "windowItem";
+	windowItem.style.left	   = (-offsetX).toString() + "px";
+	windowItem.style.top	   = (titleBarHeight - offsetY).toString() + "px";
 	windowItem.style.transform = translate;
 	windowItem.style.overflow  = "hidden";
-	windowItem.style.zIndex    = (itemCount + 1).toString();
+	windowItem.style.zIndex	   = (itemCount + 1).toString();
 	if (ui.noDropShadow === true) {
 		windowItem.style.boxShadow = "none";
 	}
@@ -1816,7 +1816,7 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 	var windowState = document.createElement("div");
 	windowState.id = data.id + "_state";
 	windowState.style.position = "absolute";
-	windowState.style.width  = data.width.toString() + "px";
+	windowState.style.width	 = data.width.toString() + "px";
 	windowState.style.height = data.height.toString() + "px";
 	windowState.style.backgroundColor = "rgba(0,0,0,0.8)";
 	windowState.style.lineHeight = Math.round(1.5 * titleTextSize) + "px";
@@ -1834,15 +1834,15 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 	var cornerSize = Math.min(data.width, data.height) / 5;
 	var dragCorner = document.createElement("div");
-	dragCorner.className      = "dragCorner";
+	dragCorner.className	  = "dragCorner";
 	dragCorner.style.position = "absolute";
-	dragCorner.style.width    = cornerSize.toString() + "px";
-	dragCorner.style.height   = cornerSize.toString() + "px";
-	dragCorner.style.top      = (data.height - cornerSize).toString() + "px";
-	dragCorner.style.left     = (data.width - cornerSize).toString() + "px";
+	dragCorner.style.width	  = cornerSize.toString() + "px";
+	dragCorner.style.height	  = cornerSize.toString() + "px";
+	dragCorner.style.top	  = (data.height - cornerSize).toString() + "px";
+	dragCorner.style.left	  = (data.width - cornerSize).toString() + "px";
 	dragCorner.style.backgroundColor = "rgba(255,255,255,0.0)";
-	dragCorner.style.border   = "none";
-	dragCorner.style.zIndex   = "1";
+	dragCorner.style.border	  = "none";
+	dragCorner.style.zIndex	  = "1";
 	windowItem.appendChild(dragCorner);
 
 	parent.appendChild(windowTitle);
@@ -1895,14 +1895,14 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 					newapp.getFullContextMenuAndUpdate();
 				}
 
-				applications[data.id]   = newapp;
+				applications[data.id]	= newapp;
 				controlObjects[data.id] = newapp;
 
 				if (data.animation === true) {
 					wsio.emit('finishedRenderingAppFrame', {id: data.id});
 				}
 			}, false);
-			js.type  = "text/javascript";
+			js.type	 = "text/javascript";
 			js.async = false;
 			js.src = url + "/" + data.application + ".js";
 			console.log("Loading>", data.id, url + "/" + data.application + ".js");
@@ -1988,7 +1988,7 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 				});
 
 				// if not a full URL, add the local one
-				if (resourceUrl.indexOf("http://")  !== 0 &&
+				if (resourceUrl.indexOf("http://")	!== 0 &&
 					resourceUrl.indexOf("https://") !== 0 &&
 					resourceUrl.indexOf("/") !== 0) {
 					resourceUrl = url + "/" + resourceUrl;
@@ -1996,13 +1996,13 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 				// is it a JS file
 				if (loaderType === "script") {
-					loader.type  = "text/javascript";
+					loader.type	 = "text/javascript";
 					loader.async = false;
-					loader.src   = resourceUrl;
+					loader.src	 = resourceUrl;
 				} else if (loaderType === "link") {
 					// is it a CSS file
 					loader.setAttribute("type", "text/css");
-					loader.setAttribute("rel",  "stylesheet");
+					loader.setAttribute("rel",	"stylesheet");
 					loader.setAttribute("href", resourceUrl);
 				} else {
 					console.log('Dependencies> unknown file type', resourceUrl);
@@ -2045,6 +2045,11 @@ var ongoingTouches = [];
 var touchID = [];
 var nextTouchID = 0;
 
+
+var touchZoomTriggered = false;
+var lastZoomTouchDistance = 0;
+var zoomTouchGestureMultiplier = 1;
+
 /**
  * Helper function for copying native touch event
  *
@@ -2067,10 +2072,10 @@ function ongoingTouchIndexById(idToFind) {
 			return i;
 		}
 	}
-	return -1;    // not found
+	return -1;	  // not found
 }
 
-function sendTouchToServer(touch, eventType) {
+function sendTouchToServer(touch, eventType, zoomDelta) {
 	var mappedID = -1;
 
 	if (eventType === 5) {
@@ -2087,6 +2092,7 @@ function sendTouchToServer(touch, eventType) {
 		y: touch.pageY,
 		w: touch.radiusX,
 		h: touch.radiusY,
+		zoom: zoomDelta,
 		clientID: clientID
 	};
 	wsio.emit('clientTouch', touchEvt);
@@ -2136,11 +2142,18 @@ function handleEnd(evt) {
 				console.log("touchend(" + touches[i].identifier + ":...)");
 			}
 			sendTouchToServer(touches[i], 6);
-			ongoingTouches.splice(idx, 1);  // remove it; we're done
+			ongoingTouches.splice(idx, 1);	// remove it; we're done
 		} else {
 			if (touchDebugToConsole) {
 				console.log("can't figure out which touch to end");
 			}
+		}
+	}
+
+	if (ongoingTouches.length !== 2) {
+		if (touchZoomTriggered === true) {
+			console.log("touch zoom end");
+			touchZoomTriggered = false;
 		}
 	}
 }
@@ -2154,7 +2167,7 @@ function handleCancel(evt) {
 	for (var i = 0; i < touches.length; i++) {
 		var idx = ongoingTouchIndexById(touches[i].identifier);
 		sendTouchToServer(touches[i], 6);
-		ongoingTouches.splice(idx, 1);  // remove it; we're done
+		ongoingTouches.splice(idx, 1);	// remove it; we're done
 	}
 }
 
@@ -2164,16 +2177,46 @@ function handleMove(evt) {
 
 	var touches = evt.changedTouches;
 
+
+	// If two pointers are down, check for pinch gestures
+	if (ongoingTouches.length == 2) {
+		var el = document.getElementById("main");
+
+		var zoomTouchDistance = Math.sqrt(
+			Math.abs((ongoingTouches[0].pageX - ongoingTouches[1].pageX)
+			* Math.abs(ongoingTouches[0].pageX - ongoingTouches[1].pageX)) / el.offsetWidth
+			+ (Math.abs(ongoingTouches[0].pageY - ongoingTouches[1].pageY)
+			* Math.abs(ongoingTouches[0].pageY - ongoingTouches[1].pageY)) / el.offsetHeight
+		);
+
+		if (touchZoomTriggered === false) {
+			console.log("touch zoom start");
+			lastZoomTouchDistance = zoomTouchDistance;
+		}
+		touchZoomTriggered = true;
+
+		var zoomDelta = (zoomTouchDistance - lastZoomTouchDistance) * zoomTouchGestureMultiplier;
+		sendTouchToServer(ongoingTouches[0], 10, zoomDelta);
+		lastZoomTouchDistance = zoomTouchDistance;
+	} else {
+		if (touchZoomTriggered === true) {
+			console.log("touch zoom end");
+		}
+		touchZoomTriggered = false;
+	}
+
 	for (var i = 0; i < touches.length; i++) {
 		var idx = ongoingTouchIndexById(touches[i].identifier);
 
 		if (idx >= 0) {
-			if (touchDebugToConsole) {
-				console.log("touchmove(" + touches[i].identifier + ": "
-				+ ongoingTouches[idx].pageX + ", "
-				+ ongoingTouches[idx].pageY + ");");
+			if (touchZoomTriggered === false) {
+				if (touchDebugToConsole) {
+					console.log("touchmove(" + touches[i].identifier + ": "
+					+ ongoingTouches[idx].pageX + ", "
+					+ ongoingTouches[idx].pageY + ");");
+				}
+				sendTouchToServer(touches[i], 4);
 			}
-			sendTouchToServer(touches[i], 4);
 			ongoingTouches.splice(idx, 1, copyTouch(touches[i]));  // swap in the new touch record
 		} else {
 			if (touchDebugToConsole) {

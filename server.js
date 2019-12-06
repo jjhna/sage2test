@@ -12543,6 +12543,12 @@ function wsClientTouch(wsio, data) {
 
 		// Release event
 		pointerRelease(address, posX, posY, { sourceType: "touch", button: "left" });
+	} else if (data.type === 10) { // ZOOM
+		pointerScrollStart(address, posX, posY, { sourceType: "touch" });
+
+		// Zoom gesture
+		var wheelDelta = -data.zoom * omicronManager.touchZoomScale;
+		omicronManager.pointerScroll(address, { wheelDelta: wheelDelta, sourceType: "touch" });
 	}
 }
 
