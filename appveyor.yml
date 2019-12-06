@@ -5,7 +5,7 @@ image: Visual Studio 2017
 branches:
   only:
   - master
-  - lavaSc19Merge
+  - TouchUI
 
 shallow_clone: true
 
