@@ -12515,40 +12515,6 @@ function wsAssistedConfigSend(wsio, data) {
  * @param {Object} data - should have a touch object
  */
 function wsClientTouch(wsio, data) {
-	// console.log(data);
-
-	var sourceID = data.id;
-	var address = "client" + data.clientID + ".touch:" + sourceID;
-	var posX = data.x;
-	var posY = data.y;
-
-	if (data.type === 5) { // DOWN
-		createSagePointer(address);
-
-		showPointer(address, {
-			label:  "Touch: " + sourceID,
-			color: "rgba(242, 182, 15, 1.0)",
-			sourceType: "Pointer"
-		});
-
-		pointerPosition(address, { pointerX: posX, pointerY: posY, sourceType: "touch" });
-
-		// Single click
-		pointerPress(address, posX, posY, { button: "left", sourceType: "touch" });
-	} else if (data.type === 4) { // MOVE
-		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY, sourceType: "touch" });
-	} else if (data.type === 6) { // UP
-		// Hide pointer
-		hidePointer(address);
-
-		// Release event
-		pointerRelease(address, posX, posY, { sourceType: "touch", button: "left" });
-	} else if (data.type === 10) { // ZOOM
-		pointerScrollStart(address, posX, posY, { sourceType: "touch" });
-
-		// Zoom gesture
-		var wheelDelta = -data.zoom * omicronManager.touchZoomScale;
-		omicronManager.pointerScroll(address, { wheelDelta: wheelDelta, sourceType: "touch" });
-	}
+	omicronManager.processNativeTouchEvent(data);
 }
 
