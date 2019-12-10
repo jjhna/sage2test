@@ -176,26 +176,9 @@ function OmicronManager(sysConfig) {
 	this.touchList = new Map(); // All touch points
 	this.touchGroups = new Map(); // Touch groups and their child points
 
-	// Check for stuck touches
-	setInterval(function() {
-		if (omicronManager.enableStuckTouchDetection === true) {
-			var curTime = Date.now();
-			for (var tp of omicronManager.touchList.keys()) {
-				var data = omicronManager.touchList.get(tp);
-				var dt = curTime - data.timestamp;
-				if (dt > omicronManager.stuckTouchDetectionInterval) {
-					omicronManager.hidePointer(tp);
-					sageutils.log('Omicron', 'Removed stuck touch: ' + tp);
-					omicronManager.touchList.delete(tp);
-				}
-			}
-		}
-	}, omicronManager.stuckTouchDetectionInterval);
-
 	// This is intentionally before the config disable check
 	this.appsExcludedFromTouchInteraction = this.config.appsExcludedFromTouchInteraction === undefined ?
 		defaultTouchExcludedApps : this.config.appsExcludedFromTouchInteraction;
-
 	this.touchZoomScale =  this.config.zoomGestureScale === undefined ? this.touchZoomScale : this.config.zoomGestureScale;
 	this.acceleratedDragScale =  this.config.acceleratedDragScale === undefined ?
 		this.acceleratedDragScale : this.config.acceleratedDragScale;
@@ -203,6 +186,24 @@ function OmicronManager(sysConfig) {
 		true : this.config.enableStuckTouchDetection;
 	this.stuckTouchDetectionInterval = this.config.stuckTouchDetectionInterval === undefined ?
 		500 : this.config.stuckTouchDetectionInterval;
+	this.nativeTouchMode = "app";
+
+	// Check for stuck touches
+	setInterval(function() {
+		if (omicronManager.enableStuckTouchDetection === true) {
+			var curTime = Date.now();
+
+			for (var key in omicronManager.touchList) {
+				var data = omicronManager.touchList[key];
+				var dt = curTime - data.timestamp;
+				if (dt > omicronManager.stuckTouchDetectionInterval) {
+					omicronManager.hidePointer(data.address);
+					sageutils.log('Omicron', 'Removed stuck touch: ' + data.address);
+					delete omicronManager.touchList[data.address];
+				}
+			}
+		}
+	}, omicronManager.stuckTouchDetectionInterval);
 
 	if (this.config.enable === false) {
 		return;
@@ -1559,18 +1560,24 @@ OmicronManager.prototype.processNativeTouchEvent = function(data) {
 		// Single click
 		omicronManager.pointerPress(address, posX, posY, { button: "left", sourceType: "touch" });
 
+		data.address = address;
+		data.timestamp = time;
 		data.initX = posX;
 		data.initY = posY;
 
 		omicronManager.touchList[address] = data;
 
-		if (omicronManager.touchList.length === 3) {
-			// console.log("nativeTouchList");
-			// for (var key in omicronManager.nativeTouchList) {
-			// 	console.log("    [" + key + "] = " + (omicronManager.nativeTouchList[key].timestamp - time));
-			// 	omicronManager.pointerChangeMode(key);
-			//}
-		}
+		// var touchSize = Object.keys(omicronManager.touchList).length;
+		// if (touchSize === 3) {
+		// console.log("nativeTouchList");
+		// for (var key in omicronManager.nativeTouchList) {
+		// console.log("    [" + key + "] = " + (omicronManager.nativeTouchList[key].timestamp - time));
+		// omicronManager.pointerChangeMode(key);
+		// }
+		// omicronManager.nativeTouchMode = "window";
+		// } else if (touchSize < 3) {
+		// omicronManager.nativeTouchMode = "app";
+		// }
 	} else if (data.type === 4) { // MOVE
 		data = omicronManager.touchList[address];
 		data.timestamp = time;
@@ -1583,7 +1590,8 @@ OmicronManager.prototype.processNativeTouchEvent = function(data) {
 			posY = posY + distance * Math.sin(angle);
 		}
 
-		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY, sourceType: "touch" });
+		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY,
+			sourceType: "touch", nativeTouchMode: omicronManager.nativeTouchMode });
 
 		omicronManager.touchList[address] = data;
 	} else if (data.type === 6) { // UP
