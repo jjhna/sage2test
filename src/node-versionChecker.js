@@ -6,20 +6,15 @@
 //
 // See full text, terms and conditions in the LICENSE.txt included file
 //
-// Copyright (c) 2017
-
+// Copyright (c) 2019
 
 // Require variables to be declared
 "use strict";
 
-// Builtins
-// var fs    = require('fs');
-// modules defined in package.json
-var chalk = require('chalk'); // used for colorizing the console output
+// Used for colorizing the console output
+var chalk = require('chalk');
 // SAGE2 modules
 var sageutils = require('../src/node-utils');
-// sageutils.log("Prefix before >", "Message", "additional");
-
 
 var remoteSiteBlockName = "SAGE2_versionWarning";
 
@@ -31,10 +26,10 @@ var remoteSiteBlockName = "SAGE2_versionWarning";
  * @param  {object} obj - Object containing necessary references to function at server top level
  */
 function VersionChecker(obj) {
-	sageutils.log("Version manager>", "Starting...");
-	sageutils.log("Version manager>", "Base: " + obj.version.base);
-	sageutils.log("Version manager>", "Branch: " + obj.version.branch);
-	sageutils.log("Version manager>", "Date: " + obj.version.date);
+	sageutils.log("Version", "Starting...");
+	sageutils.log("Version", "Base: " + obj.version.base);
+	sageutils.log("Version", "Branch: " + obj.version.branch);
+	sageutils.log("Version", "Date: " + obj.version.date);
 	this.myVersion = obj.version;
 
 	this.config = obj.config;
@@ -75,7 +70,7 @@ VersionChecker.prototype.doesThisServerKnowAboutRemoteSite = function(host) {
 		this.setMismatchToTrue();
 		let info = "Incomming remote connection initiated by site '" + host
 		+ " not specified by local config.  ";
-		sageutils.log("Version manager", chalk.bgRed(info));
+		sageutils.log("Version", chalk.red(info));
 		this.addToMismatchLog(info);
 	}
 	return found;
@@ -120,8 +115,8 @@ VersionChecker.prototype.determineIfVersionMismatch = function(remoteData, site,
 	if (mismatch) {
 		this.setMismatchToTrue();
 		let mismatchMessage = [
-			"-----VERSION MISMATCH DETECTED-----",
-			"Warning mismatch with" + site.name
+			"----- Version mismatch detected -----",
+			"Warning mismatch with " + site.name
 		];
 		if (mismatch.beforeCheckVersion) {
 			mismatchMessage.push(site.name + " has an older version and is unable to report its version");
@@ -159,9 +154,9 @@ VersionChecker.prototype.determineIfVersionMismatch = function(remoteData, site,
 			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 2]);
 			this.addToMismatchLog(mismatchMessage[mismatchMessage.length - 1]);
 		}
-		mismatchMessage.push("-----VERSION MISMATCH END OF REPORT-----");
+		mismatchMessage.push("----- End of report -----");
 		mismatchMessage.forEach((line) => {
-			sageutils.log("Version manager", chalk.bgRed(line));
+			sageutils.log("Version", chalk.red(line));
 		});
 	}
 };
@@ -187,9 +182,9 @@ VersionChecker.prototype.doesRemoteSiteKnowAboutThisServer = function(remoteData
 		// Can only check if remote site know about this one post previously mentioned update
 		if (!found) {
 			this.setMismatchToTrue();
-			sageutils.log("Version manager",
-				chalk.bgRed("The site " + remoteData.locationInformation.host
-					+ " doesn't know about this host. They may not be able to share anything back."));
+			sageutils.log("Version",
+				chalk.red("The site " + remoteData.locationInformation.host
+					+ " is not configured to share back."));
 		}
 	}
 	return found;
@@ -280,7 +275,7 @@ VersionChecker.prototype.tryShowNextMesageInQueueOnDisplay = function(acceptOrRe
 	// Remote the first message
 	this.messageQueue.splice(0, 1);
 	// MODIFY STATUS OF ACCEPT REJECT
-	sageutils.log("Version manager", chalk.bgRed("MODIFIED STATUS OF ACCEPT REJECT"));
+	sageutils.log("Version", chalk.red("MODIFIED STATUS OF ACCEPT REJECT"));
 	if (this.messageQueue.length > 0) {
 		// Show the message
 		this.showGenericInfoPaneOnDisplay(true, this.messageQueue[0].messageData);
@@ -294,7 +289,7 @@ VersionChecker.prototype.tryShowNextMesageInQueueOnDisplay = function(acceptOrRe
  * @method reportReject
  */
 VersionChecker.prototype.reportReject = function() {
-	sageutils.log("Version manager", "Reporting REJECT");
+	sageutils.log("Version", "Reporting REJECT");
 	setTimeout(() => {
 		this.tryShowNextMesageInQueueOnDisplay("REJECT");
 	}, 1500);
@@ -307,7 +302,7 @@ VersionChecker.prototype.reportReject = function() {
  * @method reportAccept
  */
 VersionChecker.prototype.reportAccept = function() {
-	sageutils.log("Version manager", "Reporting ACCEPT");
+	sageutils.log("Version", "Reporting ACCEPT");
 
 	if (this.messageQueue[0].remoteSiteIndex) {
 		this.remote_sites[this.messageQueue[0].remoteSiteIndex].hasAcceptedNotification = true;
