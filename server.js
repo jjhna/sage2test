@@ -5635,7 +5635,7 @@ function sendConfig(req, res) {
 	res.writeHead(200, header);
 	// Adding the calculated version into the data structure
 	config.version = SAGE2_version;
-	res.write(JSON.stringify(config));
+	res.write(JSON.stringify(config, null, 4));
 	res.end();
 }
 
