@@ -497,6 +497,7 @@ function initializeSage2Server() {
 	var httpServerApp = new HttpServer(publicDirectory);
 	httpServerApp.httpPOST('/upload', uploadForm); // receive newly uploaded files from SAGE Pointer / SAGE UI
 	httpServerApp.httpGET('/config',  sendConfig); // send config object to client using http request
+	httpServerApp.httpPOST('/config', newConfig);  // receive config object using http POST
 	var options  = setupHttpsOptions();            // create HTTPS options - sets up security keys
 	sage2Server  = http.createServer(httpServerApp.onrequest);
 	sage2ServerS = https.createServer(options, httpServerApp.onrequest);
@@ -5621,6 +5622,12 @@ function setupHttpsOptions() {
 	return httpsOptions;
 }
 
+/**
+ * Send configuration object to client using http request
+ * HTTP GET request
+ * @param {any} req
+ * @param {any} res
+ */
 function sendConfig(req, res) {
 	var header = HttpServer.prototype.buildHeader();
 	// Set type
@@ -5639,6 +5646,58 @@ function sendConfig(req, res) {
 	res.end();
 }
 
+/**
+ * Receive new configuration object
+ * HTTP POST request
+ * @param {any} req
+ * @param {any} res
+ *
+ */
+function newConfig(req, res) {
+	// Get the current configuration file path
+	var configFile = getPathOfConfigFile();
+	// If backup copy doesnt exist, create it
+	// only create backup once
+	var backupFile = configFile + '.back';
+	if (!sageutils.fileExists(backupFile)) {
+		fs.copyFileSync(configFile, backupFile);
+	}
+	// Handle the POST data
+	var body = '';
+	req.on('data', chunk => {
+		body += chunk.toString();
+	});
+	req.on('end', () => {
+		let parsed = JSON.parse(body);
+		let beautiful = JSON.stringify(parsed, null, 4);
+		// Copy the new data in the configuration file
+		fs.writeFile(configFile, beautiful, (err) => {
+			// Build the HTTP response
+			var header = HttpServer.prototype.buildHeader();
+			// build the reply to the upload
+			header["Content-Type"] = "application/json";
+			res.writeHead(200, header);
+
+			if (err) {
+				sageutils.log("SAGE2", "New configuration failed " + err);
+				// Send the reply
+				res.end(JSON.stringify({status: 'server', fields: {good: false}}));
+			} else {
+				sageutils.log("SAGE2", "New configuration received - need restart");
+				// Send the reply
+				res.end(JSON.stringify({status: 'server', fields: {good: true}}));
+			}
+		});
+	});
+}
+
+/**
+ * Receive newly uploaded files from SAGE Pointer / SAGE UI
+ * HTTP POST request
+ * @param {any} req
+ * @param {any} res
+ *
+ */
 function uploadForm(req, res) {
 	var form     = new formidable.IncomingForm();
 	// Drop position
