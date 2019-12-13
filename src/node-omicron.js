@@ -1567,33 +1567,36 @@ OmicronManager.prototype.processNativeTouchEvent = function(data) {
 
 		omicronManager.touchList[address] = data;
 
-		// var touchSize = Object.keys(omicronManager.touchList).length;
-		// if (touchSize === 3) {
-		// console.log("nativeTouchList");
-		// for (var key in omicronManager.nativeTouchList) {
-		// console.log("    [" + key + "] = " + (omicronManager.nativeTouchList[key].timestamp - time));
-		// omicronManager.pointerChangeMode(key);
-		// }
-		// omicronManager.nativeTouchMode = "window";
-		// } else if (touchSize < 3) {
-		// omicronManager.nativeTouchMode = "app";
-		// }
+		var touchSize = Object.keys(omicronManager.touchList).length;
+		if (touchSize === 3) {
+			console.log("nativeTouchList");
+			for (var key in omicronManager.touchList) {
+				console.log("    [" + key + "] = " + (omicronManager.touchList[key].timestamp - time));
+				// omicronManager.pointerChangeMode(key);
+			}
+			omicronManager.nativeTouchMode = "window";
+		} else if (touchSize < 3) {
+			omicronManager.nativeTouchMode = "app";
+		}
 	} else if (data.type === 4) { // MOVE
 		data = omicronManager.touchList[address];
-		data.timestamp = time;
 
-		if (data.initX !== undefined && data.initY !== undefined) {
-			var angle = Math.atan2(posY - data.initY, posX - data.initX);
-			var distance = Math.sqrt(Math.pow(Math.abs(posX - data.initX), 2) + Math.pow(Math.abs(posY - data.initY), 2));
-			distance *= omicronManager.acceleratedDragScale;
-			posX = posX + distance * Math.cos(angle);
-			posY = posY + distance * Math.sin(angle);
+		if (data !== undefined) {
+			data.timestamp = time;
+
+			if (data.initX !== undefined && data.initY !== undefined) {
+				var angle = Math.atan2(posY - data.initY, posX - data.initX);
+				var distance = Math.sqrt(Math.pow(Math.abs(posX - data.initX), 2) + Math.pow(Math.abs(posY - data.initY), 2));
+				distance *= omicronManager.acceleratedDragScale;
+				posX = posX + distance * Math.cos(angle);
+				posY = posY + distance * Math.sin(angle);
+			}
+
+			omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY,
+				sourceType: "touch", nativeTouchMode: omicronManager.nativeTouchMode });
+
+			omicronManager.touchList[address] = data;
 		}
-
-		omicronManager.pointerPosition(address, { pointerX: posX, pointerY: posY,
-			sourceType: "touch", nativeTouchMode: omicronManager.nativeTouchMode });
-
-		omicronManager.touchList[address] = data;
 	} else if (data.type === 6) { // UP
 		// Hide pointer
 		omicronManager.hidePointer(address);

@@ -5281,7 +5281,7 @@ function loadConfiguration() {
 	}
 
 	// Touch drag bar. By default same as title bar height or 0 if disabled
-	userConfig.ui.dragBarHeight = 0;
+	userConfig.ui.dragBarHeight = userConfig.ui.titleBarHeight;
 
 	// Automatically populate the displays entry if undefined. Adds left to right, starting from the top.
 	if (userConfig.displays === undefined || userConfig.displays.length == 0) {

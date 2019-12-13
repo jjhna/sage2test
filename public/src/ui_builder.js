@@ -49,6 +49,7 @@ function UIBuilder(json_cfg, clientID) {
 	this.pointerOffsetY = null;
 	this.noDropShadow   = null;
 	this.uiHidden       = null;
+	this.dragBarHidden	= null;
 
 	// Aspect ratio of the wall and the browser
 	this.wallRatio      = null;
@@ -614,6 +615,7 @@ function UIBuilder(json_cfg, clientID) {
 		this.showRadialWallUI = this.json_cfg.ui.showRadialWallUI !== undefined ? this.json_cfg.ui.showRadialWallUI : false;
 
 		this.uiHidden = false;
+		this.dragBarHidden = true;
 		this.showInterface();
 	};
 
@@ -1657,6 +1659,11 @@ function UIBuilder(json_cfg, clientID) {
 			for (i = 0; i < applist.length; i++) {
 				applist[i].style.display = 'none';
 			}
+			// Hide the apps bottom bar
+			var draglist = document.getElementsByClassName("windowDragBar");
+			for (i = 0; i < draglist.length; i++) {
+				draglist[i].style.display = 'none';
+			}
 			// Hide the apps border
 			var itemlist = document.getElementsByClassName("windowItem");
 			for (i = 0; i < itemlist.length; i++) {
@@ -1697,6 +1704,11 @@ function UIBuilder(json_cfg, clientID) {
 			var applist = document.getElementsByClassName("windowTitle");
 			for (let i = 0; i < applist.length; i++) {
 				applist[i].style.display = 'block';
+			}
+			// Show the apps bottom bar
+			var draglist = document.getElementsByClassName("windowDragBar");
+			for (let i = 0; i < draglist.length; i++) {
+				draglist[i].style.display = 'block';
 			}
 			// Show the apps border
 			var itemlist = document.getElementsByClassName("windowItem");

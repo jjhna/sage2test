@@ -78,6 +78,14 @@ body {
 	box-shadow: 8px 4px 15px #222222;
 }
 
+.windowDragBar {
+	position: absolute;
+	background-color: #666666;
+	border: solid 1px #000000;
+	overflow: hidden;
+	box-shadow: 8px 4px 15px #222222;
+}
+
 .windowControls {
 	position: absolute;
 	background-color: rgba(0, 0, 0, 0);

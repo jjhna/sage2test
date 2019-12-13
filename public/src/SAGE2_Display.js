@@ -742,12 +742,16 @@ function setupListeners() {
 		// Clean up the DOM
 		var deleteElemTitle = document.getElementById(elem_data.elemId + "_title");
 		var deleteElem = document.getElementById(elem_data.elemId);
+		var deleteElemDragBar = document.getElementById(elem_data.elemId + "_dragBar");
 
 		// Set the CSS for fading out
 		deleteElem.classList.add('windowDisappear');
 
 		// Delete the titlebar
 		deleteElemTitle.parentNode.removeChild(deleteElemTitle);
+
+		// Delete the dragbar
+		deleteElemDragBar.parentNode.removeChild(deleteElemDragBar);
 
 		// When fade over, really delete the element
 		setTimeout(function() {
@@ -790,6 +794,7 @@ function setupListeners() {
 			var selectedElemTitle = document.getElementById(key + "_title");
 			var selectedElem = document.getElementById(key);
 			var selectedElemOverlay = document.getElementById(key + "_overlay");
+			var selectedElemDragBar = document.getElementById(key + "_dragBar");
 
 			if (selectedElemTitle) {
 				selectedElemTitle.style.zIndex = order[key].toString();
@@ -799,6 +804,9 @@ function setupListeners() {
 			}
 			if (selectedElemOverlay) {
 				selectedElemOverlay.style.zIndex = order[key].toString();
+			}
+			if (selectedElemDragBar) {
+				selectedElemDragBar.style.zIndex = order[key].toString();
 			}
 		}
 	});
@@ -947,8 +955,7 @@ function setupListeners() {
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
 
 		selectedElemDragBar.style.width = Math.round(position_data.elemWidth).toString() + "px";
-		selectedElemDragBar.style.top = (
-			Math.round(position_data.elemHeight + selectedElemDragBar.style.height)).toString() + "px";
+		selectedElemDragBar.style.top = Math.round(position_data.elemHeight + ui.titleBarHeight).toString() + "px";
 
 		if (position_data.elemId.split("_")[0] === "portal") {
 			dataSharingPortals[position_data.elemId].setPosition(position_data.elemLeft, position_data.elemTop);
@@ -965,7 +972,6 @@ function setupListeners() {
 		}
 
 		selectedElemTitle.style.width = Math.round(position_data.elemWidth).toString() + "px";
-		selectedElemDragBar.style.width = Math.round(position_data.elemWidth).toString() + "px";
 
 		var selectedElemState = document.getElementById(position_data.elemId + "_state");
 		selectedElemState.style.width = Math.round(position_data.elemWidth).toString() + "px";
@@ -1098,6 +1104,13 @@ function setupListeners() {
 		if (app) {
 			var date = new Date(event_data.date);
 			app.SAGE2Event(event_data.type, event_data.position, event_data.user, event_data.data, date);
+
+			var selectedElemDragBar = document.getElementById(event_data.id + "_dragBar");
+			if (event_data.data.sourceType !== undefined && event_data.data.sourceType === "touch") {
+				selectedElemDragBar.style.display = "block";
+			} else {
+				selectedElemDragBar.style.display = "none";
+			}
 		}
 	});
 
@@ -1719,19 +1732,20 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 	var dragBar = document.createElement("div");
 	dragBar.id	= data.id + "_dragBar";
-	dragBar.className	 = "windowTitle";
+	dragBar.className	 = "windowDragBar";
 	dragBar.style.width	 = data.width.toString() + "px";
 	dragBar.style.height = titleBarHeight.toString() + "px";
 	dragBar.style.left	 = (-offsetX).toString() + "px";
 	dragBar.style.top	 = (-offsetY + data.height + titleBarHeight).toString() + "px";
 	dragBar.style.transform = translate;
 	dragBar.style.zIndex = itemCount.toString();
-	// if (ui.noDropShadow === true) {
-	dragBar.style.boxShadow = "none";
-	// }
-	// if (ui.uiHidden === true) {
-	dragBar.style.display	= "none";
-	// }
+	if (ui.noDropShadow === true) {
+		dragBar.style.boxShadow = "none";
+	}
+	if (ui.uiHidden === true || ui.dragBarHidden === true) {
+		dragBar.style.display	= "none";
+	}
+
 	parent.appendChild(dragBar);
 
 	var iconWidth = Math.round(titleBarHeight) * (300 / 235);
@@ -2093,6 +2107,9 @@ function sendTouchToServer(touch, eventType, zoomDelta) {
 		w: touch.radiusX,
 		h: touch.radiusY,
 		zoom: zoomDelta,
+		initX: touch.pageX,
+		initY: touch.pageY,
+		timestamp: new Date(),
 		clientID: clientID
 	};
 	wsio.emit('clientTouch', touchEvt);
@@ -2112,6 +2129,20 @@ function disableNativeTouch() {
 	el.removeEventListener("touchend", handleEnd, false);
 	el.removeEventListener("touchcancel", handleCancel, false);
 	el.removeEventListener("touchmove", handleMove, false);
+}
+
+function showDragBar() {
+	var draglist = document.getElementsByClassName("windowDragBar");
+	for (var i = 0; i < draglist.length; i++) {
+		draglist[i].style.display = 'block';
+	}
+}
+
+function hideDragBar() {
+	var draglist = document.getElementsByClassName("windowDragBar");
+	for (var i = 0; i < draglist.length; i++) {
+		draglist[i].style.display = 'none';
+	}
 }
 
 function handleStart(evt) {
@@ -2152,7 +2183,9 @@ function handleEnd(evt) {
 
 	if (ongoingTouches.length !== 2) {
 		if (touchZoomTriggered === true) {
-			console.log("touch zoom end");
+			if (touchDebugToConsole) {
+				console.log("touch zoom end");
+			}
 			touchZoomTriggered = false;
 		}
 	}
@@ -2190,7 +2223,9 @@ function handleMove(evt) {
 		);
 
 		if (touchZoomTriggered === false) {
-			console.log("touch zoom start");
+			if (touchDebugToConsole) {
+				console.log("touch zoom start");
+			}
 			lastZoomTouchDistance = zoomTouchDistance;
 		}
 		touchZoomTriggered = true;
@@ -2200,7 +2235,9 @@ function handleMove(evt) {
 		lastZoomTouchDistance = zoomTouchDistance;
 	} else {
 		if (touchZoomTriggered === true) {
-			console.log("touch zoom end");
+			if (touchDebugToConsole) {
+				console.log("touch zoom end");
+			}
 		}
 		touchZoomTriggered = false;
 	}
