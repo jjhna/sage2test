@@ -25,8 +25,19 @@ function WebsocketIO(url) {
 	if (url !== undefined && url !== null) {
 		this.url = url;
 	} else {
-		this.url = (window.location.protocol === "https:" ? "wss" : "ws") + "://" + window.location.host +
-					"/" + window.location.pathname.split("/")[1];
+		// split the path into an array
+		let dir = window.location.pathname.split("/");
+		// remove the filename at the end, i.e. index.html
+		dir.pop();
+		// rebuild the string
+		let dirpath = dir.join('/');
+		if (dirpath) {
+			// if not empty, terminate the string to make a directory
+			dirpath = dirpath + "/";
+		}
+		// build the websocket url
+		this.url = (window.location.protocol === "https:" ? "wss" : "ws") + "://"
+			+ window.location.host + "/" + dirpath;
 	}
 
 	/**
