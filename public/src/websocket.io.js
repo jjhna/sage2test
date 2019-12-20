@@ -29,6 +29,8 @@ function WebsocketIO(url) {
 		let dir = window.location.pathname.split("/");
 		// remove the filename at the end, i.e. index.html
 		dir.pop();
+		// remove empty strings from array
+		dir = dir.filter(n => n);
 		// rebuild the string
 		let dirpath = dir.join('/');
 		if (dirpath) {
