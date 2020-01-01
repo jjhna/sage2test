@@ -3564,6 +3564,7 @@ function wsLoadApplication(wsio, data) {
 	var appData = {application: "custom_app", filename: data.application, data: data.data};
 	appLoader.loadFileFromLocalStorage(appData, function(appInstance) {
 		appInstance.id = getUniqueAppId();
+		// console.log(appInstance);
 		if (appInstance.animation) {
 			var i;
 			SAGE2Items.renderSync[appInstance.id] = {clients: {}, date: Date.now()};

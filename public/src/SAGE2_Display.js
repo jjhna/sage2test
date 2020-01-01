@@ -1867,32 +1867,68 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 		// load new app
 		if (window[data.application] === undefined) {
-			var js = document.createElement("script");
-			js.addEventListener('error', function(event) {
-				console.log("Error loading script: " + data.application + ".js");
-			}, false);
-			js.addEventListener('load', function(event) {
-				var newapp = new window[data.application]();
-				newapp.init(init);
-				newapp.refresh(date);
+			console.log(data);
+			if (data.react) {
+				var js = document.createElement("script");
+				js.addEventListener('error', function(event) {
+					console.log("Error loading script: " + data.application + ".js");
+				}, false);
+				js.addEventListener('load', function(event) {
+					console.log("loaded")
+					// console.log(data.sage2URL.split("/").pop());
+					let name = data.sage2URL.split("/").pop();
+					var newapp = new window[name]();
 
-				// Sending the context menu info to the server
-				if (isMaster) {
-					newapp.getFullContextMenuAndUpdate();
-				}
 
-				applications[data.id]   = newapp;
-				controlObjects[data.id] = newapp;
+					newapp.init(init);
+					newapp.refresh(date);
+	
+					// Sending the context menu info to the server
+					if (isMaster) {
+						newapp.getFullContextMenuAndUpdate();
+					}
+	
+					applications[data.id]   = newapp;
+					controlObjects[data.id] = newapp;
+	
+					if (data.animation === true) {
+						wsio.emit('finishedRenderingAppFrame', {id: data.id});
+					}
+				}, false);
+				js.type  = "text/javascript";
+				js.async = false;
+				js.src = "/app?name=" + data.sage2URL;
+				console.log("Loading>", data.id, url + "/" + data.application + ".js");
+				document.head.appendChild(js);
+			} else {
+				var js = document.createElement("script");
+				js.addEventListener('error', function(event) {
+					console.log("Error loading script: " + data.application + ".js");
+				}, false);
+				js.addEventListener('load', function(event) {
+					var newapp = new window[data.application]();
+					newapp.init(init);
+					newapp.refresh(date);
+	
+					// Sending the context menu info to the server
+					if (isMaster) {
+						newapp.getFullContextMenuAndUpdate();
+					}
+	
+					applications[data.id]   = newapp;
+					controlObjects[data.id] = newapp;
+	
+					if (data.animation === true) {
+						wsio.emit('finishedRenderingAppFrame', {id: data.id});
+					}
+				}, false);
+				js.type  = "text/javascript";
+				js.async = false;
+				js.src = url + "/" + data.application + ".js";
+				console.log("Loading>", data.id, url + "/" + data.application + ".js");
+				document.head.appendChild(js);
+			}
 
-				if (data.animation === true) {
-					wsio.emit('finishedRenderingAppFrame', {id: data.id});
-				}
-			}, false);
-			js.type  = "text/javascript";
-			js.async = false;
-			js.src = url + "/" + data.application + ".js";
-			console.log("Loading>", data.id, url + "/" + data.application + ".js");
-			document.head.appendChild(js);
 		} else {
 			// load existing app
 			var app = new window[data.application]();

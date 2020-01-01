@@ -37,6 +37,27 @@ var normalizeURL = require('normalizeurl');
 var sageutils  = require('../src/node-utils');    // provides utility functions
 var generateSW = require('../generate-service-worker.js');
 
+var rollup = require('rollup');
+var babel = require('rollup-plugin-babel');
+var inputOptions = {
+	plugins: [
+		babel({
+			presets: [["@babel/preset-env", { 
+				"targets": {
+					node: "6.5"
+				}}], "@babel/preset-react"]
+		}),
+	],
+};
+var outputOptions = {
+	format: "iife",
+	externals: ['react', 'react-dom'],
+	globals: {
+		'react': "React",
+		'react-dom': "ReactDOM"
+	}
+};
+
 /**
  * SAGE HTTP request handlers for GET and POST
  *
@@ -244,7 +265,7 @@ HttpServer.prototype.buildHeader = function() {
  * @param req {Object} request
  * @param res {Object} response
  */
-HttpServer.prototype.onreq = function(req, res) {
+HttpServer.prototype.onreq = async function(req, res) {
 	var i;
 	var _this = this;
 
@@ -301,6 +322,31 @@ HttpServer.prototype.onreq = function(req, res) {
 			res.write(payload);
 			res.end();
 
+			return;
+		}
+
+		if (getName.startsWith("/app")) {
+			let app = req.url.split("name=")[1];
+			let appPath = path.join(__dirname, "..", "public", app);
+			let name = path.parse(app).name;
+			// console.log("get App", path.parse(app));
+
+			// console.log(appPath);
+			console.log("Load App", name);
+
+			await rollup.rollup({...inputOptions, input: path.join(appPath, "index.jsx")})
+				.then(bundle => bundle.generate({...outputOptions, name: path.parse(app).name}))
+				.then(({output}) => {
+
+
+					let header   = this.buildHeader();
+					header["Content-Type"] = "text/javascript; charset=UTF8";
+					res.writeHead(200, header);
+					res.write(output[0].code);
+					res.end();
+				})
+				.catch(console.error);
+		
 			return;
 		}
 

@@ -17,12 +17,7 @@
  * @submodule SAGE2_App
  */
 
-/**
- * Base class for SAGE2 applications
- *
- * @class SAGE2_App
- */
-var SAGE2_App = Class.extend({
+var SAGE2_App_Spec = {
 
 	/**
 	* Constructor for SAGE2 applications
@@ -1470,4 +1465,11 @@ var SAGE2_App = Class.extend({
 			wsio.emit("serverDataRemoveValue", { namesOfValuesToRemove: namesOfValuesToRemove });
 		}
 	}
-});
+};
+
+/**
+ * Base class for SAGE2 applications
+ *
+ * @class SAGE2_App
+ */
+var SAGE2_App = Class.extend(SAGE2_App_Spec);

@@ -1508,6 +1508,7 @@ AppLoader.prototype.readInstructionsFile = function(json_str, file, mime_type, e
 		resizeMode: resizeMode,
 		sticky: instructions.sticky,
 		plugin: instructions.plugin,
+		react: instructions.react,
 		file: file,
 		sage2URL: s2url,
 		date: new Date()
