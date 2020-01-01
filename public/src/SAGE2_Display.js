@@ -1867,39 +1867,35 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 
 		// load new app
 		if (window[data.application] === undefined) {
-			console.log(data);
 			if (data.react) {
-				var js = document.createElement("script");
-				js.addEventListener('error', function(event) {
-					console.log("Error loading script: " + data.application + ".js");
+				let jsx = document.createElement("script");
+				jsx.addEventListener('error', function(event) {
+					console.log("Error loading script: " + data.application + ".jsx");
 				}, false);
-				js.addEventListener('load', function(event) {
-					console.log("loaded")
-					// console.log(data.sage2URL.split("/").pop());
+				jsx.addEventListener('load', function(event) {
 					let name = data.sage2URL.split("/").pop();
 					var newapp = new window[name]();
 
-
 					newapp.init(init);
 					newapp.refresh(date);
-	
+
 					// Sending the context menu info to the server
 					if (isMaster) {
 						newapp.getFullContextMenuAndUpdate();
 					}
-	
+
 					applications[data.id]   = newapp;
 					controlObjects[data.id] = newapp;
-	
+
 					if (data.animation === true) {
 						wsio.emit('finishedRenderingAppFrame', {id: data.id});
 					}
 				}, false);
-				js.type  = "text/javascript";
-				js.async = false;
-				js.src = "/app?name=" + data.sage2URL;
-				console.log("Loading>", data.id, url + "/" + data.application + ".js");
-				document.head.appendChild(js);
+				jsx.type  = "text/javascript";
+				jsx.async = false;
+				jsx.src = "/app?name=" + data.sage2URL;
+				console.log("Loading>", data.id, url + "/" + data.application + ".jsx");
+				document.head.appendChild(jsx);
 			} else {
 				var js = document.createElement("script");
 				js.addEventListener('error', function(event) {
@@ -1909,15 +1905,15 @@ function createAppWindow(data, parentId, titleBarHeight, titleTextSize, offsetX,
 					var newapp = new window[data.application]();
 					newapp.init(init);
 					newapp.refresh(date);
-	
+
 					// Sending the context menu info to the server
 					if (isMaster) {
 						newapp.getFullContextMenuAndUpdate();
 					}
-	
+
 					applications[data.id]   = newapp;
 					controlObjects[data.id] = newapp;
-	
+
 					if (data.animation === true) {
 						wsio.emit('finishedRenderingAppFrame', {id: data.id});
 					}

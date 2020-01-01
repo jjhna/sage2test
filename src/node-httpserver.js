@@ -42,18 +42,18 @@ var babel = require('rollup-plugin-babel');
 var inputOptions = {
 	plugins: [
 		babel({
-			presets: [["@babel/preset-env", { 
-				"targets": {
+			presets: [["@babel/preset-env", {
+				targets: {
 					node: "6.5"
 				}}], "@babel/preset-react"]
-		}),
-	],
+		})
+	]
 };
 var outputOptions = {
 	format: "iife",
 	externals: ['react', 'react-dom'],
 	globals: {
-		'react': "React",
+		react: "React",
 		'react-dom': "ReactDOM"
 	}
 };
@@ -265,7 +265,7 @@ HttpServer.prototype.buildHeader = function() {
  * @param req {Object} request
  * @param res {Object} response
  */
-HttpServer.prototype.onreq = async function(req, res) {
+HttpServer.prototype.onreq = function(req, res) {
 	var i;
 	var _this = this;
 
@@ -283,17 +283,7 @@ HttpServer.prototype.onreq = async function(req, res) {
 
 		// redirect root path to index.html
 		if (getName === "/") {
-			// Build the secure URL
-			let secureURL = "https://" + global.config.host +
-				(global.config.secure_port === 443 ? "" : ":" + global.config.secure_port) +
-				"/index.html";
-			this.redirect(res, secureURL, 301);
-			return;
-		}
-
-		// Clear the user's cache and redirect to index.html
-		if (getName === "/logout") {
-			this.clearSiteData(res);
+			// Build the secure URLasync
 			return;
 		}
 
@@ -334,11 +324,9 @@ HttpServer.prototype.onreq = async function(req, res) {
 			// console.log(appPath);
 			console.log("Load App", name);
 
-			await rollup.rollup({...inputOptions, input: path.join(appPath, "index.jsx")})
-				.then(bundle => bundle.generate({...outputOptions, name: path.parse(app).name}))
+			rollup.rollup(Object.assign({}, inputOptions, {input: path.join(appPath, "index.jsx")}))
+				.then(bundle => bundle.generate(Object.assign({}, outputOptions, {name: path.parse(app).name})))
 				.then(({output}) => {
-
-
 					let header   = this.buildHeader();
 					header["Content-Type"] = "text/javascript; charset=UTF8";
 					res.writeHead(200, header);
@@ -346,7 +334,7 @@ HttpServer.prototype.onreq = async function(req, res) {
 					res.end();
 				})
 				.catch(console.error);
-		
+
 			return;
 		}
 

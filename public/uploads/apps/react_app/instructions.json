@@ -8,6 +8,7 @@
     "animation": false,
     "dependencies": [],
     "load": {
+      "count": 0
     },
     "title": "React App",
     "version": "1.0.0",
