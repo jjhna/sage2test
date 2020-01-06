@@ -3,6 +3,7 @@
 class SAGE2_ReactApp {
 	constructor() {
 		Object.assign(this, SAGE2_App_Spec);
+		this.setters = {};
 
 		this.construct();
 	}
@@ -39,7 +40,7 @@ class SAGE2_ReactApp {
 		let Component = this.render;
 
 		ReactDOM.render(React.createElement(Component, {
-			useState: this.useState.bind(this),
+			useStateSAGE2: this.useState.bind(this),
 			width: this.sage2_width,
 			height: this.sage2_height
 		}), this.element);
@@ -67,7 +68,8 @@ class SAGE2_ReactApp {
 		let stateValue = this.state[name];
 		let [state, setState] = React.useState(stateValue);
 
-		return [state, (setter) =>  {
+		// save the setter function to trigger rerender in other places
+		this.setters[name] = (setter) => {
 			if (setter instanceof Function) {
 				this.state[name] = setter(stateValue);
 			} else {
@@ -76,7 +78,13 @@ class SAGE2_ReactApp {
 
 			this.SAGE2Sync();
 			setState(this.state[name]);
-		}];
+		};
+
+		return [state, this.setters[name]];
+	}
+
+	setState(name, exp) {
+		this.setters[name](exp);
 	}
 
 	event(eventType, position, user_id, data, date) {
@@ -108,14 +116,6 @@ class SAGE2_ReactApp {
 				// down
 				this.refresh(date);
 			}
-		} else if (eventType === "dataUpdate") {
-			console.log("JupyterLab Data Update", data);
-
-			this.state.src = data.state.src;
-			this.state.code = data.state.code;
-
-			this.updateContent(data, date);
-			this.refresh(date);
 		}
 	}
 }

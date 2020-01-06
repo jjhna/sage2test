@@ -39,6 +39,7 @@ var generateSW = require('../generate-service-worker.js');
 
 var rollup = require('rollup');
 var babel = require('rollup-plugin-babel');
+var postcss = require('rollup-plugin-postcss');
 var inputOptions = {
 	plugins: [
 		babel({
@@ -46,15 +47,19 @@ var inputOptions = {
 				targets: {
 					node: "6.5"
 				}}], "@babel/preset-react"]
+		}),
+		postcss({
+			plugins: []
 		})
 	]
 };
 var outputOptions = {
 	format: "iife",
-	externals: ['react', 'react-dom'],
+	externals: ['react', 'react-dom', 'd3'],
 	globals: {
 		react: "React",
-		'react-dom': "ReactDOM"
+		'react-dom': "ReactDOM",
+		d3: 'd3'
 	}
 };
 

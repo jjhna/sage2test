@@ -72,6 +72,7 @@
 		"rimraf": "latest",
 		"rollup": "^1.27.14",
 		"rollup-plugin-babel": "^4.3.3",
+		"rollup-plugin-postcss": "^2.0.3",
 		"sanitize-filename": "latest",
 		"sanitizer": "latest",
 		"semver": "latest",
