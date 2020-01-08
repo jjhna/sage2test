@@ -9,13 +9,13 @@ class SAGE2_ReactApp {
 	}
 
 	init(data) {
-		console.log('SAGE2_ReactApp> init');
+		console.log("SAGE2_ReactApp> init");
 		// Create div into the DOM
 		this.SAGE2Init("div", data);
 		// Set the DOM id
 		this.element.id = "div_" + data.id;
 		// Set the background to black
-		this.element.style.backgroundColor = 'black';
+		this.element.style.backgroundColor = "black";
 
 		// move and resize callbacks
 		this.resizeEvents = "continuous"; // onfinish
@@ -30,7 +30,7 @@ class SAGE2_ReactApp {
 	}
 
 	load(date) {
-		console.log('SAGE2_ReactApp> Load with state: ', this.state);
+		console.log("SAGE2_ReactApp> Load with state: ", this.state);
 		this.refresh(date);
 	}
 
@@ -39,11 +39,18 @@ class SAGE2_ReactApp {
 
 		let Component = this.render;
 
-		ReactDOM.render(React.createElement(Component, {
-			useStateSAGE2: this.useState.bind(this),
-			width: this.sage2_width,
-			height: this.sage2_height
-		}), this.element);
+		ReactDOM.render(
+			React.createElement(
+				ErrorBoundary,
+				null,
+				React.createElement(Component, {
+					useStateSAGE2: this.useState.bind(this),
+					width: this.sage2_width,
+					height: this.sage2_height
+				})
+			),
+			this.element
+		);
 	}
 
 	resize(date) {
@@ -69,7 +76,7 @@ class SAGE2_ReactApp {
 		let [state, setState] = React.useState(stateValue);
 
 		// save the setter function to trigger rerender in other places
-		this.setters[name] = (setter) => {
+		this.setters[name] = setter => {
 			if (setter instanceof Function) {
 				this.state[name] = setter(stateValue);
 			} else {
@@ -88,11 +95,11 @@ class SAGE2_ReactApp {
 	}
 
 	event(eventType, position, user_id, data, date) {
-		if (eventType === "pointerPress" && (data.button === "left")) {
+		if (eventType === "pointerPress" && data.button === "left") {
 			// click
 		} else if (eventType === "pointerMove" && this.dragging) {
 			// move
-		} else if (eventType === "pointerRelease" && (data.button === "left")) {
+		} else if (eventType === "pointerRelease" && data.button === "left") {
 			// click release
 		} else if (eventType === "pointerScroll") {
 			// Scroll events for zoom
@@ -117,5 +124,45 @@ class SAGE2_ReactApp {
 				this.refresh(date);
 			}
 		}
+	}
+}
+
+class ErrorBoundary extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = { hasError: false };
+	}
+
+	static getDerivedStateFromError(error) {
+		// Update state so the next render will show the fallback UI.
+		return { hasError: true };
+	}
+
+	render() {
+		if (this.state.hasError) {
+			// You can render any custom fallback UI
+			return React.createElement(
+				"div",
+				{
+					style: {
+						width: "100%",
+						height: "100%",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						fontFamily: "'Arimo', Helvetica, sans-serif",
+						background: "#FFCCCC",
+						color: "#ff0033",
+						padding: "20px",
+						boxSizing: "border-box",
+						textAlign: "center"
+					}
+				},
+				React.createElement("h1", null, "Something went wrong with this app.")
+			);
+			// return <h1>Something went wrong.</h1>;
+		}
+
+		return this.props.children;
 	}
 }

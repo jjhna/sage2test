@@ -1,25 +1,24 @@
 {
-    "main_script": "index.jsx",
-    "icon": "react.png",
-    "react": true,
-    "width": 600,
-    "height": 600,
-    "resize": "free",
-    "animation": false,
-    "dependencies": [],
-    "load": {
-      "file": "",
-      "X-attr" : "",
-      "Y-attr": ""
-    },
-    "directory": "csv",
-    "fileTypes": [
-      "csv"
-    ],
-    "title": "CSV Visualizer",
-    "version": "1.0.0",
-    "description": "SAGE2 CSV Visualization",
-    "keywords": ["sage2", "data", "visualization", "csv", "d3", "react"],
-    "author": "Andrew Burks <aburks3@uic.edu>",
-    "license": "SAGE2-Software-License"
+	"main_script": "index.jsx",
+	"icon": "react.png",
+	"react": true,
+	"width": 600,
+	"height": 600,
+	"resize": "free",
+	"animation": false,
+	"dependencies": [],
+	"load": {
+		"file": "",
+		"chart-type": "Scatter Plot",
+		"X-attr": "",
+		"Y-attr": ""
+	},
+	"directory": "csv",
+	"fileTypes": ["csv"],
+	"title": "CSV Visualizer",
+	"version": "1.0.0",
+	"description": "SAGE2 CSV Visualization",
+	"keywords": ["sage2", "data", "visualization", "csv", "d3", "react"],
+	"author": "Andrew Burks <aburks3@uic.edu>",
+	"license": "SAGE2-Software-License"
 }

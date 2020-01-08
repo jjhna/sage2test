@@ -65,6 +65,7 @@
 		"mv": "latest",
 		"node-json-db": "latest",
 		"node-pre-gyp": "latest",
+		"node-sass": "^4.13.0",
 		"normalizeurl": "latest",
 		"qr-image": "latest",
 		"rbush": ">=2",
