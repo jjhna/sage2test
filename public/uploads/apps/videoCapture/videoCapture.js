@@ -298,6 +298,8 @@ var videoCapture = SAGE2_App.extend({
 		entry.parameters = {
 			resolution: "3840"
 		};
+		entries.push(entry);
+
 		entry = {};
 		entry.description = "Resolution: HD (1920x1080)";
 		entry.callback = "changeDevice";
@@ -305,6 +307,7 @@ var videoCapture = SAGE2_App.extend({
 			resolution: "1920"
 		};
 		entries.push(entry);
+
 		entry = {};
 		entry.description = "Resolution: HD720 (1280x720)";
 		entry.callback = "changeDevice";
@@ -312,6 +315,7 @@ var videoCapture = SAGE2_App.extend({
 			resolution: "1280"
 		};
 		entries.push(entry);
+
 		entry = {};
 		entry.description = "Resolution: TV (640x360)";
 		entry.callback = "changeDevice";
