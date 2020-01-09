@@ -278,7 +278,7 @@ HttpServer.prototype.onreq = function(req, res) {
 		}
 
 		// Update the web manifest for PWA support
-		if (getName === "/manifest.webmanifest") {
+		if (getName.endsWith("manifest.webmanifest")) {
 			let manifestFilename = path.join(__dirname, "..", "manifest.webmanifest");
 			// Load the existing manifest file
 			let manifest = fs.readFileSync(manifestFilename, 'utf8');
