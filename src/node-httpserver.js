@@ -91,10 +91,10 @@ HttpServer.prototype.notfound = function(res) {
 	header["X-Frame-Options"] = "DENY";
 
 	res.writeHead(404, header);
-	res.write('<meta http-equiv="refresh" content="5;url=/index.html">');
+	res.write('<meta http-equiv="refresh" content="5;url=index.html">');
 	res.write('<h1>SAGE2 error</h1>Invalid request\n');
 	res.write('<br><br><br>\n');
-	res.write('<b><a href=/index.html>SAGE2 main page</a></b>\n');
+	res.write('<b><a href=index.html>SAGE2 main page</a></b>\n');
 	res.end();
 };
 
@@ -263,10 +263,11 @@ HttpServer.prototype.onreq = function(req, res) {
 		// redirect root path to index.html
 		if (getName === "/") {
 			// Build the secure URL
-			let secureURL = "https://" + global.config.host +
-				(global.config.secure_port === 443 ? "" : ":" + global.config.secure_port) +
-				"/index.html";
-			this.redirect(res, secureURL, 301);
+			// let secureURL = "https://" + global.config.host +
+			// 	(global.config.secure_port === 443 ? "" : ":" + global.config.secure_port) +
+			// 	"/index.html";
+			// Redirecting to relative URL should help with proxying
+			this.redirect(res, "index.html", 301);
 			return;
 		}
 
