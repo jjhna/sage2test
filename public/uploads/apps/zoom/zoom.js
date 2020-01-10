@@ -81,6 +81,9 @@ var zoom = SAGE2_App.extend({
 	},
 
 	load: function(date) {
+		// Load from state to stay in sync
+		this.viewer.viewport.panTo({x: this.state.centerx, y: this.state.centery});
+		this.viewer.viewport.zoomTo(this.state.zoom);
 	},
 
 	draw: function(date) {
@@ -224,6 +227,13 @@ var zoom = SAGE2_App.extend({
 					return;
 			}
 		}
+		// Save the state to stay in sync
+		let c = this.viewer.viewport.getCenter();
+		let z = this.viewer.viewport.getZoom();
+		this.state.centerx = c.x;
+		this.state.centery = c.y;
+		this.state.zoom = z;
+
 		this.refresh(date);
 	}
 });

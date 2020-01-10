@@ -7,14 +7,17 @@
 	"dependencies": [
 		"openseadragon.min.js"
 	],
-        "load": {
-		"file": ""
-        },
+    "load": {
+		"file": "",
+		"centerx": null,
+		"centery": null,
+		"zoom": null
+    },
 	"removeFromLauncher": false,
 	"fileTypes": [ "dzi" ],
 	"directory": "dzi",
 	"title": "Deep Zoom Image",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "High-resolution Image Viewer using the Openseadragon API",
 	"keywords": [ "openseadragon", "image", "viewer" ],
 	"author": "Luc Renambot <renambot@gmail.com>",
