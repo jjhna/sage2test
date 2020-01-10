@@ -396,9 +396,12 @@ function SAGE2_init() {
 
 	// Setup focus events
 	if ("Notification" in window && !viewOnlyMode) {
-		Notification.requestPermission(function (permission) {
-			console.log('Request', permission);
-		});
+		// Wait a little to request notification
+		setTimeout(function() {
+			Notification.requestPermission(function (permission) {
+				console.log('Request', permission);
+			});
+		}, 5000);
 	}
 	setupFocusHandlers();
 
