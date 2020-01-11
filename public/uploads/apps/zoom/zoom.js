@@ -32,8 +32,13 @@ var zoom = SAGE2_App.extend({
 
 		var dataset;
 		// Is it loaded from an asset or as an application
-		if (data.state.file && data.state.file.length > 0) {
+		if (data.state.url && data.state.url.length > 0) {
+			dataset = data.state.url;
+		} else if (data.state.file && data.state.file.length > 0) {
 			dataset = data.state.file;
+			// build URL and save it into the state for sharing
+			this.state.url = window.location.origin + data.state.file;
+			this.SAGE2Sync(false);
 		} else {
 			dataset = this.resrcPath + "enceladus.dzi";
 		}
@@ -69,6 +74,11 @@ var zoom = SAGE2_App.extend({
 			var parts = dataset.split('/');
 			var newTitle  = _this.title + ": " + parts[parts.length - 1] + " " + info;
 			_this.updateTitle(newTitle);
+
+			if (_this.state.zoom) {
+				// if the zoom has been set in the state variable, restore the settings
+				_this.load();
+			}
 		});
 
 		this.controls.addButton({type: "prev", position: 1, identifier: "Left"});
@@ -137,7 +147,7 @@ var zoom = SAGE2_App.extend({
 				}
 				this.lastZoom = date;
 			} else {
-				// not a double clikc
+				// not a double click
 				this.dragging = true;
 			}
 			// keep values up to date
@@ -188,6 +198,14 @@ var zoom = SAGE2_App.extend({
 			} else if (data.code === 189 && !this.isShift && data.state === "down") {
 				// - minus
 				this.viewer.viewport.zoomBy(0.9);
+				this.lastZoom = date;
+			} else if (data.code === 109 && data.state === "down") {
+				// - minus numpad
+				this.viewer.viewport.zoomBy(0.9);
+				this.lastZoom = date;
+			} else if (data.code === 107 && data.state === "down") {
+				// + plus numpad
+				this.viewer.viewport.zoomBy(1.1);
 				this.lastZoom = date;
 			} else if (data.code === 187 && this.isShift && data.state === "down") {
 				// + plus

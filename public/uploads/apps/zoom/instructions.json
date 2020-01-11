@@ -9,6 +9,7 @@
 	],
     "load": {
 		"file": "",
+		"url": "",
 		"centerx": null,
 		"centery": null,
 		"zoom": null
