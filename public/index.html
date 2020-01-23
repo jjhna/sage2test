@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
 <!-- android home styling -->
 <meta name="theme-color" content="#23B064"/>
-<link rel="manifest" href="/manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest">
 <!-- iOS home styling -->
 <link rel="apple-touch-icon" sizes="256x256" href="images/icons/S2-256ios.png" />
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,7 +32,7 @@
 (function() {
 	'use strict';
 	if ('serviceWorker' in navigator) {
-		navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+		navigator.serviceWorker.register('service-worker.js').then(function(registration) {
 			console.log("ServiceWorker> Registered");
 			// Check to see if there's an updated version of service-worker.js with new files to cache:
 			if (typeof registration.update == 'function') {
@@ -61,7 +61,6 @@
 							// reload or navigation to a page under the registered scope.
 							// It's the perfect time to display a "Content is cached for offline use." message.
 							console.log('ServiceWorker> Content is cached, and will be available for offline use');
-
 						}
 					break;
 

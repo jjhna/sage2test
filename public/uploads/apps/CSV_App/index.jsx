@@ -25,8 +25,6 @@ class CSV_App extends SAGE2_ReactApp {
 		// Not adding controls but making the default buttons available
 		this.controls.finishedAddingControls();
 		this.enableControls = true;
-
-		console.log(data.state.file);
 	}
 
 	getContextEntries() {
