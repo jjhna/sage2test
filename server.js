@@ -2450,6 +2450,13 @@ function wsUpdateAppState(wsio, data) {
 			}
 		}
 
+		// Send the appliation state to the display clients
+		broadcast('loadApplicationState', {
+			id: data.id,
+			state: app.data,
+			application: app.application
+		});
+
 		// Send the appliation state to the UI
 		broadcast('applicationState', {
 			id: data.id,
