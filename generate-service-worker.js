@@ -29,7 +29,7 @@ function generate() {
 		// filename of the generated service worker
 		swDest: path.join(rootDir, 'service-worker.js'),
 		// We provide our own copy of workbox
-		importWorkboxFrom: 'disabled',
+		// importWorkboxFrom: 'disabled',
 		importScripts: [
 			'lib/workbox/workbox-sw.js',
 			'lib/workbox/workbox-core.prod.js',
