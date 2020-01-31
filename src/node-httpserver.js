@@ -248,7 +248,7 @@ HttpServer.prototype.onreq = function(req, res) {
 	var i;
 	var _this = this;
 
-	if (req.method === "GET") {
+	if (req.method === "GET" || req.method === "HEAD") {
 		var reqURL  = url.parse(req.url);
 		// Remove the bad HTML, like script
 		var getName = sageutils.sanitizedURL(reqURL.pathname);
@@ -504,6 +504,10 @@ HttpServer.prototype.onreq = function(req, res) {
 					// Do not compress, just set file size
 					header["Content-Length"] = total;
 					res.writeHead(200, header);
+					if (req.method == "HEAD") {
+						res.end();
+						return;
+					}
 					readStream.on('open', function () {
 						readStream.pipe(res);
 					});
@@ -522,6 +526,10 @@ HttpServer.prototype.onreq = function(req, res) {
 						header["Content-Encoding"] = 'gzip';
 						// Write the HTTP response header
 						res.writeHead(200, header);
+						if (req.method == "HEAD") {
+							res.end();
+							return;
+						}
 						// Pipe the file input onto the HTTP response
 						readStream.on('open', function () {
 							readStream.pipe(zlib.createGzip()).pipe(res);
@@ -533,6 +541,10 @@ HttpServer.prototype.onreq = function(req, res) {
 						// Set the encoding to deflate
 						header["Content-Encoding"] = 'deflate';
 						res.writeHead(200, header);
+						if (req.method == "HEAD") {
+							res.end();
+							return;
+						}
 						readStream.on('open', function () {
 							readStream.pipe(zlib.createDeflate()).pipe(res);
 						});
@@ -543,6 +555,10 @@ HttpServer.prototype.onreq = function(req, res) {
 						// No HTTP compression, just set file size
 						header["Content-Length"] = total;
 						res.writeHead(200, header);
+						if (req.method == "HEAD") {
+							res.end();
+							return;
+						}
 						readStream.on('open', function () {
 							readStream.pipe(res);
 						});
