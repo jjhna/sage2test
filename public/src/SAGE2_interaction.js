@@ -368,7 +368,6 @@ function SAGE2_interaction(wsio) {
 		}
 		ext = ext.toLowerCase();
 		if (youtube >= 0) {
-			// mimeType = "video/youtube";
 			mimeType = "application/url";
 		} else if (ext === "jpg") {
 			mimeType = "image/jpeg";
@@ -390,17 +389,25 @@ function SAGE2_interaction(wsio) {
 			// madeup mimetype for drag-drop URL
 			mimeType = "application/url";
 		}
-		console.log("URL: " + url + ", type: " + mimeType);
-
 		if (mimeType !== "") {
-			this.wsio.emit('addNewWebElement', {
-				type: mimeType,
-				url: url,
-				position: [dropX, dropY],
-				id: this.uniqueID,
-				SAGE2_ptrName:  localStorage.SAGE2_ptrName,
-				SAGE2_ptrColor: localStorage.SAGE2_ptrColor
-			});
+			if (dropX != undefined && dropY != undefined) {
+				this.wsio.emit('addNewWebElement', {
+					type: mimeType,
+					url: url,
+					position: [dropX, dropY],
+					id: this.uniqueID,
+					SAGE2_ptrName:  localStorage.SAGE2_ptrName,
+					SAGE2_ptrColor: localStorage.SAGE2_ptrColor
+				});
+			} else {
+				this.wsio.emit('addNewWebElement', {
+					type: mimeType,
+					url: url,
+					id: this.uniqueID,
+					SAGE2_ptrName:  localStorage.SAGE2_ptrName,
+					SAGE2_ptrColor: localStorage.SAGE2_ptrColor
+				});
+			}
 		}
 	};
 

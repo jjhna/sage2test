@@ -331,13 +331,38 @@ function pasteHandler(event) {
 				// detect URLs
 				if (str.startsWith('http://') ||
 					str.startsWith('https://')) {
-					// Note very secure, but assumes it is a valid URI
-					wsio.emit('addNewWebElement', {
-						type: "application/url",
-						url: str,
-						id: interactor.uniqueID,
-						SAGE2_ptrName:  localStorage.SAGE2_ptrName,
-						SAGE2_ptrColor: localStorage.SAGE2_ptrColor
+
+					// Validate the URL with a HEAD request
+					fetch(str, {
+						method: 'HEAD',
+						mode: 'cors',
+						redirect: 'follow',
+						referrerPolicy: 'no-referrer'
+					}).then(function(response) {
+						if (!response.ok) {
+							// trying to detect CORS issues vs invalid URL
+							throw Error("notfound");
+						}
+						return response;
+					}).then((response) => {
+						if (response.status === 200) {
+							let assetType   = response.headers.get('content-type');
+							let assetLength = response.headers.get('content-length');
+							if (assetType && (assetLength > 0)) {
+								// All good, upload it
+								interactor.uploadURL(response.url);
+							}
+						} else {
+							showSAGE2Message('URL not valid');
+						}
+					}).catch((error) => {
+						if (error.message == "notfound") {
+							// Show error in UI
+							showSAGE2Message('Invalid URL');
+						} else {
+							// try anyway, maybe CORS problem
+							interactor.uploadURL(str);
+						}
 					});
 				} else {
 					// Otherwise, use the text and create a quickNote
