@@ -894,9 +894,11 @@ function addCookie(sKey, sValue) {
 		domain = domainPieces.slice(-1 * numberOfPiecesFromEndTokeep).join(".");
 	}
 
+	// First-party cookie: SameSite=None; Secure - Feb 2020
 	document.cookie = encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) +
 		"; expires=Fri, 31 Dec 9999 23:59:59 GMT" +
 		"; domain=" + domain +
+		"; SameSite=None; Secure" +
 		"; path=/";
 	return true;
 }
