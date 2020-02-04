@@ -230,7 +230,7 @@ var Webview = SAGE2_App.extend({
 				// Dont try to download a PDF
 				evt.preventDefault();
 				_this.element.stop();
-				_this.element.getWebContents().stop();
+				_this.getWebContents().stop();
 
 				// calculate a position right next to the parent view
 				let pos = [_this.sage2_x + _this.sage2_width + 5,
@@ -251,7 +251,7 @@ var Webview = SAGE2_App.extend({
 				// save the url
 				_this.state.url = evt.url;
 				// set the zoom value
-				_this.element.getWebContents().zoomFactor = _this.state.zoom;
+				_this.getWebContents().zoomFactor = _this.state.zoom;
 				// sync the state object
 				_this.SAGE2Sync(true);
 			}
@@ -275,7 +275,7 @@ var Webview = SAGE2_App.extend({
 			// save the url
 			_this.state.url = evt.url;
 			// set the zoom value
-			_this.element.getWebContents().zoomFactor = _this.state.zoom;
+			_this.getWebContents().zoomFactor = _this.state.zoom;
 			// sync the state object
 			_this.SAGE2Sync(true);
 		});
@@ -285,7 +285,7 @@ var Webview = SAGE2_App.extend({
 			// save the url
 			_this.state.url = evt.url;
 			// set the zoom value
-			_this.element.getWebContents().zoomFactor = _this.state.zoom;
+			_this.getWebContents().zoomFactor = _this.state.zoom;
 			// sync the state object
 			_this.SAGE2Sync(true);
 		});
@@ -475,7 +475,7 @@ var Webview = SAGE2_App.extend({
 				// webview.openDevTools(); // Debugging
 
 				// Parse out the original URL from the session URL
-				var webviewContents = webview.getWebContents();
+				var webviewContents = this.getWebContents();
 				var urlWithSession = webviewContents.getURL();
 
 				// Check if URL has session.html before parsing and reloading page without it
@@ -513,7 +513,7 @@ var Webview = SAGE2_App.extend({
 		if (this.addedHandlerForCertificteError) {
 			return;
 		}
-		var content = this.element.getWebContents();
+		var content = this.getWebContents();
 		var _this = this;
 		if (!content) {
 			window.requestAnimationFrame(function() {
@@ -559,6 +559,17 @@ var Webview = SAGE2_App.extend({
 	 */
 	isElectron: function() {
 		return (typeof window !== 'undefined' && window.process && window.process.type === "renderer");
+	},
+
+	/**
+	 * Returns the web contents associated with a webview
+	 *
+	 * @method     getWebContents
+	 * @return     {Object}  WebContents object
+	 */
+	getWebContents: function() {
+		let remote = require('electron').remote;
+		return remote.webContents.fromId(this.element.getWebContentsId());
 	},
 
 	/**
@@ -697,7 +708,7 @@ var Webview = SAGE2_App.extend({
 		if (this.isElectron()) {
 
 			if (this.state.mode === "mobile") {
-				content = this.element.getWebContents();
+				content = this.getWebContents();
 				content.enableDeviceEmulation({
 					screenPosition: "mobile",
 					screenSize: {width: 1000, height: 2000}
@@ -705,7 +716,7 @@ var Webview = SAGE2_App.extend({
 			}
 
 			if (this.state.mode === "desktop") {
-				content = this.element.getWebContents();
+				content = this.getWebContents();
 				content.enableDeviceEmulation({
 					screenPosition: "desktop",
 					deviceScaleFactor: 0,
@@ -785,7 +796,7 @@ var Webview = SAGE2_App.extend({
 		}
 
 		if (this.contentType === "web") {
-			let content = this.element.getWebContents();
+			let content = this.getWebContents();
 			let ar = this.sage2_width / this.sage2_height;
 			if (ar >= 1.0) {
 				// landscape window
@@ -1076,7 +1087,7 @@ if (videos.length > 0) {
 
 	muteUnmute: function(act) {
 		if (isMaster) {
-			var content = this.element.getWebContents();
+			var content = this.getWebContents();
 			if (this.isMuted) {
 				content.setAudioMuted(false);
 				this.isMuted = false;
@@ -1359,7 +1370,7 @@ if (videos.length > 0) {
 				// Just reload once
 				this.isLoading = true;
 				this.element.reload();
-				this.element.getWebContents().zoomFactor = this.state.zoom;
+				this.getWebContents().zoomFactor = this.state.zoom;
 			}
 		}
 	},
@@ -1422,13 +1433,13 @@ if (videos.length > 0) {
 			// zoomin
 			if (dir === "zoomin") {
 				this.state.zoom *= 1.50;
-				this.element.getWebContents().zoomFactor = this.state.zoom;
+				this.getWebContents().zoomFactor = this.state.zoom;
 			}
 
 			// zoomout
 			if (dir === "zoomout") {
 				this.state.zoom /= 1.50;
-				this.element.getWebContents().zoomFactor = this.state.zoom;
+				this.getWebContents().zoomFactor = this.state.zoom;
 			}
 
 			this.refresh();
